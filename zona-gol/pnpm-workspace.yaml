@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - '@tensorflow/tfjs-node'
+  - canvas
+  - dlib-build
+  - face-recognition
+  - sharp

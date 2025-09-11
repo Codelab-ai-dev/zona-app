@@ -1,0 +1,52 @@
+{
+  "format": "graph-model",
+  "generatedBy": "TensorFlow.js Converter",
+  "convertedBy": "TensorFlow.js Converter v4.22.0",
+  "modelTopology": {
+    "node": [
+      {
+        "name": "input",
+        "op": "Placeholder",
+        "attr": {
+          "dtype": {
+            "type": "DT_FLOAT"
+          },
+          "shape": {
+            "shape": {
+              "dim": [
+                {"size": "-1"},
+                {"size": "112"},
+                {"size": "112"},
+                {"size": "3"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "MobileFaceNet/output",
+        "op": "Identity",
+        "input": ["input"],
+        "attr": {
+          "T": {
+            "type": "DT_FLOAT"
+          }
+        }
+      }
+    ],
+    "library": {},
+    "versions": {}
+  },
+  "weightsManifest": [
+    {
+      "paths": ["weights.bin"],
+      "weights": [
+        {
+          "name": "MobileFaceNet/weights",
+          "shape": [512],
+          "dtype": "float32"
+        }
+      ]
+    }
+  ]
+}
