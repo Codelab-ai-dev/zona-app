@@ -30,6 +30,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   bool isRegisteringAttendance = false;
   bool hasAttendanceToday = false;
   bool isUpdatingStats = false;
+  bool isSuspended = false;
+  Map<String, dynamic>? suspensionDetails;
   Map<String, int> currentStats = {
     'goals': 0,
     'assists': 0,
@@ -49,18 +51,37 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     });
 
     final playerData = await ApiService.getPlayer(widget.qrData.playerId);
-    
+
     if (mounted) {
       setState(() {
         player = playerData;
         isLoading = false;
       });
-      
-      // Check if player has attendance today
+
+      // Check if player has attendance today and suspension status
       if (playerData != null) {
         _checkAttendanceToday();
         _loadCurrentStats();
+        _checkSuspensionStatus();
       }
+    }
+  }
+
+  Future<void> _checkSuspensionStatus() async {
+    if (player == null) return;
+
+    try {
+      final suspended = await ApiService.isPlayerSuspended(player!.id, widget.matchId);
+      final details = await ApiService.getPlayerSuspension(player!.id);
+
+      if (mounted) {
+        setState(() {
+          isSuspended = suspended;
+          suspensionDetails = details;
+        });
+      }
+    } catch (e) {
+      print('❌ Error verificando suspensión: $e');
     }
   }
 
@@ -686,14 +707,24 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                               
                               const SizedBox(height: 8),
                               _buildInfoRow(
-                                'Estado', 
+                                'Estado',
                                 player!.isActive ? 'Activo' : 'Inactivo',
                                 valueColor: player!.isActive ? Colors.green : Colors.red,
                               ),
-                              
+
+                              // Suspension status
+                              if (isSuspended) ...[
+                                const SizedBox(height: 8),
+                                _buildInfoRow(
+                                  'Suspensión',
+                                  'SUSPENDIDO',
+                                  valueColor: Colors.red,
+                                ),
+                              ],
+
                               const SizedBox(height: 8),
                               _buildInfoRow(
-                                'Registrado', 
+                                'Registrado',
                                 '${player!.createdAt.day}/${player!.createdAt.month}/${player!.createdAt.year}',
                               ),
                             ],
@@ -702,12 +733,59 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                       ),
                       
                       const SizedBox(height: 24),
-                      
+
+                      // Suspension Warning Card
+                      if (isSuspended && suspensionDetails != null) ...[
+                        Card(
+                          color: Colors.red.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.block, color: Colors.red.shade700, size: 24),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'JUGADOR SUSPENDIDO',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                _buildSuspensionDetail(
+                                  'Tipo',
+                                  _getSuspensionTypeLabel(suspensionDetails!['suspension_type'] ?? ''),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildSuspensionDetail(
+                                  'Partidos pendientes',
+                                  '${(suspensionDetails!['matches_to_serve'] ?? 0) - (suspensionDetails!['matches_served'] ?? 0)} de ${suspensionDetails!['matches_to_serve'] ?? 0}',
+                                ),
+                                if (suspensionDetails!['reason'] != null && suspensionDetails!['reason'].isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildSuspensionDetail(
+                                    'Motivo',
+                                    suspensionDetails!['reason'],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       // Attendance Registration Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: hasAttendanceToday || isRegisteringAttendance ? null : _registerAttendance,
+                          onPressed: hasAttendanceToday || isRegisteringAttendance || isSuspended ? null : _registerAttendance,
                           icon: isRegisteringAttendance
                               ? const SizedBox(
                                   width: 20,
@@ -718,23 +796,27 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                                   ),
                                 )
                               : Icon(
-                                  hasAttendanceToday ? Icons.check_circle : Icons.how_to_reg,
+                                  isSuspended
+                                      ? Icons.block
+                                      : (hasAttendanceToday ? Icons.check_circle : Icons.how_to_reg),
                                   color: Colors.white,
                                 ),
                           label: Text(
-                            hasAttendanceToday 
-                                ? (widget.matchId != null 
-                                    ? '✅ Asistencia registrada al partido' 
-                                    : '✅ Asistencia ya registrada') 
-                                : isRegisteringAttendance 
-                                    ? 'Registrando asistencia...' 
-                                    : (widget.matchId != null 
-                                        ? 'Registrar Asistencia al Partido'
-                                        : 'Registrar Asistencia'),
+                            isSuspended
+                                ? '⛔ Jugador suspendido - No puede participar'
+                                : hasAttendanceToday
+                                    ? (widget.matchId != null
+                                        ? '✅ Asistencia registrada al partido'
+                                        : '✅ Asistencia ya registrada')
+                                    : isRegisteringAttendance
+                                        ? 'Registrando asistencia...'
+                                        : (widget.matchId != null
+                                            ? 'Registrar Asistencia al Partido'
+                                            : 'Registrar Asistencia'),
                             style: const TextStyle(fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: hasAttendanceToday ? Colors.grey : Colors.orange,
+                            backgroundColor: isSuspended ? Colors.red : (hasAttendanceToday ? Colors.grey : Colors.orange),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -822,5 +904,43 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildSuspensionDetail(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            '$label:',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade900,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red.shade800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getSuspensionTypeLabel(String type) {
+    const labels = {
+      'red_card': 'Tarjeta Roja',
+      'yellow_accumulation': 'Acum. Amarillas',
+      'disciplinary_committee': 'Comité Disciplinario',
+      'other': 'Otro',
+    };
+    return labels[type] ?? type;
   }
 }

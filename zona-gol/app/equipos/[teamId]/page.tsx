@@ -14,11 +14,14 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
-import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock } from "lucide-react"
+import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock, IdCard, Printer } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
+import { PlayerCredential } from "@/components/team-owner/player-credential"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Player = Database['public']['Tables']['players']['Row']
@@ -37,12 +40,20 @@ export default function TeamDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { generatePlayerQR } = useQRGenerator()
   const supabase = createClientSupabaseClient()
-  
+
   const [team, setTeam] = useState<Team | null>(null)
   const [playersWithStats, setPlayersWithStats] = useState<PlayerWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [generatingQR, setGeneratingQR] = useState(false)
+  const [credentialModalOpen, setCredentialModalOpen] = useState(false)
+  const [currentCredentialData, setCurrentCredentialData] = useState<{
+    player: PlayerWithStats,
+    qrData: string
+  } | null>(null)
+  const [printingAll, setPrintingAll] = useState(false)
   
   const teamId = params?.teamId as string
 
@@ -149,6 +160,354 @@ export default function TeamDetailPage() {
 
   const handleBackClick = () => {
     router.back()
+  }
+
+  // Función para generar credencial imprimible
+  const handleGenerateCredential = async (player: PlayerWithStats) => {
+    setGeneratingQR(true)
+    try {
+      console.log('🔵 Generando credencial para jugador:', player.name)
+
+      // Usar formato legacy para compatibilidad
+      const qrResult = await generatePlayerQR(
+        {
+          id: player.id,
+          name: player.name,
+          team_id: player.team_id,
+          jersey_number: player.jersey_number
+        },
+        { format: 'legacy' }
+      )
+
+      if (qrResult && qrResult.success) {
+        console.log('✅ QR generado exitosamente para credencial')
+        setCurrentCredentialData({
+          player,
+          qrData: qrResult.qrData
+        })
+        setCredentialModalOpen(true)
+      } else {
+        toast.error('Error generando credencial')
+      }
+    } catch (error: any) {
+      console.error('❌ Error generando credencial:', error)
+      toast.error(`Error generando credencial: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setGeneratingQR(false)
+    }
+  }
+
+  // Función para imprimir todas las credenciales
+  const handlePrintAllCredentials = async () => {
+    if (playersWithStats.length === 0) {
+      toast.error('No hay jugadores para imprimir')
+      return
+    }
+
+    setPrintingAll(true)
+    try {
+      console.log('🔵 Generando credenciales para todos los jugadores:', playersWithStats.length)
+
+      // Importar QRCode dinámicamente
+      const QRCodeLib = (await import('qrcode')).default
+
+      // Generar QRs como imágenes base64 para todos los jugadores
+      const playersWithQR = await Promise.all(
+        playersWithStats.map(async (player) => {
+          const qrResult = await generatePlayerQR(
+            {
+              id: player.id,
+              name: player.name,
+              team_id: player.team_id,
+              jersey_number: player.jersey_number
+            },
+            { format: 'legacy' }
+          )
+
+          let qrImageBase64 = ''
+          if (qrResult?.success && qrResult.qrData) {
+            try {
+              // Generar QR como imagen base64
+              qrImageBase64 = await QRCodeLib.toDataURL(qrResult.qrData, {
+                width: 200,
+                margin: 1,
+                color: {
+                  dark: '#000000',
+                  light: '#ffffff'
+                }
+              })
+            } catch (error) {
+              console.error('Error generando QR para', player.name, error)
+            }
+          }
+
+          return {
+            player,
+            qrImageBase64
+          }
+        })
+      )
+
+      const getPlayerInitials = (name: string) => {
+        return name
+          .split(" ")
+          .map((word) => word[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2)
+      }
+
+      // Generar HTML para imprimir todas las credenciales
+      const printWindow = window.open('', '_blank')
+      if (!printWindow) {
+        throw new Error('No se pudo abrir ventana de impresión')
+      }
+
+      const teamLogoHTML = team?.logo
+        ? `<img src="${team.logo}" alt="Logo ${team.name}" class="team-logo" crossorigin="anonymous" />`
+        : ''
+
+      const credentialsHTML = playersWithQR.map(({ player, qrImageBase64 }) => {
+        const photoHTML = player.photo
+          ? `<img src="${player.photo}" alt="${player.name}" crossorigin="anonymous" />`
+          : `<div class="player-photo-placeholder">${getPlayerInitials(player.name)}</div>`
+
+        const qrHTML = qrImageBase64
+          ? `<img src="${qrImageBase64}" width="82" height="82" style="display: block;" alt="QR Code" />`
+          : `<div style="width: 82px; height: 82px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">QR</div>`
+
+        return `
+          <div class="credential">
+            <div class="header">
+              <div class="team-header">
+                ${teamLogoHTML}
+                <h3 class="team-name">${team?.name.toUpperCase()}</h3>
+              </div>
+            </div>
+            <div class="content">
+              <div class="player-photo">
+                ${photoHTML}
+              </div>
+              <div class="player-info">
+                <h4 class="player-name">${player.name}</h4>
+                <p class="player-position">${player.position}</p>
+                <div class="jersey-number">${player.jersey_number}</div>
+              </div>
+              <div class="qr-container">
+                ${qrHTML}
+              </div>
+            </div>
+            <div class="footer">
+              <p class="credential-id">ID: ${player.id.slice(-8).toUpperCase()}</p>
+              <p class="valid-text">CREDENCIAL OFICIAL</p>
+            </div>
+          </div>
+        `
+      }).join('')
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Credenciales - ${team?.name}</title>
+            <style>
+              @page {
+                size: A4;
+                margin: 10mm;
+              }
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                background: white;
+              }
+              .credentials-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10mm;
+                padding: 10mm;
+              }
+              .credential {
+                width: 85.6mm;
+                height: 53.98mm;
+                border: 2px solid #0066cc;
+                border-radius: 8px;
+                padding: 8px;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 4px;
+              }
+              .team-header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                margin-bottom: 2px;
+              }
+              .team-logo {
+                width: 24px;
+                height: 24px;
+                object-fit: contain;
+              }
+              .team-name {
+                font-size: 14px;
+                font-weight: bold;
+                color: #0066cc;
+                margin: 0;
+                line-height: 1;
+              }
+              .content {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex: 1;
+                min-height: 90px;
+              }
+              .player-photo {
+                flex-shrink: 0;
+                width: 60px;
+                height: 75px;
+                background: white;
+                border: 2px solid #cbd5e1;
+                border-radius: 6px;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .player-photo img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+              }
+              .player-photo-placeholder {
+                width: 100%;
+                height: 100%;
+                background: #f1f5f9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                color: #64748b;
+              }
+              .player-info {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                height: 100%;
+              }
+              .player-name {
+                font-size: 16px;
+                font-weight: bold;
+                color: #1e293b;
+                margin: 0 0 4px 0;
+                line-height: 1.1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              .player-position {
+                font-size: 12px;
+                color: #64748b;
+                margin: 0 0 8px 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-weight: 500;
+              }
+              .jersey-number {
+                font-size: 20px;
+                font-weight: bold;
+                color: #0066cc;
+                background: white;
+                border: 3px solid #0066cc;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                align-self: flex-start;
+              }
+              .qr-container {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                border-radius: 6px;
+                padding: 4px;
+                border: 2px solid #e2e8f0;
+                width: 90px;
+                height: 90px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 4px;
+              }
+              .credential-id {
+                font-size: 8px;
+                color: #64748b;
+                margin: 0;
+                font-weight: 500;
+              }
+              .valid-text {
+                font-size: 9px;
+                color: #0066cc;
+                margin: 1px 0 0 0;
+                font-weight: bold;
+                letter-spacing: 0.5px;
+              }
+              @media print {
+                body {
+                  margin: 0;
+                  padding: 0;
+                }
+                .credentials-container {
+                  padding: 10mm;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="credentials-container">
+              ${credentialsHTML}
+            </div>
+          </body>
+        </html>
+      `)
+
+      printWindow.document.close()
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print()
+          printWindow.close()
+          setPrintingAll(false)
+        }, 500)
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error imprimiendo credenciales:', error)
+      toast.error(`Error imprimiendo credenciales: ${error.message || 'Error desconocido'}`)
+      setPrintingAll(false)
+    }
   }
 
   if (loading) {
@@ -277,13 +636,28 @@ export default function TeamDetailPage() {
       {/* Players Statistics Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2" />
-            Estadísticas de Jugadores
-          </CardTitle>
-          <CardDescription>
-            Rendimiento individual de cada jugador del equipo
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <Trophy className="w-5 h-5 mr-2" />
+                Estadísticas de Jugadores
+              </CardTitle>
+              <CardDescription>
+                Rendimiento individual de cada jugador del equipo
+              </CardDescription>
+            </div>
+            {playersWithStats.length > 0 && (
+              <Button
+                onClick={handlePrintAllCredentials}
+                disabled={printingAll}
+                variant="outline"
+                className="text-blue-600 hover:text-blue-700"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                {printingAll ? 'Generando...' : 'Imprimir Todas las Credenciales'}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {playersWithStats.length === 0 ? (
@@ -313,6 +687,7 @@ export default function TeamDetailPage() {
                     <TableHead className="text-center">TA</TableHead>
                     <TableHead className="text-center">TR</TableHead>
                     <TableHead className="text-center">Min</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -373,6 +748,17 @@ export default function TeamDetailPage() {
                           {player.total_minutes_played}'
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateCredential(player)}
+                          disabled={generatingQR}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <IdCard className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -381,6 +767,17 @@ export default function TeamDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Credencial */}
+      {currentCredentialData && team && (
+        <PlayerCredential
+          open={credentialModalOpen}
+          onOpenChange={setCredentialModalOpen}
+          player={currentCredentialData.player}
+          team={{ name: team.name, logo: team.logo }}
+          qrData={currentCredentialData.qrData}
+        />
+      )}
     </div>
   )
 }

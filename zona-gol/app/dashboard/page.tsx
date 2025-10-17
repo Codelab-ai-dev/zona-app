@@ -6,6 +6,7 @@ import { authActions } from "@/lib/actions/auth-actions"
 import { Button } from "@/components/ui/button"
 import { ProtectedRoute } from "@/components/layout/protected-route"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
+import { toast } from "sonner"
 import { SystemStats } from "@/components/super-admin/system-stats"
 import { LeagueManagement } from "@/components/super-admin/league-management"
 import { LeagueStats } from "@/components/league-admin/league-stats"
@@ -14,9 +15,16 @@ import { TeamManagement } from "@/components/league-admin/team-management"
 import { ProfileSettings } from "@/components/league-admin/profile-settings"
 import { CalendarView } from "@/components/league-admin/calendar-view"
 import { FixtureGenerator } from "@/components/league-admin/fixture-generator"
+import { DisciplineTable } from "@/components/league-admin/discipline-table"
+import { SuspensionsManagement } from "@/components/league-admin/suspensions-management"
+import { TopScorers } from "@/components/league-admin/top-scorers"
+import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-bracket-generator"
 import { TeamStats } from "@/components/team-owner/team-stats"
+import { TeamRecord } from "@/components/team-owner/team-record"
+import { TeamScorers } from "@/components/team-owner/team-scorers"
 import { PlayerManagement } from "@/components/team-owner/player-management"
 import { TeamInfo } from "@/components/team-owner/team-info"
+import { TeamUniforms } from "@/components/team-owner/team-uniforms"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function DashboardPage() {
@@ -47,7 +55,7 @@ export default function DashboardPage() {
       window.location.reload()
     } catch (error) {
       console.error('❌ Error asignando liga:', error)
-      alert('Error asignando liga: ' + (error as any).message)
+      toast.error('Error asignando liga: ' + (error as any).message)
     } finally {
       setAssigning(false)
     }
@@ -71,16 +79,19 @@ export default function DashboardPage() {
       }
 
       console.log('📋 Leagues disponibles:', leagues)
-      
+
       if (leagues && leagues.length > 0) {
-        const leagueList = leagues.map((l: any) => `ID: ${l.id} | Nombre: ${l.name} | Slug: ${l.slug}`).join('\n')
-        alert(`Leagues disponibles:\n\n${leagueList}`)
+        const leagueList = leagues.map((l: any) => `• ${l.name} (ID: ${l.id})`).join('\n')
+        toast.info('Leagues disponibles', {
+          description: leagueList,
+          duration: 8000
+        })
       } else {
-        alert('No se encontraron leagues activas')
+        toast.warning('No se encontraron leagues activas')
       }
     } catch (error) {
       console.error('❌ Error:', error)
-      alert('Error obteniendo leagues: ' + (error as any).message)
+      toast.error('Error obteniendo leagues: ' + (error as any).message)
     }
   }
 
@@ -133,7 +144,7 @@ export default function DashboardPage() {
                   <Button 
                     onClick={() => leagueIdInput && handleAssignToLeague(leagueIdInput)}
                     disabled={assigning || !leagueIdInput}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-soccer-blue hover:bg-soccer-blue-dark"
                   >
                     {assigning ? 'Asignando...' : 'Asignar Liga'}
                   </Button>
@@ -145,12 +156,16 @@ export default function DashboardPage() {
 
         return (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="overview">Resumen</TabsTrigger>
               <TabsTrigger value="tournaments">Torneos</TabsTrigger>
               <TabsTrigger value="teams">Equipos</TabsTrigger>
               <TabsTrigger value="fixtures">Jornadas</TabsTrigger>
+              <TabsTrigger value="playoffs">Liguilla</TabsTrigger>
               <TabsTrigger value="calendar">Calendario</TabsTrigger>
+              <TabsTrigger value="scorers">Goleadores</TabsTrigger>
+              <TabsTrigger value="discipline">Disciplina</TabsTrigger>
+              <TabsTrigger value="suspensions">Suspensiones</TabsTrigger>
               <TabsTrigger value="settings">Configuración</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
@@ -165,8 +180,20 @@ export default function DashboardPage() {
             <TabsContent value="fixtures">
               <FixtureGenerator leagueId={profile.league_id} />
             </TabsContent>
+            <TabsContent value="playoffs">
+              <PlayoffBracketGenerator leagueId={profile.league_id} />
+            </TabsContent>
             <TabsContent value="calendar">
               <CalendarView leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="scorers">
+              <TopScorers leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="discipline">
+              <DisciplineTable leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="suspensions">
+              <SuspensionsManagement leagueId={profile.league_id} />
             </TabsContent>
             <TabsContent value="settings">
               <ProfileSettings />
@@ -191,19 +218,31 @@ export default function DashboardPage() {
 
         return (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Resumen</TabsTrigger>
+              <TabsTrigger value="record">Estadísticas</TabsTrigger>
+              <TabsTrigger value="scorers">Goleadores</TabsTrigger>
               <TabsTrigger value="players">Jugadores</TabsTrigger>
               <TabsTrigger value="team">Mi Equipo</TabsTrigger>
+              <TabsTrigger value="uniforms">Uniformes</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
               <TeamStats teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="record">
+              <TeamRecord teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="scorers">
+              <TeamScorers teamId={profile.team_id} />
             </TabsContent>
             <TabsContent value="players">
               <PlayerManagement teamId={profile.team_id} />
             </TabsContent>
             <TabsContent value="team">
               <TeamInfo teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="uniforms">
+              <TeamUniforms teamId={profile.team_id} />
             </TabsContent>
           </Tabs>
         )

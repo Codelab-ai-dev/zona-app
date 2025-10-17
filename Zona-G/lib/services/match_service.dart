@@ -1,31 +1,110 @@
 import '../models/match.dart';
 import '../config/supabase_config.dart';
+import './auth_service.dart';
 
 class MatchService {
-  
-  // Get upcoming matches
+
+  // Helper method to get weekday name
+  static String _getWeekdayName(int weekday) {
+    switch (weekday) {
+      case 1: return 'Lunes';
+      case 2: return 'Martes';
+      case 3: return 'Miércoles';
+      case 4: return 'Jueves';
+      case 5: return 'Viernes';
+      case 6: return 'Sábado';
+      case 7: return 'Domingo';
+      default: return 'Desconocido';
+    }
+  }
+
+  // Get upcoming matches (current week only)
   static Future<List<Match>> getUpcomingMatches({int limit = 10}) async {
     try {
-      print('🏆 Obteniendo partidos próximos...');
-      
+      print('🏆 Obteniendo partidos próximos de la semana...');
+
+      // Get current user's league ID
+      final currentUser = AuthService.currentUser;
+      if (currentUser?.leagueId == null) {
+        print('⚠️ Usuario no tiene liga asignada');
+        return [];
+      }
+
+      print('🔍 Filtrando partidos para la liga: ${currentUser!.leagueId}');
+
+      // Calculate current week's date range (Monday to next Sunday)
+      final now = DateTime.now();
+      final currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
+
+      // Get Monday of current week (start of week) at 00:00:00
+      final startOfWeek = DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: currentWeekday - 1));
+
+      // Get the next Sunday (always looking forward)
+      // From any day, calculate days until the upcoming Sunday
+      // Sunday = 7, so days_until = (7 - current_weekday)
+      // But if today IS Sunday (7), we want next Sunday which is 7 days away
+      int daysUntilNextSunday;
+      if (currentWeekday == 7) {
+        daysUntilNextSunday = 7; // If today is Sunday, next Sunday is 7 days away
+      } else {
+        daysUntilNextSunday = 7 - currentWeekday; // Otherwise, calculate days remaining
+      }
+
+      final endOfWeek = DateTime(now.year, now.month, now.day)
+          .add(Duration(days: daysUntilNextSunday))
+          .add(const Duration(hours: 23, minutes: 59, seconds: 59));
+
+      // Convert to UTC for Supabase query
+      final startOfWeekUtc = startOfWeek.toUtc();
+      final endOfWeekUtc = endOfWeek.toUtc();
+
+      print('📅 Rango de partidos (local): ${startOfWeek} - ${endOfWeek}');
+      print('📅 Rango de partidos (UTC): ${startOfWeekUtc.toIso8601String()} - ${endOfWeekUtc.toIso8601String()}');
+      print('📅 Hoy es: ${now.toString()} (${_getWeekdayName(currentWeekday)})');
+
       final response = await SupabaseConfig.client
           .from('matches')
           .select('''
             *,
             home_team:teams!matches_home_team_id_fkey(id, name, logo),
             away_team:teams!matches_away_team_id_fkey(id, name, logo),
-            tournament:tournaments(id, name)
+            tournament:tournaments(id, name, league_id)
           ''')
           .inFilter('status', ['scheduled', 'in_progress'])
-          .gte('match_date', DateTime.now().toIso8601String())
+          .gte('match_date', startOfWeekUtc.toIso8601String())
+          .lte('match_date', endOfWeekUtc.toIso8601String())
           .order('match_date', ascending: true)
           .limit(limit);
 
-      print('✅ Partidos obtenidos: ${response.length}');
-      
-      return response
+      print('✅ Partidos obtenidos de la base de datos: ${response.length}');
+
+      // Debug: Print all matches before filtering
+      for (var match in response) {
+        print('🔍 Partido encontrado: ${match['home_team']?['name']} vs ${match['away_team']?['name']} - Fecha: ${match['match_date']} - Liga: ${match['tournament']?['league_id']}');
+      }
+
+      // Filter by league ID on the client side since we can't filter through nested relations directly
+      final filteredMatches = response
+          .where((match) {
+            final tournamentData = match['tournament'];
+            if (tournamentData == null) {
+              print('⚠️ Partido sin torneo: ${match['id']}');
+              return false;
+            }
+            final leagueId = tournamentData['league_id'];
+            final matchesUserLeague = leagueId == currentUser.leagueId;
+            if (!matchesUserLeague) {
+              print('⚠️ Partido de otra liga: ${match['home_team']?['name']} vs ${match['away_team']?['name']} - Liga del partido: $leagueId - Liga del usuario: ${currentUser.leagueId}');
+            }
+            return matchesUserLeague;
+          })
           .map<Match>((data) => Match.fromJson(data))
           .toList();
+
+      print('✅ Partidos de la semana de tu liga obtenidos: ${filteredMatches.length}');
+
+      return filteredMatches;
     } catch (e) {
       print('❌ Error obteniendo partidos: $e');
       return [];
@@ -36,24 +115,44 @@ class MatchService {
   static Future<List<Match>> getFinishedMatches({int limit = 20}) async {
     try {
       print('🏁 Obteniendo partidos finalizados...');
-      
+
+      // Get current user's league ID
+      final currentUser = AuthService.currentUser;
+      if (currentUser?.leagueId == null) {
+        print('⚠️ Usuario no tiene liga asignada');
+        return [];
+      }
+
+      print('🔍 Filtrando partidos para la liga: ${currentUser!.leagueId}');
+
       final response = await SupabaseConfig.client
           .from('matches')
           .select('''
             *,
             home_team:teams!matches_home_team_id_fkey(id, name, logo),
             away_team:teams!matches_away_team_id_fkey(id, name, logo),
-            tournament:tournaments(id, name)
+            tournament:tournaments(id, name, league_id)
           ''')
           .eq('status', 'finished')
           .order('match_date', ascending: false)
           .limit(limit);
 
-      print('✅ Partidos finalizados obtenidos: ${response.length}');
-      
-      return response
+      print('✅ Partidos obtenidos: ${response.length}');
+
+      // Filter by league ID on the client side since we can't filter through nested relations directly
+      final filteredMatches = response
+          .where((match) {
+            final tournamentData = match['tournament'];
+            if (tournamentData == null) return false;
+            final leagueId = tournamentData['league_id'];
+            return leagueId == currentUser.leagueId;
+          })
           .map<Match>((data) => Match.fromJson(data))
           .toList();
+
+      print('✅ Partidos finalizados de la liga obtenidos: ${filteredMatches.length}');
+
+      return filteredMatches;
     } catch (e) {
       print('❌ Error obteniendo partidos finalizados: $e');
       return [];
@@ -220,10 +319,10 @@ class MatchService {
   }
 
   // Finalize match with final score
-  static Future<bool> finalizeMatch(String matchId, int homeScore, int awayScore) async {
+  static Future<bool> finalizeMatch(String matchId, int homeScore, int awayScore, {String? observations}) async {
     try {
       print('🏁 Finalizando partido: $matchId (${homeScore}-${awayScore})');
-      
+
       // Step 1: Update the match with final score and status
       final response = await SupabaseConfig.client
           .from('matches')
@@ -239,11 +338,31 @@ class MatchService {
 
       print('✅ Partido actualizado: ${response['id']}');
 
-      // Step 2: The team_stats table will be automatically updated by the database trigger
+      // Step 2: Save referee observations if provided
+      if (observations != null && observations.isNotEmpty) {
+        print('📝 Guardando observaciones del árbitro...');
+        try {
+          // Try to upsert the referee report (insert or update if exists)
+          await SupabaseConfig.client
+              .from('match_referee_reports')
+              .upsert({
+                'match_id': matchId,
+                'general_observations': observations,
+                'updated_at': DateTime.now().toIso8601String(),
+              }, onConflict: 'match_id');
+
+          print('✅ Observaciones del árbitro guardadas');
+        } catch (e) {
+          print('⚠️ Error guardando observaciones del árbitro: $e');
+          // Don't fail the whole operation if observations fail to save
+        }
+      }
+
+      // Step 3: The team_stats table will be automatically updated by the database trigger
       // But we'll add a small delay to ensure the trigger has completed
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Step 3: Verify that team statistics were updated
+      // Step 4: Verify that team statistics were updated
       await _verifyTeamStatsUpdate(matchId, homeScore, awayScore);
 
       print('✅ Partido finalizado exitosamente con estadísticas actualizadas');

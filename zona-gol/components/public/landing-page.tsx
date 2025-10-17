@@ -18,25 +18,25 @@ import {
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-soccer-white via-blue-50 to-emerald-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-soccer-green rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold text-green-800">Zona Gol</span>
+              <span className="text-2xl font-bold text-soccer-blue">Zona Gol</span>
             </div>
             <nav className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-gray-600 hover:text-green-600 transition-colors">
+              <Link href="#features" className="text-soccer-gray hover:text-soccer-green transition-colors">
                 Características
               </Link>
-              <Link href="#how-it-works" className="text-gray-600 hover:text-green-600 transition-colors">
+              <Link href="#how-it-works" className="text-soccer-gray hover:text-soccer-green transition-colors">
                 Cómo Funciona
               </Link>
-              <Link href="#ligas" className="text-gray-600 hover:text-green-600 transition-colors">
+              <Link href="#ligas" className="text-soccer-gray hover:text-soccer-green transition-colors">
                 Ligas
               </Link>
               <Button asChild variant="outline">
@@ -55,14 +55,14 @@ export function LandingPage() {
           </Badge>
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
             Gestiona tu Liga de
-            <span className="text-green-600 block">Fútbol Fácilmente</span>
+            <span className="text-soccer-green block">Fútbol Fácilmente</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             La plataforma completa para administrar ligas, equipos, jugadores y torneos. 
             Controla estadísticas, resultados y mantén a todos informados en tiempo real.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-green-600 hover:bg-green-700" asChild>
+            <Button size="lg" className="bg-soccer-green hover:bg-soccer-green-dark" asChild>
               <Link href="/login">
                 <Play className="w-5 h-5 mr-2" />
                 Comenzar Ahora
@@ -93,8 +93,8 @@ export function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-soccer-green/10 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-soccer-green" />
                 </div>
                 <CardTitle>Gestión de Equipos</CardTitle>
                 <CardDescription>
@@ -104,15 +104,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Registro de jugadores
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Asignación de posiciones
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Control de dorsales
                   </li>
                 </ul>
@@ -121,8 +121,8 @@ export function LandingPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Trophy className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-soccer-blue/10 rounded-lg flex items-center justify-center mb-4">
+                  <Trophy className="w-6 h-6 text-soccer-blue" />
                 </div>
                 <CardTitle>Torneos y Partidos</CardTitle>
                 <CardDescription>
@@ -132,15 +132,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Calendarios automáticos
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Gestión de resultados
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Tablas de posiciones
                   </li>
                 </ul>
@@ -149,8 +149,8 @@ export function LandingPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart3 className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-soccer-gold/10 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-soccer-gold-dark" />
                 </div>
                 <CardTitle>Estadísticas Avanzadas</CardTitle>
                 <CardDescription>
@@ -160,15 +160,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Goles y asistencias
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Tarjetas y minutos
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Reportes detallados
                   </li>
                 </ul>
@@ -177,8 +177,8 @@ export function LandingPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-orange-600" />
+                <div className="w-12 h-12 bg-soccer-red/10 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-soccer-red" />
                 </div>
                 <CardTitle>Control de Acceso</CardTitle>
                 <CardDescription>
@@ -188,15 +188,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Super administradores
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Administradores de liga
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Dueños de equipo
                   </li>
                 </ul>
@@ -205,8 +205,8 @@ export function LandingPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <Calendar className="w-6 h-6 text-red-600" />
+                <div className="w-12 h-12 bg-soccer-blue/10 rounded-lg flex items-center justify-center mb-4">
+                  <Calendar className="w-6 h-6 text-soccer-blue" />
                 </div>
                 <CardTitle>Programación</CardTitle>
                 <CardDescription>
@@ -216,15 +216,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Fechas automáticas
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Notificaciones
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Sincronización
                   </li>
                 </ul>
@@ -233,8 +233,8 @@ export function LandingPage() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="w-6 h-6 text-teal-600" />
+                <div className="w-12 h-12 bg-soccer-green/10 rounded-lg flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-soccer-green" />
                 </div>
                 <CardTitle>Vista Pública</CardTitle>
                 <CardDescription>
@@ -244,15 +244,15 @@ export function LandingPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Resultados en vivo
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Clasificaciones
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-soccer-green mr-2" />
                     Próximos partidos
                   </li>
                 </ul>
@@ -276,7 +276,7 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-16 h-16 bg-soccer-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 1
               </div>
               <h3 className="text-xl font-semibold mb-4">Crea tu Liga</h3>
@@ -286,7 +286,7 @@ export function LandingPage() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-16 h-16 bg-soccer-blue rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 2
               </div>
               <h3 className="text-xl font-semibold mb-4">Agrega Equipos</h3>
@@ -296,7 +296,7 @@ export function LandingPage() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-16 h-16 bg-soccer-gold-dark rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 3
               </div>
               <h3 className="text-xl font-semibold mb-4">Programa Torneos</h3>
@@ -309,22 +309,22 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-green-600 to-blue-600">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-soccer-green to-soccer-blue">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             ¿Listo para digitalizar tu liga?
           </h2>
-          <p className="text-xl text-green-100 mb-8">
+          <p className="text-xl text-soccer-white mb-8">
             Únete a cientos de ligas que ya están usando Zona Gol para mejorar su organización
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100">
+            <Button size="lg" className="bg-white text-soccer-green hover:bg-gray-100">
               <Link href="/login">
                 Comenzar Gratis
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-green-600" asChild>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-soccer-green" asChild>
               <a href="#ligas">Ver Demo</a>
             </Button>
           </div>
@@ -343,7 +343,7 @@ export function LandingPage() {
             </p>
           </div>
           <div className="text-center py-8">
-            <Button size="lg" asChild className="bg-green-600 hover:bg-green-700">
+            <Button size="lg" asChild className="bg-soccer-green hover:bg-soccer-green-dark">
               <Link href="/ligas">Ver Todas las Ligas</Link>
             </Button>
           </div>
@@ -355,7 +355,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-soccer-green rounded-lg flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold">Zona Gol</span>

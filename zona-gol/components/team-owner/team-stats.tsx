@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { useTeams } from "@/lib/hooks/use-teams"
 import { Database } from "@/lib/supabase/database.types"
-import { Users, Trophy, Target, Calendar, Loader2 } from "lucide-react"
+import { Users, Trophy, Target, Calendar, Loader2, FileText } from "lucide-react"
+import { RefereeReportModal } from "./referee-report-modal"
+import { TeamSuspensionsPanel } from "./team-suspensions-panel"
 
 type Player = Database['public']['Tables']['players']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -25,7 +28,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
     getMatchesByTeam,
     getTeamStats
   } = useTeams()
-  
+
   const [teamStats, setTeamStats] = useState<{
     playersCount: number
     matchesCount: number
@@ -34,6 +37,8 @@ export function TeamStats({ teamId }: TeamStatsProps) {
     draws: number
   } | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const [refereeModalOpen, setRefereeModalOpen] = useState(false)
 
   // Load team data when component mounts or teamId changes
   useEffect(() => {
@@ -83,6 +88,11 @@ export function TeamStats({ teamId }: TeamStatsProps) {
         <span className="text-lg">Cargando estadísticas del equipo...</span>
       </div>
     )
+  }
+
+  const handleViewRefereeReport = (match: Match) => {
+    setSelectedMatch(match)
+    setRefereeModalOpen(true)
   }
 
   const activePlayers = players.filter((p) => p.is_active)
@@ -196,7 +206,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
         })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Distribución por Posición</CardTitle>
@@ -221,12 +231,14 @@ export function TeamStats({ teamId }: TeamStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {finishedMatches.slice(-3).map((match) => {
+              {finishedMatches.slice(-3).reverse().map((match) => {
                 const isHome = match.home_team_id === teamId
                 const teamScore = isHome ? match.home_score : match.away_score
                 const opponentScore = isHome ? match.away_score : match.home_score
                 // Get opponent team info from match relations
                 const opponentTeam = isHome ? (match as any).away_team : (match as any).home_team
+                const tournament = (match as any).tournament
+                const matchDate = new Date(match.match_date)
 
                 const result =
                   teamScore! > opponentScore! ? "Victoria" : teamScore === opponentScore ? "Empate" : "Derrota"
@@ -238,14 +250,34 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       : "bg-red-100 text-red-800"
 
                 return (
-                  <div key={match.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">vs {opponentTeam?.name || 'Equipo Rival'}</p>
-                      <p className="text-sm text-gray-500">
-                        {teamScore} - {opponentScore}
-                      </p>
+                  <div key={match.id} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">vs {opponentTeam?.name || 'Equipo Rival'}</p>
+                        <p className="text-sm text-gray-500">
+                          {teamScore} - {opponentScore}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                          <Calendar className="w-3 h-3" />
+                          <span>{matchDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                          {match.round && <span>• Jornada {match.round}</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${resultColor}`}>
+                          {result}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewRefereeReport(match)}
+                          className="p-2 h-8 w-8"
+                          title="Ver cédula arbitral"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs ${resultColor}`}>{result}</div>
                   </div>
                 )
               })}
@@ -255,7 +287,19 @@ export function TeamStats({ teamId }: TeamStatsProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Team Suspensions Panel */}
+        <TeamSuspensionsPanel teamId={teamId} />
       </div>
+
+      {/* Referee Report Modal */}
+      {selectedMatch && (
+        <RefereeReportModal
+          open={refereeModalOpen}
+          onOpenChange={setRefereeModalOpen}
+          match={selectedMatch}
+        />
+      )}
     </div>
   )
 }

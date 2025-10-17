@@ -12,22 +12,32 @@ export const leagueActions = {
   async getActiveLeagues() {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setLeagues } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
+      console.log('🔍 Fetching active leagues from database...')
+
       const { data: leagues, error } = await supabase
         .from('leagues')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
+        console.error('❌ Database error:', error)
         throw error
       }
-      
+
+      console.log('✅ Database query successful. Found leagues:', leagues?.length || 0)
+      leagues?.forEach((league, index) => {
+        console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
+      })
+
       setLeagues(leagues || [])
+      console.log('📦 Store updated with leagues')
+
       return leagues
     } catch (error) {
       console.error('Get leagues error:', error)
@@ -94,6 +104,11 @@ export const leagueActions = {
       }
       
       setLeagues(leagues || [])
+      console.log('📋 Todas las ligas obtenidas:', leagues?.map(l => ({
+        name: l.name,
+        is_active: l.is_active,
+        created_at: l.created_at
+      })))
       return leagues || []
     } catch (error) {
       console.error('Get all leagues error:', error)
@@ -155,12 +170,13 @@ export const leagueActions = {
       setLoading(true)
       setError(null)
       
-      // 1. Crear la liga con el usuario actual como administrador
+      // 1. Crear la liga con el usuario actual como administrador (asegurar que sea activa)
       const { data: league, error } = await (supabase
         .from('leagues') as any)
         .insert({
           ...leagueData,
           admin_id: user.id,
+          is_active: leagueData.is_active !== undefined ? leagueData.is_active : true
         })
         .select()
         .single()
@@ -220,10 +236,15 @@ export const leagueActions = {
       setLoading(true)
       setError(null)
       
-      // 1. Crear la liga
+      // 1. Crear la liga (asegurar que siempre sea activa)
+      const leagueDataWithDefaults = {
+        ...leagueData,
+        is_active: leagueData.is_active !== undefined ? leagueData.is_active : true
+      }
+
       const { data: league, error } = await (supabase
         .from('leagues') as any)
-        .insert(leagueData)
+        .insert(leagueDataWithDefaults)
         .select()
         .single()
       
@@ -232,7 +253,8 @@ export const leagueActions = {
       }
       
       console.log('🏆 Liga creada:', league)
-      
+      console.log('🔍 Estado is_active de la liga creada:', league.is_active)
+
       // 2. Asignar automáticamente la liga al administrador
       if (league && leagueData.admin_id) {
         try {
@@ -295,7 +317,39 @@ export const leagueActions = {
         throw error
       }
       
+      console.log('🔄 Liga actualizada en BD:', {
+        id: league.id,
+        name: league.name,
+        is_active: league.is_active,
+        updated_at: league.updated_at
+      })
+
       updateLeague(league)
+
+      // Forzar actualización del store solo con ligas activas para el directorio público
+      setTimeout(async () => {
+        try {
+          const { data: activeLeagues } = await supabase
+            .from('leagues')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+
+          if (activeLeagues) {
+            const { setLeagues } = useLeagueStore.getState()
+            setLeagues(activeLeagues)
+            console.log('🔄 Store actualizado con ligas activas:', activeLeagues?.length)
+
+            // Trigger a refresh event for the public directory
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('league-status-updated'))
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Error refrescando store:', error)
+        }
+      }, 100)
+
       return league
     } catch (error) {
       console.error('Update league error:', error)
@@ -644,58 +698,83 @@ export const serverLeagueActions = {
         .select('*, team:teams!inner(*)', { count: 'exact', head: true })
         .eq('team.league_id', leagueId)
       
-      // Get matches count and data
-      const { data: matches, count: matchesCount } = await supabase
-        .from('matches')
-        .select(`
-          id,
-          tournament_id,
-          home_team_id,
-          away_team_id,
-          home_score,
-          away_score,
-          match_date,
-          match_time,
-          field_number,
-          round,
-          status,
-          created_at,
-          updated_at,
-          home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
-          away_team:teams!matches_away_team_id_fkey(id, name, slug, logo),
-          tournament:tournaments(id, name)
-        `, { count: 'exact' })
-        .eq('home_team.league_id', leagueId)
-        .order('match_date', { ascending: false })
+      // First get tournament IDs for this league to filter matches correctly
+      const tournamentIds = tournaments?.map(t => t.id) || []
+
+      console.log('🏟️ League matches query:', {
+        leagueId,
+        tournamentIds,
+        tournamentsCount: tournaments?.length || 0
+      })
+
+      // Get matches count and data (only if there are tournaments)
+      let matches: any[] = []
+      let matchesCount = 0
+
+      if (tournamentIds.length > 0) {
+        const { data: matchesData, count: matchesCountData } = await supabase
+          .from('matches')
+          .select(`
+            id,
+            tournament_id,
+            home_team_id,
+            away_team_id,
+            home_score,
+            away_score,
+            match_date,
+            match_time,
+            field_number,
+            round,
+            status,
+            created_at,
+            updated_at,
+            home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
+            away_team:teams!matches_away_team_id_fkey(id, name, slug, logo),
+            tournament:tournaments(id, name)
+          `, { count: 'exact' })
+          .in('tournament_id', tournamentIds)
+          .order('match_date', { ascending: false })
+
+        matches = matchesData || []
+        matchesCount = matchesCountData || 0
+      }
       
       // Debug: Log all matches to understand the data
       console.log('🔍 All matches for league:', leagueId, {
-        totalMatches: matches?.length || 0,
-        statuses: matches?.map(m => ({ id: m.id, status: m.status, date: m.match_date })) || []
+        totalMatches: matches.length,
+        tournamentIds,
+        statuses: matches.map(m => ({
+          id: m.id,
+          status: m.status,
+          date: m.match_date,
+          tournament_id: m.tournament_id,
+          home: m.home_team?.name,
+          away: m.away_team?.name
+        }))
       })
 
       // Get upcoming matches
-      const upcomingMatches = matches?.filter(match => {
+      const upcomingMatches = matches.filter(match => {
         const isScheduled = match.status === 'scheduled' || match.status === 'in_progress'
         const isFuture = new Date(match.match_date) > new Date()
         return isScheduled && isFuture
-      }).slice(0, 5) || []
-      
+      }).slice(0, 5)
+
       // Get recent matches (finished matches, regardless of date)
-      const recentMatches = matches?.filter(match => 
+      const recentMatches = matches.filter(match =>
         match.status === 'finished'
       ).sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
-      .slice(0, 5) || []
+      .slice(0, 5)
 
       // Organize matches by rounds/matchdays
-      const matchesByRound = matches?.reduce((acc: any, match) => {
+      const matchesByRound = matches.reduce((acc: any, match) => {
         const round = match.round || 1 // Default to round 1 if not specified
         if (!acc[round]) {
           acc[round] = []
         }
         acc[round].push(match)
         return acc
-      }, {}) || {}
+      }, {})
 
       // Sort matches within each round by date and time
       Object.keys(matchesByRound).forEach(round => {

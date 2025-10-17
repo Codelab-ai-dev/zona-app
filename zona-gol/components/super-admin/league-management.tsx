@@ -25,6 +25,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { fileUploadService } from "@/lib/utils/file-upload"
 import { FileUpload } from "@/components/ui/file-upload"
 import { Plus, Edit, Trash2, Users, Copy, Eye, EyeOff, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 // Definir tipos
 type League = Database['public']['Tables']['leagues']['Row']
@@ -94,7 +95,7 @@ export function LeagueManagement() {
 
   const handleCreateLeague = async () => {
     if (!formData.name || !formData.adminName || !formData.adminEmail) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
@@ -286,8 +287,11 @@ export function LeagueManagement() {
             name: adminName
           })
           
-          // Recargar ligas
-          await getAllLeagues()
+          // Recargar ligas con un pequeño delay para asegurar consistencia
+          setTimeout(async () => {
+            await getAllLeagues()
+            console.log('🔄 Ligas recargadas después de crear nueva liga')
+          }, 500)
           
           console.log('🎉 Liga creada exitosamente en background')
           
@@ -300,7 +304,7 @@ export function LeagueManagement() {
       
     } catch (error: any) {
       console.error('❌ Error en creación de liga:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setCreating(false)
     }
@@ -368,10 +372,12 @@ export function LeagueManagement() {
       setEditingLeague(null)
       setFormData({ name: "", slug: "", description: "", adminName: "", adminEmail: "", adminPhone: "", logo: "" })
       setLogoFile(null)
-      
+
+      toast.success('Liga actualizada exitosamente')
       console.log('✅ Liga actualizada exitosamente')
     } catch (error: any) {
       console.error('❌ Error updating league:', error)
+      toast.error('Error al actualizar la liga')
     }
   }
 
@@ -383,9 +389,10 @@ export function LeagueManagement() {
     try {
       await leagueActions.deleteLeague(leagueId)
       // The store will be updated automatically by the action
+      toast.success('Liga eliminada exitosamente')
     } catch (error: any) {
       console.error('Error deleting league:', error)
-      alert(`Error al eliminar la liga: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error al eliminar la liga: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -398,9 +405,79 @@ export function LeagueManagement() {
         is_active: !league.is_active
       })
       // The store will be updated automatically by the action
+      toast.success(`Liga ${league.is_active ? 'desactivada' : 'activada'} exitosamente`)
     } catch (error: any) {
       console.error('Error updating league status:', error)
-      alert(`Error al actualizar el estado de la liga: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error al actualizar el estado de la liga: ${error.message || 'Error desconocido'}`)
+    }
+  }
+
+  // Función para verificar estado real de las ligas en BD
+  const debugLeaguesStatus = async () => {
+    try {
+      const supabase = createClientSupabaseClient()
+      const { data: leagues, error } = await supabase
+        .from('leagues')
+        .select('id, name, is_active, created_at, updated_at')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      console.log('🔍 Estado real de las ligas en BD:')
+      leagues.forEach(league => {
+        console.log(`${league.is_active ? '✅' : '❌'} ${league.name} (${league.is_active ? 'ACTIVA' : 'INACTIVA'})`)
+      })
+
+      const inactiveCount = leagues.filter(l => !l.is_active).length
+      const activeCount = leagues.filter(l => l.is_active).length
+
+      toast.info('Estado de la base de datos', {
+        description: `${activeCount} ligas activas, ${inactiveCount} ligas inactivas. Ver consola para detalles.`,
+        duration: 5000
+      })
+    } catch (error: any) {
+      console.error('Error checking leagues status:', error)
+      toast.error(`Error verificando estado: ${error.message}`)
+    }
+  }
+
+  // Función para activar todas las ligas inactivas (útil para corrección masiva)
+  const activateAllLeagues = async () => {
+    if (!confirm('¿Estás seguro de que quieres activar TODAS las ligas inactivas?')) {
+      return
+    }
+
+    const inactiveLeagues = leagues.filter(l => !l.is_active)
+
+    if (inactiveLeagues.length === 0) {
+      toast.warning('No hay ligas inactivas para activar')
+      return
+    }
+
+    try {
+      console.log(`🔄 Activando ${inactiveLeagues.length} ligas inactivas...`)
+
+      for (const league of inactiveLeagues) {
+        await leagueActions.updateLeague(league.id, {
+          is_active: true
+        })
+        console.log(`✅ Liga activada: ${league.name}`)
+      }
+
+      toast.success(`Se activaron ${inactiveLeagues.length} ligas exitosamente`)
+
+      // Recargar ligas para reflejar los cambios
+      await getAllLeagues()
+
+      // También refrescar la página para asegurar que se actualice la vista pública
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error: any) {
+      console.error('Error activating leagues:', error)
+      toast.error(`Error al activar ligas: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -412,17 +489,22 @@ export function LeagueManagement() {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      // Aquí podrías agregar una notificación de éxito
+      toast.success('Copiado al portapapeles')
       console.log('✅ Copiado al portapapeles')
     } catch (err) {
       console.error('❌ Error al copiar:', err)
       // Fallback para navegadores más antiguos
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
+      try {
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        toast.success('Copiado al portapapeles')
+      } catch (fallbackErr) {
+        toast.error('Error al copiar al portapapeles')
+      }
     }
   }
 
@@ -433,14 +515,31 @@ export function LeagueManagement() {
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Ligas</h2>
           <p className="text-gray-600">Administra todas las ligas del sistema</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Liga
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
+        <div className="flex space-x-3">
+          <Button
+            variant="outline"
+            onClick={debugLeaguesStatus}
+            className="text-gray-600 hover:text-gray-700 border-gray-600"
+            size="sm"
+          >
+            Debug BD
+          </Button>
+          <Button
+            variant="outline"
+            onClick={activateAllLeagues}
+            className="text-blue-600 hover:text-blue-700 border-blue-600"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Activar Todas
+          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Liga
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Crear Nueva Liga</DialogTitle>
               <DialogDescription>
@@ -542,6 +641,7 @@ export function LeagueManagement() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
@@ -564,7 +664,7 @@ export function LeagueManagement() {
                     size="icon"
                     onClick={() => {
                       navigator.clipboard.writeText(createdAdmin.email)
-                      alert('Email copiado al portapapeles')
+                      toast.success('Email copiado al portapapeles')
                     }}
                   >
                     <Copy size={16} />
@@ -590,7 +690,7 @@ export function LeagueManagement() {
                     size="icon"
                     onClick={() => {
                       navigator.clipboard.writeText(generatedPassword)
-                      alert('Contraseña copiada al portapapeles')
+                      toast.success('Contraseña copiada al portapapeles')
                     }}
                   >
                     <Copy size={16} />

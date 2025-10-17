@@ -586,33 +586,45 @@ export const teamActions = {
         .select('*', { count: 'exact', head: true })
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
       
-      // Get wins, losses, draws
+      // Get wins, losses, draws, goals for, goals against, and points
       const { data: matches } = await supabase
         .from('matches')
         .select('home_team_id, away_team_id, home_score, away_score, status')
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
         .eq('status', 'finished')
-      
-      let wins = 0, losses = 0, draws = 0
-      
+
+      let wins = 0, losses = 0, draws = 0, goalsFor = 0, goalsAgainst = 0
+
       matches?.forEach(match => {
         if (match.home_score === null || match.away_score === null) return
-        
+
         const isHome = match.home_team_id === teamId
         const teamScore = isHome ? match.home_score : match.away_score
         const opponentScore = isHome ? match.away_score : match.home_score
-        
+
+        // Accumulate goals
+        goalsFor += teamScore
+        goalsAgainst += opponentScore
+
+        // Count wins, losses, draws
         if (teamScore > opponentScore) wins++
         else if (teamScore < opponentScore) losses++
         else draws++
       })
-      
+
+      // Calculate points (3 for win, 1 for draw, 0 for loss)
+      const points = (wins * 3) + (draws * 1)
+
       return {
         playersCount: playersCount || 0,
         matchesCount: matchesCount || 0,
         wins,
         losses,
         draws,
+        goalsFor,
+        goalsAgainst,
+        goalDifference: goalsFor - goalsAgainst,
+        points,
       }
     } catch (error) {
       console.error('Get team stats error:', error)

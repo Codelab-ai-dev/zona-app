@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Trophy, Users, Calendar, ArrowRight, Loader2, LogIn, Info } from "lucide-react"
+import { Trophy, Users, Calendar, ArrowRight, Loader2, LogIn, Info, RefreshCw } from "lucide-react"
 import { useLeagues } from "@/lib/hooks/use-leagues"
 
 interface LeagueStats {
@@ -30,37 +30,64 @@ export function LeagueDirectory() {
   const { getActiveLeagues, getLeagueStats, loading, error, leagues } = useLeagues();
   const [leagueStats, setLeagueStats] = useState<Record<string, LeagueStats>>({});
   const [loadingStats, setLoadingStats] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Always filter to show only active leagues, regardless of what's in the store
+  const activeLeagues = useMemo(() => {
+    return leagues?.filter(league => league.is_active) || [];
+  }, [leagues]);
+
+  // Función para refrescar manualmente
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await getActiveLeagues();
+    } catch (error) {
+      console.error('Error refreshing leagues:', error);
+    }
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    // Cargar las ligas activas solo una vez al montar el componente
-    const loadLeagues = async () => {
-      if (leagues && leagues.length > 0) return; // Evitar cargar si ya hay datos
-      
-      try {
-        await getActiveLeagues();
-      } catch (error) {
-        console.error('Error loading leagues:', error);
-      }
+    // Cargar ligas al montar el componente
+    getActiveLeagues().catch(console.error);
+
+    // Escuchar eventos de actualización de ligas
+    const handleLeagueUpdate = () => {
+      getActiveLeagues().catch(console.error);
     };
-    
-    loadLeagues();
-  }, []); // Solo ejecutar una vez al montar
+
+    window.addEventListener('league-status-updated', handleLeagueUpdate);
+
+    return () => {
+      window.removeEventListener('league-status-updated', handleLeagueUpdate);
+    };
+  }, []); // Sin dependencias para evitar re-ejecuciones
 
   useEffect(() => {
-    // Cargar estadísticas para cada liga solo cuando las ligas cambien
+    // Recargar estadísticas cuando cambien las ligas
     const loadStats = async () => {
-      if (!leagues || leagues.length === 0) return;
-      if (Object.keys(leagueStats).length > 0) return; // Evitar cargar si ya hay estadísticas
-      
+      if (!leagues || leagues.length === 0) {
+        setLeagueStats({});
+        return;
+      }
+
+      const currentActiveLeagues = leagues.filter(league => league.is_active);
+
+      if (currentActiveLeagues.length === 0) {
+        setLeagueStats({});
+        return;
+      }
+
       setLoadingStats(true);
       const stats: Record<string, LeagueStats> = {};
-      
+
       try {
-        for (const league of leagues) {
+        for (const league of currentActiveLeagues) {
           const leagueStat = await getLeagueStats(league.id);
           stats[league.id] = leagueStat;
         }
-        
+
         setLeagueStats(stats);
       } catch (error) {
         console.error('Error loading league stats:', error);
@@ -68,9 +95,10 @@ export function LeagueDirectory() {
         setLoadingStats(false);
       }
     };
-    
+
+    // Solo cargar stats si realmente hay cambios en leagues
     loadStats();
-  }, [leagues]); // Solo dependemos de las ligas, no de las funciones
+  }, [leagues]); // Solo dependemos de leagues
 
   const getLeagueInitials = (leagueName: string) => {
     return leagueName
@@ -115,7 +143,16 @@ export function LeagueDirectory() {
             <p className="text-gray-500 text-lg">Explora y únete a las competiciones activas</p>
           </div>
           <div className="mt-4 md:mt-0">
-            
+            <Button
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Actualizando...' : 'Actualizar'}
+            </Button>
           </div>
         </div>
         
@@ -134,7 +171,7 @@ export function LeagueDirectory() {
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {leagues && leagues.map((league) => {
+          {activeLeagues && activeLeagues.map((league) => {
             const stats = leagueStats[league.id] || { teamsCount: 0, tournamentsCount: 0, activeTournament: null };
             return (
               <Card key={league.id} className="border border-gray-200 hover:border-green-500 transition-all duration-200 bg-white">
@@ -142,11 +179,11 @@ export function LeagueDirectory() {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-start gap-4">
-                        <div className="flex flex-col items-center">
+                        <div className="flex flex-col items-center gap-2">
                           <Avatar className="w-16 h-16">
                             {league.logo && (
-                              <AvatarImage 
-                                src={league.logo} 
+                              <AvatarImage
+                                src={league.logo}
                                 alt={`Logo de ${league.name}`}
                               />
                             )}
@@ -154,26 +191,24 @@ export function LeagueDirectory() {
                               {getLeagueInitials(league.name)}
                             </AvatarFallback>
                           </Avatar>
+                          {loadingStats ? (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span className="text-xs">Cargando</span>
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant={league.is_active ? "default" : "outline"}
+                              className={league.is_active ? 'bg-green-600' : 'text-gray-500'}
+                            >
+                              <span className="text-xs">
+                                {league.is_active ? "Activo" : "Inactivo"}
+                              </span>
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex flex-col items-center">
                           <h3 className="text-xl font-medium text-gray-900">{league.name}</h3>
-                          <div className="mt-1">
-                            {loadingStats ? (
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span className="text-xs">Cargando</span>
-                              </Badge>
-                            ) : (
-                              <Badge 
-                                variant={stats.activeTournament ? "default" : "outline"}
-                                className={stats.activeTournament ? 'bg-green-600' : 'text-gray-500'}
-                              >
-                                <span className="text-xs">
-                                  {stats.activeTournament ? "Activo" : "Inactivo"}
-                                </span>
-                              </Badge>
-                            )}
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -198,7 +233,7 @@ export function LeagueDirectory() {
           })}
         </div>
 
-        {leagues && leagues.length === 0 && !loading && (
+        {activeLeagues && activeLeagues.length === 0 && !loading && (
           <div className="bg-white border border-gray-200 rounded-md p-6 text-center max-w-md mx-auto">
             <Trophy className="w-8 h-8 text-gray-400 mx-auto mb-3" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay ligas disponibles</h3>

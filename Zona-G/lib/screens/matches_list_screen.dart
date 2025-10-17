@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import '../models/match.dart';
 import '../services/match_service.dart';
 import 'match_detail_screen.dart';
@@ -27,7 +29,7 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
     });
 
     final matchesList = await MatchService.getUpcomingMatches(limit: 20);
-    
+
     if (mounted) {
       setState(() {
         matches = matchesList;
@@ -44,46 +46,36 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            onPressed: _loadMatches,
-            icon: const Icon(Icons.refresh),
-          ),
+          IconButton(onPressed: _loadMatches, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : matches.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.sports_soccer,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No hay partidos próximos',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.sports_soccer, size: 80, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No hay partidos próximos',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadMatches,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: matches.length,
-                    itemBuilder: (context, index) {
-                      final match = matches[index];
-                      return _buildMatchCard(match);
-                    },
-                  ),
-                ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadMatches,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: matches.length,
+                itemBuilder: (context, index) {
+                  final match = matches[index];
+                  return _buildMatchCard(match);
+                },
+              ),
+            ),
     );
   }
 
@@ -139,9 +131,9 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Teams
               Row(
                 children: [
@@ -150,15 +142,7 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                     flex: 2,
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: match.homeTeamLogo != null
-                              ? NetworkImage(match.homeTeamLogo!)
-                              : null,
-                          child: match.homeTeamLogo == null
-                              ? const Icon(Icons.sports_soccer, size: 30)
-                              : null,
-                        ),
+                        _buildTeamLogo(match.homeTeamLogo),
                         const SizedBox(height: 8),
                         Text(
                           match.homeTeamName ?? 'Equipo Local',
@@ -173,7 +157,7 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Score/VS
                   Expanded(
                     flex: 1,
@@ -204,21 +188,13 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Away Team
                   Expanded(
                     flex: 2,
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: match.awayTeamLogo != null
-                              ? NetworkImage(match.awayTeamLogo!)
-                              : null,
-                          child: match.awayTeamLogo == null
-                              ? const Icon(Icons.sports_soccer, size: 30)
-                              : null,
-                        ),
+                        _buildTeamLogo(match.awayTeamLogo),
                         const SizedBox(height: 8),
                         Text(
                           match.awayTeamName ?? 'Equipo Visitante',
@@ -235,9 +211,9 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Action Button
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -248,7 +224,8 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MatchDetailScreen(match: match),
+                                builder: (context) =>
+                                    MatchDetailScreen(match: match),
                               ),
                             );
                           }
@@ -271,6 +248,82 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildTeamLogo(String? logoUrl) {
+    return CircleAvatar(
+      radius: 30,
+      backgroundColor: Colors.grey[200],
+      child: logoUrl != null && logoUrl.isNotEmpty
+          ? ClipOval(
+              child: _buildLogoImage(logoUrl, 60, 60),
+            )
+          : const Icon(
+              Icons.sports_soccer,
+              size: 30,
+              color: Colors.green,
+            ),
+    );
+  }
+
+  Widget _buildLogoImage(String logoUrl, double width, double height) {
+    // Check if it's a base64 encoded image
+    if (logoUrl.startsWith('data:image/')) {
+      try {
+        // Extract the base64 part after the comma
+        final base64String = logoUrl.split(',')[1];
+        final Uint8List bytes = base64Decode(base64String);
+        
+        return Image.memory(
+          bytes,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('❌ Error cargando logo base64: $error');
+            return const Icon(
+              Icons.sports_soccer,
+              size: 30,
+              color: Colors.green,
+            );
+          },
+        );
+      } catch (e) {
+        print('❌ Error decodificando base64: $e');
+        return const Icon(
+          Icons.sports_soccer,
+          size: 30,
+          color: Colors.green,
+        );
+      }
+    } else {
+      // It's a regular URL
+      return Image.network(
+        logoUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const SizedBox(
+            width: 30,
+            height: 30,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.green,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error cargando logo URL: $logoUrl - $error');
+          return const Icon(
+            Icons.sports_soccer,
+            size: 30,
+            color: Colors.green,
+          );
+        },
+      );
+    }
   }
 
   Color _getStatusColor(MatchStatus status) {

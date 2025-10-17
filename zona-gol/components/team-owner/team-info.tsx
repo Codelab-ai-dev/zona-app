@@ -18,6 +18,7 @@ import {
 import { useTeams } from "@/lib/hooks/use-teams"
 import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { PlayerStatistics } from "./player-statistics"
 
 type Team = Database['public']['Tables']['teams']['Row']
 import { Edit, Shield, Calendar, Globe, Loader2 } from "lucide-react"
@@ -282,30 +283,8 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximas Funcionalidades</CardTitle>
-            <CardDescription>Características que estarán disponibles pronto</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm">Subir logo del equipo</span>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm">Gestión de colores del uniforme</span>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span className="text-sm">Historial de temporadas</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Player Statistics Section */}
+      <PlayerStatistics teamId={teamId} />
     </div>
   )
 }

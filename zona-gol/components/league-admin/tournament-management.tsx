@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dialog"
 import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { Database } from "@/lib/supabase/database.types"
-import { Plus, Edit, Calendar, Trophy, Loader2 } from "lucide-react"
+import { Plus, Edit, Calendar, Trophy, Loader2, Users, Lock, Unlock } from "lucide-react"
+import { toast } from "sonner"
 
 type Tournament = Database['public']['Tables']['tournaments']['Row']
 
@@ -43,6 +44,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     name: "",
     startDate: "",
     endDate: "",
+    maxPlayers: "",
   })
 
   // Load tournaments when component mounts or leagueId changes
@@ -59,8 +61,8 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
   if (!leagueId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Liga No Encontrada</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-foreground mb-4">Liga No Encontrada</h2>
+        <p className="text-muted-foreground">
           No se pudo cargar la información de la liga.
         </p>
       </div>
@@ -69,7 +71,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
 
   const handleCreateTournament = async () => {
     if (!formData.name || !formData.startDate || !formData.endDate) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
@@ -81,15 +83,17 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         league_id: leagueId,
         start_date: formData.startDate,
         end_date: formData.endDate,
+        max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
         is_active: true
       })
 
-      setFormData({ name: "", startDate: "", endDate: "" })
+      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "" })
       setIsCreateDialogOpen(false)
+      toast.success(`Torneo "${formData.name}" creado exitosamente`)
       console.log('✅ Torneo creado exitosamente')
     } catch (error: any) {
       console.error('❌ Error creando torneo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setCreating(false)
     }
@@ -101,6 +105,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       name: tournament.name,
       startDate: tournament.start_date,
       endDate: tournament.end_date,
+      maxPlayers: tournament.max_players ? tournament.max_players.toString() : "",
     })
   }
 
@@ -114,14 +119,16 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         name: formData.name,
         start_date: formData.startDate,
         end_date: formData.endDate,
+        max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
       })
 
       setEditingTournament(null)
-      setFormData({ name: "", startDate: "", endDate: "" })
+      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "" })
+      toast.success(`Torneo "${formData.name}" actualizado exitosamente`)
       console.log('✅ Torneo actualizado exitosamente')
     } catch (error: any) {
       console.error('❌ Error actualizando torneo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setUpdating(false)
     }
@@ -135,10 +142,32 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       await updateTournament(tournamentId, {
         is_active: !tournament.is_active
       })
+      toast.success(`Torneo ${tournament.is_active ? 'desactivado' : 'activado'} exitosamente`)
       console.log('✅ Estado del torneo actualizado')
     } catch (error: any) {
       console.error('❌ Error actualizando estado del torneo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
+    }
+  }
+
+  const toggleRegistrationStatus = async (tournamentId: string) => {
+    const tournament = tournaments.find(t => t.id === tournamentId)
+    if (!tournament) return
+
+    const action = tournament.registration_open ? 'cerrar' : 'abrir'
+    const confirmMessage = `¿Estás seguro de que quieres ${action} los registros de jugadores para "${tournament.name}"?`
+
+    if (!confirm(confirmMessage)) return
+
+    try {
+      await updateTournament(tournamentId, {
+        registration_open: !tournament.registration_open
+      })
+      toast.success(`Registros ${action}dos exitosamente`)
+      console.log(`✅ Registros ${action}dos exitosamente`)
+    } catch (error: any) {
+      console.error(`❌ Error al ${action} registros:`, error)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -154,12 +183,12 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Torneos</h2>
-          <p className="text-gray-600">Administra los torneos de tu liga</p>
+          <h2 className="text-2xl font-bold text-foreground">Gestión de Torneos</h2>
+          <p className="text-muted-foreground">Administra los torneos de tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
+            <Button className="bg-soccer-green hover:bg-soccer-green-dark">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Torneo
             </Button>
@@ -197,8 +226,22 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 />
               </div>
-              <Button 
-                onClick={handleCreateTournament} 
+              <div>
+                <Label htmlFor="maxPlayers">Límite de Jugadores por Equipo (opcional)</Label>
+                <Input
+                  id="maxPlayers"
+                  type="number"
+                  min="1"
+                  value={formData.maxPlayers}
+                  onChange={(e) => setFormData({ ...formData, maxPlayers: e.target.value })}
+                  placeholder="Sin límite"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Deja vacío para no establecer límite de jugadores
+                </p>
+              </div>
+              <Button
+                onClick={handleCreateTournament}
                 className="w-full bg-green-600 hover:bg-green-700"
                 disabled={creating}
               >
@@ -228,8 +271,8 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
           <span>Cargando torneos...</span>
         </div>
       ) : tournaments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <div className="text-center py-8 text-muted-foreground">
+          <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
           <p>No hay torneos creados todavía</p>
           <p className="text-sm">Crea tu primer torneo para comenzar</p>
         </div>
@@ -248,10 +291,31 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                     <Calendar className="w-4 h-4 mr-1" />
                     {formatDate(tournament.start_date)} - {formatDate(tournament.end_date)}
                   </CardDescription>
+                  {tournament.max_players && (
+                    <CardDescription className="flex items-center mt-1">
+                      <Users className="w-4 h-4 mr-1" />
+                      Límite: {tournament.max_players} jugadores por equipo
+                    </CardDescription>
+                  )}
                 </div>
-                <Badge variant={tournament.is_active ? "default" : "secondary"}>
-                  {tournament.is_active ? "Activo" : "Inactivo"}
-                </Badge>
+                <div className="flex flex-col gap-2">
+                  <Badge variant={tournament.is_active ? "default" : "secondary"}>
+                    {tournament.is_active ? "Activo" : "Inactivo"}
+                  </Badge>
+                  <Badge variant={tournament.registration_open ? "default" : "destructive"} className="flex items-center gap-1">
+                    {tournament.registration_open ? (
+                      <>
+                        <Unlock className="w-3 h-3" />
+                        Registros Abiertos
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        Registros Cerrados
+                      </>
+                    )}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -262,6 +326,23 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => toggleTournamentStatus(tournament.id)}>
                   {tournament.is_active ? "Desactivar" : "Activar"}
+                </Button>
+                <Button
+                  variant={tournament.registration_open ? "destructive" : "default"}
+                  size="sm"
+                  onClick={() => toggleRegistrationStatus(tournament.id)}
+                >
+                  {tournament.registration_open ? (
+                    <>
+                      <Lock className="w-4 h-4 mr-1" />
+                      Cerrar Registros
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-4 h-4 mr-1" />
+                      Abrir Registros
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -304,8 +385,22 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
               />
             </div>
-            <Button 
-              onClick={handleUpdateTournament} 
+            <div>
+              <Label htmlFor="edit-maxPlayers">Límite de Jugadores por Equipo (opcional)</Label>
+              <Input
+                id="edit-maxPlayers"
+                type="number"
+                min="1"
+                value={formData.maxPlayers}
+                onChange={(e) => setFormData({ ...formData, maxPlayers: e.target.value })}
+                placeholder="Sin límite"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Deja vacío para no establecer límite de jugadores
+              </p>
+            </div>
+            <Button
+              onClick={handleUpdateTournament}
               className="w-full bg-green-600 hover:bg-green-700"
               disabled={updating}
             >

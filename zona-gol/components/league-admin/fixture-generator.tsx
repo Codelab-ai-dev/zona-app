@@ -343,17 +343,17 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Equipos activos:</strong> {activeTeams.length}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 <strong>Torneos activos:</strong> {activeTournaments.length}
               </p>
             </div>
             <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-soccer-green hover:bg-soccer-green-dark"
                   disabled={activeTeams.length < 2 || activeTournaments.length === 0}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -370,14 +370,14 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
         <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none">
           <DialogHeader className="pb-4 border-b px-8 pt-2">
             <DialogTitle className="text-xl">Configurar Generación de Jornadas</DialogTitle>
-            <DialogDescription className="text-gray-600">
+            <DialogDescription className="text-muted-foreground">
               Configura los parámetros para generar el calendario de partidos
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto px-8 py-2">
             {message && (
-              <Alert className={`mb-8 ${message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <Alert className={`mb-8 ${message.type === 'success' ? 'border-green-200 bg-muted/30 dark:bg-soccer-green/5' : 'border-red-200 bg-red-50'}`}>
                 <AlertDescription className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
                   {message.text}
                 </AlertDescription>
@@ -387,15 +387,15 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
               {/* Left Column - Basic Configuration */}
               <div className="space-y-8">
-                <div className="bg-blue-50 p-8 rounded-xl shadow-sm">
-                  <h3 className="text-xl font-semibold text-blue-900 mb-8 flex items-center gap-3">
+                <div className="bg-muted/30 dark:bg-soccer-blue/5 p-8 rounded-xl shadow-sm border border-muted">
+                  <h3 className="text-xl font-semibold text-soccer-blue dark:text-soccer-blue-light mb-8 flex items-center gap-3">
                     <Calendar className="w-6 h-6" />
                     Configuración Básica
                   </h3>
                   <div className="space-y-6">
 
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Torneo</Label>
+                      <Label className="text-sm font-medium text-foreground">Torneo</Label>
                       <Select value={config.tournamentId} onValueChange={(value) => setConfig({...config, tournamentId: value})}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Selecciona un torneo" />
@@ -411,7 +411,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
 
                     <div>
-                      <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Fecha de Inicio</Label>
+                      <Label htmlFor="startDate" className="text-sm font-medium text-foreground">Fecha de Inicio</Label>
                       <Input
                         id="startDate"
                         type="date"
@@ -422,10 +422,10 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Duración de Partidos</Label>
+                      <Label className="text-sm font-medium text-foreground">Duración de Partidos</Label>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-xs text-gray-500">Tiempo por tiempo</Label>
+                          <Label className="text-xs text-muted-foreground">Tiempo por tiempo</Label>
                           <Select 
                             value={config.matchDuration.halfTime.toString()} 
                             onValueChange={(value) => setConfig({
@@ -451,7 +451,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-gray-500">Descanso</Label>
+                          <Label className="text-xs text-muted-foreground">Descanso</Label>
                           <Select 
                             value={config.matchDuration.breakTime.toString()} 
                             onValueChange={(value) => setConfig({
@@ -472,7 +472,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Tipo de Liga</Label>
+                      <Label className="text-sm font-medium text-foreground">Tipo de Liga</Label>
                       <Select value={config.scheduleType} onValueChange={(value: any) => setConfig({...config, scheduleType: value})}>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -488,7 +488,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700">Canchas</Label>
+                        <Label className="text-sm font-medium text-foreground">Canchas</Label>
                         <Select value={config.fieldsAvailable.toString()} onValueChange={(value) => setConfig({...config, fieldsAvailable: parseInt(value)})}>
                           <SelectTrigger className="mt-2">
                             <SelectValue />
@@ -504,7 +504,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                       </div>
                       
                       <div>
-                        <Label className="text-sm font-medium text-gray-700">Formato</Label>
+                        <Label className="text-sm font-medium text-foreground">Formato</Label>
                         <Select value={config.doubleRound ? "double" : "single"} onValueChange={(value) => setConfig({...config, doubleRound: value === "double"})}>
                           <SelectTrigger className="mt-2">
                             <SelectValue />
@@ -522,15 +522,15 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
               {/* Right Column - Schedule Configuration */}
               <div className="space-y-8">
-                <div className="bg-green-50 p-8 rounded-xl shadow-sm">
-                  <h3 className="text-xl font-semibold text-green-900 mb-8 flex items-center gap-3">
+                <div className="bg-muted/30 dark:bg-soccer-green/5 p-8 rounded-xl shadow-sm border border-muted">
+                  <h3 className="text-xl font-semibold text-soccer-green dark:text-soccer-green-light mb-8 flex items-center gap-3">
                     <Clock className="w-6 h-6" />
                     Configuración de Horarios
                   </h3>
                   <div className="space-y-6">
 
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Días de Partidos</Label>
+                      <Label className="text-sm font-medium text-foreground">Días de Partidos</Label>
                       <div className="grid grid-cols-7 gap-3 mt-3">
                         {[
                           { value: 'monday', label: 'L' },
@@ -585,7 +585,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
                     {config.scheduleType === 'custom' && (
                       <div>
-                        <Label className="text-sm font-medium text-gray-700">Horarios Personalizados</Label>
+                        <Label className="text-sm font-medium text-foreground">Horarios Personalizados</Label>
                         <div className="grid grid-cols-5 gap-3 mt-3">
                           {['08:00', '09:30', '11:00', '12:30', '14:00', '15:30', '17:00', '18:30', '19:00', '20:30', '22:00'].map(time => (
                             <Button
@@ -610,8 +610,8 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                   </div>
                 </div>
 
-                <div className="bg-orange-50 p-8 rounded-xl shadow-sm">
-                  <h3 className="text-xl font-semibold text-orange-900 mb-8 flex items-center gap-3">
+                <div className="bg-muted/30 dark:bg-soccer-gold/5 p-8 rounded-xl shadow-sm border border-muted">
+                  <h3 className="text-xl font-semibold text-soccer-gold dark:text-soccer-gold-light mb-8 flex items-center gap-3">
                     <Trophy className="w-6 h-6" />
                     Preferencia del Campeón
                   </h3>
@@ -624,13 +624,13 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                         onChange={(e) => setConfig({...config, championFixedSchedule: e.target.checked})}
                         className="rounded"
                       />
-                      <Label htmlFor="championFixedSchedule" className="text-sm text-orange-700">
+                      <Label htmlFor="championFixedSchedule" className="text-sm text-foreground">
                         Horario fijo para el campeón
                       </Label>
                     </div>
                     {config.championFixedSchedule && (
                       <div>
-                        <Label className="text-sm text-orange-700">Horario preferido</Label>
+                        <Label className="text-sm text-foreground">Horario preferido</Label>
                         <Select 
                           value={config.championPreferredTime || ''} 
                           onValueChange={(value) => setConfig({...config, championPreferredTime: value})}
@@ -653,41 +653,41 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="bg-blue-50 p-8 rounded-xl shadow-sm mt-8 max-w-7xl mx-auto">
-              <h3 className="text-xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
+            <div className="bg-muted/30 dark:bg-soccer-blue/5 p-8 rounded-xl shadow-sm border border-muted mt-8 max-w-7xl mx-auto">
+              <h3 className="text-xl font-semibold text-soccer-blue dark:text-soccer-blue-light mb-6 flex items-center gap-3">
                 <Users className="w-6 h-6" />
                 Resumen de Configuración
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ul className="text-sm text-blue-700 space-y-3">
+                <ul className="text-sm text-foreground space-y-3">
                   <li className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-600" />
+                    <Users className="w-4 h-4 text-soccer-blue" />
                     <span><strong className="font-medium">Equipos:</strong> {activeTeams.length} participantes</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <Calendar className="w-4 h-4 text-soccer-blue" />
                     <span><strong className="font-medium">Jornadas:</strong> {config.doubleRound ? activeTeams.length * 2 - 2 : activeTeams.length - 1}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-blue-600 font-bold">Σ</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">Σ</span>
                     <span><strong className="font-medium">Partidos total:</strong> {config.doubleRound ? activeTeams.length * (activeTeams.length - 1) : activeTeams.length * (activeTeams.length - 1) / 2}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <Calendar className="w-4 h-4 text-soccer-blue" />
                     <span><strong className="font-medium">Días por semana:</strong> {config.matchDays.length}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-blue-600 font-bold">⚽</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">⚽</span>
                     <span><strong className="font-medium">Canchas:</strong> {config.fieldsAvailable} disponibles</span>
                   </li>
                 </ul>
-                <ul className="text-sm text-blue-700 space-y-3">
+                <ul className="text-sm text-foreground space-y-3">
                   <li className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-soccer-blue" />
                     <span><strong className="font-medium">Duración:</strong> {config.matchDuration.halfTime}min + {config.matchDuration.breakTime}min descanso + {config.matchDuration.halfTime}min</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-blue-600 font-bold">⏱</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">⏱</span>
                     <span>
                       <strong className="font-medium">Tipo de liga:</strong> {
                         config.scheduleType === 'morning' ? 'Matutina' :
@@ -697,12 +697,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-soccer-blue" />
                     <span><strong className="font-medium">Horarios:</strong> {config.scheduleType === 'custom' ? config.matchTimes.length : getScheduleTimesByType(config.scheduleType).length} disponibles</span>
                   </li>
                   {config.championFixedSchedule && (
                     <li className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-blue-600" />
+                      <Trophy className="w-4 h-4 text-soccer-blue" />
                       <span><strong className="font-medium">Campeón:</strong> Horario fijo {config.championPreferredTime}</span>
                     </li>
                   )}
@@ -722,7 +722,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               <Button 
                 onClick={generateFixtures}
                 disabled={generating || !config.tournamentId || !config.startDate || config.matchDays.length === 0 || (config.scheduleType === 'custom' && config.matchTimes.length === 0)}
-                className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
+                className="flex-1 h-12 text-base bg-soccer-green hover:bg-soccer-green-dark"
               >
                 {generating ? (
                   <>
@@ -749,14 +749,14 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               <Eye className="w-6 h-6" />
               Vista Previa del Calendario
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
+            <DialogDescription className="text-muted-foreground">
               Revisa el calendario generado antes de guardarlo
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto px-8 py-8">
             {message && (
-              <Alert className={`mb-8 ${message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <Alert className={`mb-8 ${message.type === 'success' ? 'border-green-200 bg-muted/30 dark:bg-soccer-green/5' : 'border-red-200 bg-red-50'}`}>
                 <AlertDescription className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
                   {message.text}
                 </AlertDescription>
@@ -765,30 +765,30 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
             <div className="space-y-8 max-w-7xl mx-auto">
               {Object.entries(groupFixturesByRound(generatedFixtures)).map(([round, matches]) => (
-                <Card key={round} className="shadow-sm border-blue-100">
-                  <CardHeader className="pb-4 bg-blue-50">
-                    <CardTitle className="text-xl text-blue-900 flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
+                <Card key={round} className="shadow-sm border-soccer-gold/20">
+                  <CardHeader className="pb-4 bg-soccer-gold/10">
+                    <CardTitle className="text-xl text-foreground flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-soccer-gold" />
                       Jornada {round}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="grid gap-4">
                       {matches.map((match, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-blue-50 transition-colors">
+                        <div key={index} className="flex items-center justify-between p-4 border hover:bg-muted/50 dark:hover:bg-soccer-green/5 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="text-center">
-                              <Badge variant="outline" className="text-xs bg-white">
+                              <Badge variant="outline" className="text-xs bg-soccer-blue/10 text-soccer-blue border-soccer-blue/30">
                                 Cancha {match.field}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="font-medium truncate">{match.homeTeam.name}</span>
-                              <span className="text-gray-500 font-bold">vs</span>
-                              <span className="font-medium truncate">{match.awayTeam.name}</span>
+                              <span className="font-medium truncate text-foreground">{match.homeTeam.name}</span>
+                              <span className="text-muted-foreground font-bold">vs</span>
+                              <span className="font-medium truncate text-foreground">{match.awayTeam.name}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="w-4 h-4" />
                             <span>{new Date(match.date).toLocaleDateString('es-ES')}</span>
                             <Clock className="w-4 h-4" />
@@ -816,7 +816,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 <Button 
                   onClick={saveFixtures}
                   disabled={saving}
-                  className="flex-1 h-12 text-base bg-green-600 hover:bg-green-700"
+                  className="flex-1 h-12 text-base bg-soccer-green hover:bg-soccer-green-dark"
                 >
                   {saving ? (
                     <>

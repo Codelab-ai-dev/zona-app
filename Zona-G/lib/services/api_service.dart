@@ -5,22 +5,98 @@ import '../config/supabase_config.dart';
 class ApiService {
   static const String baseUrl = 'http://localhost:3000'; // Change to your server URL
   
+  // Check if player is suspended for a match
+  static Future<bool> isPlayerSuspended(String playerId, String? matchId) async {
+    try {
+      print('🔍 Verificando suspensión para jugador: $playerId');
+
+      if (matchId == null) {
+        // If no match context, check if player has any active suspension
+        final response = await SupabaseConfig.client
+            .from('player_suspensions')
+            .select('id')
+            .eq('player_id', playerId)
+            .eq('status', 'active')
+            .limit(1);
+
+        final isSuspended = response.isNotEmpty;
+        print(isSuspended ? '⛔ Jugador suspendido (sin contexto de partido)' : '✅ Jugador habilitado');
+        return isSuspended;
+      }
+
+      // Get match details to check team and league
+      final matchResponse = await SupabaseConfig.client
+          .from('matches')
+          .select('tournament_id, tournament:tournaments(league_id)')
+          .eq('id', matchId)
+          .single();
+
+      // Check for active suspensions
+      final suspensionResponse = await SupabaseConfig.client
+          .from('player_suspensions')
+          .select('id, matches_to_serve, matches_served, suspension_type, reason')
+          .eq('player_id', playerId)
+          .eq('status', 'active')
+          .limit(1);
+
+      if (suspensionResponse.isEmpty) {
+        print('✅ Jugador habilitado - Sin suspensiones activas');
+        return false;
+      }
+
+      final suspension = suspensionResponse.first;
+      final matchesRemaining = suspension['matches_to_serve'] - suspension['matches_served'];
+
+      if (matchesRemaining > 0) {
+        print('⛔ Jugador suspendido - Partidos restantes: $matchesRemaining');
+        print('   Tipo: ${suspension['suspension_type']}');
+        print('   Motivo: ${suspension['reason']}');
+        return true;
+      }
+
+      print('✅ Jugador habilitado - Suspensión cumplida');
+      return false;
+    } catch (e) {
+      print('❌ Error verificando suspensión: $e');
+      // En caso de error, asumimos que NO está suspendido para no bloquear innecesariamente
+      return false;
+    }
+  }
+
+  // Get suspension details for a player
+  static Future<Map<String, dynamic>?> getPlayerSuspension(String playerId) async {
+    try {
+      final response = await SupabaseConfig.client
+          .from('player_suspensions')
+          .select('*')
+          .eq('player_id', playerId)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo detalles de suspensión: $e');
+      return null;
+    }
+  }
+
   // Get player by ID
   static Future<Player?> getPlayer(String playerId) async {
     try {
       print('🔍 Buscando jugador con ID: $playerId');
-      
+
       final response = await SupabaseConfig.client
           .from('players')
           .select()
           .eq('id', playerId)
           .single();
-      
+
       print('✅ Jugador encontrado: ${response['name']}');
       print('🖼️ URL de foto: ${response['photo'] ?? 'Sin foto'}');
-      
+
       final player = Player.fromJson(response);
-      
+
       // Si no hay foto directa, intentar generar URL desde storage
       if (player.photo == null || player.photo!.isEmpty) {
         print('⚠️ No hay foto directa, intentando obtener desde storage...');
@@ -39,19 +115,19 @@ class ApiService {
           print('❌ Error obteniendo foto desde storage: $e');
         }
       }
-      
+
       return player;
     } catch (e) {
       print('❌ Error fetching player: $e');
       print('🔍 Player ID buscado: $playerId');
-      
+
       // Try to search by approximate match or different format
       try {
         print('🔄 Intentando búsqueda alternativa...');
         final allPlayers = await SupabaseConfig.client
             .from('players')
             .select();
-        
+
         print('📊 Total jugadores en BD: ${allPlayers.length}');
         if (allPlayers.isNotEmpty) {
           print('🎯 Primer jugador ejemplo: ID=${allPlayers[0]['id']}, Name=${allPlayers[0]['name']}');
@@ -59,7 +135,7 @@ class ApiService {
       } catch (e2) {
         print('❌ Error en búsqueda alternativa: $e2');
       }
-      
+
       return null;
     }
   }

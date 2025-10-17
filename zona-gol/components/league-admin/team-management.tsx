@@ -31,6 +31,7 @@ import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Database } from "@/lib/supabase/database.types"
 import { Users, Shield, CheckCircle, XCircle, Plus, Loader2, Edit, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Tournament = Database['public']['Tables']['tournaments']['Row']
@@ -101,20 +102,22 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   const approveTeam = async (teamId: string) => {
     try {
       await updateTeam(teamId, { is_active: true })
+      toast.success('Equipo aprobado exitosamente')
       console.log('✅ Equipo aprobado')
     } catch (error: any) {
       console.error('❌ Error aprobando equipo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
   const rejectTeam = async (teamId: string) => {
     try {
       await updateTeam(teamId, { is_active: false })
+      toast.success('Equipo rechazado exitosamente')
       console.log('✅ Equipo rechazado')
     } catch (error: any) {
       console.error('❌ Error rechazando equipo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -138,7 +141,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const handleCreateTeam = async () => {
     if (!formData.name || !formData.ownerName || !formData.ownerEmail) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
@@ -229,7 +232,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       
     } catch (error: any) {
       console.error('❌ Error en creación de equipo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setCreating(false)
     }
@@ -267,7 +270,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const handleUpdateTeam = async () => {
     if (!editingTeam || !formData.name) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
@@ -285,13 +288,14 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
       setIsEditDialogOpen(false)
       setEditingTeam(null)
+      toast.success('Equipo actualizado exitosamente')
       console.log('✅ Equipo actualizado exitosamente')
-      
+
       // Reload teams to show the updated team
       await getTeamsByLeague(leagueId)
     } catch (error: any) {
       console.error('❌ Error actualizando equipo:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setUpdating(false)
     }
@@ -310,13 +314,14 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       await updateTeam(teamId, {
         is_active: !team.is_active
       })
+      toast.success(`Equipo ${action}do exitosamente`)
       console.log(`✅ Equipo ${action}do exitosamente`)
-      
+
       // Reload teams to show the updated status
       await getTeamsByLeague(leagueId)
     } catch (error: any) {
       console.error(`❌ Error al ${action} equipo:`, error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -329,12 +334,12 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Equipos</h2>
-          <p className="text-gray-600">Administra los equipos registrados en tu liga</p>
+          <h2 className="text-2xl font-bold text-foreground">Gestión de Equipos</h2>
+          <p className="text-muted-foreground">Administra los equipos registrados en tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
+            <Button className="bg-soccer-green hover:bg-soccer-green-dark">
               <Plus className="w-4 h-4 mr-2" />
               Agregar Equipo
             </Button>
@@ -469,7 +474,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               <Button
                 onClick={handleCreateTeam}
                 disabled={!formData.name.trim() || !formData.ownerName.trim() || !formData.ownerEmail.trim() || creating}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-soccer-green hover:bg-soccer-green-dark"
               >
                 {creating ? (
                   <>
@@ -505,14 +510,14 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
-            <Card key={team.id} className="cursor-pointer transition-colors hover:bg-gray-50">
+            <Card key={team.id} className="cursor-pointer transition-colors hover:bg-muted/50 dark:hover:bg-soccer-green/5">
               <CardHeader onClick={() => handleTeamClick(team.id)}>
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12">
                     {team.logo ? (
                       <AvatarImage src={team.logo || "/placeholder.svg"} alt={`${team.name} logo`} />
                     ) : (
-                      <AvatarFallback className="bg-green-100 text-green-800 font-bold">
+                      <AvatarFallback className="bg-soccer-green/20 text-soccer-green dark:text-soccer-green-light font-bold">
                         {getTeamInitials(team.name)}
                       </AvatarFallback>
                     )}
@@ -706,7 +711,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
             <Button
               onClick={handleUpdateTeam}
               disabled={!formData.name.trim() || updating}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-soccer-blue hover:bg-soccer-blue-dark"
             >
               {updating ? (
                 <>

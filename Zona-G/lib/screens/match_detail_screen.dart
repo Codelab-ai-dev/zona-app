@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import '../models/match.dart';
 import '../models/qr_data.dart';
 import '../services/match_service.dart';
@@ -51,77 +53,140 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   Future<void> _showFinalizeMatchDialog() async {
     final TextEditingController homeScoreController = TextEditingController();
     final TextEditingController awayScoreController = TextEditingController();
+    final TextEditingController observationsController = TextEditingController();
 
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Finalizar Partido'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${widget.match.homeTeamName} vs ${widget.match.awayTeamName}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                // Home team score
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.match.homeTeamName ?? 'Local',
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: homeScoreController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '0',
-                          contentPadding: EdgeInsets.all(12),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${widget.match.homeTeamName} vs ${widget.match.awayTeamName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+
+              // Marcador Section
+              const Text(
+                'Marcador Final',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  // Home team score
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          widget.match.homeTeamName ?? 'Local',
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: homeScoreController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: '0',
+                            contentPadding: EdgeInsets.all(12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    '-',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 16),
+                  // Away team score
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          widget.match.awayTeamName ?? 'Visitante',
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: awayScoreController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: '0',
+                            contentPadding: EdgeInsets.all(12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Observations Section
+              const Text(
+                'Observaciones del Árbitro',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: observationsController,
+                maxLines: 5,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Describe las incidencias del partido: tarjetas, lesiones, comportamiento de jugadores, etc. (opcional)',
+                  contentPadding: EdgeInsets.all(12),
+                  helperText: 'Máximo 500 caracteres',
+                  helperMaxLines: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Estas observaciones se guardarán en la cédula arbitral del partido',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blue.shade700,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                const Text(
-                  '-',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 16),
-                // Away team score
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.match.awayTeamName ?? 'Visitante',
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: awayScoreController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '0',
-                          contentPadding: EdgeInsets.all(12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -132,29 +197,35 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             onPressed: () {
               final homeScore = int.tryParse(homeScoreController.text) ?? 0;
               final awayScore = int.tryParse(awayScoreController.text) ?? 0;
+              final observations = observationsController.text.trim();
               Navigator.pop(context);
-              _finalizeMatch(homeScore, awayScore);
+              _finalizeMatch(homeScore, awayScore, observations: observations.isEmpty ? null : observations);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Finalizar'),
+            child: const Text('Finalizar Partido'),
           ),
         ],
       ),
     );
   }
 
-  // Finalize match with score
-  Future<void> _finalizeMatch(int homeScore, int awayScore) async {
+  // Finalize match with score and optional observations
+  Future<void> _finalizeMatch(int homeScore, int awayScore, {String? observations}) async {
     setState(() {
       isFinalizingMatch = true;
     });
 
     try {
-      final success = await MatchService.finalizeMatch(widget.match.id, homeScore, awayScore);
-      
+      final success = await MatchService.finalizeMatch(
+        widget.match.id,
+        homeScore,
+        awayScore,
+        observations: observations,
+      );
+
       if (mounted) {
         if (success) {
           // Show success message with detailed result
@@ -421,15 +492,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: widget.match.homeTeamLogo != null
-                            ? NetworkImage(widget.match.homeTeamLogo!)
-                            : null,
-                        child: widget.match.homeTeamLogo == null
-                            ? const Icon(Icons.sports_soccer, size: 40)
-                            : null,
-                      ),
+                      _buildTeamLogo(widget.match.homeTeamLogo, 40),
                       const SizedBox(height: 8),
                       Text(
                         widget.match.homeTeamName ?? 'Equipo Local',
@@ -483,15 +546,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: widget.match.awayTeamLogo != null
-                            ? NetworkImage(widget.match.awayTeamLogo!)
-                            : null,
-                        child: widget.match.awayTeamLogo == null
-                            ? const Icon(Icons.sports_soccer, size: 40)
-                            : null,
-                      ),
+                      _buildTeamLogo(widget.match.awayTeamLogo, 40),
                       const SizedBox(height: 8),
                       Text(
                         widget.match.awayTeamName ?? 'Equipo Visitante',
@@ -855,6 +910,82 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildTeamLogo(String? logoUrl, double radius) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: Colors.grey[200],
+      child: logoUrl != null && logoUrl.isNotEmpty
+          ? ClipOval(
+              child: _buildLogoImage(logoUrl, radius * 2, radius * 2),
+            )
+          : Icon(
+              Icons.sports_soccer,
+              size: radius,
+              color: Colors.green,
+            ),
+    );
+  }
+
+  Widget _buildLogoImage(String logoUrl, double width, double height) {
+    // Check if it's a base64 encoded image
+    if (logoUrl.startsWith('data:image/')) {
+      try {
+        // Extract the base64 part after the comma
+        final base64String = logoUrl.split(',')[1];
+        final Uint8List bytes = base64Decode(base64String);
+        
+        return Image.memory(
+          bytes,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('❌ Error cargando logo base64: $error');
+            return Icon(
+              Icons.sports_soccer,
+              size: width / 2,
+              color: Colors.green,
+            );
+          },
+        );
+      } catch (e) {
+        print('❌ Error decodificando base64: $e');
+        return Icon(
+          Icons.sports_soccer,
+          size: width / 2,
+          color: Colors.green,
+        );
+      }
+    } else {
+      // It's a regular URL
+      return Image.network(
+        logoUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            width: width / 2,
+            height: height / 2,
+            child: const CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.green,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error cargando logo URL: $logoUrl - $error');
+          return Icon(
+            Icons.sports_soccer,
+            size: width / 2,
+            color: Colors.green,
+          );
+        },
+      );
+    }
   }
 
   Color _getStatusColor(MatchStatus status) {

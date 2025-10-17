@@ -5,6 +5,7 @@ import { Orbitron } from 'next/font/google'
 import { SupabaseProvider } from '@/lib/providers/supabase-provider'
 import { ThemeProvider } from '@/lib/contexts/theme-context'
 import { ThemeScript } from '@/components/theme-script'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const orbitron = Orbitron({
@@ -33,6 +34,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SupabaseProvider>
             {children}
+            <Toaster richColors position="top-right" />
           </SupabaseProvider>
         </ThemeProvider>
       </body>

@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useTeams } from "@/lib/hooks/use-teams"
 import { Database } from "@/lib/supabase/database.types"
@@ -23,7 +24,8 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { PlayerQRModal } from "@/components/ui/player-qr-modal"
-import { Plus, Edit, Trash2, User, Loader2, QrCode } from "lucide-react"
+import { Plus, Edit, Trash2, User, Loader2, QrCode, Ban, AlertCircle, Lock } from "lucide-react"
+import { toast } from "sonner"
 
 type Player = Database['public']['Tables']['players']['Row']
 type PlayerInsert = Database['public']['Tables']['players']['Insert']
@@ -31,6 +33,7 @@ type PlayerUpdate = Database['public']['Tables']['players']['Update']
 
 interface PlayerManagementProps {
   teamId: string
+  teamName?: string
 }
 
 const positions = [
@@ -46,13 +49,15 @@ const positions = [
   "Delantero",
 ]
 
-export function PlayerManagement({ teamId }: PlayerManagementProps) {
+export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManagementProps) {
   const { profile } = useAuth()
   const {
     players,
+    currentTeam,
     loading,
     error,
     getPlayersByTeam,
+    getTeamById,
     createPlayer,
     updatePlayer,
     deletePlayer
@@ -70,6 +75,14 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
     qrData: string,
     credential: any
   } | null>(null)
+  const [teamInfo, setTeamInfo] = useState<{
+    name: string,
+    logo?: string | null
+  }>({ name: teamName })
+  const [suspendedPlayers, setSuspendedPlayers] = useState<Set<string>>(new Set())
+  const [maxPlayersLimit, setMaxPlayersLimit] = useState<number | null>(null)
+  const [registrationOpen, setRegistrationOpen] = useState<boolean>(true)
+  const [tournamentId, setTournamentId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     position: "",
@@ -77,34 +90,110 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
     birthDate: "",
     photo: "",
   })
+  const [requestFormData, setRequestFormData] = useState({
+    name: "",
+    position: "",
+    jerseyNumber: "",
+    birthDate: "",
+    reason: "",
+  })
+  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false)
+  const [submittingRequest, setSubmittingRequest] = useState(false)
+
+  const supabase = createClientSupabaseClient()
 
   // Load players when component mounts or teamId changes
   useEffect(() => {
     if (teamId) {
       console.log('🔵 Loading players for teamId:', teamId)
       getPlayersByTeam(teamId).catch(console.error)
+      loadSuspendedPlayers()
     } else {
       console.warn('⚠️ No teamId provided to PlayerManagement')
     }
   }, [teamId, getPlayersByTeam])
 
+  // Load suspended players
+  const loadSuspendedPlayers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('player_suspensions')
+        .select('player_id')
+        .eq('team_id', teamId)
+        .eq('status', 'active')
+
+      if (error) {
+        console.error('Error loading suspended players:', error)
+        return
+      }
+
+      const suspendedIds = new Set(data?.map(s => s.player_id) || [])
+      setSuspendedPlayers(suspendedIds)
+    } catch (error) {
+      console.error('Error loading suspended players:', error)
+    }
+  }
+
+  // Load team information and tournament max players
+  useEffect(() => {
+    if (teamId && getTeamById) {
+      getTeamById(teamId)
+        .then(async (team) => {
+          if (team) {
+            setTeamInfo({
+              name: team.name || teamName,
+              logo: team.logo || null
+            })
+
+            // Load tournament max_players and registration_open if team has a tournament
+            if (team.tournament_id) {
+              try {
+                const { data: tournament, error } = await supabase
+                  .from('tournaments')
+                  .select('max_players, registration_open, id')
+                  .eq('id', team.tournament_id)
+                  .single()
+
+                if (!error && tournament) {
+                  console.log('🔵 Tournament info loaded:', tournament)
+                  setMaxPlayersLimit(tournament.max_players)
+                  setRegistrationOpen(tournament.registration_open)
+                  setTournamentId(tournament.id)
+                  console.log('🔵 Registration open status:', tournament.registration_open)
+                }
+              } catch (err) {
+                console.error('Error loading tournament info:', err)
+              }
+            }
+          }
+        })
+        .catch(console.error)
+    }
+  }, [teamId, getTeamById, teamName])
+
 
 
   const handleCreatePlayer = async () => {
     if (!formData.name || !formData.position || !formData.jerseyNumber) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
     const jerseyNumber = parseInt(formData.jerseyNumber)
     if (isNaN(jerseyNumber) || jerseyNumber < 1 || jerseyNumber > 99) {
-      alert('El número de camiseta debe estar entre 1 y 99')
+      toast.error('El número de camiseta debe estar entre 1 y 99')
       return
     }
 
     // Check if jersey number is already used
     if (getUsedJerseyNumbers().includes(jerseyNumber)) {
-      alert('Este número de camiseta ya está en uso')
+      toast.error('Este número de camiseta ya está en uso')
+      return
+    }
+
+    // Check if max players limit has been reached
+    if (maxPlayersLimit && players.length >= maxPlayersLimit) {
+      toast.error(`Has alcanzado el límite de ${maxPlayersLimit} jugadores permitidos para este torneo`)
       return
     }
 
@@ -164,9 +253,10 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
       
       // Reload players to show the new player
       await getPlayersByTeam(teamId)
+      toast.success(`Jugador ${formData.name} registrado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error creando jugador:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setCreating(false)
     }
@@ -185,19 +275,19 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
 
   const handleUpdatePlayer = async () => {
     if (!editingPlayer || !formData.name || !formData.position || !formData.jerseyNumber) {
-      alert('Por favor completa todos los campos requeridos')
+      toast.error('Por favor completa todos los campos requeridos')
       return
     }
 
     const jerseyNumber = parseInt(formData.jerseyNumber)
     if (isNaN(jerseyNumber) || jerseyNumber < 1 || jerseyNumber > 99) {
-      alert('El número de camiseta debe estar entre 1 y 99')
+      toast.error('El número de camiseta debe estar entre 1 y 99')
       return
     }
 
     // Check if jersey number is already used by another player
     if (getUsedJerseyNumbers().includes(jerseyNumber)) {
-      alert('Este número de camiseta ya está en uso')
+      toast.error('Este número de camiseta ya está en uso')
       return
     }
 
@@ -220,9 +310,10 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
       
       // Reload players to show the updated player
       await getPlayersByTeam(teamId)
+      toast.success(`Jugador ${formData.name} actualizado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error actualizando jugador:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     } finally {
       setUpdating(false)
     }
@@ -242,9 +333,10 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
       
       // Reload players to show the updated list
       await getPlayersByTeam(teamId)
+      toast.success(`Jugador ${player.name} eliminado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error eliminando jugador:', error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -265,9 +357,10 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
       
       // Reload players to show the updated status
       await getPlayersByTeam(teamId)
+      toast.success(`Jugador ${player.name} ${action}do exitosamente`)
     } catch (error: any) {
       console.error(`❌ Error al ${action} jugador:`, error)
-      alert(`Error: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -296,12 +389,63 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
     return age
   }
 
+  // Función para solicitar registro excepcional de jugador
+  const handleRequestPlayer = async () => {
+    if (!requestFormData.name || !requestFormData.position || !requestFormData.jerseyNumber || !requestFormData.reason) {
+      toast.error('Por favor completa todos los campos requeridos')
+      return
+    }
+
+    if (!tournamentId || !profile?.id) {
+      toast.error('Error: No se pudo identificar el torneo o usuario')
+      return
+    }
+
+    const jerseyNumber = parseInt(requestFormData.jerseyNumber)
+    if (isNaN(jerseyNumber) || jerseyNumber < 1 || jerseyNumber > 99) {
+      toast.error('El número de camiseta debe estar entre 1 y 99')
+      return
+    }
+
+    setSubmittingRequest(true)
+
+    try {
+      const { error } = await supabase
+        .from('player_registration_requests')
+        .insert({
+          team_id: teamId,
+          tournament_id: tournamentId,
+          player_name: requestFormData.name,
+          player_position: requestFormData.position,
+          jersey_number: jerseyNumber,
+          birth_date: requestFormData.birthDate || null,
+          reason: requestFormData.reason,
+          requested_by: profile.id,
+          status: 'pending'
+        })
+
+      if (error) throw error
+
+      toast.success('Solicitud enviada exitosamente', {
+        description: 'El administrador de la liga la revisará.'
+      })
+      setRequestFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", reason: "" })
+      setIsRequestDialogOpen(false)
+      console.log('✅ Solicitud de jugador excepcional enviada')
+    } catch (error: any) {
+      console.error('❌ Error enviando solicitud:', error)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setSubmittingRequest(false)
+    }
+  }
+
   // Función para generar QR manualmente para jugadores existentes
   const handleGenerateQR = async (player: Player) => {
     setGeneratingQR(true)
     try {
       console.log('🔵 Generando QR manualmente para jugador:', player.name)
-      
+
       // Usar formato legacy para compatibilidad
       const qrResult = await generatePlayerQR(
         {
@@ -312,7 +456,7 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
         },
         { format: 'legacy' }
       )
-      
+
       if (qrResult && qrResult.success) {
         console.log('✅ QR generado exitosamente')
         setCurrentQRData({
@@ -322,15 +466,16 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
         })
         setQrModalOpen(true)
       } else {
-        alert('Error generando código QR')
+        toast.error('Error generando código QR')
       }
     } catch (error: any) {
       console.error('❌ Error generando QR:', error)
-      alert(`Error generando QR: ${error.message || 'Error desconocido'}`)
+      toast.error(`Error generando QR: ${error.message || 'Error desconocido'}`)
     } finally {
       setGeneratingQR(false)
     }
   }
+
 
   // Don't render if no teamId
   if (!teamId) {
@@ -344,6 +489,18 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
     )
   }
 
+  const remainingSlots = maxPlayersLimit ? maxPlayersLimit - players.length : null
+  const isAtLimit = maxPlayersLimit ? players.length >= maxPlayersLimit : false
+  const canRegister = registrationOpen && !isAtLimit
+
+  console.log('🔍 Registration state:', {
+    registrationOpen,
+    isAtLimit,
+    canRegister,
+    maxPlayersLimit,
+    playersCount: players.length
+  })
+
   return (
     <div className="space-y-6">
       {error && (
@@ -351,7 +508,42 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
           <p className="text-red-700">{error}</p>
         </div>
       )}
-      
+
+      {!registrationOpen && (
+        <div className="border-2 border-red-400 rounded-lg p-4 bg-red-50">
+          <div className="flex items-start">
+            <Lock className="w-6 h-6 mr-3 mt-0.5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 text-lg">Registro de Jugadores Cerrado</h3>
+              <p className="text-sm mt-2 text-red-700">
+                La liga ha cerrado el periodo de registro de jugadores para este torneo.
+                Si necesitas registrar un jugador debido a una lesión u otra circunstancia excepcional,
+                puedes solicitar una aprobación especial más abajo.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {maxPlayersLimit && registrationOpen && (
+        <div className={`border rounded-lg p-4 ${isAtLimit ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-300'}`}>
+          <div className="flex items-start">
+            <AlertCircle className={`w-5 h-5 mr-3 mt-0.5 ${isAtLimit ? 'text-red-600' : 'text-blue-600'}`} />
+            <div className="flex-1">
+              <h3 className={`font-semibold ${isAtLimit ? 'text-red-900' : 'text-blue-900'}`}>
+                {isAtLimit ? 'Límite de jugadores alcanzado' : 'Límite de jugadores'}
+              </h3>
+              <p className={`text-sm mt-1 ${isAtLimit ? 'text-red-700' : 'text-blue-700'}`}>
+                {isAtLimit
+                  ? `Has registrado el máximo de ${maxPlayersLimit} jugadores permitidos para este torneo.`
+                  : `Tienes ${remainingSlots} ${remainingSlots === 1 ? 'espacio disponible' : 'espacios disponibles'} de ${maxPlayersLimit} jugadores permitidos.`
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gestión de Jugadores</h2>
@@ -359,9 +551,12 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              disabled={!canRegister}
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Nuevo Jugador
+              {!registrationOpen ? 'Registros Cerrados' : isAtLimit ? 'Límite Alcanzado' : 'Nuevo Jugador'}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -461,8 +656,10 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {players.map((player) => (
-          <Card key={player.id}>
+        {players.map((player) => {
+          const isSuspended = suspendedPlayers.has(player.id)
+          return (
+          <Card key={player.id} className={isSuspended ? 'border-red-300 bg-red-50/50' : ''}>
             <CardHeader>
               <div className="flex items-center space-x-3">
                 <Avatar className="w-12 h-12">
@@ -484,9 +681,17 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
                   <CardDescription>{player.position}</CardDescription>
                 </div>
               </div>
-              <Badge variant={player.is_active ? "default" : "secondary"} className="w-fit">
-                {player.is_active ? "Activo" : "Inactivo"}
-              </Badge>
+              <div className="flex gap-2">
+                <Badge variant={player.is_active ? "default" : "secondary"} className="w-fit">
+                  {player.is_active ? "Activo" : "Inactivo"}
+                </Badge>
+                {isSuspended && (
+                  <Badge variant="destructive" className="w-fit flex items-center gap-1">
+                    <Ban className="w-3 h-3" />
+                    Suspendido
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -496,13 +701,13 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
                 <p className="text-sm text-gray-500">
                   Registrado: {new Date(player.created_at).toLocaleDateString("es-ES")}
                 </p>
-                <div className="flex space-x-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditPlayer(player)}>
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleGenerateQR(player)}
                     disabled={generatingQR}
                   >
@@ -523,7 +728,8 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
               </div>
             </CardContent>
           </Card>
-        ))}
+        )
+        })}
         </div>
       )}
 
@@ -620,6 +826,112 @@ export function PlayerManagement({ teamId }: PlayerManagementProps) {
           credential={currentQRData.credential}
         />
       )}
+
+      {/* Sección de solicitud de jugador excepcional */}
+      {!registrationOpen && tournamentId && (
+        <div className="border-t-2 pt-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Solicitar Jugador Excepcional</h3>
+              <p className="text-sm text-gray-600">Por lesión u otra circunstancia excepcional</p>
+            </div>
+            <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Solicitar Jugador
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Solicitar Registro Excepcional</DialogTitle>
+                  <DialogDescription>
+                    Completa la información del jugador y justifica la solicitud. El administrador de la liga revisará tu solicitud.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="request-name">Nombre Completo</Label>
+                    <Input
+                      id="request-name"
+                      value={requestFormData.name}
+                      onChange={(e) => setRequestFormData({ ...requestFormData, name: e.target.value })}
+                      placeholder="Carlos Rodríguez"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="request-position">Posición</Label>
+                    <Select
+                      value={requestFormData.position}
+                      onValueChange={(value) => setRequestFormData({ ...requestFormData, position: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar posición" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {positions.map((position) => (
+                          <SelectItem key={position} value={position}>
+                            {position}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="request-jerseyNumber">Número de Camiseta</Label>
+                    <Input
+                      id="request-jerseyNumber"
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={requestFormData.jerseyNumber}
+                      onChange={(e) => setRequestFormData({ ...requestFormData, jerseyNumber: e.target.value })}
+                      placeholder="9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="request-birthDate">Fecha de Nacimiento (opcional)</Label>
+                    <Input
+                      id="request-birthDate"
+                      type="date"
+                      value={requestFormData.birthDate}
+                      onChange={(e) => setRequestFormData({ ...requestFormData, birthDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="request-reason">Justificación de la Solicitud</Label>
+                    <Textarea
+                      id="request-reason"
+                      value={requestFormData.reason}
+                      onChange={(e) => setRequestFormData({ ...requestFormData, reason: e.target.value })}
+                      placeholder="Ejemplo: El jugador titular sufrió una lesión de ligamento cruzado anterior y estará fuera por 6 meses. Necesitamos un reemplazo para completar el plantel."
+                      rows={4}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Explica detalladamente la razón por la cual necesitas registrar este jugador
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleRequestPlayer}
+                    disabled={submittingRequest}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    {submittingRequest ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Enviando solicitud...
+                      </>
+                    ) : (
+                      'Enviar Solicitud'
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
