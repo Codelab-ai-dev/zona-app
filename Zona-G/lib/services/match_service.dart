@@ -69,7 +69,10 @@ class MatchService {
             *,
             home_team:teams!matches_home_team_id_fkey(id, name, logo),
             away_team:teams!matches_away_team_id_fkey(id, name, logo),
-            tournament:tournaments(id, name, league_id)
+            tournament:tournaments(id, name, league_id),
+            phase,
+            playoff_round,
+            playoff_position
           ''')
           .inFilter('status', ['scheduled', 'in_progress'])
           .gte('match_date', startOfWeekUtc.toIso8601String())
@@ -131,7 +134,10 @@ class MatchService {
             *,
             home_team:teams!matches_home_team_id_fkey(id, name, logo),
             away_team:teams!matches_away_team_id_fkey(id, name, logo),
-            tournament:tournaments(id, name, league_id)
+            tournament:tournaments(id, name, league_id),
+            phase,
+            playoff_round,
+            playoff_position
           ''')
           .eq('status', 'finished')
           .order('match_date', ascending: false)
@@ -170,7 +176,10 @@ class MatchService {
             *,
             home_team:teams!matches_home_team_id_fkey(id, name, logo),
             away_team:teams!matches_away_team_id_fkey(id, name, logo),
-            tournament:tournaments(id, name)
+            tournament:tournaments(id, name),
+            phase,
+            playoff_round,
+            playoff_position
           ''')
           .eq('id', matchId)
           .single();

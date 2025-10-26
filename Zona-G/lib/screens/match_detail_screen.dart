@@ -482,7 +482,30 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                 color: Colors.blue,
               ),
             ),
-            
+
+            // Playoff Round Indicator
+            if (widget.match.isPlayoff) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events,
+                    size: 20,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.match.playoffRoundText,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 16),
             
             // Teams

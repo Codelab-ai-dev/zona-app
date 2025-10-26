@@ -102,13 +102,39 @@ class _MatchesListScreenState extends State<MatchesListScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      match.tournamentName ?? 'Torneo',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          match.tournamentName ?? 'Torneo',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        if (match.isPlayoff) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.emoji_events,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                match.playoffRoundText,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Container(

@@ -1,4 +1,6 @@
 enum MatchStatus { scheduled, in_progress, finished, cancelled }
+enum MatchPhase { regular, playoffs }
+enum PlayoffRound { quarterfinals, semifinals, final_match, third_place }
 
 class Match {
   final String id;
@@ -17,6 +19,9 @@ class Match {
   final String? tournamentName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final MatchPhase phase;
+  final PlayoffRound? playoffRound;
+  final int? playoffPosition;
 
   Match({
     required this.id,
@@ -35,6 +40,9 @@ class Match {
     this.tournamentName,
     this.createdAt,
     this.updatedAt,
+    this.phase = MatchPhase.regular,
+    this.playoffRound,
+    this.playoffPosition,
   });
 
   factory Match.fromJson(Map<String, dynamic> json) {
@@ -55,6 +63,9 @@ class Match {
       tournamentName: json['tournament']?['name'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      phase: _parseMatchPhase(json['phase']),
+      playoffRound: _parsePlayoffRound(json['playoff_round']),
+      playoffPosition: json['playoff_position'],
     );
   }
 
@@ -88,6 +99,32 @@ class Match {
     }
   }
 
+  static MatchPhase _parseMatchPhase(String? phase) {
+    switch (phase) {
+      case 'playoffs':
+        return MatchPhase.playoffs;
+      case 'regular':
+      default:
+        return MatchPhase.regular;
+    }
+  }
+
+  static PlayoffRound? _parsePlayoffRound(String? round) {
+    if (round == null) return null;
+    switch (round) {
+      case 'quarterfinals':
+        return PlayoffRound.quarterfinals;
+      case 'semifinals':
+        return PlayoffRound.semifinals;
+      case 'final':
+        return PlayoffRound.final_match;
+      case 'third_place':
+        return PlayoffRound.third_place;
+      default:
+        return null;
+    }
+  }
+
   String get statusText {
     switch (status) {
       case MatchStatus.scheduled:
@@ -99,6 +136,33 @@ class Match {
       case MatchStatus.cancelled:
         return 'Cancelado';
     }
+  }
+
+  String get phaseText {
+    switch (phase) {
+      case MatchPhase.regular:
+        return 'Temporada Regular';
+      case MatchPhase.playoffs:
+        return playoffRoundText;
+    }
+  }
+
+  String get playoffRoundText {
+    if (playoffRound == null) return 'Liguilla';
+    switch (playoffRound!) {
+      case PlayoffRound.quarterfinals:
+        return 'Cuartos de Final';
+      case PlayoffRound.semifinals:
+        return 'Semifinales';
+      case PlayoffRound.final_match:
+        return 'Final';
+      case PlayoffRound.third_place:
+        return 'Tercer Lugar';
+    }
+  }
+
+  bool get isPlayoff {
+    return phase == MatchPhase.playoffs;
   }
 
   String get scoreText {

@@ -19,6 +19,7 @@ import { DisciplineTable } from "@/components/league-admin/discipline-table"
 import { SuspensionsManagement } from "@/components/league-admin/suspensions-management"
 import { TopScorers } from "@/components/league-admin/top-scorers"
 import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-bracket-generator"
+import { AppManagement } from "@/components/league-admin/app-management"
 import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
 import { TeamScorers } from "@/components/team-owner/team-scorers"
@@ -158,7 +159,7 @@ export default function DashboardPage() {
         return (
           <Tabs defaultValue="overview" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 lg:grid-cols-10 gap-1 min-w-max">
+              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 lg:grid-cols-11 gap-1 min-w-max">
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap">Resumen</TabsTrigger>
                 <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap">Torneos</TabsTrigger>
                 <TabsTrigger value="teams" className="text-sm whitespace-nowrap">Equipos</TabsTrigger>
@@ -168,6 +169,7 @@ export default function DashboardPage() {
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-sm whitespace-nowrap">Disciplina</TabsTrigger>
                 <TabsTrigger value="suspensions" className="text-sm whitespace-nowrap">Suspensiones</TabsTrigger>
+                <TabsTrigger value="app" className="text-sm whitespace-nowrap">App Móvil</TabsTrigger>
                 <TabsTrigger value="settings" className="text-sm whitespace-nowrap">Configuración</TabsTrigger>
               </TabsList>
             </div>
@@ -197,6 +199,9 @@ export default function DashboardPage() {
             </TabsContent>
             <TabsContent value="suspensions">
               <SuspensionsManagement leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="app">
+              <AppManagement leagueId={profile.league_id} />
             </TabsContent>
             <TabsContent value="settings">
               <ProfileSettings />
