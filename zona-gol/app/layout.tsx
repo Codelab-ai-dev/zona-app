@@ -14,10 +14,27 @@ const orbitron = Orbitron({
   weight: ['400', '700', '900'],
 })  
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#27AE60' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a1a1a' },
+  ],
+}
+
 export const metadata: Metadata = {
   title: 'Zona-Gol - Sistema de Gestión de Ligas de Fútbol',
   description: 'Gestiona tu liga de fútbol con Liga Manager',
   generator: 'Zona-Gol',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Zona-Gol',
+  },
 }
 
 export default function RootLayout({

@@ -45,6 +45,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     startDate: "",
     endDate: "",
     maxPlayers: "",
+    maxCoachingStaff: "10",
   })
 
   // Load tournaments when component mounts or leagueId changes
@@ -84,10 +85,11 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         start_date: formData.startDate,
         end_date: formData.endDate,
         max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
+        max_coaching_staff: formData.maxCoachingStaff ? parseInt(formData.maxCoachingStaff) : 10,
         is_active: true
       })
 
-      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "" })
+      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "", maxCoachingStaff: "10" })
       setIsCreateDialogOpen(false)
       toast.success(`Torneo "${formData.name}" creado exitosamente`)
       console.log('✅ Torneo creado exitosamente')
@@ -106,6 +108,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       startDate: tournament.start_date,
       endDate: tournament.end_date,
       maxPlayers: tournament.max_players ? tournament.max_players.toString() : "",
+      maxCoachingStaff: tournament.max_coaching_staff ? tournament.max_coaching_staff.toString() : "10",
     })
   }
 
@@ -120,10 +123,11 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         start_date: formData.startDate,
         end_date: formData.endDate,
         max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
+        max_coaching_staff: formData.maxCoachingStaff ? parseInt(formData.maxCoachingStaff) : 10,
       })
 
       setEditingTournament(null)
-      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "" })
+      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "", maxCoachingStaff: "10" })
       toast.success(`Torneo "${formData.name}" actualizado exitosamente`)
       console.log('✅ Torneo actualizado exitosamente')
     } catch (error: any) {
@@ -238,6 +242,21 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Deja vacío para no establecer límite de jugadores
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="maxCoachingStaff">Límite de Cuerpo Técnico por Equipo</Label>
+                <Input
+                  id="maxCoachingStaff"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={formData.maxCoachingStaff}
+                  onChange={(e) => setFormData({ ...formData, maxCoachingStaff: e.target.value })}
+                  placeholder="10"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Límite de miembros del cuerpo técnico (por defecto 10)
                 </p>
               </div>
               <Button
@@ -397,6 +416,21 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Deja vacío para no establecer límite de jugadores
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="edit-maxCoachingStaff">Límite de Cuerpo Técnico por Equipo</Label>
+              <Input
+                id="edit-maxCoachingStaff"
+                type="number"
+                min="1"
+                max="20"
+                value={formData.maxCoachingStaff}
+                onChange={(e) => setFormData({ ...formData, maxCoachingStaff: e.target.value })}
+                placeholder="10"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Límite de miembros del cuerpo técnico (por defecto 10)
               </p>
             </div>
             <Button

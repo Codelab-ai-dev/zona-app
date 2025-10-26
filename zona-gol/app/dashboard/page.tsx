@@ -23,6 +23,7 @@ import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
 import { TeamScorers } from "@/components/team-owner/team-scorers"
 import { PlayerManagement } from "@/components/team-owner/player-management"
+import { CoachingStaffManagement } from "@/components/team-owner/coaching-staff-management"
 import { TeamInfo } from "@/components/team-owner/team-info"
 import { TeamUniforms } from "@/components/team-owner/team-uniforms"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -156,18 +157,20 @@ export default function DashboardPage() {
 
         return (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
-              <TabsTrigger value="overview">Resumen</TabsTrigger>
-              <TabsTrigger value="tournaments">Torneos</TabsTrigger>
-              <TabsTrigger value="teams">Equipos</TabsTrigger>
-              <TabsTrigger value="fixtures">Jornadas</TabsTrigger>
-              <TabsTrigger value="playoffs">Liguilla</TabsTrigger>
-              <TabsTrigger value="calendar">Calendario</TabsTrigger>
-              <TabsTrigger value="scorers">Goleadores</TabsTrigger>
-              <TabsTrigger value="discipline">Disciplina</TabsTrigger>
-              <TabsTrigger value="suspensions">Suspensiones</TabsTrigger>
-              <TabsTrigger value="settings">Configuración</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 lg:grid-cols-10 gap-1 min-w-max">
+                <TabsTrigger value="overview" className="text-sm whitespace-nowrap">Resumen</TabsTrigger>
+                <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap">Torneos</TabsTrigger>
+                <TabsTrigger value="teams" className="text-sm whitespace-nowrap">Equipos</TabsTrigger>
+                <TabsTrigger value="fixtures" className="text-sm whitespace-nowrap">Jornadas</TabsTrigger>
+                <TabsTrigger value="playoffs" className="text-sm whitespace-nowrap">Liguilla</TabsTrigger>
+                <TabsTrigger value="calendar" className="text-sm whitespace-nowrap">Calendario</TabsTrigger>
+                <TabsTrigger value="scorers" className="text-sm whitespace-nowrap">Goleadores</TabsTrigger>
+                <TabsTrigger value="discipline" className="text-sm whitespace-nowrap">Disciplina</TabsTrigger>
+                <TabsTrigger value="suspensions" className="text-sm whitespace-nowrap">Suspensiones</TabsTrigger>
+                <TabsTrigger value="settings" className="text-sm whitespace-nowrap">Configuración</TabsTrigger>
+              </TabsList>
+            </div>
             <TabsContent value="overview">
               <LeagueStats leagueId={profile.league_id} />
             </TabsContent>
@@ -218,14 +221,17 @@ export default function DashboardPage() {
 
         return (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="overview">Resumen</TabsTrigger>
-              <TabsTrigger value="record">Estadísticas</TabsTrigger>
-              <TabsTrigger value="scorers">Goleadores</TabsTrigger>
-              <TabsTrigger value="players">Jugadores</TabsTrigger>
-              <TabsTrigger value="team">Mi Equipo</TabsTrigger>
-              <TabsTrigger value="uniforms">Uniformes</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-7 gap-1 min-w-max">
+                <TabsTrigger value="overview" className="text-sm whitespace-nowrap">Resumen</TabsTrigger>
+                <TabsTrigger value="record" className="text-sm whitespace-nowrap">Estadísticas</TabsTrigger>
+                <TabsTrigger value="scorers" className="text-sm whitespace-nowrap">Goleadores</TabsTrigger>
+                <TabsTrigger value="players" className="text-sm whitespace-nowrap">Jugadores</TabsTrigger>
+                <TabsTrigger value="coaching" className="text-sm whitespace-nowrap">Cuerpo Técnico</TabsTrigger>
+                <TabsTrigger value="team" className="text-sm whitespace-nowrap">Mi Equipo</TabsTrigger>
+                <TabsTrigger value="uniforms" className="text-sm whitespace-nowrap">Uniformes</TabsTrigger>
+              </TabsList>
+            </div>
             <TabsContent value="overview">
               <TeamStats teamId={profile.team_id} />
             </TabsContent>
@@ -237,6 +243,9 @@ export default function DashboardPage() {
             </TabsContent>
             <TabsContent value="players">
               <PlayerManagement teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="coaching">
+              <CoachingStaffManagement teamId={profile.team_id} />
             </TabsContent>
             <TabsContent value="team">
               <TeamInfo teamId={profile.team_id} />

@@ -1,0 +1,24 @@
+{
+  "name": "Zona-Gol",
+  "short_name": "Zona-Gol",
+  "description": "Sistema de Gestión de Ligas de Fútbol",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#27AE60",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/zona-gol-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/zona-gol-logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import { toast } from "sonner"
 type Team = Database['public']['Tables']['teams']['Row']
 type Player = Database['public']['Tables']['players']['Row']
 type PlayerStats = Database['public']['Tables']['player_stats']['Row']
+type CoachingStaff = Database['public']['Tables']['coaching_staff']['Row']
 
 interface PlayerWithStats extends Player {
   total_games: number
@@ -45,12 +46,14 @@ export default function TeamDetailPage() {
 
   const [team, setTeam] = useState<Team | null>(null)
   const [playersWithStats, setPlayersWithStats] = useState<PlayerWithStats[]>([])
+  const [coachingStaff, setCoachingStaff] = useState<CoachingStaff[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [generatingQR, setGeneratingQR] = useState(false)
   const [credentialModalOpen, setCredentialModalOpen] = useState(false)
   const [currentCredentialData, setCurrentCredentialData] = useState<{
-    player: PlayerWithStats,
+    player?: PlayerWithStats,
+    staff?: CoachingStaff,
     qrData: string
   } | null>(null)
   const [printingAll, setPrintingAll] = useState(false)
@@ -137,7 +140,21 @@ export default function TeamDetailPage() {
         
         console.log('✅ Player stats calculated:', playersWithStatsData.length)
         setPlayersWithStats(playersWithStatsData)
-        
+
+        // Load coaching staff for this team
+        const { data: coachingStaffData, error: coachingStaffError } = await supabase
+          .from('coaching_staff')
+          .select('*')
+          .eq('team_id', teamId)
+          .eq('is_active', true)
+
+        if (coachingStaffError) {
+          console.error('❌ Error loading coaching staff:', coachingStaffError)
+        } else {
+          console.log('✅ Coaching staff loaded:', coachingStaffData?.length || 0)
+          setCoachingStaff(coachingStaffData || [])
+        }
+
       } catch (err: any) {
         console.error('❌ Error in loadTeamAndStats:', err)
         setError(err.message || 'Error cargando datos del equipo')
@@ -197,16 +214,45 @@ export default function TeamDetailPage() {
     }
   }
 
+  // Función para generar credencial de miembro del cuerpo técnico
+  const handleGenerateStaffCredential = async (staff: CoachingStaff) => {
+    setGeneratingQR(true)
+    try {
+      console.log('🔵 Generando credencial para cuerpo técnico:', staff.name)
+
+      // Para cuerpo técnico, usamos un formato compacto en el QR
+      const qrData = JSON.stringify({
+        t: 's', // type: staff
+        i: staff.id,
+        n: staff.name,
+        r: staff.role,
+        tm: staff.team_id
+      })
+
+      console.log('✅ QR data generado para credencial de cuerpo técnico')
+      setCurrentCredentialData({
+        staff,
+        qrData: qrData
+      })
+      setCredentialModalOpen(true)
+    } catch (error: any) {
+      console.error('❌ Error generando credencial:', error)
+      toast.error(`Error generando credencial: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setGeneratingQR(false)
+    }
+  }
+
   // Función para imprimir todas las credenciales
   const handlePrintAllCredentials = async () => {
-    if (playersWithStats.length === 0) {
-      toast.error('No hay jugadores para imprimir')
+    if (playersWithStats.length === 0 && coachingStaff.length === 0) {
+      toast.error('No hay jugadores ni cuerpo técnico para imprimir')
       return
     }
 
     setPrintingAll(true)
     try {
-      console.log('🔵 Generando credenciales para todos los jugadores:', playersWithStats.length)
+      console.log('🔵 Generando credenciales para jugadores y cuerpo técnico:', playersWithStats.length, coachingStaff.length)
 
       // Importar QRCode dinámicamente
       const QRCodeLib = (await import('qrcode')).default
@@ -242,11 +288,49 @@ export default function TeamDetailPage() {
           }
 
           return {
+            type: 'player' as const,
             player,
             qrImageBase64
           }
         })
       )
+
+      // Generar QRs para el cuerpo técnico
+      const staffWithQR = await Promise.all(
+        coachingStaff.map(async (staff) => {
+          // Usar formato compacto para evitar QR codes demasiado grandes
+          const qrData = JSON.stringify({
+            t: 's', // type: staff
+            i: staff.id,
+            n: staff.name,
+            r: staff.role,
+            tm: staff.team_id
+          })
+
+          let qrImageBase64 = ''
+          try {
+            qrImageBase64 = await QRCodeLib.toDataURL(qrData, {
+              width: 200,
+              margin: 1,
+              color: {
+                dark: '#000000',
+                light: '#ffffff'
+              }
+            })
+          } catch (error) {
+            console.error('Error generando QR para', staff.name, error)
+          }
+
+          return {
+            type: 'staff' as const,
+            staff,
+            qrImageBase64
+          }
+        })
+      )
+
+      // Combinar jugadores y cuerpo técnico
+      const allCredentials = [...playersWithQR, ...staffWithQR]
 
       const getPlayerInitials = (name: string) => {
         return name
@@ -267,42 +351,83 @@ export default function TeamDetailPage() {
         ? `<img src="${team.logo}" alt="Logo ${team.name}" class="team-logo" crossorigin="anonymous" />`
         : ''
 
-      const credentialsHTML = playersWithQR.map(({ player, qrImageBase64 }) => {
-        const photoHTML = player.photo
-          ? `<img src="${player.photo}" alt="${player.name}" crossorigin="anonymous" />`
-          : `<div class="player-photo-placeholder">${getPlayerInitials(player.name)}</div>`
+      const credentialsHTML = allCredentials.map((item) => {
+        if (item.type === 'player') {
+          const { player, qrImageBase64 } = item
+          const photoHTML = player.photo
+            ? `<img src="${player.photo}" alt="${player.name}" crossorigin="anonymous" />`
+            : `<div class="player-photo-placeholder">${getPlayerInitials(player.name)}</div>`
 
-        const qrHTML = qrImageBase64
-          ? `<img src="${qrImageBase64}" width="82" height="82" style="display: block;" alt="QR Code" />`
-          : `<div style="width: 82px; height: 82px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">QR</div>`
+          const qrHTML = qrImageBase64
+            ? `<img src="${qrImageBase64}" width="82" height="82" style="display: block;" alt="QR Code" />`
+            : `<div style="width: 82px; height: 82px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">QR</div>`
 
-        return `
-          <div class="credential">
-            <div class="header">
-              <div class="team-header">
-                ${teamLogoHTML}
-                <h3 class="team-name">${team?.name.toUpperCase()}</h3>
+          return `
+            <div class="credential">
+              <div class="header">
+                <div class="team-header">
+                  ${teamLogoHTML}
+                  <h3 class="team-name">${team?.name.toUpperCase()}</h3>
+                </div>
+              </div>
+              <div class="content">
+                <div class="player-photo">
+                  ${photoHTML}
+                </div>
+                <div class="player-info">
+                  <h4 class="player-name">${player.name}</h4>
+                  <p class="player-position">${player.position}</p>
+                  <div class="jersey-number">${player.jersey_number}</div>
+                </div>
+                <div class="qr-container">
+                  ${qrHTML}
+                </div>
+              </div>
+              <div class="footer">
+                <p class="credential-id">ID: ${player.id.slice(-8).toUpperCase()}</p>
+                <p class="valid-text">CREDENCIAL OFICIAL</p>
               </div>
             </div>
-            <div class="content">
-              <div class="player-photo">
-                ${photoHTML}
+          `
+        } else {
+          // Credencial para cuerpo técnico
+          const { staff, qrImageBase64 } = item
+          const photoHTML = staff.photo
+            ? `<img src="${staff.photo}" alt="${staff.name}" crossorigin="anonymous" />`
+            : `<div class="player-photo-placeholder">${getPlayerInitials(staff.name)}</div>`
+
+          const qrHTML = qrImageBase64
+            ? `<img src="${qrImageBase64}" width="82" height="82" style="display: block;" alt="QR Code" />`
+            : `<div style="width: 82px; height: 82px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">QR</div>`
+
+          return `
+            <div class="credential staff-credential">
+              <div class="header">
+                <div class="team-header">
+                  ${teamLogoHTML}
+                  <h3 class="team-name">${team?.name.toUpperCase()}</h3>
+                </div>
               </div>
-              <div class="player-info">
-                <h4 class="player-name">${player.name}</h4>
-                <p class="player-position">${player.position}</p>
-                <div class="jersey-number">${player.jersey_number}</div>
+              <div class="content">
+                <div class="player-photo">
+                  ${photoHTML}
+                </div>
+                <div class="player-info">
+                  <h4 class="player-name">${staff.name}</h4>
+                  <p class="player-position">${staff.role}</p>
+                  <div class="staff-badge">STAFF</div>
+                </div>
+                <div class="qr-container">
+                  ${qrHTML}
+                </div>
               </div>
-              <div class="qr-container">
-                ${qrHTML}
+              <div class="footer">
+                <p class="credential-id">ID: ${staff.id.slice(-8).toUpperCase()}</p>
+                <p class="valid-text">CUERPO TÉCNICO</p>
               </div>
             </div>
-            <div class="footer">
-              <p class="credential-id">ID: ${player.id.slice(-8).toUpperCase()}</p>
-              <p class="valid-text">CREDENCIAL OFICIAL</p>
-            </div>
-          </div>
-        `
+          `
+        }
       }).join('')
 
       printWindow.document.write(`
@@ -445,6 +570,23 @@ export default function TeamDetailPage() {
                 justify-content: center;
                 margin: 0;
                 align-self: flex-start;
+              }
+              .staff-badge {
+                font-size: 11px;
+                font-weight: bold;
+                color: white;
+                background: #9333ea;
+                border-radius: 12px;
+                padding: 4px 12px;
+                margin: 0;
+                align-self: flex-start;
+                letter-spacing: 0.5px;
+              }
+              .staff-credential {
+                border-color: #9333ea;
+              }
+              .staff-credential .team-name {
+                color: #9333ea;
               }
               .qr-container {
                 flex-shrink: 0;
@@ -596,12 +738,19 @@ export default function TeamDetailPage() {
       )}
 
       {/* Statistics Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
             <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-gray-900">{playersWithStats.length}</p>
             <p className="text-sm text-gray-600">Jugadores</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-gray-900">{coachingStaff.length}</p>
+            <p className="text-sm text-gray-600">Cuerpo Técnico</p>
           </CardContent>
         </Card>
         <Card>
@@ -768,12 +917,92 @@ export default function TeamDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Coaching Staff Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Users className="w-5 h-5 mr-2" />
+            Cuerpo Técnico
+          </CardTitle>
+          <CardDescription>
+            Miembros del cuerpo técnico del equipo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {coachingStaff.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No hay miembros del cuerpo técnico registrados
+              </h3>
+              <p className="text-gray-600">
+                Los miembros del cuerpo técnico aparecerán aquí cuando se registren
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Miembro</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead className="text-center">Cédula</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {coachingStaff.map((staff) => (
+                    <TableRow key={staff.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="w-8 h-8">
+                            {staff.photo ? (
+                              <AvatarImage src={staff.photo} alt={staff.name} />
+                            ) : (
+                              <AvatarFallback className="bg-purple-100 text-purple-800 text-xs">
+                                {getPlayerInitials(staff.name)}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-gray-900">{staff.name}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          {staff.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-sm text-gray-600">
+                        {staff.cedula || '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateStaffCredential(staff)}
+                          disabled={generatingQR}
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          <IdCard className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Modal Credencial */}
       {currentCredentialData && team && (
         <PlayerCredential
           open={credentialModalOpen}
           onOpenChange={setCredentialModalOpen}
-          player={currentCredentialData.player}
+          player={currentCredentialData.player || currentCredentialData.staff}
           team={{ name: team.name, logo: team.logo }}
           qrData={currentCredentialData.qrData}
         />

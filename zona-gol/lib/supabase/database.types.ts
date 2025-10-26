@@ -62,6 +62,7 @@ export interface Database {
           end_date: string
           is_active: boolean
           max_players: number | null
+          max_coaching_staff: number | null
           registration_open: boolean
           created_at: string
           updated_at: string
@@ -74,6 +75,7 @@ export interface Database {
           end_date: string
           is_active?: boolean
           max_players?: number | null
+          max_coaching_staff?: number | null
           registration_open?: boolean
           created_at?: string
           updated_at?: string
@@ -86,6 +88,7 @@ export interface Database {
           end_date?: string
           is_active?: boolean
           max_players?: number | null
+          max_coaching_staff?: number | null
           registration_open?: boolean
           created_at?: string
           updated_at?: string
@@ -222,6 +225,53 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      coaching_staff: {
+        Row: {
+          id: string
+          team_id: string
+          name: string
+          role: string
+          photo: string | null
+          birth_date: string | null
+          cedula: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          name: string
+          role: string
+          photo?: string | null
+          birth_date?: string | null
+          cedula?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          name?: string
+          role?: string
+          photo?: string | null
+          birth_date?: string | null
+          cedula?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_staff_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"

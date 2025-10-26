@@ -21,13 +21,13 @@ export const teamActions = {
       setLoading(true)
       setError(null)
       
+      console.log('🔵 Fetching teams for league:', leagueId)
+      const startTime = performance.now()
+      
+      // Optimized query: Load teams first without JOINs for faster initial load
       const { data: teams, error } = await supabase
         .from('teams')
-        .select(`
-          *,
-          owner:users!teams_owner_id_fkey(id, name, email),
-          tournament:tournaments(id, name)
-        `)
+        .select('*')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
       
@@ -35,7 +35,40 @@ export const teamActions = {
         throw error
       }
       
+      const loadTime = performance.now() - startTime
+      console.log(`✅ Teams loaded in ${loadTime.toFixed(2)}ms`)
+      
+      // Set teams immediately for faster UI update
       setTeams(teams || [])
+      
+      // Load owner and tournament data in parallel (optional enhancement)
+      if (teams && teams.length > 0) {
+        const ownerIds = [...new Set(teams.map((t: any) => t.owner_id).filter(Boolean))]
+        const tournamentIds = [...new Set(teams.map((t: any) => t.tournament_id).filter(Boolean))]
+        
+        const [ownersResult, tournamentsResult] = await Promise.all([
+          ownerIds.length > 0 
+            ? supabase.from('users').select('id, name, email').in('id', ownerIds)
+            : Promise.resolve({ data: [] }),
+          tournamentIds.length > 0
+            ? supabase.from('tournaments').select('id, name').in('id', tournamentIds)
+            : Promise.resolve({ data: [] })
+        ])
+        
+        // Enrich teams with owner and tournament data
+        const ownersMap = new Map(ownersResult.data?.map((o: any) => [o.id, o]) || [])
+        const tournamentsMap = new Map(tournamentsResult.data?.map((t: any) => [t.id, t]) || [])
+        
+        const enrichedTeams = teams.map((team: any) => ({
+          ...team,
+          owner: team.owner_id ? ownersMap.get(team.owner_id) : null,
+          tournament: team.tournament_id ? tournamentsMap.get(team.tournament_id) : null
+        }))
+        
+        setTeams(enrichedTeams)
+        console.log('✅ Teams enriched with owner and tournament data')
+      }
+      
       return teams
     } catch (error) {
       console.error('Get teams by league error:', error)
