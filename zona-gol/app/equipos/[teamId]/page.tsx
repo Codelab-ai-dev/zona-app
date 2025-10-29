@@ -6,21 +6,27 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
-import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock, IdCard, Printer } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock, Loader2, IdCard, Printer } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
 import { PlayerCredential } from "@/components/team-owner/player-credential"
-import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 type Team = Database['public']['Tables']['teams']['Row']
@@ -57,13 +63,37 @@ export default function TeamDetailPage() {
     qrData: string
   } | null>(null)
   const [printingAll, setPrintingAll] = useState(false)
-  
+  const [isLeagueAdmin, setIsLeagueAdmin] = useState(false)
+  const [leagueLogo, setLeagueLogo] = useState<string>('')
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
+  const [playerModalOpen, setPlayerModalOpen] = useState(false)
+
   const teamId = params?.teamId as string
+
+  useEffect(() => {
+    const checkLeagueAdmin = async () => {
+      if (!user || !team) return
+
+      try {
+        const { data: league } = await supabase
+          .from('leagues')
+          .select('admin_id')
+          .eq('id', team.league_id)
+          .single()
+
+        setIsLeagueAdmin(league?.admin_id === user.id)
+      } catch (error) {
+        console.error('Error checking league admin:', error)
+      }
+    }
+
+    checkLeagueAdmin()
+  }, [user, team, supabase])
 
   useEffect(() => {
     const loadTeamAndStats = async () => {
       if (!teamId) return
-      
+
       try {
         setLoading(true)
         setError(null)
@@ -90,7 +120,21 @@ export default function TeamDetailPage() {
         
         console.log('✅ Team data loaded:', teamData.name)
         setTeam(teamData)
-        
+
+        // Load league logo
+        if (teamData.league_id) {
+          const { data: league } = await supabase
+            .from('leagues')
+            .select('logo')
+            .eq('id', teamData.league_id)
+            .single()
+
+          if (league?.logo) {
+            setLeagueLogo(league.logo)
+            console.log('✅ League logo loaded')
+          }
+        }
+
         // Load players for this team
         const { data: players, error: playersError } = await supabase
           .from('players')
@@ -142,6 +186,7 @@ export default function TeamDetailPage() {
         setPlayersWithStats(playersWithStatsData)
 
         // Load coaching staff for this team
+        console.log('🔵 Loading coaching staff for team ID:', teamId)
         const { data: coachingStaffData, error: coachingStaffError } = await supabase
           .from('coaching_staff')
           .select('*')
@@ -150,10 +195,11 @@ export default function TeamDetailPage() {
 
         if (coachingStaffError) {
           console.error('❌ Error loading coaching staff:', coachingStaffError)
-        } else {
-          console.log('✅ Coaching staff loaded:', coachingStaffData?.length || 0)
-          setCoachingStaff(coachingStaffData || [])
+          // No bloqueamos la carga por error en cuerpo técnico
         }
+
+        console.log('✅ Coaching staff loaded:', coachingStaffData?.length || 0, coachingStaffData)
+        setCoachingStaff(coachingStaffData || [])
 
       } catch (err: any) {
         console.error('❌ Error in loadTeamAndStats:', err)
@@ -179,13 +225,17 @@ export default function TeamDetailPage() {
     router.back()
   }
 
+  const handlePlayerClick = (player: PlayerWithStats) => {
+    setSelectedPlayer(player)
+    setPlayerModalOpen(true)
+  }
+
   // Función para generar credencial imprimible
   const handleGenerateCredential = async (player: PlayerWithStats) => {
     setGeneratingQR(true)
     try {
       console.log('🔵 Generando credencial para jugador:', player.name)
 
-      // Usar formato legacy para compatibilidad
       const qrResult = await generatePlayerQR(
         {
           id: player.id,
@@ -220,9 +270,8 @@ export default function TeamDetailPage() {
     try {
       console.log('🔵 Generando credencial para cuerpo técnico:', staff.name)
 
-      // Para cuerpo técnico, usamos un formato compacto en el QR
       const qrData = JSON.stringify({
-        t: 's', // type: staff
+        t: 's',
         i: staff.id,
         n: staff.name,
         r: staff.role,
@@ -254,10 +303,25 @@ export default function TeamDetailPage() {
     try {
       console.log('🔵 Generando credenciales para jugadores y cuerpo técnico:', playersWithStats.length, coachingStaff.length)
 
-      // Importar QRCode dinámicamente
+      // Obtener información de la liga para el logo
+      let leagueLogo = ''
+      if (team?.league_id) {
+        try {
+          const { data: league } = await supabase
+            .from('leagues')
+            .select('logo')
+            .eq('id', team.league_id)
+            .single()
+
+          leagueLogo = league?.logo || ''
+          console.log('✅ Logo de liga obtenido:', leagueLogo)
+        } catch (error) {
+          console.warn('⚠️ No se pudo obtener logo de liga:', error)
+        }
+      }
+
       const QRCodeLib = (await import('qrcode')).default
 
-      // Generar QRs como imágenes base64 para todos los jugadores
       const playersWithQR = await Promise.all(
         playersWithStats.map(async (player) => {
           const qrResult = await generatePlayerQR(
@@ -273,7 +337,6 @@ export default function TeamDetailPage() {
           let qrImageBase64 = ''
           if (qrResult?.success && qrResult.qrData) {
             try {
-              // Generar QR como imagen base64
               qrImageBase64 = await QRCodeLib.toDataURL(qrResult.qrData, {
                 width: 200,
                 margin: 1,
@@ -295,12 +358,10 @@ export default function TeamDetailPage() {
         })
       )
 
-      // Generar QRs para el cuerpo técnico
       const staffWithQR = await Promise.all(
         coachingStaff.map(async (staff) => {
-          // Usar formato compacto para evitar QR codes demasiado grandes
           const qrData = JSON.stringify({
-            t: 's', // type: staff
+            t: 's',
             i: staff.id,
             n: staff.name,
             r: staff.role,
@@ -329,7 +390,6 @@ export default function TeamDetailPage() {
         })
       )
 
-      // Combinar jugadores y cuerpo técnico
       const allCredentials = [...playersWithQR, ...staffWithQR]
 
       const getPlayerInitials = (name: string) => {
@@ -341,7 +401,6 @@ export default function TeamDetailPage() {
           .slice(0, 2)
       }
 
-      // Generar HTML para imprimir todas las credenciales
       const printWindow = window.open('', '_blank')
       if (!printWindow) {
         throw new Error('No se pudo abrir ventana de impresión')
@@ -390,7 +449,6 @@ export default function TeamDetailPage() {
             </div>
           `
         } else {
-          // Credencial para cuerpo técnico
           const { staff, qrImageBase64 } = item
           const photoHTML = staff.photo
             ? `<img src="${staff.photo}" alt="${staff.name}" crossorigin="anonymous" />`
@@ -470,6 +528,28 @@ export default function TeamDetailPage() {
                 justify-content: space-between;
                 break-inside: avoid;
                 page-break-inside: avoid;
+                position: relative;
+                overflow: hidden;
+              }
+              .credential::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 120px;
+                height: 120px;
+                background-image: url('${leagueLogo}');
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
+                opacity: 0.08;
+                z-index: 0;
+                pointer-events: none;
+              }
+              .credential > * {
+                position: relative;
+                z-index: 1;
               }
               .header {
                 text-align: center;
@@ -782,6 +862,230 @@ export default function TeamDetailPage() {
         </Card>
       </div>
 
+      {/* Team Statistics Section */}
+      {playersWithStats.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Trophy className="w-5 h-5 mr-2" />
+              Estadísticas del Equipo
+            </CardTitle>
+            <CardDescription>
+              Análisis detallado del rendimiento colectivo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Rendimiento Ofensivo */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Target className="w-5 h-5 mr-2 text-green-600" />
+                  Rendimiento Ofensivo
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-muted-foreground mb-1">Goles Totales</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm text-muted-foreground mb-1">Asistencias Totales</p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <p className="text-sm text-muted-foreground mb-1">Goles por Jugador</p>
+                    <p className="text-3xl font-bold text-purple-600">
+                      {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                    <p className="text-sm text-muted-foreground mb-1">Asistencias por Jugador</p>
+                    <p className="text-3xl font-bold text-indigo-600">
+                      {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Máximos Goleadores */}
+              {(() => {
+                const topScorers = [...playersWithStats]
+                  .filter(p => p.total_goals > 0)
+                  .sort((a, b) => b.total_goals - a.total_goals)
+                  .slice(0, 3)
+
+                return topScorers.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Trophy className="w-5 h-5 mr-2 text-yellow-600" />
+                      Máximos Goleadores
+                    </h3>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {topScorers.map((player, index) => (
+                        <div key={player.id} className="p-4 bg-muted/30 rounded-lg border hover:shadow-md transition-shadow">
+                          <div className="flex items-center space-x-3">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                              index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                              index === 1 ? 'bg-gray-300 text-gray-900' :
+                              'bg-orange-400 text-orange-900'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <Avatar className="w-10 h-10">
+                              {player.photo ? (
+                                <AvatarImage src={player.photo} alt={player.name} />
+                              ) : (
+                                <AvatarFallback className="bg-green-100 text-green-800">
+                                  {getPlayerInitials(player.name)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{player.name}</p>
+                              <p className="text-xs text-muted-foreground">#{player.jersey_number}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-green-600">{player.total_goals}</p>
+                              <p className="text-xs text-muted-foreground">goles</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null
+              })()}
+
+              {/* Máximos Asistidores */}
+              {(() => {
+                const topAssisters = [...playersWithStats]
+                  .filter(p => p.total_assists > 0)
+                  .sort((a, b) => b.total_assists - a.total_assists)
+                  .slice(0, 3)
+
+                return topAssisters.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                      <Target className="w-5 h-5 mr-2 text-blue-600" />
+                      Máximos Asistidores
+                    </h3>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {topAssisters.map((player, index) => (
+                        <div key={player.id} className="p-4 bg-muted/30 rounded-lg border hover:shadow-md transition-shadow">
+                          <div className="flex items-center space-x-3">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                              index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                              index === 1 ? 'bg-gray-300 text-gray-900' :
+                              'bg-orange-400 text-orange-900'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <Avatar className="w-10 h-10">
+                              {player.photo ? (
+                                <AvatarImage src={player.photo} alt={player.name} />
+                              ) : (
+                                <AvatarFallback className="bg-blue-100 text-blue-800">
+                                  {getPlayerInitials(player.name)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{player.name}</p>
+                              <p className="text-xs text-muted-foreground">#{player.jersey_number}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-blue-600">{player.total_assists}</p>
+                              <p className="text-xs text-muted-foreground">asist.</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null
+              })()}
+
+              {/* Disciplina del Equipo */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
+                  Disciplina
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-4 h-6 bg-yellow-400 rounded"></div>
+                      <p className="text-sm text-muted-foreground">Tarjetas Amarillas</p>
+                    </div>
+                    <p className="text-3xl font-bold text-yellow-600">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-4 h-6 bg-red-600 rounded"></div>
+                      <p className="text-sm text-muted-foreground">Tarjetas Rojas</p>
+                    </div>
+                    <p className="text-3xl font-bold text-red-600">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Tarjetas por Jugador</p>
+                    <p className="text-3xl font-bold text-gray-700">
+                      {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Jugadores sin Tarjetas</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Participación */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-gray-600" />
+                  Participación
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Partidos Jugados (Total)</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Minutos Jugados (Total)</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Promedio Minutos por Jugador</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-sm text-muted-foreground mb-2">Jugadores Activos</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {playersWithStats.filter(p => p.total_games > 0).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Players Statistics Table */}
       <Card>
         <CardHeader>
@@ -795,7 +1099,7 @@ export default function TeamDetailPage() {
                 Rendimiento individual de cada jugador del equipo
               </CardDescription>
             </div>
-            {playersWithStats.length > 0 && (
+            {isLeagueAdmin && playersWithStats.length > 0 && (
               <Button
                 onClick={handlePrintAllCredentials}
                 disabled={printingAll}
@@ -836,12 +1140,16 @@ export default function TeamDetailPage() {
                     <TableHead className="text-center">TA</TableHead>
                     <TableHead className="text-center">TR</TableHead>
                     <TableHead className="text-center">Min</TableHead>
-                    <TableHead className="text-center">Acciones</TableHead>
+                    {isLeagueAdmin && <TableHead className="text-center">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {playersWithStats.map((player) => (
-                    <TableRow key={player.id}>
+                    <TableRow
+                      key={player.id}
+                      onClick={() => handlePlayerClick(player)}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">
@@ -897,17 +1205,19 @@ export default function TeamDetailPage() {
                           {player.total_minutes_played}'
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGenerateCredential(player)}
-                          disabled={generatingQR}
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <IdCard className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
+                      {isLeagueAdmin && (
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleGenerateCredential(player)}
+                            disabled={generatingQR}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <IdCard className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -929,7 +1239,12 @@ export default function TeamDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {coachingStaff.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
+              <p className="text-gray-600">Cargando cuerpo técnico...</p>
+            </div>
+          ) : coachingStaff.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -947,7 +1262,7 @@ export default function TeamDetailPage() {
                     <TableHead>Miembro</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead className="text-center">Cédula</TableHead>
-                    <TableHead className="text-center">Acciones</TableHead>
+                    {isLeagueAdmin && <TableHead className="text-center">Acciones</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -977,17 +1292,19 @@ export default function TeamDetailPage() {
                       <TableCell className="text-center text-sm text-gray-600">
                         {staff.cedula || '-'}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGenerateStaffCredential(staff)}
-                          disabled={generatingQR}
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          <IdCard className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
+                      {isLeagueAdmin && (
+                        <TableCell className="text-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleGenerateStaffCredential(staff)}
+                            disabled={generatingQR}
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            <IdCard className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1003,10 +1320,202 @@ export default function TeamDetailPage() {
           open={credentialModalOpen}
           onOpenChange={setCredentialModalOpen}
           player={currentCredentialData.player || currentCredentialData.staff}
-          team={{ name: team.name, logo: team.logo }}
+          team={{ name: team.name, logo: team.logo, leagueLogo: leagueLogo }}
           qrData={currentCredentialData.qrData}
         />
       )}
+
+      {/* Modal de Información del Jugador */}
+      <Dialog open={playerModalOpen} onOpenChange={setPlayerModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-3">
+              {selectedPlayer && (
+                <>
+                  <Avatar className="w-12 h-12">
+                    {selectedPlayer.photo ? (
+                      <AvatarImage src={selectedPlayer.photo} alt={selectedPlayer.name} />
+                    ) : (
+                      <AvatarFallback className="bg-blue-100 text-blue-800">
+                        {getPlayerInitials(selectedPlayer.name)}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span>{selectedPlayer.name}</span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        #{selectedPlayer.jersey_number}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-normal text-muted-foreground">{selectedPlayer.position}</p>
+                  </div>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Información detallada y estadísticas del jugador
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPlayer && (
+            <div className="space-y-6 mt-4">
+              {/* Información Personal */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Información Personal
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nombre Completo</p>
+                    <p className="font-medium">{selectedPlayer.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Posición</p>
+                    <p className="font-medium">{selectedPlayer.position}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Número de Camiseta</p>
+                    <p className="font-medium text-green-600 text-lg">#{selectedPlayer.jersey_number}</p>
+                  </div>
+                  {selectedPlayer.cedula && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cédula</p>
+                      <p className="font-medium">{selectedPlayer.cedula}</p>
+                    </div>
+                  )}
+                  {selectedPlayer.birth_date && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fecha de Nacimiento</p>
+                      <p className="font-medium">
+                        {new Date(selectedPlayer.birth_date).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Estadísticas */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <Trophy className="w-5 h-5 mr-2" />
+                  Estadísticas del Torneo
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-3xl font-bold text-gray-900">{selectedPlayer.total_games}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Partidos Jugados</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-3xl font-bold text-green-600">{selectedPlayer.total_goals}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Goles</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-3xl font-bold text-blue-600">{selectedPlayer.total_assists}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Asistencias</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-3xl font-bold text-yellow-600">{selectedPlayer.total_yellow_cards}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Tarjetas Amarillas</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-3xl font-bold text-red-600">{selectedPlayer.total_red_cards}</p>
+                      <p className="text-sm text-muted-foreground mt-1">Tarjetas Rojas</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <div className="flex items-center justify-center">
+                        <Clock className="w-5 h-5 mr-2 text-gray-600" />
+                        <p className="text-3xl font-bold text-gray-900">{selectedPlayer.total_minutes_played}</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">Minutos Jugados</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Promedios y Ratios */}
+              {selectedPlayer.total_games > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <Target className="w-5 h-5 mr-2" />
+                    Promedios
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Goles por Partido</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {(selectedPlayer.total_goals / selectedPlayer.total_games).toFixed(2)}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Asistencias por Partido</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {(selectedPlayer.total_assists / selectedPlayer.total_games).toFixed(2)}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Minutos por Partido</p>
+                      <p className="text-2xl font-bold text-gray-700">
+                        {Math.round(selectedPlayer.total_minutes_played / selectedPlayer.total_games)}'
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Disciplina */}
+              {(selectedPlayer.total_yellow_cards > 0 || selectedPlayer.total_red_cards > 0) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-2" />
+                    Disciplina
+                  </h3>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-12 bg-yellow-400 rounded"></div>
+                          <span className="text-2xl font-bold">{selectedPlayer.total_yellow_cards}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-12 bg-red-600 rounded"></div>
+                          <span className="text-2xl font-bold">{selectedPlayer.total_red_cards}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Total de tarjetas recibidas en el torneo
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

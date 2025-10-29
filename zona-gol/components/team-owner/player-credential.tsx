@@ -28,6 +28,7 @@ interface Player {
 interface Team {
   name: string
   logo?: string | null
+  leagueLogo?: string | null
 }
 
 interface PlayerCredentialProps {
@@ -156,7 +157,31 @@ export function PlayerCredential({
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                position: relative;
+                overflow: hidden;
               }
+              ${team.leagueLogo ? `
+              .credential::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 120px;
+                height: 120px;
+                background-image: url('${team.leagueLogo}');
+                background-size: contain;
+                background-position: center;
+                background-repeat: no-repeat;
+                opacity: 0.08;
+                z-index: 0;
+                pointer-events: none;
+              }
+              .credential > * {
+                position: relative;
+                z-index: 1;
+              }
+              ` : ''}
               .header {
                 text-align: center;
                 margin-bottom: 4px;
@@ -395,14 +420,33 @@ export function PlayerCredential({
           <div className="flex justify-center p-6 bg-gray-50 rounded-lg">
             <div
               id="credential-content"
-              className="border-2 border-blue-600 rounded-lg p-4 bg-gradient-to-br from-slate-50 to-slate-200 shadow-lg"
+              className="border-2 border-blue-600 rounded-lg p-4 bg-gradient-to-br from-slate-50 to-slate-200 shadow-lg relative overflow-hidden"
               style={{
                 width: '320px',
                 height: '220px'
               }}
             >
+              {/* Marca de agua con logo de la liga */}
+              {team.leagueLogo && (
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    opacity: 0.08,
+                    zIndex: 0
+                  }}
+                >
+                  <img
+                    src={team.leagueLogo}
+                    alt="Liga"
+                    className="w-full h-full object-contain"
+                    crossOrigin="anonymous"
+                  />
+                </div>
+              )}
               {/* Header */}
-              <div className="text-center mb-2">
+              <div className="text-center mb-2 relative z-10">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   {team.logo && (
                     <img
@@ -419,7 +463,7 @@ export function PlayerCredential({
               </div>
 
               {/* Contenido principal */}
-              <div className="flex items-center gap-3 min-h-24 flex-1">
+              <div className="flex items-center gap-3 min-h-24 flex-1 relative z-10">
                 {/* Foto del jugador */}
                 <div className="flex-shrink-0">
                   <div className="w-16 h-20 bg-white border-2 border-slate-300 rounded-md overflow-hidden">
@@ -470,7 +514,7 @@ export function PlayerCredential({
               </div>
 
               {/* Footer */}
-              <div className="text-center mt-1">
+              <div className="text-center mt-1 relative z-10">
                 <p className="text-sm text-slate-600 m-0 font-medium">
                   ID: {player.id.slice(-8).toUpperCase()}
                 </p>

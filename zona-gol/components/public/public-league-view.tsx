@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,7 @@ type Tournament = Database['public']['Tables']['tournaments']['Row']
 
 interface PublicLeagueViewProps {
   league: League
+  tournamentId?: string
 }
 
 interface LeagueData {
@@ -25,7 +27,7 @@ interface LeagueData {
   stats: any
 }
 
-export function PublicLeagueView({ league }: PublicLeagueViewProps) {
+export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps) {
   const [data, setData] = useState<LeagueData>({
     tournaments: [],
     teams: [],
@@ -33,24 +35,42 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
     stats: null,
   })
   const [loading, setLoading] = useState(true)
-  const [selectedRound, setSelectedRound] = useState<number | null>(null)
+  const [selectedRound, setSelectedRound] = useState<string | null>(null)
 
   useEffect(() => {
     const loadLeagueData = async () => {
       try {
         setLoading(true)
-        const [tournaments, teams, stats] = await Promise.all([
-          serverLeagueActions.getTournamentsByLeague(league.id),
-          serverLeagueActions.getTeamsByLeague(league.id),
-          serverLeagueActions.getLeagueStats(league.id),
-        ])
 
-        setData({
-          tournaments: tournaments || [],
-          teams: teams || [],
-          matches: stats?.upcomingMatches || [],
-          stats,
-        })
+        // Si hay tournamentId, cargar solo datos de ese torneo
+        if (tournamentId) {
+          const [tournaments, teams, stats] = await Promise.all([
+            serverLeagueActions.getTournamentsByLeague(league.id),
+            serverLeagueActions.getTeamsByTournament(tournamentId),
+            serverLeagueActions.getTournamentStats(tournamentId),
+          ])
+
+          setData({
+            tournaments: tournaments || [],
+            teams: teams || [],
+            matches: stats?.upcomingMatches || [],
+            stats,
+          })
+        } else {
+          // Si no hay tournamentId, cargar todos los datos de la liga
+          const [tournaments, teams, stats] = await Promise.all([
+            serverLeagueActions.getTournamentsByLeague(league.id),
+            serverLeagueActions.getTeamsByLeague(league.id),
+            serverLeagueActions.getLeagueStats(league.id),
+          ])
+
+          setData({
+            tournaments: tournaments || [],
+            teams: teams || [],
+            matches: stats?.upcomingMatches || [],
+            stats,
+          })
+        }
       } catch (error) {
         console.error('Error loading league data:', error)
       } finally {
@@ -59,13 +79,13 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
     }
 
     loadLeagueData()
-  }, [league.id])
+  }, [league.id, tournamentId])
   
   // Set default selected round to the most recent one
   useEffect(() => {
     const roundNumbers = data.stats?.roundNumbers || []
     if (roundNumbers.length > 0 && !selectedRound) {
-      setSelectedRound(roundNumbers[roundNumbers.length - 1])
+      setSelectedRound(roundNumbers[roundNumbers.length - 1].toString())
     }
   }, [data.stats?.roundNumbers, selectedRound])
 
@@ -92,8 +112,25 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
   const matchesByRound = data.stats?.matchesByRound || {}
   const roundNumbers = data.stats?.roundNumbers || []
 
+  // Separate regular and playoff matches
+  const upcomingRegularMatches = upcomingMatches.filter(m => m.phase !== 'playoffs')
+  const upcomingPlayoffMatches = upcomingMatches.filter(m => m.phase === 'playoffs')
+  const recentRegularMatches = recentMatches.filter(m => m.phase !== 'playoffs')
+  const recentPlayoffMatches = recentMatches.filter(m => m.phase === 'playoffs')
+
   // Get team standings from the database (all teams with their statistics)
   const teamStandings = data.stats?.teamStandings || []
+
+  // Filtrar partidos de playoffs por ronda
+  const playoffMatches = leagueMatches.filter(m => m.phase === 'playoffs')
+  const playoffsByRound = playoffMatches.reduce((acc: any, match) => {
+    const round = match.playoff_round || 'other'
+    if (!acc[round]) {
+      acc[round] = []
+    }
+    acc[round].push(match)
+    return acc
+  }, {})
 
   // Debug logging
   console.log('🏆 League data:', { 
@@ -219,12 +256,11 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
 
         {/* Tabs Content */}
         <Tabs defaultValue="standings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="standings">Tabla de Posiciones</TabsTrigger>
             <TabsTrigger value="matches">Partidos</TabsTrigger>
             <TabsTrigger value="rounds">Jornadas</TabsTrigger>
             <TabsTrigger value="teams">Equipos</TabsTrigger>
-            <TabsTrigger value="tournaments">Torneos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="standings">
@@ -341,24 +377,77 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                   <CardDescription>Partidos programados</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {upcomingMatches.map((match) => (
-                      <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="text-center">
-                            <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
-                            <p className="text-xs text-muted-foreground">vs</p>
-                            <p className="font-medium text-sm text-foreground">{getTeamName(match.away_team_id, match.away_team)}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-foreground">{formatDate(match.match_date)}</p>
-                          <Badge variant="outline" className="text-xs bg-soccer-blue/10 text-soccer-blue border-soccer-blue dark:bg-soccer-blue/20 dark:text-soccer-blue-light dark:border-soccer-blue/60">
-                            Programado
-                          </Badge>
+                  <div className="space-y-6">
+                    {/* Regular Matches */}
+                    {upcomingRegularMatches.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Fase Regular
+                        </h3>
+                        <div className="space-y-3">
+                          {upcomingRegularMatches.map((match) => (
+                            <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <div className="text-center">
+                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-xs text-muted-foreground">vs</p>
+                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-foreground">{formatDate(match.match_date)}</p>
+                                <Badge variant="outline" className="text-xs bg-soccer-blue/10 text-soccer-blue border-soccer-blue dark:bg-soccer-blue/20 dark:text-soccer-blue-light dark:border-soccer-blue/60">
+                                  Programado
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Playoff Matches */}
+                    {upcomingPlayoffMatches.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-700 dark:text-yellow-500 uppercase tracking-wide">
+                          <Trophy className="w-4 h-4" />
+                          <span>Liguilla</span>
+                        </h3>
+                        <div className="space-y-3">
+                          {upcomingPlayoffMatches.map((match) => (
+                            <div key={match.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                              <div className="flex items-center space-x-4 flex-1">
+                                <div className="text-center min-w-[120px]">
+                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-xs text-muted-foreground">vs</p>
+                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                </div>
+                                {match.leg && (
+                                  <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                    {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                  </Badge>
+                                )}
+                                {match.playoff_round && (
+                                  <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                    {match.playoff_round === 'quarterfinals' && 'Cuartos'}
+                                    {match.playoff_round === 'semifinals' && 'Semifinal'}
+                                    {match.playoff_round === 'third_place' && '3er Lugar'}
+                                    {match.playoff_round === 'final' && 'FINAL'}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-foreground">{formatDate(match.match_date)}</p>
+                                <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  Programado
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {upcomingMatches.length === 0 && (
                       <p className="text-center text-muted-foreground py-8">No hay partidos programados</p>
                     )}
@@ -372,26 +461,81 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                   <CardDescription>Últimos partidos jugados</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentMatches.map((match) => (
-                      <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="text-center">
-                            <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
-                            <p className="text-lg font-bold text-soccer-green">
-                              {match.home_score || 0} - {match.away_score || 0}
-                            </p>
-                            <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm">{formatDate(match.match_date)}</p>
-                          <Badge variant="secondary" className="text-xs">
-                            Finalizado
-                          </Badge>
+                  <div className="space-y-6">
+                    {/* Regular Matches */}
+                    {recentRegularMatches.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          Fase Regular
+                        </h3>
+                        <div className="space-y-3">
+                          {recentRegularMatches.map((match) => (
+                            <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
+                              <div className="flex items-center space-x-4">
+                                <div className="text-center">
+                                  <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-lg font-bold text-soccer-green">
+                                    {match.home_score || 0} - {match.away_score || 0}
+                                  </p>
+                                  <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm">{formatDate(match.match_date)}</p>
+                                <Badge variant="secondary" className="text-xs">
+                                  Finalizado
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Playoff Matches */}
+                    {recentPlayoffMatches.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-700 dark:text-yellow-500 uppercase tracking-wide">
+                          <Trophy className="w-4 h-4" />
+                          <span>Liguilla</span>
+                        </h3>
+                        <div className="space-y-3">
+                          {recentPlayoffMatches.map((match) => (
+                            <div key={match.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-yellow-50 dark:from-green-950/20 dark:to-yellow-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                              <div className="flex items-center space-x-4 flex-1">
+                                <div className="text-center min-w-[120px]">
+                                  <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-lg font-bold text-soccer-green">
+                                    {match.home_score || 0} - {match.away_score || 0}
+                                  </p>
+                                  <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                </div>
+                                {match.leg && (
+                                  <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                    {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                  </Badge>
+                                )}
+                                {match.playoff_round && (
+                                  <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                    {match.playoff_round === 'quarterfinals' && 'Cuartos'}
+                                    {match.playoff_round === 'semifinals' && 'Semifinal'}
+                                    {match.playoff_round === 'third_place' && '3er Lugar'}
+                                    {match.playoff_round === 'final' && 'FINAL'}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm">{formatDate(match.match_date)}</p>
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-400">
+                                  Finalizado
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {recentMatches.length === 0 && (
                       <div className="text-center text-muted-foreground py-8">
                         <p className="mb-2">No hay resultados disponibles</p>
@@ -421,9 +565,9 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Select 
-                      value={selectedRound?.toString() || ""} 
-                      onValueChange={(value) => setSelectedRound(parseInt(value))}
+                    <Select
+                      value={selectedRound || ""}
+                      onValueChange={(value) => setSelectedRound(value)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecciona una jornada" />
@@ -434,7 +578,7 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                           const finishedMatches = roundMatches.filter(m => m.status === 'finished')
                           const isCompleted = roundMatches.length > 0 && finishedMatches.length === roundMatches.length
                           const isInProgress = finishedMatches.length > 0 && finishedMatches.length < roundMatches.length
-                          
+
                           return (
                             <SelectItem key={roundNumber} value={roundNumber.toString()}>
                               <div className="flex items-center space-x-2 w-full">
@@ -447,6 +591,15 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                             </SelectItem>
                           )
                         })}
+                        {playoffMatches.length > 0 && (
+                          <SelectItem value="playoffs">
+                            <div className="flex items-center space-x-2 w-full">
+                              <Trophy className="w-4 h-4 text-yellow-600" />
+                              <span className="font-semibold">Liguilla</span>
+                              <span className="text-xs text-muted-foreground">({playoffMatches.length} partidos)</span>
+                            </div>
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </CardContent>
@@ -454,12 +607,241 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
 
                 {/* Selected Round Details */}
                 {selectedRound && (() => {
-                  const roundMatches = matchesByRound[selectedRound] || []
+                  // Handle playoffs selection
+                  if (selectedRound === 'playoffs') {
+                    return (
+                      <Card className="border-2 border-yellow-400">
+                        <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
+                          <CardTitle className="flex items-center space-x-2">
+                            <Trophy className="w-6 h-6 text-yellow-600" />
+                            <span>Fase Final - Liguilla</span>
+                          </CardTitle>
+                          <CardDescription>
+                            {playoffMatches.length} partido(s) de playoffs
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 mt-4">
+                          {/* Cuartos de Final */}
+                          {playoffsByRound['quarterfinals'] && playoffsByRound['quarterfinals'].length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-lg mb-3 flex items-center">
+                                <Trophy className="w-5 h-5 mr-2 text-orange-500" />
+                                Cuartos de Final
+                              </h3>
+                              <div className="space-y-3">
+                                {playoffsByRound['quarterfinals'].map((match: any) => {
+                                  const isFinished = match.status === 'finished'
+                                  return (
+                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                    }`}>
+                                      <div className="flex items-center space-x-4 flex-1">
+                                        <div className="text-center min-w-[140px]">
+                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          {isFinished ? (
+                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                              {match.home_score || 0} - {match.away_score || 0}
+                                            </p>
+                                          ) : (
+                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                          )}
+                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                        </div>
+                                        {match.leg && (
+                                          <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                            {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="flex flex-col items-end space-y-1">
+                                          <p className="text-sm font-medium">
+                                            {formatDate(match.match_date)}
+                                            {match.match_time && (
+                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                            )}
+                                          </p>
+                                          {match.field_number && (
+                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                          )}
+                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                            {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Semifinales */}
+                          {playoffsByRound['semifinals'] && playoffsByRound['semifinals'].length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-lg mb-3 flex items-center">
+                                <Trophy className="w-5 h-5 mr-2 text-amber-500" />
+                                Semifinales
+                              </h3>
+                              <div className="space-y-3">
+                                {playoffsByRound['semifinals'].map((match: any) => {
+                                  const isFinished = match.status === 'finished'
+                                  return (
+                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                    }`}>
+                                      <div className="flex items-center space-x-4 flex-1">
+                                        <div className="text-center min-w-[140px]">
+                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          {isFinished ? (
+                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                              {match.home_score || 0} - {match.away_score || 0}
+                                            </p>
+                                          ) : (
+                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                          )}
+                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                        </div>
+                                        {match.leg && (
+                                          <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                            {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="flex flex-col items-end space-y-1">
+                                          <p className="text-sm font-medium">
+                                            {formatDate(match.match_date)}
+                                            {match.match_time && (
+                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                            )}
+                                          </p>
+                                          {match.field_number && (
+                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                          )}
+                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                            {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tercer Lugar */}
+                          {playoffsByRound['third_place'] && playoffsByRound['third_place'].length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-lg mb-3 flex items-center">
+                                <Trophy className="w-5 h-5 mr-2 text-orange-400" />
+                                Tercer Lugar
+                              </h3>
+                              <div className="space-y-3">
+                                {playoffsByRound['third_place'].map((match: any) => {
+                                  const isFinished = match.status === 'finished'
+                                  return (
+                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                    }`}>
+                                      <div className="flex items-center space-x-4 flex-1">
+                                        <div className="text-center min-w-[140px]">
+                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          {isFinished ? (
+                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                              {match.home_score || 0} - {match.away_score || 0}
+                                            </p>
+                                          ) : (
+                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                          )}
+                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="flex flex-col items-end space-y-1">
+                                          <p className="text-sm font-medium">
+                                            {formatDate(match.match_date)}
+                                            {match.match_time && (
+                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                            )}
+                                          </p>
+                                          {match.field_number && (
+                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                          )}
+                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                            {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Final */}
+                          {playoffsByRound['final'] && playoffsByRound['final'].length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-xl mb-3 flex items-center">
+                                <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
+                                FINAL
+                              </h3>
+                              <div className="space-y-3">
+                                {playoffsByRound['final'].map((match: any) => {
+                                  const isFinished = match.status === 'finished'
+                                  return (
+                                    <div key={match.id} className={`flex items-center justify-between p-5 rounded-lg border-2 ${
+                                      isFinished ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-400' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300'
+                                    }`}>
+                                      <div className="flex items-center space-x-4 flex-1">
+                                        <div className="text-center min-w-[160px]">
+                                          <p className="font-bold text-base">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          {isFinished ? (
+                                            <p className="text-2xl font-bold text-yellow-600 my-2">
+                                              {match.home_score || 0} - {match.away_score || 0}
+                                            </p>
+                                          ) : (
+                                            <p className="text-sm text-muted-foreground my-2">vs</p>
+                                          )}
+                                          <p className="font-bold text-base">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="flex flex-col items-end space-y-1">
+                                          <p className="text-base font-bold">
+                                            {formatDate(match.match_date)}
+                                            {match.match_time && (
+                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                            )}
+                                          </p>
+                                          {match.field_number && (
+                                            <p className="text-sm text-muted-foreground">Campo {match.field_number}</p>
+                                          )}
+                                          <Badge variant={isFinished ? "default" : "outline"} className="text-sm">
+                                            {isFinished ? "✅ FINALIZADO" : match.status === 'in_progress' ? "⚽ EN VIVO" : "📅 PROGRAMADO"}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  // Handle regular round selection
+                  const roundMatches = matchesByRound[parseInt(selectedRound)] || []
                   const finishedMatches = roundMatches.filter(m => m.status === 'finished')
                   const scheduledMatches = roundMatches.filter(m => m.status === 'scheduled' || m.status === 'in_progress')
                   const isCompleted = roundMatches.length > 0 && finishedMatches.length === roundMatches.length
                   const isInProgress = scheduledMatches.length > 0 && finishedMatches.length > 0
-                  
+
                   return (
                     <Card>
                       <CardHeader>
@@ -493,7 +875,7 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                         <div className="space-y-3">
                           {roundMatches.map((match) => {
                             const isFinished = match.status === 'finished'
-                            
+
                             return (
                               <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
                                 isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 dark:bg-muted/50 border-gray-200'
@@ -511,7 +893,7 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                                     <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
                                   </div>
                                 </div>
-                                
+
                                 <div className="text-right">
                                   <div className="flex flex-col items-end space-y-1">
                                     <p className="text-sm font-medium">
@@ -520,19 +902,19 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                                         <span className="ml-2 text-muted-foreground">{match.match_time}</span>
                                       )}
                                     </p>
-                                    
+
                                     {match.field_number && (
                                       <p className="text-xs text-muted-foreground">
                                         Campo {match.field_number}
                                       </p>
                                     )}
-                                    
-                                    <Badge 
-                                      variant={isFinished ? "secondary" : "outline"} 
+
+                                    <Badge
+                                      variant={isFinished ? "secondary" : "outline"}
                                       className="text-xs"
                                     >
-                                      {isFinished ? "Finalizado" : 
-                                       match.status === 'in_progress' ? "En progreso" : 
+                                      {isFinished ? "Finalizado" :
+                                       match.status === 'in_progress' ? "En progreso" :
                                        "Programado"}
                                     </Badge>
                                   </div>
@@ -586,10 +968,12 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
                         <Users className="w-4 h-4 mr-1" />
                         Equipo registrado
                       </span>
-                      <Button variant="outline" size="sm">
-                        Ver Equipo
-                        <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
+                      <Link href={`/equipos/${team.id}`}>
+                        <Button variant="outline" size="sm">
+                          Ver Equipo
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
@@ -602,56 +986,6 @@ export function PublicLeagueView({ league }: PublicLeagueViewProps) {
             </div>
           </TabsContent>
 
-          <TabsContent value="tournaments">
-            <div className="grid gap-6 md:grid-cols-2">
-              {data.tournaments.map((tournament) => (
-                <Card key={tournament.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center">
-                          <Trophy className="w-5 h-5 mr-2 text-soccer-gold" />
-                          {tournament.name}
-                        </CardTitle>
-                        <CardDescription>
-                          {new Date(tournament.start_date).toLocaleDateString("es-ES")} -{" "}
-                          {new Date(tournament.end_date).toLocaleDateString("es-ES")}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={tournament.is_active ? "default" : "secondary"}>
-                        {tournament.is_active ? "Activo" : "Finalizado"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground">
-                        <p>
-                          Partidos:{" "}
-                          {
-                            leagueMatches.filter((m) => m.tournament_id === tournament.id && m.status === "finished")
-                              .length
-                          }{" "}
-                          jugados
-                        </p>
-                        <p>
-                          Programados:{" "}
-                          {
-                            leagueMatches.filter((m) => m.tournament_id === tournament.id && m.status === "scheduled")
-                              .length
-                          }
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Ver Detalles
-                        <ArrowRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
         </Tabs>
       </main>
     </div>

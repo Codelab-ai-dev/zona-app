@@ -47,6 +47,7 @@ interface PlayoffMatch {
   date: string
   time: string
   field: number
+  leg?: 'first' | 'second' // Para partidos de ida y vuelta
 }
 
 interface StandingsTeam {
@@ -76,6 +77,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
   const [startTime, setStartTime] = useState("10:00")
   const [fieldNumber, setFieldNumber] = useState(1)
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(true)
+  const [homeAndAway, setHomeAndAway] = useState(false)
 
   // Selected teams for playoffs
   const [selectedTeams, setSelectedTeams] = useState<Team[]>([])
@@ -244,7 +246,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
     }
 
     if (numTeams === 8) {
-      // Quarterfinals (8 teams -> 4 matches)
+      // Quarterfinals (8 teams -> 4 matches, or 8 if home and away)
       // Traditional seeding: 1v8, 4v5, 2v7, 3v6
       const quarterfinalPairs = [
         [0, 7], // 1st vs 8th
@@ -254,30 +256,64 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
       ]
 
       quarterfinalPairs.forEach((pair, index) => {
-        const dateTime = getMatchDateTime(0, index)
+        // Partido de ida
+        const firstLegDateTime = getMatchDateTime(0, index)
         matches.push({
           round: 'quarterfinals',
           position: index + 1,
           homeTeam: selectedTeams[pair[0]],
           awayTeam: selectedTeams[pair[1]],
-          date: dateTime.date,
-          time: dateTime.time,
-          field: fieldNumber
+          date: firstLegDateTime.date,
+          time: firstLegDateTime.time,
+          field: fieldNumber,
+          leg: homeAndAway ? 'first' : undefined
         })
+
+        // Partido de vuelta (si está activado)
+        if (homeAndAway) {
+          const secondLegDateTime = getMatchDateTime(3, index)
+          matches.push({
+            round: 'quarterfinals',
+            position: index + 1,
+            homeTeam: selectedTeams[pair[1]], // Equipos invertidos
+            awayTeam: selectedTeams[pair[0]],
+            date: secondLegDateTime.date,
+            time: secondLegDateTime.time,
+            field: fieldNumber,
+            leg: 'second'
+          })
+        }
       })
 
-      // Semifinals (4 teams -> 2 matches)
+      // Semifinals (4 teams -> 2 matches, or 4 if home and away)
       for (let i = 0; i < 2; i++) {
-        const dateTime = getMatchDateTime(7, i)
+        // Partido de ida
+        const firstLegDateTime = getMatchDateTime(homeAndAway ? 7 : 7, i)
         matches.push({
           round: 'semifinals',
           position: i + 1,
           homeTeam: null, // TBD from quarterfinals
           awayTeam: null,
-          date: dateTime.date,
-          time: dateTime.time,
-          field: fieldNumber
+          date: firstLegDateTime.date,
+          time: firstLegDateTime.time,
+          field: fieldNumber,
+          leg: homeAndAway ? 'first' : undefined
         })
+
+        // Partido de vuelta (si está activado)
+        if (homeAndAway) {
+          const secondLegDateTime = getMatchDateTime(10, i)
+          matches.push({
+            round: 'semifinals',
+            position: i + 1,
+            homeTeam: null, // TBD from quarterfinals
+            awayTeam: null,
+            date: secondLegDateTime.date,
+            time: secondLegDateTime.time,
+            field: fieldNumber,
+            leg: 'second'
+          })
+        }
       }
     } else {
       // 4 teams: Direct semifinals
@@ -287,22 +323,39 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
       ]
 
       semifinalPairs.forEach((pair, index) => {
-        const dateTime = getMatchDateTime(0, index)
+        // Partido de ida
+        const firstLegDateTime = getMatchDateTime(0, index)
         matches.push({
           round: 'semifinals',
           position: index + 1,
           homeTeam: selectedTeams[pair[0]],
           awayTeam: selectedTeams[pair[1]],
-          date: dateTime.date,
-          time: dateTime.time,
-          field: fieldNumber
+          date: firstLegDateTime.date,
+          time: firstLegDateTime.time,
+          field: fieldNumber,
+          leg: homeAndAway ? 'first' : undefined
         })
+
+        // Partido de vuelta (si está activado)
+        if (homeAndAway) {
+          const secondLegDateTime = getMatchDateTime(3, index)
+          matches.push({
+            round: 'semifinals',
+            position: index + 1,
+            homeTeam: selectedTeams[pair[1]], // Equipos invertidos
+            awayTeam: selectedTeams[pair[0]],
+            date: secondLegDateTime.date,
+            time: secondLegDateTime.time,
+            field: fieldNumber,
+            leg: 'second'
+          })
+        }
       })
     }
 
-    // Third place match
+    // Third place match (siempre partido único)
     if (thirdPlaceMatch) {
-      const dateTime = getMatchDateTime(numTeams === 8 ? 14 : 7, 0)
+      const dateTime = getMatchDateTime(numTeams === 8 ? (homeAndAway ? 14 : 14) : (homeAndAway ? 7 : 7), 0)
       matches.push({
         round: 'third_place',
         position: 1,
@@ -314,8 +367,8 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
       })
     }
 
-    // Final
-    const finalDateTime = getMatchDateTime(numTeams === 8 ? 14 : 7, thirdPlaceMatch ? 1 : 0)
+    // Final (siempre partido único)
+    const finalDateTime = getMatchDateTime(numTeams === 8 ? (homeAndAway ? 14 : 14) : (homeAndAway ? 7 : 7), thirdPlaceMatch ? 1 : 0)
     matches.push({
       round: 'final',
       position: 1,
@@ -369,7 +422,8 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
             status: 'scheduled',
             phase: 'playoffs',
             playoff_round: match.round,
-            playoff_position: match.position
+            playoff_position: match.position,
+            leg: match.leg || null
           }
 
           console.log('📝 Match to insert:', {
@@ -555,15 +609,27 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3 pt-4">
-                    <input
-                      type="checkbox"
-                      id="thirdPlace"
-                      checked={thirdPlaceMatch}
-                      onChange={(e) => setThirdPlaceMatch(e.target.checked)}
-                      className="rounded w-4 h-4"
-                    />
-                    <Label htmlFor="thirdPlace" className="text-base cursor-pointer">Incluir partido por el tercer lugar</Label>
+                  <div className="space-y-3 pt-4">
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="thirdPlace"
+                        checked={thirdPlaceMatch}
+                        onChange={(e) => setThirdPlaceMatch(e.target.checked)}
+                        className="rounded w-4 h-4"
+                      />
+                      <Label htmlFor="thirdPlace" className="text-base cursor-pointer">Incluir partido por el tercer lugar</Label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="homeAndAway"
+                        checked={homeAndAway}
+                        onChange={(e) => setHomeAndAway(e.target.checked)}
+                        className="rounded w-4 h-4"
+                      />
+                      <Label htmlFor="homeAndAway" className="text-base cursor-pointer">Partidos de ida y vuelta</Label>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -757,6 +823,11 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                             <Badge variant="outline" className="bg-soccer-blue/10 px-3 py-1">
                               Cancha {match.field}
                             </Badge>
+                            {match.leg && (
+                              <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="px-3 py-1">
+                                {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                              </Badge>
+                            )}
                             <div className="flex items-center gap-3 flex-1">
                               <span className="font-semibold text-base">
                                 {match.homeTeam?.name || <span className="text-muted-foreground italic">Por definir</span>}

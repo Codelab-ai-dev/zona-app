@@ -64,6 +64,11 @@ export interface Database {
           max_players: number | null
           max_coaching_staff: number | null
           registration_open: boolean
+          tournament_format: 'league' | 'knockout' | 'group_knockout'
+          number_of_groups: number | null
+          teams_advancing_per_group: number
+          rounds_per_season: number
+          has_third_place_match: boolean
           created_at: string
           updated_at: string
         }
@@ -77,6 +82,11 @@ export interface Database {
           max_players?: number | null
           max_coaching_staff?: number | null
           registration_open?: boolean
+          tournament_format?: 'league' | 'knockout' | 'group_knockout'
+          number_of_groups?: number | null
+          teams_advancing_per_group?: number
+          rounds_per_season?: number
+          has_third_place_match?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -90,6 +100,11 @@ export interface Database {
           max_players?: number | null
           max_coaching_staff?: number | null
           registration_open?: boolean
+          tournament_format?: 'league' | 'knockout' | 'group_knockout'
+          number_of_groups?: number | null
+          teams_advancing_per_group?: number
+          rounds_per_season?: number
+          has_third_place_match?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -295,6 +310,7 @@ export interface Database {
           phase: "regular" | "playoffs"
           playoff_round: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position: number | null
+          leg: "first" | "second" | null
           created_at: string
           updated_at: string
         }
@@ -313,6 +329,7 @@ export interface Database {
           phase?: "regular" | "playoffs"
           playoff_round?: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position?: number | null
+          leg?: "first" | "second" | null
           created_at?: string
           updated_at?: string
         }
@@ -331,6 +348,7 @@ export interface Database {
           phase?: "regular" | "playoffs"
           playoff_round?: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position?: number | null
+          leg?: "first" | "second" | null
           created_at?: string
           updated_at?: string
         }

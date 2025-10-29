@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Ban, Plus, CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react"
+import { Ban, Plus, CheckCircle, XCircle, Loader2, AlertTriangle, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import {
   Table,
@@ -65,11 +65,15 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<string>("")
   const [suspensionType, setSuspensionType] = useState<string>("disciplinary_committee")
   const [reason, setReason] = useState("")
   const [matchesToServe, setMatchesToServe] = useState(1)
   const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editingSuspension, setEditingSuspension] = useState<Suspension | null>(null)
+  const [editMatchesToServe, setEditMatchesToServe] = useState(1)
 
   const supabase = createClientSupabaseClient()
 
@@ -276,6 +280,48 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
     }
   }
 
+  const handleOpenEditDialog = (suspension: Suspension) => {
+    setEditingSuspension(suspension)
+    setEditMatchesToServe(suspension.matches_to_serve)
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateSuspension = async () => {
+    if (!editingSuspension) return
+
+    if (editMatchesToServe < 1) {
+      toast.error('El número de partidos debe ser al menos 1')
+      return
+    }
+
+    setEditing(true)
+    try {
+      const { error } = await supabase
+        .from('player_suspensions')
+        .update({
+          matches_to_serve: editMatchesToServe,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingSuspension.id)
+
+      if (error) {
+        console.error('Error updating suspension:', error)
+        toast.error('Error al actualizar la suspensión')
+        return
+      }
+
+      toast.success('Suspensión actualizada exitosamente')
+      setEditDialogOpen(false)
+      setEditingSuspension(null)
+      await loadSuspensions()
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al actualizar la suspensión')
+    } finally {
+      setEditing(false)
+    }
+  }
+
   const getSuspensionTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       red_card: 'Tarjeta Roja',
@@ -383,6 +429,14 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                       <TableCell className="text-right">
                         {suspension.status === 'active' && (
                           <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenEditDialog(suspension)}
+                            >
+                              <Pencil className="w-4 h-4 mr-1" />
+                              Editar
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -502,6 +556,94 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                 </>
               ) : (
                 'Crear Suspensión'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Suspension Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Suspensión</DialogTitle>
+            <DialogDescription>
+              Modifica el número de partidos de suspensión
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingSuspension && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Jugador:</span>
+                    <span className="font-medium">
+                      {editingSuspension.player_name}
+                      <Badge variant="outline" className="ml-2">
+                        #{editingSuspension.jersey_number}
+                      </Badge>
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Equipo:</span>
+                    <span className="font-medium">{editingSuspension.team_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Tipo:</span>
+                    <Badge variant="secondary">
+                      {getSuspensionTypeLabel(editingSuspension.suspension_type)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Partidos cumplidos:</span>
+                    <span className="font-medium">{editingSuspension.matches_served}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-matches">Número de Partidos a Cumplir *</Label>
+                <Input
+                  id="edit-matches"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={editMatchesToServe}
+                  onChange={(e) => setEditMatchesToServe(parseInt(e.target.value) || 1)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Partidos restantes: {Math.max(0, editMatchesToServe - editingSuspension.matches_served)}
+                </p>
+              </div>
+
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium">Nota:</p>
+                    <p className="mt-1">
+                      Al modificar el número de partidos, se actualizará el total de partidos a cumplir.
+                      Los partidos ya cumplidos ({editingSuspension.matches_served}) no se modificarán.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateSuspension} disabled={editing}>
+              {editing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Cambios'
               )}
             </Button>
           </DialogFooter>

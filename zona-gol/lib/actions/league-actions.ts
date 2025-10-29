@@ -902,5 +902,228 @@ export const serverLeagueActions = {
         activeTournament: null
       }
     }
+  },
+
+  async getTeamsByTournament(tournamentId: string) {
+    const supabase = createClientSupabaseClient()
+
+    try {
+      const { data: teams, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('is_active', true)
+        .order('name', { ascending: true })
+
+      if (error) {
+        throw error
+      }
+
+      return teams || []
+    } catch (error) {
+      console.error('Get teams by tournament error:', error)
+      return []
+    }
+  },
+
+  async getTournamentStats(tournamentId: string) {
+    const supabase = createClientSupabaseClient()
+
+    try {
+      // Get teams count
+      const { count: teamsCount } = await supabase
+        .from('teams')
+        .select('*', { count: 'exact', head: true })
+        .eq('tournament_id', tournamentId)
+        .eq('is_active', true)
+
+      // Get matches for this tournament
+      const { data: matches, count: matchesCount } = await supabase
+        .from('matches')
+        .select(`
+          id,
+          tournament_id,
+          home_team_id,
+          away_team_id,
+          home_score,
+          away_score,
+          match_date,
+          match_time,
+          field_number,
+          round,
+          status,
+          phase,
+          playoff_round,
+          created_at,
+          updated_at,
+          home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
+          away_team:teams!matches_away_team_id_fkey(id, name, slug, logo),
+          tournament:tournaments(id, name)
+        `, { count: 'exact' })
+        .eq('tournament_id', tournamentId)
+        .order('match_date', { ascending: false })
+
+      const allMatches = matches || []
+
+      // Get upcoming matches
+      const upcomingMatches = allMatches.filter(match => {
+        const isScheduled = match.status === 'scheduled' || match.status === 'in_progress'
+        const isFuture = new Date(match.match_date) > new Date()
+        return isScheduled && isFuture
+      }).slice(0, 5)
+
+      // Get recent matches
+      const recentMatches = allMatches.filter(match =>
+        match.status === 'finished'
+      ).sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
+      .slice(0, 5)
+
+      // Organize matches by rounds
+      const matchesByRound = allMatches.reduce((acc: any, match) => {
+        const round = match.round || 1
+        if (!acc[round]) {
+          acc[round] = []
+        }
+        acc[round].push(match)
+        return acc
+      }, {})
+
+      // Sort matches within each round
+      Object.keys(matchesByRound).forEach(round => {
+        matchesByRound[round].sort((a: any, b: any) => {
+          const dateA = new Date(a.match_date)
+          const dateB = new Date(b.match_date)
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA.getTime() - dateB.getTime()
+          }
+          if (a.match_time && b.match_time) {
+            return a.match_time.localeCompare(b.match_time)
+          }
+          return 0
+        })
+      })
+
+      const roundNumbers = Object.keys(matchesByRound)
+        .map(r => parseInt(r))
+        .sort((a, b) => a - b)
+
+      // Calculate team standings
+      const teamStandings = await this.calculateTeamStandingsByTournament(tournamentId)
+
+      return {
+        teamsCount: teamsCount || 0,
+        matchesCount: matchesCount || 0,
+        upcomingMatches,
+        recentMatches,
+        allMatches,
+        matchesByRound,
+        roundNumbers,
+        teamStandings
+      }
+    } catch (error) {
+      console.error('Get tournament stats error:', error)
+      return {
+        teamsCount: 0,
+        matchesCount: 0,
+        upcomingMatches: [],
+        recentMatches: [],
+        allMatches: [],
+        matchesByRound: {},
+        roundNumbers: [],
+        teamStandings: []
+      }
+    }
+  },
+
+  async calculateTeamStandingsByTournament(tournamentId: string) {
+    const supabase = createClientSupabaseClient()
+
+    try {
+      // Get all matches for this tournament
+      const { data: matches } = await supabase
+        .from('matches')
+        .select(`
+          id,
+          home_team_id,
+          away_team_id,
+          home_score,
+          away_score,
+          status,
+          home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
+          away_team:teams!matches_away_team_id_fkey(id, name, slug, logo)
+        `)
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'finished')
+
+      // Get all teams in this tournament
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('id, name, slug, logo')
+        .eq('tournament_id', tournamentId)
+        .eq('is_active', true)
+
+      // Initialize standings
+      const standings: any = {}
+      teams?.forEach(team => {
+        standings[team.id] = {
+          team,
+          played: 0,
+          won: 0,
+          drawn: 0,
+          lost: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDifference: 0,
+          points: 0
+        }
+      })
+
+      // Calculate standings from matches
+      matches?.forEach(match => {
+        if (match.home_score !== null && match.away_score !== null) {
+          const homeId = match.home_team_id
+          const awayId = match.away_team_id
+
+          if (standings[homeId] && standings[awayId]) {
+            standings[homeId].played++
+            standings[awayId].played++
+
+            standings[homeId].goalsFor += match.home_score
+            standings[homeId].goalsAgainst += match.away_score
+            standings[awayId].goalsFor += match.away_score
+            standings[awayId].goalsAgainst += match.home_score
+
+            if (match.home_score > match.away_score) {
+              standings[homeId].won++
+              standings[homeId].points += 3
+              standings[awayId].lost++
+            } else if (match.home_score < match.away_score) {
+              standings[awayId].won++
+              standings[awayId].points += 3
+              standings[homeId].lost++
+            } else {
+              standings[homeId].drawn++
+              standings[awayId].drawn++
+              standings[homeId].points++
+              standings[awayId].points++
+            }
+
+            standings[homeId].goalDifference = standings[homeId].goalsFor - standings[homeId].goalsAgainst
+            standings[awayId].goalDifference = standings[awayId].goalsFor - standings[awayId].goalsAgainst
+          }
+        }
+      })
+
+      // Convert to array and sort
+      return Object.values(standings).sort((a: any, b: any) => {
+        if (b.points !== a.points) return b.points - a.points
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+        return a.team.name.localeCompare(b.team.name)
+      })
+    } catch (error) {
+      console.error('Calculate team standings error:', error)
+      return []
+    }
   }
 }

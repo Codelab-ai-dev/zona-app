@@ -9,8 +9,17 @@ import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { Menu, LogOut, User } from "lucide-react"
+import { Menu, LogOut, User, Smartphone } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { AppDownload } from "@/components/shared/app-download"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -57,8 +66,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <div className="flex items-center">
+            {/* Left side - Logo + User Info */}
+            <div className="flex items-center gap-4">
               <img
                 src="/zona-gol-final.webp"
                 alt="Zona-Gol Logo"
@@ -66,27 +75,55 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 height={60}
                 className="rounded"
               />
+
+              {/* User info - Desktop */}
+              <div className="hidden md:flex items-center gap-3">
+                {profile && (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        Hola, {profile.name}
+                      </span>
+                      <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs w-fit">
+                        {getRoleLabel(profile.role)}
+                      </Badge>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Right side - Always visible */}
+            {/* Right side - Actions */}
             <div className="flex items-center space-x-3">
-              {/* User name - visible on all screens */}
-              {profile && (
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  Hola, {profile.name}
-                </span>
-              )}
-
               {/* Theme Toggle - always visible */}
               <ThemeToggle />
 
-              {/* Desktop - Badge + Logout Button */}
-              <div className="hidden md:flex items-center space-x-3">
-                {profile && (
-                  <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs">
-                    {getRoleLabel(profile.role)}
-                  </Badge>
+              {/* Desktop - App Mobile + Logout Button together */}
+              <div className="hidden md:flex items-center gap-2">
+                {/* App Mobile - Only for League Admins */}
+                {profile?.role === 'league_admin' && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                        <Smartphone className="h-4 w-4" />
+                        App Móvil
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Smartphone className="h-5 w-5 text-soccer-green" />
+                          Descargar App Móvil
+                        </DialogTitle>
+                        <DialogDescription>
+                          Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
+                        </DialogDescription>
+                      </DialogHeader>
+                      {profile?.league_id && <AppDownload leagueId={profile.league_id} />}
+                    </DialogContent>
+                  </Dialog>
                 )}
+
                 <Button variant="outline" onClick={handleSignOut} size="sm">
                   Cerrar Sesión
                 </Button>
@@ -161,6 +198,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             </div>
                           </div>
                         </div>
+
+                        {/* App Download Button - Mobile - Only for League Admins */}
+                        {profile?.role === 'league_admin' && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" className="w-full">
+                                <Smartphone className="h-4 w-4 mr-2" />
+                                Descargar App Móvil
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <Smartphone className="h-5 w-5 text-soccer-green" />
+                                  Descargar App Móvil
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
+                                </DialogDescription>
+                              </DialogHeader>
+                              {profile?.league_id && <AppDownload leagueId={profile.league_id} />}
+                            </DialogContent>
+                          </Dialog>
+                        )}
                       </div>
 
                       {/* Sign Out Button - Fixed at bottom */}

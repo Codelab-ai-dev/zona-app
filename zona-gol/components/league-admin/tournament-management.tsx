@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -46,6 +54,11 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     endDate: "",
     maxPlayers: "",
     maxCoachingStaff: "10",
+    tournamentFormat: "league" as 'league' | 'knockout' | 'group_knockout',
+    numberOfGroups: "4",
+    teamsAdvancingPerGroup: "2",
+    roundsPerSeason: "2",
+    hasThirdPlaceMatch: false,
   })
 
   // Load tournaments when component mounts or leagueId changes
@@ -86,10 +99,26 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         end_date: formData.endDate,
         max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
         max_coaching_staff: formData.maxCoachingStaff ? parseInt(formData.maxCoachingStaff) : 10,
+        tournament_format: formData.tournamentFormat,
+        number_of_groups: formData.tournamentFormat === 'group_knockout' ? parseInt(formData.numberOfGroups) : null,
+        teams_advancing_per_group: parseInt(formData.teamsAdvancingPerGroup),
+        rounds_per_season: parseInt(formData.roundsPerSeason),
+        has_third_place_match: formData.hasThirdPlaceMatch,
         is_active: true
       })
 
-      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "", maxCoachingStaff: "10" })
+      setFormData({
+        name: "",
+        startDate: "",
+        endDate: "",
+        maxPlayers: "",
+        maxCoachingStaff: "10",
+        tournamentFormat: "league",
+        numberOfGroups: "4",
+        teamsAdvancingPerGroup: "2",
+        roundsPerSeason: "2",
+        hasThirdPlaceMatch: false,
+      })
       setIsCreateDialogOpen(false)
       toast.success(`Torneo "${formData.name}" creado exitosamente`)
       console.log('✅ Torneo creado exitosamente')
@@ -109,6 +138,11 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       endDate: tournament.end_date,
       maxPlayers: tournament.max_players ? tournament.max_players.toString() : "",
       maxCoachingStaff: tournament.max_coaching_staff ? tournament.max_coaching_staff.toString() : "10",
+      tournamentFormat: tournament.tournament_format || "league",
+      numberOfGroups: tournament.number_of_groups ? tournament.number_of_groups.toString() : "4",
+      teamsAdvancingPerGroup: tournament.teams_advancing_per_group ? tournament.teams_advancing_per_group.toString() : "2",
+      roundsPerSeason: tournament.rounds_per_season ? tournament.rounds_per_season.toString() : "2",
+      hasThirdPlaceMatch: tournament.has_third_place_match || false,
     })
   }
 
@@ -124,10 +158,26 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         end_date: formData.endDate,
         max_players: formData.maxPlayers ? parseInt(formData.maxPlayers) : null,
         max_coaching_staff: formData.maxCoachingStaff ? parseInt(formData.maxCoachingStaff) : 10,
+        tournament_format: formData.tournamentFormat,
+        number_of_groups: formData.tournamentFormat === 'group_knockout' ? parseInt(formData.numberOfGroups) : null,
+        teams_advancing_per_group: parseInt(formData.teamsAdvancingPerGroup),
+        rounds_per_season: parseInt(formData.roundsPerSeason),
+        has_third_place_match: formData.hasThirdPlaceMatch,
       })
 
       setEditingTournament(null)
-      setFormData({ name: "", startDate: "", endDate: "", maxPlayers: "", maxCoachingStaff: "10" })
+      setFormData({
+        name: "",
+        startDate: "",
+        endDate: "",
+        maxPlayers: "",
+        maxCoachingStaff: "10",
+        tournamentFormat: "league",
+        numberOfGroups: "4",
+        teamsAdvancingPerGroup: "2",
+        roundsPerSeason: "2",
+        hasThirdPlaceMatch: false,
+      })
       toast.success(`Torneo "${formData.name}" actualizado exitosamente`)
       console.log('✅ Torneo actualizado exitosamente')
     } catch (error: any) {
@@ -259,6 +309,109 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                   Límite de miembros del cuerpo técnico (por defecto 10)
                 </p>
               </div>
+
+              {/* Tournament Format */}
+              <div>
+                <Label htmlFor="tournamentFormat">Formato del Torneo</Label>
+                <Select
+                  value={formData.tournamentFormat}
+                  onValueChange={(value: 'league' | 'knockout' | 'group_knockout') =>
+                    setFormData({ ...formData, tournamentFormat: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el formato" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="league">Liga (Todos contra Todos)</SelectItem>
+                    <SelectItem value="knockout">Eliminación Directa</SelectItem>
+                    <SelectItem value="group_knockout">Fase de Grupos + Eliminación Directa</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.tournamentFormat === 'league' && 'Los equipos se enfrentan en formato round-robin'}
+                  {formData.tournamentFormat === 'knockout' && 'Eliminación simple, el perdedor queda eliminado'}
+                  {formData.tournamentFormat === 'group_knockout' && 'Estilo Mundial: fase de grupos seguida de eliminatorias'}
+                </p>
+              </div>
+
+              {/* League-specific options */}
+              {formData.tournamentFormat === 'league' && (
+                <div>
+                  <Label htmlFor="roundsPerSeason">Vueltas</Label>
+                  <Select
+                    value={formData.roundsPerSeason}
+                    onValueChange={(value) => setFormData({ ...formData, roundsPerSeason: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Una vuelta (todos vs todos)</SelectItem>
+                      <SelectItem value="2">Dos vueltas (ida y vuelta)</SelectItem>
+                      <SelectItem value="3">Tres vueltas</SelectItem>
+                      <SelectItem value="4">Cuatro vueltas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Group knockout specific options */}
+              {formData.tournamentFormat === 'group_knockout' && (
+                <>
+                  <div>
+                    <Label htmlFor="numberOfGroups">Número de Grupos</Label>
+                    <Select
+                      value={formData.numberOfGroups}
+                      onValueChange={(value) => setFormData({ ...formData, numberOfGroups: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2">2 grupos</SelectItem>
+                        <SelectItem value="4">4 grupos</SelectItem>
+                        <SelectItem value="6">6 grupos</SelectItem>
+                        <SelectItem value="8">8 grupos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="teamsAdvancingPerGroup">Equipos que avanzan por grupo</Label>
+                    <Select
+                      value={formData.teamsAdvancingPerGroup}
+                      onValueChange={(value) => setFormData({ ...formData, teamsAdvancingPerGroup: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 equipo (Campeón de grupo)</SelectItem>
+                        <SelectItem value="2">2 equipos (1° y 2° lugar)</SelectItem>
+                        <SelectItem value="3">3 equipos (1°, 2° y 3°)</SelectItem>
+                        <SelectItem value="4">4 equipos (Todos avanzan)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {/* Knockout options */}
+              {(formData.tournamentFormat === 'knockout' || formData.tournamentFormat === 'group_knockout') && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasThirdPlaceMatch"
+                    checked={formData.hasThirdPlaceMatch}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, hasThirdPlaceMatch: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="hasThirdPlaceMatch" className="cursor-pointer">
+                    Incluir partido por el tercer lugar
+                  </Label>
+                </div>
+              )}
+
               <Button
                 onClick={handleCreateTournament}
                 className="w-full bg-green-600 hover:bg-green-700"
@@ -333,6 +486,11 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                         Registros Cerrados
                       </>
                     )}
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    {tournament.tournament_format === 'league' && '🏆 Liga'}
+                    {tournament.tournament_format === 'knockout' && '⚡ Eliminación'}
+                    {tournament.tournament_format === 'group_knockout' && '🌍 Grupos + Eliminación'}
                   </Badge>
                 </div>
               </div>
@@ -433,6 +591,104 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 Límite de miembros del cuerpo técnico (por defecto 10)
               </p>
             </div>
+
+            {/* Tournament Format */}
+            <div>
+              <Label htmlFor="edit-tournamentFormat">Formato del Torneo</Label>
+              <Select
+                value={formData.tournamentFormat}
+                onValueChange={(value: 'league' | 'knockout' | 'group_knockout') =>
+                  setFormData({ ...formData, tournamentFormat: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona el formato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="league">Liga (Todos contra Todos)</SelectItem>
+                  <SelectItem value="knockout">Eliminación Directa</SelectItem>
+                  <SelectItem value="group_knockout">Fase de Grupos + Eliminación Directa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* League-specific options */}
+            {formData.tournamentFormat === 'league' && (
+              <div>
+                <Label htmlFor="edit-roundsPerSeason">Vueltas</Label>
+                <Select
+                  value={formData.roundsPerSeason}
+                  onValueChange={(value) => setFormData({ ...formData, roundsPerSeason: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Una vuelta (todos vs todos)</SelectItem>
+                    <SelectItem value="2">Dos vueltas (ida y vuelta)</SelectItem>
+                    <SelectItem value="3">Tres vueltas</SelectItem>
+                    <SelectItem value="4">Cuatro vueltas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Group knockout specific options */}
+            {formData.tournamentFormat === 'group_knockout' && (
+              <>
+                <div>
+                  <Label htmlFor="edit-numberOfGroups">Número de Grupos</Label>
+                  <Select
+                    value={formData.numberOfGroups}
+                    onValueChange={(value) => setFormData({ ...formData, numberOfGroups: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2">2 grupos</SelectItem>
+                      <SelectItem value="4">4 grupos</SelectItem>
+                      <SelectItem value="6">6 grupos</SelectItem>
+                      <SelectItem value="8">8 grupos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-teamsAdvancingPerGroup">Equipos que avanzan por grupo</Label>
+                  <Select
+                    value={formData.teamsAdvancingPerGroup}
+                    onValueChange={(value) => setFormData({ ...formData, teamsAdvancingPerGroup: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 equipo (Campeón de grupo)</SelectItem>
+                      <SelectItem value="2">2 equipos (1° y 2° lugar)</SelectItem>
+                      <SelectItem value="3">3 equipos (1°, 2° y 3°)</SelectItem>
+                      <SelectItem value="4">4 equipos (Todos avanzan)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {/* Knockout options */}
+            {(formData.tournamentFormat === 'knockout' || formData.tournamentFormat === 'group_knockout') && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-hasThirdPlaceMatch"
+                  checked={formData.hasThirdPlaceMatch}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, hasThirdPlaceMatch: checked as boolean })
+                  }
+                />
+                <Label htmlFor="edit-hasThirdPlaceMatch" className="cursor-pointer">
+                  Incluir partido por el tercer lugar
+                </Label>
+              </div>
+            )}
+
             <Button
               onClick={handleUpdateTournament}
               className="w-full bg-green-600 hover:bg-green-700"

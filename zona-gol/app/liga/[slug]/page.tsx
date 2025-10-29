@@ -1,4 +1,4 @@
-import { PublicLeagueView } from "@/components/public/public-league-view"
+import { LeagueTournamentsView } from "@/components/public/league-tournaments-view"
 import { serverLeagueActions } from "@/lib/actions/league-actions"
 import { notFound } from "next/navigation"
 
@@ -12,7 +12,7 @@ export default async function PublicLeaguePage({ params }: PublicLeaguePageProps
   try {
     const { slug } = await params
     const league = await serverLeagueActions.getLeagueBySlug(slug)
-    return <PublicLeagueView league={league} />
+    return <LeagueTournamentsView league={league} />
   } catch (error) {
     console.error('Error loading league:', error)
     notFound()
