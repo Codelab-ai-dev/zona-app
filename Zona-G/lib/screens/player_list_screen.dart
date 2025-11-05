@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/api_service.dart';
+import '../config/app_theme.dart';
 import 'player_detail_screen.dart';
 import '../models/qr_data.dart';
 
@@ -138,161 +139,274 @@ class _PlayerListScreenState extends State<PlayerListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Lista de Jugadores'),
-            if (currentMatchId != null)
-              Text(
-                '🏆 Partido activo',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green[200],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient(opacity: 0.9),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.15),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Icon(
+                        Icons.people_alt_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Jugadores registrados',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            currentMatchId != null
+                                ? 'Partido activo listo para asistencia'
+                                : 'Gestiona tu plantilla y perfiles',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar jugador, posición o dorsal...',
+                    prefixIcon: Icon(Icons.search_rounded),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : filteredPlayers.isEmpty
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.search_off_rounded,
+                                  size: 72,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  searchQuery.isNotEmpty
+                                      ? 'No se encontraron jugadores'
+                                      : 'No hay jugadores registrados',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  searchQuery.isNotEmpty
+                                      ? 'Prueba con otro nombre, dorsal o posición.'
+                                      : 'Agrega nuevos jugadores desde el panel de administración.',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                if (searchQuery.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        searchQuery = '';
+                                      });
+                                    },
+                                    child: const Text('Limpiar búsqueda'),
+                                  ),
+                                ],
+                              ],
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadPlayers,
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                                itemCount: filteredPlayers.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final player = filteredPlayers[index];
+                                  return _PlayerTile(
+                                    player: player,
+                                    onTap: () => _navigateToPlayerDetail(player),
+                                    getPhotoImageProvider: _getPhotoImageProvider,
+                                    calculateAge: _calculateAge,
+                                  );
+                                },
+                              ),
+                            ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayerTile extends StatelessWidget {
+  final Player player;
+  final VoidCallback onTap;
+  final ImageProvider? Function(String?) getPhotoImageProvider;
+  final int Function(String?) calculateAge;
+
+  const _PlayerTile({
+    required this.player,
+    required this.onTap,
+    required this.getPhotoImageProvider,
+    required this.calculateAge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final photo = getPhotoImageProvider(player.photo);
+    final int? age = player.birthDate != null ? calculateAge(player.birthDate) : null;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 12),
+            ),
           ],
         ),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Buscar jugador...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.12),
+              backgroundImage: photo,
+              child: photo == null
+                  ? Text(
+                      player.name.isNotEmpty ? player.name[0].toUpperCase() : '?',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : null,
             ),
-          ),
-          
-          // Players list
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredPlayers.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.people_outline,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              searchQuery.isNotEmpty 
-                                  ? 'No se encontraron jugadores'
-                                  : 'No hay jugadores registrados',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            if (searchQuery.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    searchQuery = '';
-                                  });
-                                },
-                                child: const Text('Limpiar búsqueda'),
-                              ),
-                            ],
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadPlayers,
-                        child: ListView.builder(
-                          itemCount: filteredPlayers.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemBuilder: (context, index) {
-                            final player = filteredPlayers[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: _getPhotoImageProvider(player.photo),
-                                  child: _getPhotoImageProvider(player.photo) == null 
-                                      ? Text(
-                                          player.name.isNotEmpty 
-                                              ? player.name[0].toUpperCase() 
-                                              : '?',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ) 
-                                      : null,
-                                ),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        player.name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '#${player.jerseyNumber}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(player.position),
-                                    if (player.birthDate != null)
-                                      Text(
-                                        '${_calculateAge(player.birthDate)} años',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                trailing: Icon(
-                                  player.isActive 
-                                      ? Icons.check_circle
-                                      : Icons.cancel,
-                                  color: player.isActive 
-                                      ? Colors.green 
-                                      : Colors.red,
-                                ),
-                                onTap: () => _navigateToPlayerDetail(player),
-                              ),
-                            );
-                          },
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          player.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-          ),
-        ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '#${player.jerseyNumber}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.secondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    player.position,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  if (age != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '$age años',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Icon(
+              player.isActive ? Icons.check_circle_rounded : Icons.block_rounded,
+              color: player.isActive ? theme.colorScheme.primary : Colors.redAccent,
+            ),
+          ],
+        ),
       ),
     );
   }

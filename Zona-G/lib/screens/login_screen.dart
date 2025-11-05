@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../config/app_theme.dart';
 import 'tournaments_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -91,95 +92,144 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(
-                0xFF0D4D0D,
-              ).withOpacity(0.95), // Verde oscuro con transparencia
-              const Color(
-                0xFF1B5E20,
-              ).withOpacity(0.90), // Verde medio con transparencia
-              const Color(
-                0xFF2E7D32,
-              ).withOpacity(0.85), // Verde claro con transparencia
-            ],
-          ),
-          image: DecorationImage(
-            image: const AssetImage('assets/images/fondo.png'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.3), // Overlay oscuro para legibilidad
-              BlendMode.darken,
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient(opacity: 0.95),
             ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: Image.asset(
-                        'assets/images/zona-gol-final.webp',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          // Fallback al icono si no se encuentra la imagen
-                          return const Icon(
-                            Icons.sports_soccer,
-                            size: 80,
-                            color: Colors.white,
-                          );
-                        },
+          Positioned(
+            top: -120,
+            right: -60,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -150,
+            left: -40,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/zona-gol-final.webp',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.white.withOpacity(0.1),
+                                    child: const Icon(
+                                      Icons.sports_soccer,
+                                      size: 48,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Zona Gol',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Control total de tu liga en la palma de la mano',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: Colors.white70,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                    ),
 
-                    const SizedBox(height: 48),
+                      const SizedBox(height: 32),
 
-                    // Login Form
-                    Card(
-                      elevation: 12,
-                      color: Colors.white.withOpacity(0.95),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          gradient: AppTheme.surfaceGradient(opacity: 0.98),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 30,
+                              offset: const Offset(0, 24),
+                            ),
+                          ],
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
+                            Text(
                               'Iniciar Sesión',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
                               ),
-                              textAlign: TextAlign.center,
                             ),
-
+                            const SizedBox(height: 8),
+                            Text(
+                              'Solo administradores de liga',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
                             const SizedBox(height: 24),
 
-                            // Email Field
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               decoration: const InputDecoration(
                                 labelText: 'Correo Electrónico',
-                                prefixIcon: Icon(Icons.email),
-                                border: OutlineInputBorder(),
+                                hintText: 'admin@ligazonagol.com',
+                                prefixIcon: Icon(Icons.alternate_email_rounded),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -194,7 +244,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             const SizedBox(height: 16),
 
-                            // Password Field
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
@@ -202,12 +251,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               onFieldSubmitted: (_) => _login(),
                               decoration: InputDecoration(
                                 labelText: 'Contraseña',
-                                prefixIcon: const Icon(Icons.lock),
+                                prefixIcon: const Icon(Icons.lock_rounded),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -215,7 +264,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     });
                                   },
                                 ),
-                                border: const OutlineInputBorder(),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -228,25 +276,17 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
 
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 28),
 
-                            // Login Button
-                            SizedBox(
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
+                            FilledButton(
+                              onPressed: _isLoading ? null : _login,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
                                 child: _isLoading
-                                    ? const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
+                                    ? Row(
+                                        key: const ValueKey('loading'),
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
                                           SizedBox(
                                             width: 20,
                                             height: 20,
@@ -256,57 +296,46 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           ),
                                           SizedBox(width: 12),
-                                          Text('Iniciando sesión...'),
+                                          Text('Ingresando...'),
                                         ],
                                       )
                                     : const Text(
-                                        'Iniciar Sesión',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        key: ValueKey('label'),
+                                        'Ingresar',
                                       ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
-                    // Footer
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Solo administradores de liga',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              offset: Offset(1, 1),
-                              blurRadius: 2,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.verified_user,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Zona segura para administradores',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

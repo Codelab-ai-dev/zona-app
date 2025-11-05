@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import '../config/app_theme.dart';
 import '../models/match.dart';
 import '../models/qr_data.dart';
 import '../services/match_service.dart';
@@ -430,279 +431,291 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canFinalize =
+        widget.match.status == MatchStatus.in_progress || widget.match.status == MatchStatus.scheduled;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalles del Partido'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient(opacity: 0.95),
+          ),
+        ),
         actions: [
-          if (widget.match.status == MatchStatus.in_progress || widget.match.status == MatchStatus.scheduled)
+          if (canFinalize)
             IconButton(
               onPressed: _showFinalizeMatchDialog,
-              icon: const Icon(Icons.sports_score),
+              icon: const Icon(Icons.sports_score_rounded),
               tooltip: 'Finalizar Partido',
             ),
           IconButton(
             onPressed: _loadMatchData,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMatchHeader(),
-                  const SizedBox(height: 24),
-                  _buildQRScanButton(),
-                  const SizedBox(height: 24),
-                  _buildTeamsSection(),
-                ],
-              ),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient(opacity: 0.9),
+        ),
+        child: SafeArea(
+          top: false,
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildMatchHeader(),
+                      const SizedBox(height: 24),
+                      _buildAttendanceStats(),
+                      if (widget.match.canRegisterAttendance) ...[
+                        const SizedBox(height: 24),
+                        _buildQRScanButton(),
+                      ],
+                      const SizedBox(height: 28),
+                      _buildTeamsSection(),
+                    ],
+                  ),
+                ),
+        ),
+      ),
     );
   }
 
   Widget _buildMatchHeader() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Tournament
-            Text(
-              widget.match.tournamentName ?? 'Torneo',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.blue,
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.95),
+            Colors.white.withOpacity(0.88),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 20),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.match.tournamentName ?? 'Torneo',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (widget.match.isPlayoff) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.emoji_events,
+                              size: 18,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.match.playoffRoundText,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.secondary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-
-            // Playoff Round Indicator
-            if (widget.match.isPlayoff) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.emoji_events,
-                    size: 20,
-                    color: Colors.amber,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(widget.match.status).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  widget.match.statusText,
+                  style: TextStyle(
+                    color: _getStatusColor(widget.match.status),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
-                  const SizedBox(width: 8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildTeamLogo(widget.match.homeTeamLogo, 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.match.homeTeamName ?? 'Equipo Local',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
                   Text(
-                    widget.match.playoffRoundText,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber,
+                    widget.match.scoreText,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      DateFormat('EEE d MMM · HH:mm', 'es').format(widget.match.matchDate).toUpperCase(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        letterSpacing: 0.6,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
               ),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildTeamLogo(widget.match.awayTeamLogo, 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.match.awayTeamName ?? 'Equipo Visitante',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ],
-
-            const SizedBox(height: 16),
-            
-            // Teams
-            Row(
-              children: [
-                // Home Team
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildTeamLogo(widget.match.homeTeamLogo, 40),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.match.homeTeamName ?? 'Equipo Local',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Score/VS
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.match.scoreText,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(widget.match.status),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          widget.match.statusText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Away Team
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildTeamLogo(widget.match.awayTeamLogo, 40),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.match.awayTeamName ?? 'Equipo Visitante',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Match Details
-            _buildInfoRow('Fecha', DateFormat('EEEE, dd MMMM yyyy', 'es').format(widget.match.matchDate)),
+          ),
+          const SizedBox(height: 24),
+          _buildInfoRow('Fecha', DateFormat('EEEE, dd MMMM yyyy', 'es').format(widget.match.matchDate)),
+          const SizedBox(height: 8),
+          _buildInfoRow('Hora', DateFormat('HH:mm', 'es').format(widget.match.matchDate)),
+          if (widget.match.venue != null) ...[
             const SizedBox(height: 8),
-            _buildInfoRow('Hora', DateFormat('HH:mm').format(widget.match.matchDate)),
-            if (widget.match.venue != null) ...[
-              const SizedBox(height: 8),
-              _buildInfoRow('Lugar', widget.match.venue!),
-            ],
+            _buildInfoRow('Lugar', widget.match.venue!),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildAttendanceStats() {
+    final theme = Theme.of(context);
     final attendedCount = attendanceCount['attended'] ?? 0;
     final totalCount = attendanceCount['total'] ?? 0;
     final percentage = totalCount > 0 ? (attendedCount / totalCount * 100) : 0.0;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Asistencia',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Control de asistencia',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildAttendanceChip(
+                label: 'Registrados',
+                value: '$attendedCount',
+                color: theme.colorScheme.primary,
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '$attendedCount',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                      const Text(
-                        'Registrados',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '$totalCount',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const Text(
-                        'Total Jugadores',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${percentage.toStringAsFixed(1)}%',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
-                      ),
-                      const Text(
-                        'Asistencia',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              _buildAttendanceChip(
+                label: 'Total jugadores',
+                value: '$totalCount',
+                color: theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 12),
+              _buildAttendanceChip(
+                label: 'Asistencia',
+                value: '${percentage.toStringAsFixed(1)}%',
+                color: theme.colorScheme.tertiary,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildQRScanButton() {
-    if (!widget.match.canRegisterAttendance) {
-      return Container();
-    }
-
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
+      child: FilledButton.icon(
         onPressed: () async {
           final result = await Navigator.push(
             context,
@@ -713,21 +726,50 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
               ),
             ),
           );
-          
-          // Refresh data if QR scan was successful
+
           if (result == true) {
             _loadMatchData();
           }
         },
-        icon: const Icon(Icons.qr_code_scanner),
-        label: const Text(
-          'Escanear QR de Jugador',
-          style: TextStyle(fontSize: 16),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
+        icon: const Icon(Icons.qr_code_scanner_rounded),
+        label: const Text('Registrar asistencia con QR'),
+        style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceChip({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: color.withOpacity(0.8),
+                  ),
+            ),
+          ],
         ),
       ),
     );
