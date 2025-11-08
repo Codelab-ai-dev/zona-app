@@ -112,20 +112,20 @@ export function ProfileSettings() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <Lock className="w-5 h-5 text-yellow-300" />
             Cambiar Contraseña
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white/80 drop-shadow">
             Actualiza tu contraseña para mantener tu cuenta segura
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {message && (
-            <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-              <AlertDescription className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+            <Alert className={`backdrop-blur-xl shadow-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'}`}>
+              <AlertDescription className="text-white drop-shadow">
                 {message.text}
               </AlertDescription>
             </Alert>
@@ -133,7 +133,7 @@ export function ProfileSettings() {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="current-password">Contraseña Actual</Label>
+              <Label htmlFor="current-password" className="text-white/90 drop-shadow">Contraseña Actual</Label>
               <div className="relative">
                 <Input
                   id="current-password"
@@ -141,13 +141,12 @@ export function ProfileSettings() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="Ingresa tu contraseña actual"
-                  className="pr-10"
+                  className="pr-10 backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-white/10 text-white"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
                   {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -156,7 +155,7 @@ export function ProfileSettings() {
             </div>
 
             <div>
-              <Label htmlFor="new-password">Nueva Contraseña</Label>
+              <Label htmlFor="new-password" className="text-white/90 drop-shadow">Nueva Contraseña</Label>
               <div className="relative">
                 <Input
                   id="new-password"
@@ -164,13 +163,12 @@ export function ProfileSettings() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Ingresa tu nueva contraseña"
-                  className="pr-10"
+                  className="pr-10 backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-white/10 text-white"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                 >
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -180,15 +178,15 @@ export function ProfileSettings() {
               {/* Password requirements */}
               {newPassword && (
                 <div className="mt-2 space-y-1">
-                  <p className="text-sm font-medium text-gray-700">Requisitos de contraseña:</p>
+                  <p className="text-sm font-medium text-white/90 drop-shadow">Requisitos de contraseña:</p>
                   {passwordStrength.map((req, index) => (
                     <div key={index} className="flex items-center text-sm">
                       {req.passed ? (
-                        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                        <CheckCircle className="w-4 h-4 text-green-300 mr-2" />
                       ) : (
-                        <X className="w-4 h-4 text-red-500 mr-2" />
+                        <X className="w-4 h-4 text-red-300 mr-2" />
                       )}
-                      <span className={req.passed ? 'text-green-700' : 'text-red-700'}>
+                      <span className={req.passed ? 'text-green-300 drop-shadow' : 'text-red-300 drop-shadow'}>
                         {req.label}
                       </span>
                     </div>
@@ -198,7 +196,7 @@ export function ProfileSettings() {
             </div>
 
             <div>
-              <Label htmlFor="confirm-password">Confirmar Nueva Contraseña</Label>
+              <Label htmlFor="confirm-password" className="text-white/90 drop-shadow">Confirmar Nueva Contraseña</Label>
               <div className="relative">
                 <Input
                   id="confirm-password"
@@ -206,27 +204,26 @@ export function ProfileSettings() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirma tu nueva contraseña"
-                  className="pr-10"
+                  className="pr-10 backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-white/10 text-white"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
               {confirmPassword && newPassword !== confirmPassword && (
-                <p className="text-sm text-red-600 mt-1">Las contraseñas no coinciden</p>
+                <p className="text-sm text-red-300 mt-1 drop-shadow">Las contraseñas no coinciden</p>
               )}
             </div>
 
             <Button 
               onClick={handleChangePassword}
               disabled={isChanging || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword || !isPasswordValid(newPassword)}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
             >
               {isChanging ? (
                 <>
@@ -244,26 +241,26 @@ export function ProfileSettings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <CardTitle>Consejos de Seguridad</CardTitle>
+          <CardTitle className="text-white drop-shadow-lg">Consejos de Seguridad</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-gray-600">
+          <ul className="space-y-2 text-sm text-white/80 drop-shadow">
             <li className="flex items-center">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+              <CheckCircle className="w-4 h-4 text-green-300 mr-2" />
               Usa una contraseña única que no uses en otros sitios
             </li>
             <li className="flex items-center">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+              <CheckCircle className="w-4 h-4 text-green-300 mr-2" />
               Cambia tu contraseña periódicamente
             </li>
             <li className="flex items-center">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+              <CheckCircle className="w-4 h-4 text-green-300 mr-2" />
               No compartas tu contraseña con nadie
             </li>
             <li className="flex items-center">
-              <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+              <CheckCircle className="w-4 h-4 text-green-300 mr-2" />
               Usa un administrador de contraseñas si es posible
             </li>
           </ul>

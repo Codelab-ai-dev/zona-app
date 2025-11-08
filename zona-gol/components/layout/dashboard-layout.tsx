@@ -62,18 +62,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card shadow-sm border-b border-border sticky top-0 z-50">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-black via-black-200 to-black">
+      {/* Contenido */}
+      <div className="relative z-10">
+        <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-50 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Left side - Logo + User Info */}
-            <div className="flex items-center gap-4">
+            <div className="flex px-2 items-center gap-4">
               <img
-                src="/zona-gol-final.webp"
+                src="/zona-gol.png"
                 alt="Zona-Gol Logo"
-                width={60}
-                height={60}
-                className="rounded"
+                width={100}
+                height={100}
+                className="rounded drop-shadow-xl"
               />
 
               {/* User info - Desktop */}
@@ -81,10 +83,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {profile && (
                   <>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium text-white drop-shadow-lg">
                         Hola, {profile.name}
                       </span>
-                      <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs w-fit">
+                      <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs w-fit backdrop-blur-md bg-green-500/80 text-white border-0">
                         {getRoleLabel(profile.role)}
                       </Badge>
                     </div>
@@ -96,7 +98,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Right side - Actions */}
             <div className="flex items-center space-x-3">
               {/* Theme Toggle - always visible */}
-              <ThemeToggle />
+              <div className="backdrop-blur-md bg-white/10 rounded-lg p-1 border border-white/20">
+                <ThemeToggle />
+              </div>
 
               {/* Desktop - App Mobile + Logout Button together */}
               <div className="hidden md:flex items-center gap-2">
@@ -104,7 +108,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {profile?.role === 'league_admin' && (
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="flex items-center gap-2 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                         <Smartphone className="h-4 w-4" />
                         App Móvil
                       </Button>
@@ -124,7 +128,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </Dialog>
                 )}
 
-                <Button variant="outline" onClick={handleSignOut} size="sm">
+                <Button variant="outline" onClick={handleSignOut} size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                   Cerrar Sesión
                 </Button>
               </div>
@@ -133,7 +137,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="md:hidden">
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="hover:bg-accent">
+                    <Button variant="ghost" size="icon" className="backdrop-blur-md bg-white/10 hover:bg-white/20 text-white border border-white/20">
                       <Menu className="h-6 w-6" />
                       <span className="sr-only">Abrir menú</span>
                     </Button>
@@ -249,8 +253,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+        </header>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-6">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

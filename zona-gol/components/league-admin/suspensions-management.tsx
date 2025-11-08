@@ -190,7 +190,7 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
           reason: reason,
           matches_to_serve: matchesToServe,
           status: 'active',
-        })
+        } as any)
 
       if (error) {
         console.error('Error creating suspension:', error)
@@ -220,8 +220,8 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
     if (!confirm('¿Estás seguro de cancelar esta suspensión?')) return
 
     try {
-      const { error } = await supabase
-        .from('player_suspensions')
+      const { error } = await (supabase
+        .from('player_suspensions') as any)
         .update({ status: 'cancelled', updated_at: new Date().toISOString() })
         .eq('id', suspensionId)
 
@@ -257,11 +257,11 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
       }
 
       // Update the suspension to completed
-      const { error } = await supabase
-        .from('player_suspensions')
+      const { error } = await (supabase
+        .from('player_suspensions') as any)
         .update({
           status: 'completed',
-          matches_served: suspension.matches_to_serve, // Set served to total to complete
+          matches_served: (suspension as any).matches_to_serve, // Set served to total to complete
           updated_at: new Date().toISOString()
         })
         .eq('id', suspensionId)
@@ -296,8 +296,8 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
     setEditing(true)
     try {
-      const { error } = await supabase
-        .from('player_suspensions')
+      const { error } = await (supabase
+        .from('player_suspensions') as any)
         .update({
           matches_to_serve: editMatchesToServe,
           updated_at: new Date().toISOString()
@@ -334,29 +334,29 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
   const getStatusBadge = (status: string) => {
     if (status === 'active') {
-      return <Badge variant="destructive">Activa</Badge>
+      return <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">Activa</Badge>
     }
     if (status === 'completed') {
-      return <Badge variant="secondary">Completada</Badge>
+      return <Badge className="backdrop-blur-md bg-gray-500/80 text-white border-0">Completada</Badge>
     }
-    return <Badge variant="outline">Cancelada</Badge>
+    return <Badge className="backdrop-blur-md bg-white/10 text-white border-white/30">Cancelada</Badge>
   }
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Ban className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                <Ban className="w-5 h-5 text-red-300" />
                 Gestión de Suspensiones
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-white/80 drop-shadow">
                 Administra las suspensiones de jugadores por tarjetas o decisiones disciplinarias
               </CardDescription>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button onClick={() => setCreateDialogOpen(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               Nueva Suspensión
             </Button>
@@ -365,61 +365,61 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin mr-3" />
-              <span>Cargando suspensiones...</span>
+              <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
+              <span className="text-white drop-shadow">Cargando suspensiones...</span>
             </div>
           ) : suspensions.length === 0 ? (
             <div className="text-center py-12">
-              <Ban className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Ban className="w-12 h-12 mx-auto text-white/50 mb-4" />
+              <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
                 No hay suspensiones registradas
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-white/80 drop-shadow mb-4">
                 No se han registrado suspensiones en esta liga.
               </p>
-              <Button onClick={() => setCreateDialogOpen(true)}>
+              <Button onClick={() => setCreateDialogOpen(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
                 <Plus className="w-4 h-4 mr-2" />
                 Crear Primera Suspensión
               </Button>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border border-white/20">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Jugador</TableHead>
-                    <TableHead>Equipo</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead className="text-center">Partidos</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                  <TableRow className="border-white/20 hover:bg-white/5">
+                    <TableHead className="text-white/90">Jugador</TableHead>
+                    <TableHead className="text-white/90">Equipo</TableHead>
+                    <TableHead className="text-white/90">Tipo</TableHead>
+                    <TableHead className="text-white/90">Motivo</TableHead>
+                    <TableHead className="text-center text-white/90">Partidos</TableHead>
+                    <TableHead className="text-white/90">Estado</TableHead>
+                    <TableHead className="text-right text-white/90">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {suspensions.map((suspension) => (
-                    <TableRow key={suspension.id}>
+                    <TableRow key={suspension.id} className="border-white/20 hover:bg-white/5">
                       <TableCell className="font-medium">
-                        <div>
-                          {suspension.player_name}
-                          <Badge variant="outline" className="ml-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white drop-shadow">{suspension.player_name}</span>
+                          <Badge className="backdrop-blur-md bg-white/10 text-white border-white/30">
                             #{suspension.jersey_number}
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-white/80 drop-shadow">
                         {suspension.team_name}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">
                           {getSuspensionTypeLabel(suspension.suspension_type)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="max-w-xs truncate text-white/80 drop-shadow">
                         {suspension.reason}
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="font-medium">
+                        <span className="font-medium text-white drop-shadow">
                           {suspension.matches_served} / {suspension.matches_to_serve}
                         </span>
                       </TableCell>
@@ -431,24 +431,24 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                           <div className="flex gap-2 justify-end">
                             <Button
                               size="sm"
-                              variant="outline"
                               onClick={() => handleOpenEditDialog(suspension)}
+                              className="backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0"
                             >
                               <Pencil className="w-4 h-4 mr-1" />
                               Editar
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
                               onClick={() => handleCompleteSuspension(suspension.id)}
+                              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
                               Completar
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
                               onClick={() => handleCancelSuspension(suspension.id)}
+                              className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0"
                             >
                               <XCircle className="w-4 h-4 mr-1" />
                               Cancelar
@@ -467,24 +467,24 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Create Suspension Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Nueva Suspensión</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Nueva Suspensión</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
               Crea una suspensión para un jugador por decisión disciplinaria
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="player">Jugador *</Label>
+              <Label htmlFor="player" className="text-white/90 drop-shadow">Jugador *</Label>
               <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                   <SelectValue placeholder="Selecciona un jugador" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
                   {players.map((player) => (
-                    <SelectItem key={player.id} value={player.id}>
+                    <SelectItem key={player.id} value={player.id} className="text-white hover:bg-white/10">
                       {player.name} (#{player.jersey_number}) - {player.team_name}
                     </SelectItem>
                   ))}
@@ -493,33 +493,34 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Suspensión *</Label>
+              <Label htmlFor="type" className="text-white/90 drop-shadow">Tipo de Suspensión *</Label>
               <Select value={suspensionType} onValueChange={setSuspensionType}>
-                <SelectTrigger>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="disciplinary_committee">Comité Disciplinario</SelectItem>
-                  <SelectItem value="yellow_accumulation">Acumulación de Amarillas</SelectItem>
-                  <SelectItem value="red_card">Tarjeta Roja</SelectItem>
-                  <SelectItem value="other">Otro</SelectItem>
+                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                  <SelectItem value="disciplinary_committee" className="text-white hover:bg-white/10">Comité Disciplinario</SelectItem>
+                  <SelectItem value="yellow_accumulation" className="text-white hover:bg-white/10">Acumulación de Amarillas</SelectItem>
+                  <SelectItem value="red_card" className="text-white hover:bg-white/10">Tarjeta Roja</SelectItem>
+                  <SelectItem value="other" className="text-white hover:bg-white/10">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">Motivo *</Label>
+              <Label htmlFor="reason" className="text-white/90 drop-shadow">Motivo *</Label>
               <Textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Describe el motivo de la suspensión..."
                 rows={3}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="matches">Número de Partidos a Cumplir *</Label>
+              <Label htmlFor="matches" className="text-white/90 drop-shadow">Número de Partidos a Cumplir *</Label>
               <Input
                 id="matches"
                 type="number"
@@ -527,13 +528,14 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                 max={20}
                 value={matchesToServe}
                 onChange={(e) => setMatchesToServe(parseInt(e.target.value) || 1)}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
               />
             </div>
 
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-4 backdrop-blur-xl bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
               <div className="flex gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                <div className="text-sm text-yellow-800">
+                <AlertTriangle className="w-5 h-5 text-yellow-300 flex-shrink-0" />
+                <div className="text-sm text-white drop-shadow">
                   <p className="font-medium">Nota importante:</p>
                   <p className="mt-1">
                     El jugador no podrá registrar asistencia en los próximos {matchesToServe} partido(s) de su equipo.
@@ -545,10 +547,10 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button onClick={() => setCreateDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               Cancelar
             </Button>
-            <Button onClick={handleCreateSuspension} disabled={creating}>
+            <Button onClick={handleCreateSuspension} disabled={creating} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
               {creating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

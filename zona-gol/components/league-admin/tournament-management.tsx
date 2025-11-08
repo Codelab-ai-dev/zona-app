@@ -75,8 +75,8 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
   if (!leagueId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-foreground mb-4">Liga No Encontrada</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
+        <p className="text-white/80 drop-shadow">
           No se pudo cargar la información de la liga.
         </p>
       </div>
@@ -237,51 +237,54 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Gestión de Torneos</h2>
-          <p className="text-muted-foreground">Administra los torneos de tu liga</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Torneos</h2>
+          <p className="text-white/80 drop-shadow">Administra los torneos de tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-soccer-green hover:bg-soccer-green-dark">
+            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Torneo
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Torneo</DialogTitle>
-              <DialogDescription>Completa la información para crear un nuevo torneo</DialogDescription>
+              <DialogTitle className="text-white drop-shadow-lg">Crear Nuevo Torneo</DialogTitle>
+              <DialogDescription className="text-white/80 drop-shadow">Completa la información para crear un nuevo torneo</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Nombre del Torneo</Label>
+                <Label htmlFor="name" className="text-white/90 drop-shadow mb-2 block">Nombre del Torneo</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Temporada 2024 - Apertura"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
               </div>
               <div>
-                <Label htmlFor="startDate">Fecha de Inicio</Label>
+                <Label htmlFor="startDate" className="text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
                 <Input
                   id="startDate"
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
                 />
               </div>
               <div>
-                <Label htmlFor="endDate">Fecha de Fin</Label>
+                <Label htmlFor="endDate" className="text-white/90 drop-shadow mb-2 block">Fecha de Fin</Label>
                 <Input
                   id="endDate"
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
                 />
               </div>
               <div>
-                <Label htmlFor="maxPlayers">Límite de Jugadores por Equipo (opcional)</Label>
+                <Label htmlFor="maxPlayers" className="text-white/90 drop-shadow mb-2 block">Límite de Jugadores por Equipo (opcional)</Label>
                 <Input
                   id="maxPlayers"
                   type="number"
@@ -289,13 +292,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                   value={formData.maxPlayers}
                   onChange={(e) => setFormData({ ...formData, maxPlayers: e.target.value })}
                   placeholder="Sin límite"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-white/60 drop-shadow mt-1">
                   Deja vacío para no establecer límite de jugadores
                 </p>
               </div>
               <div>
-                <Label htmlFor="maxCoachingStaff">Límite de Cuerpo Técnico por Equipo</Label>
+                <Label htmlFor="maxCoachingStaff" className="text-white/90 drop-shadow mb-2 block">Límite de Cuerpo Técnico por Equipo</Label>
                 <Input
                   id="maxCoachingStaff"
                   type="number"
@@ -304,31 +308,32 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                   value={formData.maxCoachingStaff}
                   onChange={(e) => setFormData({ ...formData, maxCoachingStaff: e.target.value })}
                   placeholder="10"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-white/60 drop-shadow mt-1">
                   Límite de miembros del cuerpo técnico (por defecto 10)
                 </p>
               </div>
 
               {/* Tournament Format */}
               <div>
-                <Label htmlFor="tournamentFormat">Formato del Torneo</Label>
+                <Label htmlFor="tournamentFormat" className="text-white/90 drop-shadow mb-2 block">Formato del Torneo</Label>
                 <Select
                   value={formData.tournamentFormat}
                   onValueChange={(value: 'league' | 'knockout' | 'group_knockout') =>
                     setFormData({ ...formData, tournamentFormat: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                     <SelectValue placeholder="Selecciona el formato" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="league">Liga (Todos contra Todos)</SelectItem>
-                    <SelectItem value="knockout">Eliminación Directa</SelectItem>
-                    <SelectItem value="group_knockout">Fase de Grupos + Eliminación Directa</SelectItem>
+                  <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                    <SelectItem value="league" className="text-white hover:bg-white/10">Liga (Todos contra Todos)</SelectItem>
+                    <SelectItem value="knockout" className="text-white hover:bg-white/10">Eliminación Directa</SelectItem>
+                    <SelectItem value="group_knockout" className="text-white hover:bg-white/10">Fase de Grupos + Eliminación Directa</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-white/60 drop-shadow mt-1">
                   {formData.tournamentFormat === 'league' && 'Los equipos se enfrentan en formato round-robin'}
                   {formData.tournamentFormat === 'knockout' && 'Eliminación simple, el perdedor queda eliminado'}
                   {formData.tournamentFormat === 'group_knockout' && 'Estilo Mundial: fase de grupos seguida de eliminatorias'}
@@ -338,19 +343,19 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
               {/* League-specific options */}
               {formData.tournamentFormat === 'league' && (
                 <div>
-                  <Label htmlFor="roundsPerSeason">Vueltas</Label>
+                  <Label htmlFor="roundsPerSeason" className="text-white/90 drop-shadow mb-2 block">Vueltas</Label>
                   <Select
                     value={formData.roundsPerSeason}
                     onValueChange={(value) => setFormData({ ...formData, roundsPerSeason: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Una vuelta (todos vs todos)</SelectItem>
-                      <SelectItem value="2">Dos vueltas (ida y vuelta)</SelectItem>
-                      <SelectItem value="3">Tres vueltas</SelectItem>
-                      <SelectItem value="4">Cuatro vueltas</SelectItem>
+                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                      <SelectItem value="1" className="text-white hover:bg-white/10">Una vuelta (todos vs todos)</SelectItem>
+                      <SelectItem value="2" className="text-white hover:bg-white/10">Dos vueltas (ida y vuelta)</SelectItem>
+                      <SelectItem value="3" className="text-white hover:bg-white/10">Tres vueltas</SelectItem>
+                      <SelectItem value="4" className="text-white hover:bg-white/10">Cuatro vueltas</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -360,36 +365,36 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
               {formData.tournamentFormat === 'group_knockout' && (
                 <>
                   <div>
-                    <Label htmlFor="numberOfGroups">Número de Grupos</Label>
+                    <Label htmlFor="numberOfGroups" className="text-white/90 drop-shadow mb-2 block">Número de Grupos</Label>
                     <Select
                       value={formData.numberOfGroups}
                       onValueChange={(value) => setFormData({ ...formData, numberOfGroups: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">2 grupos</SelectItem>
-                        <SelectItem value="4">4 grupos</SelectItem>
-                        <SelectItem value="6">6 grupos</SelectItem>
-                        <SelectItem value="8">8 grupos</SelectItem>
+                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                        <SelectItem value="2" className="text-white hover:bg-white/10">2 grupos</SelectItem>
+                        <SelectItem value="4" className="text-white hover:bg-white/10">4 grupos</SelectItem>
+                        <SelectItem value="6" className="text-white hover:bg-white/10">6 grupos</SelectItem>
+                        <SelectItem value="8" className="text-white hover:bg-white/10">8 grupos</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="teamsAdvancingPerGroup">Equipos que avanzan por grupo</Label>
+                    <Label htmlFor="teamsAdvancingPerGroup" className="text-white/90 drop-shadow mb-2 block">Equipos que avanzan por grupo</Label>
                     <Select
                       value={formData.teamsAdvancingPerGroup}
                       onValueChange={(value) => setFormData({ ...formData, teamsAdvancingPerGroup: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 equipo (Campeón de grupo)</SelectItem>
-                        <SelectItem value="2">2 equipos (1° y 2° lugar)</SelectItem>
-                        <SelectItem value="3">3 equipos (1°, 2° y 3°)</SelectItem>
-                        <SelectItem value="4">4 equipos (Todos avanzan)</SelectItem>
+                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                        <SelectItem value="1" className="text-white hover:bg-white/10">1 equipo (Campeón de grupo)</SelectItem>
+                        <SelectItem value="2" className="text-white hover:bg-white/10">2 equipos (1° y 2° lugar)</SelectItem>
+                        <SelectItem value="3" className="text-white hover:bg-white/10">3 equipos (1°, 2° y 3°)</SelectItem>
+                        <SelectItem value="4" className="text-white hover:bg-white/10">4 equipos (Todos avanzan)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -405,8 +410,9 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                     onCheckedChange={(checked) =>
                       setFormData({ ...formData, hasThirdPlaceMatch: checked as boolean })
                     }
+                    className="border-white/30"
                   />
-                  <Label htmlFor="hasThirdPlaceMatch" className="cursor-pointer">
+                  <Label htmlFor="hasThirdPlaceMatch" className="cursor-pointer text-white/90 drop-shadow">
                     Incluir partido por el tercer lugar
                   </Label>
                 </div>
@@ -414,7 +420,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
 
               <Button
                 onClick={handleCreateTournament}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-lg"
                 disabled={creating}
               >
                 {creating ? (
@@ -432,49 +438,49 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-700">{error}</p>
+        <div className="backdrop-blur-xl bg-red-500/20 border border-red-300/30 rounded-md p-4 mb-6 shadow-xl">
+          <p className="text-white drop-shadow">{error}</p>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          <span>Cargando torneos...</span>
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
+          <span className="text-white drop-shadow">Cargando torneos...</span>
         </div>
       ) : tournaments.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p>No hay torneos creados todavía</p>
-          <p className="text-sm">Crea tu primer torneo para comenzar</p>
+        <div className="text-center py-8">
+          <Trophy className="w-12 h-12 mx-auto mb-4 text-white/50 drop-shadow" />
+          <p className="text-white/80 drop-shadow">No hay torneos creados todavía</p>
+          <p className="text-sm text-white/70 drop-shadow">Crea tu primer torneo para comenzar</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {tournaments.map((tournament) => (
-          <Card key={tournament.id}>
+          <Card key={tournament.id} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg flex items-center">
-                    <Trophy className="w-5 h-5 mr-2 text-yellow-600" />
+                  <CardTitle className="text-lg flex items-center text-white drop-shadow-lg">
+                    <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                     {tournament.name}
                   </CardTitle>
-                  <CardDescription className="flex items-center mt-2">
+                  <CardDescription className="flex items-center mt-2 text-white/70 drop-shadow">
                     <Calendar className="w-4 h-4 mr-1" />
                     {formatDate(tournament.start_date)} - {formatDate(tournament.end_date)}
                   </CardDescription>
                   {tournament.max_players && (
-                    <CardDescription className="flex items-center mt-1">
+                    <CardDescription className="flex items-center mt-1 text-white/70 drop-shadow">
                       <Users className="w-4 h-4 mr-1" />
                       Límite: {tournament.max_players} jugadores por equipo
                     </CardDescription>
                   )}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Badge variant={tournament.is_active ? "default" : "secondary"}>
+                  <Badge className={tournament.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0" : "backdrop-blur-md bg-gray-500/80 text-white border-0"}>
                     {tournament.is_active ? "Activo" : "Inactivo"}
                   </Badge>
-                  <Badge variant={tournament.registration_open ? "default" : "destructive"} className="flex items-center gap-1">
+                  <Badge className={tournament.registration_open ? "backdrop-blur-md bg-blue-500/80 text-white border-0 flex items-center gap-1" : "backdrop-blur-md bg-red-500/80 text-white border-0 flex items-center gap-1"}>
                     {tournament.registration_open ? (
                       <>
                         <Unlock className="w-3 h-3" />
@@ -487,7 +493,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                       </>
                     )}
                   </Badge>
-                  <Badge variant="outline" className="flex items-center gap-1">
+                  <Badge className="backdrop-blur-md bg-white/20 text-white border-white/30 flex items-center gap-1">
                     {tournament.tournament_format === 'league' && '🏆 Liga'}
                     {tournament.tournament_format === 'knockout' && '⚡ Eliminación'}
                     {tournament.tournament_format === 'group_knockout' && '🌍 Grupos + Eliminación'}
@@ -497,15 +503,15 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
             </CardHeader>
             <CardContent>
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" onClick={() => handleEditTournament(tournament)}>
+                <Button className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20" size="sm" onClick={() => handleEditTournament(tournament)}>
                   <Edit className="w-4 h-4 mr-1" />
                   Editar
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => toggleTournamentStatus(tournament.id)}>
+                <Button className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20" size="sm" onClick={() => toggleTournamentStatus(tournament.id)}>
                   {tournament.is_active ? "Desactivar" : "Activar"}
                 </Button>
                 <Button
-                  variant={tournament.registration_open ? "destructive" : "default"}
+                  className={tournament.registration_open ? "backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0" : "backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"}
                   size="sm"
                   onClick={() => toggleRegistrationStatus(tournament.id)}
                 >
@@ -530,40 +536,43 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
 
       {/* Edit Tournament Dialog */}
       <Dialog open={!!editingTournament} onOpenChange={() => setEditingTournament(null)}>
-        <DialogContent>
+        <DialogContent className="backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Torneo</DialogTitle>
-            <DialogDescription>Modifica la información del torneo</DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Editar Torneo</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">Modifica la información del torneo</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">Nombre del Torneo</Label>
+              <Label htmlFor="edit-name" className="text-white/90 drop-shadow mb-2 block">Nombre del Torneo</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
               />
             </div>
             <div>
-              <Label htmlFor="edit-startDate">Fecha de Inicio</Label>
+              <Label htmlFor="edit-startDate" className="text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
               <Input
                 id="edit-startDate"
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
               />
             </div>
             <div>
-              <Label htmlFor="edit-endDate">Fecha de Fin</Label>
+              <Label htmlFor="edit-endDate" className="text-white/90 drop-shadow mb-2 block">Fecha de Fin</Label>
               <Input
                 id="edit-endDate"
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
               />
             </div>
             <div>
-              <Label htmlFor="edit-maxPlayers">Límite de Jugadores por Equipo (opcional)</Label>
+              <Label htmlFor="edit-maxPlayers" className="text-white/90 drop-shadow mb-2 block">Límite de Jugadores por Equipo (opcional)</Label>
               <Input
                 id="edit-maxPlayers"
                 type="number"
@@ -571,13 +580,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 value={formData.maxPlayers}
                 onChange={(e) => setFormData({ ...formData, maxPlayers: e.target.value })}
                 placeholder="Sin límite"
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-white/60 drop-shadow mt-1">
                 Deja vacío para no establecer límite de jugadores
               </p>
             </div>
             <div>
-              <Label htmlFor="edit-maxCoachingStaff">Límite de Cuerpo Técnico por Equipo</Label>
+              <Label htmlFor="edit-maxCoachingStaff" className="text-white/90 drop-shadow mb-2 block">Límite de Cuerpo Técnico por Equipo</Label>
               <Input
                 id="edit-maxCoachingStaff"
                 type="number"
@@ -586,28 +596,29 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 value={formData.maxCoachingStaff}
                 onChange={(e) => setFormData({ ...formData, maxCoachingStaff: e.target.value })}
                 placeholder="10"
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-white/60 drop-shadow mt-1">
                 Límite de miembros del cuerpo técnico (por defecto 10)
               </p>
             </div>
 
             {/* Tournament Format */}
             <div>
-              <Label htmlFor="edit-tournamentFormat">Formato del Torneo</Label>
+              <Label htmlFor="edit-tournamentFormat" className="text-white/90 drop-shadow mb-2 block">Formato del Torneo</Label>
               <Select
                 value={formData.tournamentFormat}
                 onValueChange={(value: 'league' | 'knockout' | 'group_knockout') =>
                   setFormData({ ...formData, tournamentFormat: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                   <SelectValue placeholder="Selecciona el formato" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="league">Liga (Todos contra Todos)</SelectItem>
-                  <SelectItem value="knockout">Eliminación Directa</SelectItem>
-                  <SelectItem value="group_knockout">Fase de Grupos + Eliminación Directa</SelectItem>
+                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                  <SelectItem value="league" className="text-white hover:bg-white/10">Liga (Todos contra Todos)</SelectItem>
+                  <SelectItem value="knockout" className="text-white hover:bg-white/10">Eliminación Directa</SelectItem>
+                  <SelectItem value="group_knockout" className="text-white hover:bg-white/10">Fase de Grupos + Eliminación Directa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -615,19 +626,19 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
             {/* League-specific options */}
             {formData.tournamentFormat === 'league' && (
               <div>
-                <Label htmlFor="edit-roundsPerSeason">Vueltas</Label>
+                <Label htmlFor="edit-roundsPerSeason" className="text-white/90 drop-shadow mb-2 block">Vueltas</Label>
                 <Select
                   value={formData.roundsPerSeason}
                   onValueChange={(value) => setFormData({ ...formData, roundsPerSeason: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Una vuelta (todos vs todos)</SelectItem>
-                    <SelectItem value="2">Dos vueltas (ida y vuelta)</SelectItem>
-                    <SelectItem value="3">Tres vueltas</SelectItem>
-                    <SelectItem value="4">Cuatro vueltas</SelectItem>
+                  <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                    <SelectItem value="1" className="text-white hover:bg-white/10">Una vuelta (todos vs todos)</SelectItem>
+                    <SelectItem value="2" className="text-white hover:bg-white/10">Dos vueltas (ida y vuelta)</SelectItem>
+                    <SelectItem value="3" className="text-white hover:bg-white/10">Tres vueltas</SelectItem>
+                    <SelectItem value="4" className="text-white hover:bg-white/10">Cuatro vueltas</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -637,36 +648,36 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
             {formData.tournamentFormat === 'group_knockout' && (
               <>
                 <div>
-                  <Label htmlFor="edit-numberOfGroups">Número de Grupos</Label>
+                  <Label htmlFor="edit-numberOfGroups" className="text-white/90 drop-shadow mb-2 block">Número de Grupos</Label>
                   <Select
                     value={formData.numberOfGroups}
                     onValueChange={(value) => setFormData({ ...formData, numberOfGroups: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2">2 grupos</SelectItem>
-                      <SelectItem value="4">4 grupos</SelectItem>
-                      <SelectItem value="6">6 grupos</SelectItem>
-                      <SelectItem value="8">8 grupos</SelectItem>
+                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                      <SelectItem value="2" className="text-white hover:bg-white/10">2 grupos</SelectItem>
+                      <SelectItem value="4" className="text-white hover:bg-white/10">4 grupos</SelectItem>
+                      <SelectItem value="6" className="text-white hover:bg-white/10">6 grupos</SelectItem>
+                      <SelectItem value="8" className="text-white hover:bg-white/10">8 grupos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="edit-teamsAdvancingPerGroup">Equipos que avanzan por grupo</Label>
+                  <Label htmlFor="edit-teamsAdvancingPerGroup" className="text-white/90 drop-shadow mb-2 block">Equipos que avanzan por grupo</Label>
                   <Select
                     value={formData.teamsAdvancingPerGroup}
                     onValueChange={(value) => setFormData({ ...formData, teamsAdvancingPerGroup: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 equipo (Campeón de grupo)</SelectItem>
-                      <SelectItem value="2">2 equipos (1° y 2° lugar)</SelectItem>
-                      <SelectItem value="3">3 equipos (1°, 2° y 3°)</SelectItem>
-                      <SelectItem value="4">4 equipos (Todos avanzan)</SelectItem>
+                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                      <SelectItem value="1" className="text-white hover:bg-white/10">1 equipo (Campeón de grupo)</SelectItem>
+                      <SelectItem value="2" className="text-white hover:bg-white/10">2 equipos (1° y 2° lugar)</SelectItem>
+                      <SelectItem value="3" className="text-white hover:bg-white/10">3 equipos (1°, 2° y 3°)</SelectItem>
+                      <SelectItem value="4" className="text-white hover:bg-white/10">4 equipos (Todos avanzan)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -682,8 +693,9 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                   onCheckedChange={(checked) =>
                     setFormData({ ...formData, hasThirdPlaceMatch: checked as boolean })
                   }
+                  className="border-white/30"
                 />
-                <Label htmlFor="edit-hasThirdPlaceMatch" className="cursor-pointer">
+                <Label htmlFor="edit-hasThirdPlaceMatch" className="cursor-pointer text-white/90 drop-shadow">
                   Incluir partido por el tercer lugar
                 </Label>
               </div>
@@ -691,7 +703,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
 
             <Button
               onClick={handleUpdateTournament}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-lg"
               disabled={updating}
             >
               {updating ? (

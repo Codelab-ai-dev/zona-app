@@ -91,8 +91,8 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   if (!leagueId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Liga No Encontrada</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
+        <p className="text-white/80 drop-shadow">
           No se pudo cargar la información de la liga.
         </p>
       </div>
@@ -334,28 +334,28 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Gestión de Equipos</h2>
-          <p className="text-muted-foreground">Administra los equipos registrados en tu liga</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Equipos</h2>
+          <p className="text-white/80 drop-shadow">Administra los equipos registrados en tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-soccer-green hover:bg-soccer-green-dark">
+            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               Agregar Equipo
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px]">
+          <DialogContent className="sm:max-w-[800px] backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Equipo</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-white drop-shadow-lg">Crear Nuevo Equipo</DialogTitle>
+              <DialogDescription className="text-white/80 drop-shadow">
                 Agrega un nuevo equipo a tu liga. El equipo será aprobado automáticamente.
               </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[70vh] overflow-y-auto">
-              <div className="grid gap-6 py-4 lg:grid-cols-2">
+            <div className="max-h-[70vh] overflow-y-auto px-2">
+              <div className="grid gap-6 py-4 px-4 lg:grid-cols-2">
                 {/* Columna izquierda - Información del Equipo */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 border-b pb-2">Información del Equipo</h4>
+                  <h4 className="font-medium text-white drop-shadow-lg border-b border-white/20 pb-2">Información del Equipo</h4>
                   
                   <div className="flex justify-center">
                     <FileUpload
@@ -368,74 +368,78 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="team-name">Nombre del Equipo *</Label>
+                    <Label htmlFor="team-name" className="text-white/90 drop-shadow mb-2 block">Nombre del Equipo *</Label>
                     <Input
                       id="team-name"
                       value={formData.name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       placeholder="Ej: Real Madrid CF"
                       required
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="team-slug">URL Personalizada</Label>
+                    <Label htmlFor="team-slug" className="text-white/90 drop-shadow mb-2 block">URL Personalizada</Label>
                     <Input
                       id="team-slug"
                       value={formData.slug}
                       onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                       placeholder="real-madrid-cf"
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
-                    <p className="text-xs text-gray-500">Se generará automáticamente si se deja vacío</p>
+                    <p className="text-xs text-white/60 drop-shadow mt-1">Se generará automáticamente si se deja vacío</p>
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="team-description">Descripción</Label>
+                    <Label htmlFor="team-description" className="text-white/90 drop-shadow mb-2 block">Descripción</Label>
                     <Textarea
                       id="team-description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Descripción del equipo..."
                       rows={3}
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="team-tournament">Torneo (Opcional)</Label>
+                    <Label htmlFor="team-tournament" className="text-white/90 drop-shadow mb-2 block">Torneo (Opcional)</Label>
                     <Select value={formData.tournamentId} onValueChange={(value) => setFormData({ ...formData, tournamentId: value })}>
-                      <SelectTrigger>
+                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                         <SelectValue placeholder="Seleccionar torneo" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin torneo asignado</SelectItem>
+                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                        <SelectItem value="none" className="text-white hover:bg-white/10">Sin torneo asignado</SelectItem>
                         {tournaments?.map((tournament) => (
-                          <SelectItem key={tournament.id} value={tournament.id}>
+                          <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
                             {tournament.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500">El equipo puede asignarse a un torneo más tarde</p>
+                    <p className="text-xs text-white/60 drop-shadow mt-1">El equipo puede asignarse a un torneo más tarde</p>
                   </div>
                 </div>
 
                 {/* Columna derecha - Información del Propietario */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 border-b pb-2">Información del Propietario</h4>
+                  <h4 className="font-medium text-white drop-shadow-lg border-b border-white/20 pb-2">Información del Propietario</h4>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="owner-name">Nombre Completo *</Label>
+                    <Label htmlFor="owner-name" className="text-white/90 drop-shadow mb-2 block">Nombre Completo *</Label>
                     <Input
                       id="owner-name"
                       value={formData.ownerName}
                       onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
                       placeholder="Ej: Juan Pérez"
                       required
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="owner-email">Email *</Label>
+                    <Label htmlFor="owner-email" className="text-white/90 drop-shadow mb-2 block">Email *</Label>
                     <Input
                       id="owner-email"
                       type="email"
@@ -443,22 +447,24 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                       onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
                       placeholder="propietario@ejemplo.com"
                       required
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
                   </div>
                   
                   <div className="grid gap-2">
-                    <Label htmlFor="owner-phone">Teléfono</Label>
+                    <Label htmlFor="owner-phone" className="text-white/90 drop-shadow mb-2 block">Teléfono</Label>
                     <Input
                       id="owner-phone"
                       value={formData.ownerPhone}
                       onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
                       placeholder="+502 1234-5678"
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                     />
                   </div>
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-                    <h5 className="text-sm font-medium text-blue-800">ℹ️ Información importante</h5>
-                    <ul className="text-xs text-blue-700 space-y-1">
+                  <div className="backdrop-blur-md bg-blue-500/20 border border-blue-300/30 rounded-lg p-3 space-y-2">
+                    <h5 className="text-sm font-medium text-white drop-shadow">ℹ️ Información importante</h5>
+                    <ul className="text-xs text-white/80 drop-shadow space-y-1">
                       <li>• Se creará automáticamente una cuenta para el propietario</li>
                       <li>• Recibirá una contraseña temporal que podrá cambiar</li>
                       <li>• Podrá gestionar los jugadores de su equipo</li>
@@ -468,13 +474,13 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button onClick={() => setIsCreateDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                 Cancelar
               </Button>
               <Button
                 onClick={handleCreateTeam}
                 disabled={!formData.name.trim() || !formData.ownerName.trim() || !formData.ownerEmail.trim() || creating}
-                className="bg-soccer-green hover:bg-soccer-green-dark"
+                className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-lg"
               >
                 {creating ? (
                   <>
@@ -491,26 +497,26 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-700">{error}</p>
+        <div className="backdrop-blur-xl bg-red-500/20 border border-red-300/30 rounded-md p-4 mb-6 shadow-xl">
+          <p className="text-white drop-shadow">{error}</p>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          <span>Cargando equipos...</span>
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
+          <span className="text-white drop-shadow">Cargando equipos...</span>
         </div>
       ) : teams.length === 0 ? (
         <div className="text-center py-12">
-          <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay equipos registrados</h3>
-          <p className="text-gray-600">Los equipos aparecerán aquí cuando se registren en tu liga</p>
+          <Shield className="w-12 h-12 text-white/50 mx-auto mb-4 drop-shadow" />
+          <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">No hay equipos registrados</h3>
+          <p className="text-white/80 drop-shadow">Los equipos aparecerán aquí cuando se registren en tu liga</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {teams.map((team) => (
-            <Card key={team.id} className="cursor-pointer transition-colors hover:bg-muted/50 dark:hover:bg-soccer-green/5">
+            <Card key={team.id} className="cursor-pointer backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
               <CardHeader onClick={() => handleTeamClick(team.id)}>
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12">
@@ -523,34 +529,34 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                     )}
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg hover:text-blue-600">{team.name}</CardTitle>
-                    <CardDescription>/{team.slug}</CardDescription>
+                    <CardTitle className="text-lg text-white drop-shadow-lg hover:text-blue-300">{team.name}</CardTitle>
+                    <CardDescription className="text-white/70 drop-shadow">/{team.slug}</CardDescription>
                   </div>
                 </div>
-                <Badge variant={team.is_active ? "default" : "secondary"} className="w-fit">
+                <Badge className={team.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0 w-fit" : "backdrop-blur-md bg-gray-500/80 text-white border-0 w-fit"}>
                   {team.is_active ? "Aprobado" : "Pendiente"}
                 </Badge>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {team.description && (
-                    <p className="text-sm text-gray-600">{team.description}</p>
+                    <p className="text-sm text-white/80 drop-shadow">{team.description}</p>
                   )}
                   {/* Show tournament info if assigned */}
                   {team.tournament_id && (
-                    <div className="flex items-center text-sm text-blue-600">
+                    <div className="flex items-center text-sm text-blue-300 drop-shadow">
                       <Shield className="w-4 h-4 mr-1" />
                       Torneo: {tournaments?.find(t => t.id === team.tournament_id)?.name || 'Torneo asignado'}
                     </div>
                   )}
                   {/* Show owner info if available */}
                   {(team as any).owner && (
-                    <div className="flex items-center text-sm text-gray-500">
+                    <div className="flex items-center text-sm text-white/70 drop-shadow">
                       <Users className="w-4 h-4 mr-1" />
                       Propietario: {(team as any).owner.name}
                     </div>
                   )}
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-white/70 drop-shadow">
                     <Shield className="w-4 h-4 mr-1" />
                     Creado: {new Date(team.created_at).toLocaleDateString("es-ES")}
                   </div>
@@ -559,24 +565,22 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                   <div className="flex space-x-2 pt-2">
                     <Button 
                       size="sm" 
-                      variant="outline"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEditTeam(team)
                       }}
-                      className="flex-1"
+                      className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                     >
                       <Edit className="w-4 h-4 mr-1" />
                       Editar
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeactivateTeam(team.id)
                       }}
-                      className={team.is_active ? "text-red-600 hover:text-red-700 flex-1" : "text-green-600 hover:text-green-700 flex-1"}
+                      className={team.is_active ? "flex-1 backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0" : "flex-1 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"}
                     >
                       {team.is_active ? (
                         <>
@@ -600,10 +604,10 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Edit Team Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[700px] backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Equipo</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Editar Equipo</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
               Modifica la información del equipo.
             </DialogDescription>
           </DialogHeader>
@@ -618,100 +622,106 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-team-name">Nombre del Equipo</Label>
+              <Label htmlFor="edit-team-name" className="text-white/90 drop-shadow mb-2 block">Nombre del Equipo</Label>
               <Input
                 id="edit-team-name"
                 value={formData.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Ej: Real Madrid CF"
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-team-slug">URL Personalizada</Label>
+              <Label htmlFor="edit-team-slug" className="text-white/90 drop-shadow mb-2 block">URL Personalizada</Label>
               <Input
                 id="edit-team-slug"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="real-madrid-cf"
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
-              <p className="text-xs text-gray-500">Se generará automáticamente si se deja vacío</p>
+              <p className="text-xs text-white/60 drop-shadow mt-1">Se generará automáticamente si se deja vacío</p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-team-description">Descripción</Label>
+              <Label htmlFor="edit-team-description" className="text-white/90 drop-shadow mb-2 block">Descripción</Label>
               <Textarea
                 id="edit-team-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Descripción del equipo..."
                 rows={3}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-team-tournament">Torneo</Label>
+              <Label htmlFor="edit-team-tournament" className="text-white/90 drop-shadow mb-2 block">Torneo</Label>
               <Select value={formData.tournamentId} onValueChange={(value) => setFormData({ ...formData, tournamentId: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                   <SelectValue placeholder="Seleccionar torneo" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin torneo asignado</SelectItem>
+                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                  <SelectItem value="none" className="text-white hover:bg-white/10">Sin torneo asignado</SelectItem>
                   {tournaments?.map((tournament) => (
-                    <SelectItem key={tournament.id} value={tournament.id}>
+                    <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
                       {tournament.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500">El equipo puede cambiarse de torneo</p>
+              <p className="text-xs text-white/60 drop-shadow mt-1">El equipo puede cambiarse de torneo</p>
             </div>
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-gray-900 mb-3">Información del Propietario</h4>
+            <div className="border-t border-white/20 pt-4">
+              <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Propietario</h4>
               <div className="space-y-3">
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-name">Nombre Completo</Label>
+                  <Label htmlFor="edit-owner-name" className="text-white/90 drop-shadow mb-2 block">Nombre Completo</Label>
                   <Input
                     id="edit-owner-name"
                     value={formData.ownerName}
                     onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
                     placeholder="Ej: Juan Pérez"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-email">Email</Label>
+                  <Label htmlFor="edit-owner-email" className="text-white/90 drop-shadow mb-2 block">Email</Label>
                   <Input
                     id="edit-owner-email"
                     type="email"
                     value={formData.ownerEmail}
                     onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
                     placeholder="propietario@ejemplo.com"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-phone">Teléfono</Label>
+                  <Label htmlFor="edit-owner-phone" className="text-white/90 drop-shadow mb-2 block">Teléfono</Label>
                   <Input
                     id="edit-owner-phone"
                     value={formData.ownerPhone}
                     onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
                     placeholder="+502 1234-5678"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
                   />
                 </div>
-                <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                <p className="text-xs text-white/60 drop-shadow backdrop-blur-md bg-white/10 p-2 rounded">
                   Los cambios en la información del propietario solo actualizarán el nombre y teléfono.
                 </p>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
+            <Button onClick={() => {
               setIsEditDialogOpen(false)
               setEditingTeam(null)
               setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
-            }}>
+            }} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               Cancelar
             </Button>
             <Button
               onClick={handleUpdateTeam}
               disabled={!formData.name.trim() || updating}
-              className="bg-soccer-blue hover:bg-soccer-blue-dark"
+              className="backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 shadow-lg rounded-lg"
             >
               {updating ? (
                 <>

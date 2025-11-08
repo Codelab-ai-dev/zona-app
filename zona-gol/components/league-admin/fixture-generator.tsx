@@ -330,30 +330,30 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <Calendar className="w-5 h-5" />
             Generador de Jornadas
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white/80 drop-shadow">
             Genera automáticamente el calendario completo de partidos para el torneo
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/80 drop-shadow">
                 <strong>Equipos activos:</strong> {activeTeams.length}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/80 drop-shadow">
                 <strong>Torneos activos:</strong> {activeTournaments.length}
               </p>
             </div>
             <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="bg-soccer-green hover:bg-soccer-green-dark"
+                  className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
                   disabled={activeTeams.length < 2 || activeTournaments.length === 0}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -367,18 +367,18 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
       {/* Generator Dialog */}
       <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
-        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none">
-          <DialogHeader className="pb-4 border-b px-8 pt-2">
-            <DialogTitle className="text-xl">Configurar Generación de Jornadas</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none bg-gradient-to-br from-black via-gray-900 to-black">
+          <DialogHeader className="pb-4 border-b border-white/20 px-8 pt-2">
+            <DialogTitle className="text-xl text-white drop-shadow-lg">Configurar Generación de Jornadas</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
               Configura los parámetros para generar el calendario de partidos
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto px-8 py-2">
             {message && (
-              <Alert className={`mb-8 ${message.type === 'success' ? 'border-green-200 bg-muted/30 dark:bg-soccer-green/5' : 'border-red-200 bg-red-50'}`}>
-                <AlertDescription className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+              <Alert className={`mb-8 backdrop-blur-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'} shadow-xl`}>
+                <AlertDescription className="text-white drop-shadow">
                   {message.text}
                 </AlertDescription>
               </Alert>
@@ -387,22 +387,22 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
               {/* Left Column - Basic Configuration */}
               <div className="space-y-8">
-                <div className="bg-muted/30 dark:bg-soccer-blue/5 p-8 rounded-xl shadow-sm border border-muted">
-                  <h3 className="text-xl font-semibold text-soccer-blue dark:text-soccer-blue-light mb-8 flex items-center gap-3">
+                <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20">
+                  <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-8 flex items-center gap-3">
                     <Calendar className="w-6 h-6" />
                     Configuración Básica
                   </h3>
                   <div className="space-y-6">
 
                     <div>
-                      <Label className="text-sm font-medium text-foreground">Torneo</Label>
+                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Torneo</Label>
                       <Select value={config.tournamentId} onValueChange={(value) => setConfig({...config, tournamentId: value})}>
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                           <SelectValue placeholder="Selecciona un torneo" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
                           {activeTournaments.map(tournament => (
-                            <SelectItem key={tournament.id} value={tournament.id}>
+                            <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
                               {tournament.name}
                             </SelectItem>
                           ))}
@@ -411,21 +411,21 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
 
                     <div>
-                      <Label htmlFor="startDate" className="text-sm font-medium text-foreground">Fecha de Inicio</Label>
+                      <Label htmlFor="startDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
                       <Input
                         id="startDate"
                         type="date"
                         value={config.startDate}
                         onChange={(e) => setConfig({...config, startDate: e.target.value})}
-                        className="mt-1"
+                        className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-foreground">Duración de Partidos</Label>
+                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Duración de Partidos</Label>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-xs text-muted-foreground">Tiempo por tiempo</Label>
+                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Tiempo por tiempo</Label>
                           <Select 
                             value={config.matchDuration.halfTime.toString()} 
                             onValueChange={(value) => setConfig({
@@ -437,21 +437,21 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               }
                             })}
                           >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="20">20 min</SelectItem>
-                              <SelectItem value="25">25 min</SelectItem>
-                              <SelectItem value="30">30 min</SelectItem>
-                              <SelectItem value="35">35 min</SelectItem>
-                              <SelectItem value="40">40 min</SelectItem>
-                              <SelectItem value="45">45 min</SelectItem>
+                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                              <SelectItem value="20" className="text-white hover:bg-white/10">20 min</SelectItem>
+                              <SelectItem value="25" className="text-white hover:bg-white/10">25 min</SelectItem>
+                              <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
+                              <SelectItem value="35" className="text-white hover:bg-white/10">35 min</SelectItem>
+                              <SelectItem value="40" className="text-white hover:bg-white/10">40 min</SelectItem>
+                              <SelectItem value="45" className="text-white hover:bg-white/10">45 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-muted-foreground">Descanso</Label>
+                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Descanso</Label>
                           <Select 
                             value={config.matchDuration.breakTime.toString()} 
                             onValueChange={(value) => setConfig({
@@ -459,12 +459,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               matchDuration: {...config.matchDuration, breakTime: parseInt(value)}
                             })}
                           >
-                            <SelectTrigger className="mt-1">
+                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="10">10 min</SelectItem>
-                              <SelectItem value="15">15 min</SelectItem>
+                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                              <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
+                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -472,30 +472,30 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-foreground">Tipo de Liga</Label>
+                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Tipo de Liga</Label>
                       <Select value={config.scheduleType} onValueChange={(value: any) => setConfig({...config, scheduleType: value})}>
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="morning">Liga Matutina (8:00 - 12:30)</SelectItem>
-                          <SelectItem value="afternoon">Liga Vespertina (14:00 - 18:30)</SelectItem>
-                          <SelectItem value="evening">Liga Nocturna (19:00 - 22:00)</SelectItem>
-                          <SelectItem value="custom">Horarios Personalizados</SelectItem>
+                        <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                          <SelectItem value="morning" className="text-white hover:bg-white/10">Liga Matutina (8:00 - 12:30)</SelectItem>
+                          <SelectItem value="afternoon" className="text-white hover:bg-white/10">Liga Vespertina (14:00 - 18:30)</SelectItem>
+                          <SelectItem value="evening" className="text-white hover:bg-white/10">Liga Nocturna (19:00 - 22:00)</SelectItem>
+                          <SelectItem value="custom" className="text-white hover:bg-white/10">Horarios Personalizados</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium text-foreground">Canchas</Label>
+                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Canchas</Label>
                         <Select value={config.fieldsAvailable.toString()} onValueChange={(value) => setConfig({...config, fieldsAvailable: parseInt(value)})}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
                             {[1,2,3,4,5,6].map(num => (
-                              <SelectItem key={num} value={num.toString()}>
+                              <SelectItem key={num} value={num.toString()} className="text-white hover:bg-white/10">
                                 {num} cancha{num > 1 ? 's' : ''}
                               </SelectItem>
                             ))}
@@ -504,14 +504,14 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                       </div>
                       
                       <div>
-                        <Label className="text-sm font-medium text-foreground">Formato</Label>
+                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Formato</Label>
                         <Select value={config.doubleRound ? "double" : "single"} onValueChange={(value) => setConfig({...config, doubleRound: value === "double"})}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="single">Una vuelta</SelectItem>
-                            <SelectItem value="double">Ida y vuelta</SelectItem>
+                          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                            <SelectItem value="single" className="text-white hover:bg-white/10">Una vuelta</SelectItem>
+                            <SelectItem value="double" className="text-white hover:bg-white/10">Ida y vuelta</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -522,15 +522,15 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
               {/* Right Column - Schedule Configuration */}
               <div className="space-y-8">
-                <div className="bg-muted/30 dark:bg-soccer-green/5 p-8 rounded-xl shadow-sm border border-muted">
-                  <h3 className="text-xl font-semibold text-soccer-green dark:text-soccer-green-light mb-8 flex items-center gap-3">
+                <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20">
+                  <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-8 flex items-center gap-3">
                     <Clock className="w-6 h-6" />
                     Configuración de Horarios
                   </h3>
                   <div className="space-y-6">
 
                     <div>
-                      <Label className="text-sm font-medium text-foreground">Días de Partidos</Label>
+                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Días de Partidos</Label>
                       <div className="grid grid-cols-7 gap-3 mt-3">
                         {[
                           { value: 'monday', label: 'L' },
@@ -653,41 +653,41 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="bg-muted/30 dark:bg-soccer-blue/5 p-8 rounded-xl shadow-sm border border-muted mt-8 max-w-7xl mx-auto">
-              <h3 className="text-xl font-semibold text-soccer-blue dark:text-soccer-blue-light mb-6 flex items-center gap-3">
+            <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20 mt-8 max-w-7xl mx-auto">
+              <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-6 flex items-center gap-3">
                 <Users className="w-6 h-6" />
                 Resumen de Configuración
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ul className="text-sm text-foreground space-y-3">
+                <ul className="text-sm text-white/90 drop-shadow space-y-3">
                   <li className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-soccer-blue" />
+                    <Users className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Equipos:</strong> {activeTeams.length} participantes</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-soccer-blue" />
+                    <Calendar className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Jornadas:</strong> {config.doubleRound ? activeTeams.length * 2 - 2 : activeTeams.length - 1}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">Σ</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">Σ</span>
                     <span><strong className="font-medium">Partidos total:</strong> {config.doubleRound ? activeTeams.length * (activeTeams.length - 1) : activeTeams.length * (activeTeams.length - 1) / 2}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-soccer-blue" />
+                    <Calendar className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Días por semana:</strong> {config.matchDays.length}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">⚽</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">⚽</span>
                     <span><strong className="font-medium">Canchas:</strong> {config.fieldsAvailable} disponibles</span>
                   </li>
                 </ul>
-                <ul className="text-sm text-foreground space-y-3">
+                <ul className="text-sm text-white/90 drop-shadow space-y-3">
                   <li className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-soccer-blue" />
+                    <Clock className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Duración:</strong> {config.matchDuration.halfTime}min + {config.matchDuration.breakTime}min descanso + {config.matchDuration.halfTime}min</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center text-soccer-blue font-bold">⏱</span>
+                    <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">⏱</span>
                     <span>
                       <strong className="font-medium">Tipo de liga:</strong> {
                         config.scheduleType === 'morning' ? 'Matutina' :
@@ -697,12 +697,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-soccer-blue" />
+                    <Clock className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Horarios:</strong> {config.scheduleType === 'custom' ? config.matchTimes.length : getScheduleTimesByType(config.scheduleType).length} disponibles</span>
                   </li>
                   {config.championFixedSchedule && (
                     <li className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-soccer-blue" />
+                      <Trophy className="w-4 h-4 text-blue-300" />
                       <span><strong className="font-medium">Campeón:</strong> Horario fijo {config.championPreferredTime}</span>
                     </li>
                   )}
@@ -710,19 +710,18 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="flex gap-6 pt-6 border-t mt-8">
+            <div className="flex gap-6 pt-6 border-t border-white/20 mt-8">
               <Button
                 type="button"
-                variant="outline"
                 onClick={() => setIsGeneratorOpen(false)}
-                className="flex-1 h-12 text-base"
+                className="flex-1 h-12 text-base backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
               >
                 Cancelar
               </Button>
               <Button 
                 onClick={generateFixtures}
                 disabled={generating || !config.tournamentId || !config.startDate || config.matchDays.length === 0 || (config.scheduleType === 'custom' && config.matchTimes.length === 0)}
-                className="flex-1 h-12 text-base bg-soccer-green hover:bg-soccer-green-dark"
+                className="flex-1 h-12 text-base backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
               >
                 {generating ? (
                   <>

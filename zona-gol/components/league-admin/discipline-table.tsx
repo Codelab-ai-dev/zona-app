@@ -145,114 +145,114 @@ export function DisciplineTable({ leagueId }: DisciplineTableProps) {
   }
 
   return (
-    <Card>
+    <Card className="backdrop-blur-xl bg-white/10 border-white/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+          <AlertTriangle className="w-5 h-5 text-yellow-300" />
           Tabla de Disciplina
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-white/80 drop-shadow">
           Registro de tarjetas amarillas y rojas de todos los jugadores
         </CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mr-3" />
-            <span>Cargando datos disciplinarios...</span>
+            <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
+            <span className="text-white drop-shadow">Cargando datos disciplinarios...</span>
           </div>
         ) : disciplineRecords.length === 0 ? (
           <div className="text-center py-12">
-            <AlertTriangle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <AlertTriangle className="w-12 h-12 mx-auto text-white/50 mb-4" />
+            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
               No hay registros disciplinarios
             </h3>
-            <p className="text-gray-500">
+            <p className="text-white/80 drop-shadow">
               No se han registrado tarjetas en partidos de esta liga.
             </p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border border-white/20">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 text-center">#</TableHead>
-                  <TableHead>Jugador</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead className="text-center">Dorsal</TableHead>
-                  <TableHead className="text-center">
+                <TableRow className="border-white/20 hover:bg-white/5">
+                  <TableHead className="w-12 text-center text-white/90">#</TableHead>
+                  <TableHead className="text-white/90">Jugador</TableHead>
+                  <TableHead className="text-white/90">Equipo</TableHead>
+                  <TableHead className="text-center text-white/90">Dorsal</TableHead>
+                  <TableHead className="text-center text-white/90">
                     <div className="flex items-center justify-center gap-1">
                       <div className="w-4 h-6 bg-yellow-400 border border-yellow-500 rounded-sm"></div>
                       Amarillas
                     </div>
                   </TableHead>
-                  <TableHead className="text-center">
+                  <TableHead className="text-center text-white/90">
                     <div className="flex items-center justify-center gap-1">
                       <div className="w-4 h-6 bg-red-500 border border-red-600 rounded-sm"></div>
                       Rojas
                     </div>
                   </TableHead>
-                  <TableHead className="text-center">Total</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-center text-white/90">Total</TableHead>
+                  <TableHead className="text-white/90">Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {disciplineRecords.map((record, index) => (
-                  <TableRow key={record.player_id} className={record.is_suspended ? 'bg-red-50' : ''}>
-                    <TableCell className="text-center font-medium">
+                  <TableRow key={record.player_id} className={`border-white/20 ${record.is_suspended ? 'bg-red-500/10' : 'hover:bg-white/5'}`}>
+                    <TableCell className="text-center font-medium text-white">
                       {index + 1}
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        {record.player_name}
+                        <span className="text-white drop-shadow">{record.player_name}</span>
                         {record.is_suspended && (
-                          <Badge variant="destructive" className="text-xs">
+                          <Badge className="text-xs backdrop-blur-md bg-red-500/80 text-white border-0">
                             SUSPENDIDO
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-white/80 drop-shadow">
                       {record.team_name}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline">{record.jersey_number}</Badge>
+                      <Badge className="backdrop-blur-md bg-white/10 text-white border-white/30">{record.jersey_number}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
                       {record.yellow_cards > 0 ? (
-                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                        <Badge className="backdrop-blur-md bg-yellow-400/80 text-yellow-900 border-0">
                           {record.yellow_cards}
                         </Badge>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-white/40">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
                       {record.red_cards > 0 ? (
-                        <Badge className="bg-red-100 text-red-800 border-red-300">
+                        <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">
                           {record.red_cards}
                         </Badge>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-white/40">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="secondary" className="font-bold">
+                      <Badge className="font-bold backdrop-blur-md bg-white/10 text-white border-white/30">
                         {record.total_cards}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {record.is_suspended ? (
                         <div className="text-sm">
-                          <Badge variant="destructive">Suspendido</Badge>
+                          <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">Suspendido</Badge>
                           {record.suspension_reason && (
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-xs text-white/70 mt-1 drop-shadow">
                               {record.suspension_reason}
                             </p>
                           )}
                         </div>
                       ) : (
-                        <Badge variant="outline" className="text-green-700 border-green-300">
+                        <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">
                           Habilitado
                         </Badge>
                       )}

@@ -110,148 +110,168 @@ export function LeagueDirectory() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
-      <header className="relative bg-cover bg-center bg-no-repeat shadow-md bg-[url('/zona-fondo.png')]" style={{marginTop: '-1px'}}>
-  {/* Overlay semitransparente */}
-  <div className="absolute inset-0 bg-black/60"></div>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Video de fondo */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed top-0 left-0 w-full h-full object-cover z-0"
+      >
+        <source src="/video/zona-gol.mp4" type="video/mp4" />
+      </video>
 
-  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-    <div className="flex flex-col items-center justify-center text-center">
-      <div>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
-          <img src="/zona-gol-final.webp" alt="Logo" className="w-44 h-44 md:w-48 md:h-48" />
-          <h1 className="text-7xl md:text-8xl font-bold text-white mt-4 md:mt-0" style={{fontFamily: "var(--font-orbitron), sans-serif"}}>Zona-Gol</h1>
-        </div>
-        
-        <div className="absolute top-6 right-6">
-          <Button asChild variant="outline" size="lg" className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white">
-            <Link href="/login" className="flex items-center gap-2">
-              <LogIn size={18} />
-              <span>Acceso Administradores</span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </div>
-  </div>
-</header>
+      {/* Overlay oscuro para mejorar legibilidad */}
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-0"></div>
 
-      <main className="max-w-auto mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white">
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start">
-          <div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-2">Ligas Disponibles</h2>
-            <p className="text-gray-500 text-lg">Explora y únete a las competiciones activas</p>
+      {/* Contenido */}
+      <div className="relative z-10">
+        <header className="relative" style={{marginTop: '-1px'}}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
+                <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
+                  <img src="/zona-gol.png" alt="Logo" className="w-44 h-44 md:w-48 md:h-48 drop-shadow-2xl" />
+                  <h1 className="text-7xl md:text-8xl font-bold text-white mt-4 md:mt-0 drop-shadow-lg" style={{fontFamily: "var(--font-orbitron), sans-serif"}}>Zona-Gol</h1>
+                </div>
+                
+                <div className="absolute top-6 right-6">
+                  <Button asChild variant="outline" size="lg" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white transition-all duration-300 shadow-lg">
+                    <Link href="/login" className="flex items-center gap-2">
+                      <LogIn size={18} />
+                      <span>Acceso Administradores</span>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 md:mt-0">
-            <Button
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Actualizando...' : 'Actualizar'}
-            </Button>
-          </div>
-        </div>
-        
+        </header>
 
-        {loading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-            <span className="ml-2 text-gray-600">Cargando ligas...</span>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Header con efecto glass */}
+          <div className="mb-10 backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="flex flex-col md:flex-row justify-between items-start">
+              <div>
+                <h2 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">Ligas Disponibles</h2>
+                <p className="text-white/80 text-lg drop-shadow">Explora y únete a las competiciones activas</p>
+              </div>
+              <div className="mt-4 md:mt-0">
+                <Button
+                  onClick={handleRefresh}
+                  disabled={refreshing || loading}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all duration-300"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Actualizando...' : 'Actualizar'}
+                </Button>
+              </div>
+            </div>
           </div>
-        )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
-            <p>Error al cargar las ligas: {error}</p>
-          </div>
-        )}
+          {loading && (
+            <div className="flex justify-center items-center py-12 backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
+              <span className="ml-2 text-white drop-shadow">Cargando ligas...</span>
+            </div>
+          )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {activeLeagues && activeLeagues.map((league) => {
-            const stats = leagueStats[league.id] || { teamsCount: 0, tournamentsCount: 0, activeTournament: null };
-            return (
-              <Card key={league.id} className="border border-gray-200 hover:border-green-500 transition-all duration-200 bg-white">
-                <CardContent className="py-3 px-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-start gap-4">
-                        <div className="flex flex-col items-center gap-2">
-                          <Avatar className="w-16 h-16">
-                            {league.logo && (
-                              <AvatarImage
-                                src={league.logo}
-                                alt={`Logo de ${league.name}`}
-                              />
+          {error && (
+            <div className="backdrop-blur-xl bg-red-500/20 border border-red-300/30 text-white p-4 rounded-2xl mb-6 shadow-xl">
+              <p className="drop-shadow">Error al cargar las ligas: {error}</p>
+            </div>
+          )}
+
+          {/* Grid de ligas con efecto glass */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {activeLeagues && activeLeagues.map((league) => {
+              const stats = leagueStats[league.id] || { teamsCount: 0, tournamentsCount: 0, activeTournament: null };
+              return (
+                <div 
+                  key={league.id} 
+                  className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl hover:bg-white/20 hover:border-white/40 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center gap-2">
+                            <Avatar className="w-16 h-16 border-2 border-white/30 shadow-lg">
+                              {league.logo && (
+                                <AvatarImage
+                                  src={league.logo}
+                                  alt={`Logo de ${league.name}`}
+                                />
+                              )}
+                              <AvatarFallback className="bg-white/20 backdrop-blur-md text-white font-medium text-xl">
+                                {getLeagueInitials(league.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {loadingStats ? (
+                              <Badge variant="outline" className="flex items-center gap-1 backdrop-blur-md bg-white/10 border-white/30 text-white">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span className="text-xs">Cargando</span>
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant={league.is_active ? "default" : "outline"}
+                                className={league.is_active ? 'bg-green-500/80 backdrop-blur-md text-white border-0 shadow-lg' : 'backdrop-blur-md bg-white/10 border-white/30 text-white/70'}
+                              >
+                                <span className="text-xs">
+                                  {league.is_active ? "Activo" : "Inactivo"}
+                                </span>
+                              </Badge>
                             )}
-                            <AvatarFallback className="bg-gray-100 text-gray-800 font-medium text-xl">
-                              {getLeagueInitials(league.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {loadingStats ? (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                              <span className="text-xs">Cargando</span>
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant={league.is_active ? "default" : "outline"}
-                              className={league.is_active ? 'bg-green-600' : 'text-gray-500'}
-                            >
-                              <span className="text-xs">
-                                {league.is_active ? "Activo" : "Inactivo"}
-                              </span>
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <h3 className="text-xl font-medium text-gray-900">{league.name}</h3>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <h3 className="text-xl font-medium text-white drop-shadow-lg">{league.name}</h3>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <Button 
-                        asChild 
-                        variant="outline"
-                        size="sm"
-                        className="text-green-700 border-green-200 hover:bg-green-50 hover:text-green-800"
-                      >
-                        <Link href={`/liga/${league.slug}`} className="flex items-center">
-                          Ver Liga
-                          <ArrowRight className="w-3 h-3 ml-2" />
-                        </Link>
-                      </Button>
+                      
+                      <div>
+                        <Button 
+                          asChild 
+                          variant="outline"
+                          size="sm"
+                          className="backdrop-blur-md bg-green-500/20 text-white border-green-300/30 hover:bg-green-500/40 hover:border-green-300/50 transition-all duration-300 shadow-lg"
+                        >
+                          <Link href={`/liga/${league.slug}`} className="flex items-center">
+                            Ver Liga
+                            <ArrowRight className="w-3 h-3 ml-2" />
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        {activeLeagues && activeLeagues.length === 0 && !loading && (
-          <div className="bg-white border border-gray-200 rounded-md p-6 text-center max-w-md mx-auto">
-            <Trophy className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay ligas disponibles</h3>
-            <p className="text-gray-500 mb-4">Las ligas aparecerán aquí cuando estén disponibles públicamente</p>
-            <Button 
-              asChild 
-              variant="outline"
-              className="text-green-700 border-green-200 hover:bg-green-50"
-            >
-              <Link href="/login" className="flex items-center gap-2">
-                <LogIn className="w-4 h-4" />
-                Acceder al Panel
-              </Link>
-            </Button>
+                </div>
+              )
+            })}
           </div>
-        )}
 
-      </main>
+          {activeLeagues && activeLeagues.length === 0 && !loading && (
+            <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-8 text-center max-w-md mx-auto shadow-xl">
+              <Trophy className="w-12 h-12 text-white/70 mx-auto mb-4 drop-shadow-lg" />
+              <h3 className="text-xl font-medium text-white mb-3 drop-shadow">No hay ligas disponibles</h3>
+              <p className="text-white/80 mb-6 drop-shadow">Las ligas aparecerán aquí cuando estén disponibles públicamente</p>
+              <Button 
+                asChild 
+                variant="outline"
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 transition-all duration-300 shadow-lg"
+              >
+                <Link href="/login" className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Acceder al Panel
+                </Link>
+              </Button>
+            </div>
+          )}
+
+        </main>
+      </div>
     </div>
   )
 }

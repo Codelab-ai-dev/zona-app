@@ -91,14 +91,16 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-4 bg-muted rounded w-1/2" />
-          <div className="grid gap-6 md:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted rounded" />
-            ))}
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        <div className="relative z-10 container mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 backdrop-blur-xl bg-white/10 rounded w-1/3" />
+            <div className="h-4 backdrop-blur-xl bg-white/10 rounded w-1/2" />
+            <div className="grid gap-6 md:grid-cols-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-32 backdrop-blur-xl bg-white/10 rounded" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -186,20 +188,21 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-soccer-green">{league.name}</h1>
-              <p className="text-muted-foreground mt-1">{league.description}</p>
-            </div>
-            <div className="text-right">
-              <Badge variant="default" className="mb-2">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="backdrop-blur-xl bg-white/10 shadow-xl border-b border-white/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
+                <p className="text-white/80 mt-1 drop-shadow">{league.description}</p>
+              </div>
+              <div className="text-right">
+                <Badge className="mb-2 backdrop-blur-md bg-green-500/80 text-white border-0">
                 Liga Oficial
               </Badge>
-              <p className="text-sm text-muted-foreground">/{league.slug}</p>
+              <p className="text-sm text-white/70 drop-shadow">/{league.slug}</p>
             </div>
           </div>
         </div>
@@ -209,40 +212,40 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <div className="grid gap-6 md:grid-cols-4 mb-8">
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Equipos</CardTitle>
-              <Shield className="w-4 h-4 text-blue-600" />
+              <CardTitle className="text-sm font-medium text-white/90 drop-shadow">Equipos</CardTitle>
+              <Shield className="w-4 h-4 text-blue-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{data.stats?.teamsCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Equipos activos</p>
+              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.teamsCount || 0}</div>
+              <p className="text-xs text-white/70 drop-shadow">Equipos activos</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Jugadores</CardTitle>
-              <Users className="w-4 h-4 text-soccer-green" />
+              <CardTitle className="text-sm font-medium text-white/90 drop-shadow">Jugadores</CardTitle>
+              <Users className="w-4 h-4 text-green-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{data.stats?.playersCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Jugadores registrados</p>
+              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.playersCount || 0}</div>
+              <p className="text-xs text-white/70 drop-shadow">Jugadores registrados</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Partidos</CardTitle>
-              <Calendar className="w-4 h-4 text-purple-600" />
+              <CardTitle className="text-sm font-medium text-white/90 drop-shadow">Partidos</CardTitle>
+              <Calendar className="w-4 h-4 text-purple-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{data.stats?.matchesCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Total de partidos</p>
+              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.matchesCount || 0}</div>
+              <p className="text-xs text-white/70 drop-shadow">Total de partidos</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Torneo Actual</CardTitle>
               <Trophy className="w-4 h-4 text-soccer-gold" />
@@ -256,25 +259,25 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
         {/* Tabs Content */}
         <Tabs defaultValue="standings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="standings">Tabla de Posiciones</TabsTrigger>
-            <TabsTrigger value="matches">Partidos</TabsTrigger>
-            <TabsTrigger value="rounds">Jornadas</TabsTrigger>
-            <TabsTrigger value="teams">Equipos</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 backdrop-blur-xl bg-white/10 border-white/20">
+            <TabsTrigger value="standings" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Tabla de Posiciones</TabsTrigger>
+            <TabsTrigger value="matches" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Partidos</TabsTrigger>
+            <TabsTrigger value="rounds" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Jornadas</TabsTrigger>
+            <TabsTrigger value="teams" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Equipos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="standings">
-            <Card>
+            <Card className="backdrop-blur-xl bg-white/10 border-white/20">
               <CardHeader>
-                <CardTitle>Tabla de Posiciones</CardTitle>
+                <CardTitle className="text-white drop-shadow-lg">Tabla de Posiciones</CardTitle>
                 <CardDescription className="flex items-center space-x-2">
-                  <span>{activeTournament ? `${activeTournament.name}` : "Posiciones generales"}</span>
+                  <span className="text-white/80 drop-shadow">{activeTournament ? `${activeTournament.name}` : "Posiciones generales"}</span>
                   {teamStandings.some(s => s.matches_played > 0) ? (
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-soccer-green rounded-full">
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium backdrop-blur-md bg-green-500/80 text-white rounded-full border-0">
                       📊 Estadísticas en tiempo real
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-muted-foreground rounded-full">
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium backdrop-blur-md bg-white/10 text-white/70 rounded-full border-white/30">
                       📋 Equipos registrados
                     </span>
                   )}
@@ -284,68 +287,68 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b text-left">
-                        <th className="pb-2 text-sm font-medium text-muted-foreground">Pos</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground">Equipo</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">PJ</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">G</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">E</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">P</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">GF</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">GC</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">DG</th>
-                        <th className="pb-2 text-sm font-medium text-muted-foreground text-center">Pts</th>
+                      <tr className="border-b border-white/20 text-left">
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow">Pos</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow">Equipo</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">PJ</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">G</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">E</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">P</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">GF</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">GC</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">DG</th>
+                        <th className="pb-2 text-sm font-medium text-white/90 drop-shadow text-center">Pts</th>
                       </tr>
                     </thead>
                     <tbody>
                       {teamStandings.map((standing, index) => {
                         const hasPlayedMatches = standing.matches_played > 0
                         return (
-                        <tr key={standing.team.id} className={`border-b hover:bg-muted/30 dark:bg-muted/50 ${hasPlayedMatches ? '' : 'opacity-75'}`}>
+                        <tr key={standing.team.id} className={`border-b border-white/20 hover:bg-white/5 ${hasPlayedMatches ? '' : 'opacity-75'}`}>
                           <td className="py-3 text-sm font-medium">
                             {hasPlayedMatches ? (
-                              <span className="font-bold text-foreground">{index + 1}</span>
+                              <span className="font-bold text-white drop-shadow">{index + 1}</span>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <span className="text-white/50">-</span>
                             )}
                           </td>
                           <td className="py-3">
                             <div className="flex items-center space-x-3">
-                              <Avatar className="w-8 h-8">
+                              <Avatar className="w-8 h-8 border border-white/30">
                                 {standing.team.logo && (
                                   <AvatarImage
                                     src={standing.team.logo}
                                     alt={`Logo de ${standing.team.name}`}
                                   />
                                 )}
-                                <AvatarFallback className="bg-green-100 text-soccer-green text-xs font-bold">
+                                <AvatarFallback className="backdrop-blur-md bg-green-500/80 text-white text-xs font-bold">
                                   {getTeamInitials(standing.team.name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{standing.team.name}</span>
+                              <span className="font-medium text-white drop-shadow">{standing.team.name}</span>
                             </div>
                           </td>
-                          <td className="py-3 text-center text-sm">{standing.matches_played || 0}</td>
-                          <td className="py-3 text-center text-sm">{standing.matches_won || 0}</td>
-                          <td className="py-3 text-center text-sm">{standing.matches_drawn || 0}</td>
-                          <td className="py-3 text-center text-sm">{standing.matches_lost || 0}</td>
-                          <td className="py-3 text-center text-sm">{standing.goals_for || 0}</td>
-                          <td className="py-3 text-center text-sm">{standing.goals_against || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.matches_played || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.matches_won || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.matches_drawn || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.matches_lost || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.goals_for || 0}</td>
+                          <td className="py-3 text-center text-sm text-white/80">{standing.goals_against || 0}</td>
                           <td className="py-3 text-center text-sm">
                             <span
                               className={
                                 (standing.goal_difference || 0) > 0
-                                  ? "text-soccer-green"
+                                  ? "text-green-300 drop-shadow"
                                   : (standing.goal_difference || 0) < 0
-                                    ? "text-soccer-red"
-                                    : "text-muted-foreground"
+                                    ? "text-red-300 drop-shadow"
+                                    : "text-white/50"
                               }
                             >
                               {(standing.goal_difference || 0) > 0 ? "+" : ""}
                               {standing.goal_difference || 0}
                             </span>
                           </td>
-                          <td className="py-3 text-center text-sm font-bold">{standing.points || 0}</td>
+                          <td className="py-3 text-center text-sm font-bold text-white drop-shadow">{standing.points || 0}</td>
                         </tr>
                         )
                       })}
@@ -371,32 +374,32 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
           <TabsContent value="matches">
             <div className="grid gap-6 md:grid-cols-2">
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader>
-                  <CardTitle>Próximos Partidos</CardTitle>
-                  <CardDescription>Partidos programados</CardDescription>
+                  <CardTitle className="text-white drop-shadow-lg">Próximos Partidos</CardTitle>
+                  <CardDescription className="text-white/80 drop-shadow">Partidos programados</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
                     {/* Regular Matches */}
                     {upcomingRegularMatches.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        <h3 className="text-sm font-semibold text-white/90 drop-shadow uppercase tracking-wide">
                           Fase Regular
                         </h3>
                         <div className="space-y-3">
                           {upcomingRegularMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
+                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
                               <div className="flex items-center space-x-4">
                                 <div className="text-center">
-                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
-                                  <p className="text-xs text-muted-foreground">vs</p>
-                                  <p className="font-medium text-sm text-foreground">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-xs text-white/70">vs</p>
+                                  <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="text-sm font-medium text-foreground">{formatDate(match.match_date)}</p>
-                                <Badge variant="outline" className="text-xs bg-soccer-blue/10 text-soccer-blue border-soccer-blue dark:bg-soccer-blue/20 dark:text-soccer-blue-light dark:border-soccer-blue/60">
+                                <p className="text-sm font-medium text-white drop-shadow">{formatDate(match.match_date)}</p>
+                                <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
                                   Programado
                                 </Badge>
                               </div>
@@ -409,13 +412,13 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                     {/* Playoff Matches */}
                     {upcomingPlayoffMatches.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-700 dark:text-yellow-500 uppercase tracking-wide">
+                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-300 drop-shadow uppercase tracking-wide">
                           <Trophy className="w-4 h-4" />
                           <span>Liguilla</span>
                         </h3>
                         <div className="space-y-3">
                           {upcomingPlayoffMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-yellow-500/20 rounded-lg border border-yellow-400/30">
                               <div className="flex items-center space-x-4 flex-1">
                                 <div className="text-center min-w-[120px]">
                                   <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
@@ -449,40 +452,40 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                     )}
 
                     {upcomingMatches.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">No hay partidos programados</p>
+                      <p className="text-center text-white/70 drop-shadow py-8">No hay partidos programados</p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader>
-                  <CardTitle>Resultados Recientes</CardTitle>
-                  <CardDescription>Últimos partidos jugados</CardDescription>
+                  <CardTitle className="text-white drop-shadow-lg">Resultados Recientes</CardTitle>
+                  <CardDescription className="text-white/80 drop-shadow">Últimos partidos jugados</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
                     {/* Regular Matches */}
                     {recentRegularMatches.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        <h3 className="text-sm font-semibold text-white/90 drop-shadow uppercase tracking-wide">
                           Fase Regular
                         </h3>
                         <div className="space-y-3">
                           {recentRegularMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 bg-muted/30 dark:bg-muted/50 rounded-lg">
+                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
                               <div className="flex items-center space-x-4">
                                 <div className="text-center">
-                                  <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
-                                  <p className="text-lg font-bold text-soccer-green">
+                                  <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                  <p className="text-lg font-bold text-green-300 drop-shadow">
                                     {match.home_score || 0} - {match.away_score || 0}
                                   </p>
-                                  <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="text-sm">{formatDate(match.match_date)}</p>
-                                <Badge variant="secondary" className="text-xs">
+                                <p className="text-sm text-white/80 drop-shadow">{formatDate(match.match_date)}</p>
+                                <Badge className="text-xs backdrop-blur-md bg-gray-500/80 text-white border-0">
                                   Finalizado
                                 </Badge>
                               </div>
@@ -495,13 +498,13 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                     {/* Playoff Matches */}
                     {recentPlayoffMatches.length > 0 && (
                       <div className="space-y-3">
-                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-700 dark:text-yellow-500 uppercase tracking-wide">
+                        <h3 className="text-sm font-semibold flex items-center space-x-2 text-yellow-300 drop-shadow uppercase tracking-wide">
                           <Trophy className="w-4 h-4" />
                           <span>Liguilla</span>
                         </h3>
                         <div className="space-y-3">
                           {recentPlayoffMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-yellow-50 dark:from-green-950/20 dark:to-yellow-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-green-500/20 rounded-lg border border-green-400/30">
                               <div className="flex items-center space-x-4 flex-1">
                                 <div className="text-center min-w-[120px]">
                                   <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
@@ -555,11 +558,11 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
             {roundNumbers.length > 0 ? (
               <div className="space-y-6">
                 {/* Round Selector */}
-                <Card>
+                <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="flex items-center justify-between text-white drop-shadow-lg">
                       <span>Seleccionar Jornada</span>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge className="text-xs backdrop-blur-md bg-white/10 text-white border-white/30">
                         {roundNumbers.length} jornadas disponibles
                       </Badge>
                     </CardTitle>
@@ -569,10 +572,10 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                       value={selectedRound || ""}
                       onValueChange={(value) => setSelectedRound(value)}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full backdrop-blur-md bg-white/10 border-white/30 text-white">
                         <SelectValue placeholder="Selecciona una jornada" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
                         {roundNumbers.map((roundNumber) => {
                           const roundMatches = matchesByRound[roundNumber] || []
                           const finishedMatches = roundMatches.filter(m => m.status === 'finished')
@@ -610,13 +613,13 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                   // Handle playoffs selection
                   if (selectedRound === 'playoffs') {
                     return (
-                      <Card className="border-2 border-yellow-400">
-                        <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
-                          <CardTitle className="flex items-center space-x-2">
-                            <Trophy className="w-6 h-6 text-yellow-600" />
+                      <Card className="backdrop-blur-xl bg-transparent border-2 border-yellow-400/50">
+                        <CardHeader>
+                          <CardTitle className="flex items-center space-x-2 text-white drop-shadow-lg">
+                            <Trophy className="w-6 h-6 text-yellow-300" />
                             <span>Fase Final - Liguilla</span>
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="text-white/80 drop-shadow">
                             {playoffMatches.length} partido(s) de playoffs
                           </CardDescription>
                         </CardHeader>
@@ -624,8 +627,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Cuartos de Final */}
                           {playoffsByRound['quarterfinals'] && playoffsByRound['quarterfinals'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center">
-                                <Trophy className="w-5 h-5 mr-2 text-orange-500" />
+                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                                <Trophy className="w-5 h-5 mr-2 text-orange-300" />
                                 Cuartos de Final
                               </h3>
                               <div className="space-y-3">
@@ -633,38 +636,38 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                   const isFinished = match.status === 'finished'
                                   return (
                                     <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
-                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                      isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
                                       <div className="flex items-center space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
-                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
-                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                            <p className="text-xs text-white/70 my-1">vs</p>
                                           )}
-                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                         </div>
                                         {match.leg && (
-                                          <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                          <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
                                             {match.leg === 'first' ? 'IDA' : 'VUELTA'}
                                           </Badge>
                                         )}
                                       </div>
                                       <div className="text-right">
                                         <div className="flex flex-col items-end space-y-1">
-                                          <p className="text-sm font-medium">
+                                          <p className="text-sm font-medium text-white drop-shadow">
                                             {formatDate(match.match_date)}
                                             {match.match_time && (
-                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                              <span className="ml-2 text-white/70">{match.match_time}</span>
                                             )}
                                           </p>
                                           {match.field_number && (
-                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                            <p className="text-xs text-white/70 drop-shadow">Campo {match.field_number}</p>
                                           )}
-                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                          <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                             {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
                                           </Badge>
                                         </div>
@@ -679,8 +682,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Semifinales */}
                           {playoffsByRound['semifinals'] && playoffsByRound['semifinals'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center">
-                                <Trophy className="w-5 h-5 mr-2 text-amber-500" />
+                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                                <Trophy className="w-5 h-5 mr-2 text-amber-300" />
                                 Semifinales
                               </h3>
                               <div className="space-y-3">
@@ -688,38 +691,38 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                   const isFinished = match.status === 'finished'
                                   return (
                                     <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
-                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                      isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
                                       <div className="flex items-center space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
-                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
-                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                            <p className="text-xs text-white/70 my-1">vs</p>
                                           )}
-                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                         </div>
                                         {match.leg && (
-                                          <Badge variant={match.leg === 'first' ? 'default' : 'secondary'} className="text-xs">
+                                          <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
                                             {match.leg === 'first' ? 'IDA' : 'VUELTA'}
                                           </Badge>
                                         )}
                                       </div>
                                       <div className="text-right">
                                         <div className="flex flex-col items-end space-y-1">
-                                          <p className="text-sm font-medium">
+                                          <p className="text-sm font-medium text-white drop-shadow">
                                             {formatDate(match.match_date)}
                                             {match.match_time && (
-                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                              <span className="ml-2 text-white/70">{match.match_time}</span>
                                             )}
                                           </p>
                                           {match.field_number && (
-                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                            <p className="text-xs text-white/70 drop-shadow">Campo {match.field_number}</p>
                                           )}
-                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                          <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                             {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
                                           </Badge>
                                         </div>
@@ -734,8 +737,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Tercer Lugar */}
                           {playoffsByRound['third_place'] && playoffsByRound['third_place'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center">
-                                <Trophy className="w-5 h-5 mr-2 text-orange-400" />
+                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                                <Trophy className="w-5 h-5 mr-2 text-orange-300" />
                                 Tercer Lugar
                               </h3>
                               <div className="space-y-3">
@@ -743,33 +746,33 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                   const isFinished = match.status === 'finished'
                                   return (
                                     <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
-                                      isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-gray-200'
+                                      isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
                                       <div className="flex items-center space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
-                                          <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-soccer-green my-1">
+                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
-                                            <p className="text-xs text-muted-foreground my-1">vs</p>
+                                            <p className="text-xs text-white/70 my-1">vs</p>
                                           )}
-                                          <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                          <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                         </div>
                                       </div>
                                       <div className="text-right">
                                         <div className="flex flex-col items-end space-y-1">
-                                          <p className="text-sm font-medium">
+                                          <p className="text-sm font-medium text-white drop-shadow">
                                             {formatDate(match.match_date)}
                                             {match.match_time && (
-                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                              <span className="ml-2 text-white/70">{match.match_time}</span>
                                             )}
                                           </p>
                                           {match.field_number && (
-                                            <p className="text-xs text-muted-foreground">Campo {match.field_number}</p>
+                                            <p className="text-xs text-white/70 drop-shadow">Campo {match.field_number}</p>
                                           )}
-                                          <Badge variant={isFinished ? "secondary" : "outline"} className="text-xs">
+                                          <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                             {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
                                           </Badge>
                                         </div>
@@ -784,8 +787,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Final */}
                           {playoffsByRound['final'] && playoffsByRound['final'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-xl mb-3 flex items-center">
-                                <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
+                              <h3 className="font-semibold text-xl mb-3 flex items-center text-white drop-shadow-lg">
+                                <Trophy className="w-6 h-6 mr-2 text-yellow-300" />
                                 FINAL
                               </h3>
                               <div className="space-y-3">
@@ -793,33 +796,33 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                   const isFinished = match.status === 'finished'
                                   return (
                                     <div key={match.id} className={`flex items-center justify-between p-5 rounded-lg border-2 ${
-                                      isFinished ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-400' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300'
+                                      isFinished ? 'backdrop-blur-xl bg-yellow-500/30 border-yellow-400/50' : 'backdrop-blur-xl bg-yellow-500/20 border-yellow-400/40'
                                     }`}>
                                       <div className="flex items-center space-x-4 flex-1">
                                         <div className="text-center min-w-[160px]">
-                                          <p className="font-bold text-base">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                          <p className="font-bold text-base text-white drop-shadow-lg">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-2xl font-bold text-yellow-600 my-2">
+                                            <p className="text-2xl font-bold text-yellow-300 drop-shadow-lg my-2">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
-                                            <p className="text-sm text-muted-foreground my-2">vs</p>
+                                            <p className="text-sm text-white/70 my-2">vs</p>
                                           )}
-                                          <p className="font-bold text-base">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                          <p className="font-bold text-base text-white drop-shadow-lg">{getTeamName(match.away_team_id, match.away_team)}</p>
                                         </div>
                                       </div>
                                       <div className="text-right">
                                         <div className="flex flex-col items-end space-y-1">
-                                          <p className="text-base font-bold">
+                                          <p className="text-base font-bold text-white drop-shadow">
                                             {formatDate(match.match_date)}
                                             {match.match_time && (
-                                              <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                              <span className="ml-2 text-white/70">{match.match_time}</span>
                                             )}
                                           </p>
                                           {match.field_number && (
-                                            <p className="text-sm text-muted-foreground">Campo {match.field_number}</p>
+                                            <p className="text-sm text-white/70 drop-shadow">Campo {match.field_number}</p>
                                           )}
-                                          <Badge variant={isFinished ? "default" : "outline"} className="text-sm">
+                                          <Badge className={`text-sm backdrop-blur-md border-0 ${isFinished ? 'bg-green-500/80 text-white' : 'bg-yellow-500/80 text-white'}`}>
                                             {isFinished ? "✅ FINALIZADO" : match.status === 'in_progress' ? "⚽ EN VIVO" : "📅 PROGRAMADO"}
                                           </Badge>
                                         </div>
@@ -843,29 +846,29 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                   const isInProgress = scheduledMatches.length > 0 && finishedMatches.length > 0
 
                   return (
-                    <Card>
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="flex items-center space-x-2">
+                            <CardTitle className="flex items-center space-x-2 text-white drop-shadow-lg">
                               <span>Jornada {selectedRound}</span>
                               {isCompleted && (
-                                <Badge variant="secondary" className="text-xs bg-green-100 text-soccer-green">
+                                <Badge className="text-xs backdrop-blur-md bg-green-500/80 text-white border-0">
                                   ✅ Completada
                                 </Badge>
                               )}
                               {isInProgress && (
-                                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+                                <Badge className="text-xs backdrop-blur-md bg-yellow-500/80 text-white border-0">
                                   ⏳ En progreso
                                 </Badge>
                               )}
                               {!isCompleted && !isInProgress && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
                                   📅 Programada
                                 </Badge>
                               )}
                             </CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-white/80 drop-shadow">
                               {roundMatches.length} partido(s) • {finishedMatches.length} finalizado(s) • {scheduledMatches.length} programado(s)
                             </CardDescription>
                           </div>
@@ -878,40 +881,43 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
                             return (
                               <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
-                                isFinished ? 'bg-green-50 border-green-200' : 'bg-muted/30 dark:bg-muted/50 border-gray-200'
+                                isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                               }`}>
                                 <div className="flex items-center space-x-4">
                                   <div className="text-center min-w-[120px]">
-                                    <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                     {isFinished ? (
-                                      <p className="text-lg font-bold text-soccer-green my-1">
+                                      <p className="text-lg font-bold text-green-300 drop-shadow my-1">
                                         {match.home_score || 0} - {match.away_score || 0}
                                       </p>
                                     ) : (
-                                      <p className="text-xs text-muted-foreground my-1">vs</p>
+                                      <p className="text-xs text-white/70 my-1">vs</p>
                                     )}
-                                    <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
                                   </div>
                                 </div>
 
                                 <div className="text-right">
                                   <div className="flex flex-col items-end space-y-1">
-                                    <p className="text-sm font-medium">
+                                    <p className="text-sm font-medium text-white drop-shadow">
                                       {formatDate(match.match_date)}
                                       {match.match_time && (
-                                        <span className="ml-2 text-muted-foreground">{match.match_time}</span>
+                                        <span className="ml-2 text-white/70">{match.match_time}</span>
                                       )}
                                     </p>
 
                                     {match.field_number && (
-                                      <p className="text-xs text-muted-foreground">
+                                      <p className="text-xs text-white/70 drop-shadow">
                                         Campo {match.field_number}
                                       </p>
                                     )}
 
                                     <Badge
-                                      variant={isFinished ? "secondary" : "outline"}
-                                      className="text-xs"
+                                      className={`text-xs backdrop-blur-md border-0 ${
+                                        isFinished ? 'bg-gray-500/80 text-white' :
+                                        match.status === 'in_progress' ? 'bg-yellow-500/80 text-white' :
+                                        'bg-blue-500/80 text-white'
+                                      }`}
                                     >
                                       {isFinished ? "Finalizado" :
                                        match.status === 'in_progress' ? "En progreso" :
@@ -929,10 +935,10 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                 })()}
               </div>
             ) : (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardContent className="text-center py-12">
-                  <p className="text-muted-foreground mb-2">No hay jornadas programadas</p>
-                  <p className="text-sm text-muted-foreground">Las jornadas aparecerán cuando se programen partidos</p>
+                  <p className="text-white/80 drop-shadow mb-2">No hay jornadas programadas</p>
+                  <p className="text-sm text-white/70 drop-shadow">Las jornadas aparecerán cuando se programen partidos</p>
                 </CardContent>
               </Card>
             )}
@@ -941,35 +947,35 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
           <TabsContent value="teams">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {data.teams.map((team) => (
-                <Card key={team.id}>
+                <Card key={team.id} className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader>
                     <div className="flex items-center space-x-3">
-                      <Avatar className="w-12 h-12">
+                      <Avatar className="w-12 h-12 border border-white/30">
                         {team.logo && (
                           <AvatarImage
                             src={team.logo}
                             alt={`Logo de ${team.name}`}
                           />
                         )}
-                        <AvatarFallback className="bg-soccer-blue/10 text-soccer-blue font-bold">
+                        <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white font-bold">
                           {getTeamInitials(team.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg">{team.name}</CardTitle>
-                        <CardDescription>/{team.slug}</CardDescription>
+                        <CardTitle className="text-lg text-white drop-shadow-lg">{team.name}</CardTitle>
+                        <CardDescription className="text-white/70 drop-shadow">/{team.slug}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">{team.description || "Sin descripción"}</p>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span className="flex items-center">
+                    <p className="text-sm text-white/80 drop-shadow mb-3">{team.description || "Sin descripción"}</p>
+                    <div className="flex items-center justify-between text-sm text-white/80">
+                      <span className="flex items-center drop-shadow">
                         <Users className="w-4 h-4 mr-1" />
                         Equipo registrado
                       </span>
                       <Link href={`/equipos/${team.id}`}>
-                        <Button variant="outline" size="sm">
+                        <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg" size="sm">
                           Ver Equipo
                           <ArrowRight className="w-4 h-4 ml-1" />
                         </Button>
@@ -980,7 +986,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
               ))}
               {data.teams.length === 0 && (
                 <div className="col-span-full">
-                  <p className="text-center text-muted-foreground py-8">No hay equipos registrados</p>
+                  <p className="text-center text-white/70 drop-shadow py-8">No hay equipos registrados</p>
                 </div>
               )}
             </div>
@@ -988,6 +994,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
         </Tabs>
       </main>
+      </div>
     </div>
   )
 }

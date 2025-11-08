@@ -54,17 +54,17 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Estadísticas de la Liga</h2>
-          <p className="text-muted-foreground">Cargando datos...</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
+          <p className="text-white/80 drop-shadow">Cargando datos...</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="backdrop-blur-xl bg-white/10 border-white/20">
               <CardHeader>
-                <div className="h-4 bg-muted rounded animate-pulse" />
+                <div className="h-4 bg-white/20 rounded animate-pulse" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-muted rounded animate-pulse" />
+                <div className="h-8 bg-white/20 rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -111,27 +111,27 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Estadísticas de la Liga</h2>
-        <p className="text-muted-foreground">Resumen de actividad y participación</p>
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
+        <p className="text-white/80 drop-shadow">Resumen de actividad y participación</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsData.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                <div className={`p-2 ${stat.bgColor}`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
+                <CardTitle className="text-sm font-medium text-white/90 drop-shadow">{stat.title}</CardTitle>
+                <div className="p-2 rounded-full backdrop-blur-md bg-white/20">
+                  <Icon className="w-4 h-4 text-white" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">
+                <div className="text-2xl font-bold text-white drop-shadow-lg">
                   {stat.value}
-                  {stat.total > stat.value && <span className="text-sm font-normal text-muted-foreground">/{stat.total}</span>}
+                  {stat.total > stat.value && <span className="text-sm font-normal text-white/70">/{stat.total}</span>}
                 </div>
-                <CardDescription className="text-xs">
+                <CardDescription className="text-xs text-white/70 drop-shadow">
                   {stat.title === "Torneos" && stats.activeTournament ? "Torneo activo" : 
                    stat.value > 0 ? "Registrados" : "Sin datos"}
                 </CardDescription>
@@ -142,25 +142,25 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardHeader>
-            <CardTitle>Equipos Recientes</CardTitle>
-            <CardDescription>Últimos equipos registrados</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Equipos Recientes</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Últimos equipos registrados</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stats.recentTeams.length > 0 ? (
                 stats.recentTeams.map((team) => (
-                  <div key={team.id} className="flex items-center justify-between p-3 bg-muted">
+                  <div key={team.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
-                      <p className="font-medium text-foreground">{team.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium text-white drop-shadow">{team.name}</p>
+                      <p className="text-sm text-white/70 drop-shadow">
                         Registrado el {new Date(team.created_at).toLocaleDateString("es-ES")}
                       </p>
                     </div>
                     <div
-                      className={`px-2 py-1 text-xs font-medium ${
-                        team.is_active ? "bg-soccer-green/20 text-soccer-green dark:bg-soccer-green/30 dark:text-soccer-green-light" : "bg-soccer-gold/20 text-soccer-gold dark:bg-soccer-gold/30 dark:text-soccer-gold-light"
+                      className={`px-2 py-1 text-xs font-medium rounded-full backdrop-blur-md ${
+                        team.is_active ? "bg-green-500/80 text-white" : "bg-yellow-500/80 text-white"
                       }`}
                     >
                       {team.is_active ? "Activo" : "Inactivo"}
@@ -168,35 +168,35 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground py-4">No hay equipos registrados</p>
+                <p className="text-sm text-white/70 drop-shadow py-4">No hay equipos registrados</p>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardHeader>
-            <CardTitle>Próximos Partidos</CardTitle>
-            <CardDescription>Calendario de partidos programados</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Próximos Partidos</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Calendario de partidos programados</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stats.upcomingMatches.length > 0 ? (
                 stats.upcomingMatches.map((match) => (
-                  <div key={match.id} className="flex items-center justify-between p-3 bg-muted">
+                  <div key={match.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
-                      <p className="font-medium text-foreground">
+                      <p className="font-medium text-white drop-shadow">
                         {match.home_team?.name} vs {match.away_team?.name}
                       </p>
-                      <p className="text-sm text-muted-foreground">{new Date(match.match_date).toLocaleDateString("es-ES")}</p>
+                      <p className="text-sm text-white/70 drop-shadow">{new Date(match.match_date).toLocaleDateString("es-ES")}</p>
                     </div>
-                    <div className="px-2 py-1 text-xs bg-soccer-blue/30 text-soccer-blue border border-soccer-blue/50 dark:bg-soccer-blue/40 dark:text-white dark:border-soccer-blue font-medium rounded">
+                    <div className="px-2 py-1 text-xs backdrop-blur-md bg-blue-500/80 text-white border border-white/20 font-medium rounded-full">
                       {match.status === 'scheduled' ? 'Programado' : match.status}
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground py-4">No hay partidos programados</p>
+                <p className="text-sm text-white/70 drop-shadow py-4">No hay partidos programados</p>
               )}
             </div>
           </CardContent>

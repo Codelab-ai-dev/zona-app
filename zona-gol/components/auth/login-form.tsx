@@ -152,148 +152,159 @@ export function LoginForm() {
   const configError = !supabaseReady && !loading
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('/zona-fondo.png')] bg-cover bg-center p-0 relative">
+    <div className="relative min-h-screen flex items-center justify-center bg-[url('/zona-fondo.png')] bg-cover bg-center p-4 overflow-hidden">
+      {/* Overlay oscuro */}
       <div className="absolute inset-0 bg-black/70 dark:bg-black/80"></div>
       
       {/* Theme toggle button */}
       <div className="absolute top-4 right-4 z-20">
-        <SimpleThemeToggle />
+        <div className="backdrop-blur-md bg-white/10 rounded-lg p-1 border border-white/20">
+          <SimpleThemeToggle />
+        </div>
       </div>
       
-      <Card className="w-full max-w-md overflow-hidden border-0 shadow-2xl rounded-lg relative z-10">
-          <div className="relative z-10 flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center gap-3">
-              <img src="/zona-gol-final.webp" alt="Logo" className="w-48 h-48" />
+      {/* Card con efecto glass */}
+      <div className="w-full max-w-md relative z-10">
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
+          {/* Header con logo */}
+          <div className="p-8 flex flex-col items-center justify-center">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <img src="/zona-gol.png" alt="Logo" className="w-32 h-32 drop-shadow-2xl" />
             </div>
-            <p className="text-foreground text-center">Panel de Administración</p>
+            <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-1">Panel de Administración</h2>
+            <p className="text-white/70 text-sm drop-shadow">Zona-Gol</p>
           </div>
         
-        <CardContent className="pt-6 pb-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                required
-                disabled={loading}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                disabled={loading}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-              />
-            </div>
-            {displayError && (
-              <Alert variant="destructive">
-                <AlertDescription>{displayError}</AlertDescription>
-              </Alert>
-            )}
+          {/* Formulario */}
+          <div className="px-8 pb-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-white drop-shadow font-medium">Correo electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  required
+                  disabled={loading}
+                  className="backdrop-blur-md bg-white/20 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 focus:ring-green-400/50 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-white drop-shadow font-medium">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="backdrop-blur-md bg-white/20 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 focus:ring-green-400/50 transition-all"
+                />
+              </div>
+              {displayError && (
+                <Alert className="backdrop-blur-md bg-red-500/20 border-red-300/30 shadow-lg">
+                  <AlertDescription className="text-white drop-shadow">{displayError}</AlertDescription>
+                </Alert>
+              )}
+              
+              {configError && (
+                <Alert className="backdrop-blur-md bg-yellow-500/20 border-yellow-300/30 shadow-lg">
+                  <AlertDescription className="text-white drop-shadow">
+                    Hay un problema con la configuración del sistema de autenticación.
+                    Por favor, contacta al administrador o visita la página de <a href="/debug-login" className="underline font-semibold">depuración</a>.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <Button 
+                type="submit" 
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+                disabled={loading || configError}
+              >
+                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              </Button>
+            </form>
             
-            {configError && (
-              <Alert className="bg-yellow-50 border-yellow-200">
-                <AlertDescription className="text-yellow-800">
-                  Hay un problema con la configuración del sistema de autenticación.
-                  Por favor, contacta al administrador o visita la página de <a href="/debug-login" className="underline font-medium">depuración</a>.
-                </AlertDescription>
-              </Alert>
-            )}
-            <Button 
-              type="submit" 
-              className="w-full bg-green-600 hover:bg-green-700 text-lg py-6" 
-              disabled={loading || configError}
-            >
-              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
-            </Button>
-          </form>
-          
-          <div className="flex justify-center mt-4">
-            <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" className="text-sm text-gray-600 hover:text-green-600">
-                  ¿Olvidaste tu contraseña?
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Mail className="w-5 h-5" />
-                    Recuperar Contraseña
-                  </DialogTitle>
-                  <DialogDescription>
-                    Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handlePasswordReset} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Correo electrónico</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      required
-                      disabled={resetLoading}
-                      className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                    />
-                  </div>
-                  {resetMessage && (
-                    <Alert className={resetMessage.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                      <AlertDescription className={resetMessage.type === 'success' ? 'text-green-700' : 'text-red-700'}>
-                        {resetMessage.text}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsResetDialogOpen(false)
-                        setResetEmail("")
-                        setResetMessage(null)
-                      }}
-                      className="flex-1"
-                      disabled={resetLoading}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button 
-                      type="submit"
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      disabled={resetLoading || !resetEmail}
-                    >
-                      {resetLoading ? "Enviando..." : "Enviar Enlace"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            {/* Recuperar contraseña */}
+            <div className="flex justify-center mt-4">
+              <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" className="text-sm text-white/80 hover:text-white hover:bg-white/10 transition-all">
+                    ¿Olvidaste tu contraseña?
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md backdrop-blur-xl bg-white/95 border-white/20">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Mail className="w-5 h-5" />
+                      Recuperar Contraseña
+                    </DialogTitle>
+                    <DialogDescription>
+                      Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handlePasswordReset} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Correo electrónico</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
+                        disabled={resetLoading}
+                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                      />
+                    </div>
+                    {resetMessage && (
+                      <Alert className={resetMessage.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                        <AlertDescription className={resetMessage.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                          {resetMessage.text}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsResetDialogOpen(false)
+                          setResetEmail("")
+                          setResetMessage(null)
+                        }}
+                        className="flex-1"
+                        disabled={resetLoading}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        type="submit"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        disabled={resetLoading || !resetEmail}
+                      >
+                        {resetLoading ? "Enviando..." : "Enviar Enlace"}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-        </CardContent>
-        
-        <CardFooter className="flex justify-center border-t pt-4 pb-6">
-          <Button asChild variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-            <Link href="/" className="flex items-center gap-2">
-              <ArrowLeft size={16} />
-              <span>Regresar al Inicio</span>
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
+          
+          {/* Footer */}
+          <div className="flex justify-center border-t border-white/10 backdrop-blur-md bg-white/5 py-4">
+            <Button asChild variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10 transition-all">
+              <Link href="/" className="flex items-center gap-2">
+                <ArrowLeft size={16} />
+                <span>Regresar al Inicio</span>
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -54,17 +54,17 @@ export function SystemStats() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Estadísticas del Sistema</h2>
-          <p className="text-gray-600">Cargando datos...</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas del Sistema</h2>
+          <p className="text-white/80 drop-shadow">Cargando datos...</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}>
+            <Card key={i} className="backdrop-blur-xl bg-white/10 border-white/20">
               <CardHeader>
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-white/20 rounded animate-pulse" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                <div className="h-8 bg-white/20 rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -111,27 +111,27 @@ export function SystemStats() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Estadísticas del Sistema</h2>
-        <p className="text-gray-600">Resumen general de todas las ligas</p>
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas del Sistema</h2>
+        <p className="text-white/80 drop-shadow">Resumen general de todas las ligas</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsData.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-full ${stat.bgColor}`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
+                <CardTitle className="text-sm font-medium text-white/90 drop-shadow">{stat.title}</CardTitle>
+                <div className="p-2 rounded-full backdrop-blur-md bg-white/20">
+                  <Icon className="w-4 h-4 text-white" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-white drop-shadow-lg">
                   {stat.value}
-                  <span className="text-sm font-normal text-gray-500">/{stat.total}</span>
+                  <span className="text-sm font-normal text-white/70">/{stat.total}</span>
                 </div>
-                <CardDescription className="text-xs">
+                <CardDescription className="text-xs text-white/70 drop-shadow">
                   {stat.value === stat.total ? "Todos activos" : `${stat.total - stat.value} inactivos`}
                 </CardDescription>
               </CardContent>
@@ -141,23 +141,23 @@ export function SystemStats() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardHeader>
-            <CardTitle>Ligas Recientes</CardTitle>
-            <CardDescription>Últimas ligas creadas en el sistema</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Ligas Recientes</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Últimas ligas creadas en el sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stats.leagues.recentLeagues.length > 0 ? (
                 stats.leagues.recentLeagues.map((league) => (
-                  <div key={league.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={league.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
-                      <p className="font-medium text-gray-900">{league.name}</p>
-                      <p className="text-sm text-gray-500">/{league.slug}</p>
+                      <p className="font-medium text-white drop-shadow">{league.name}</p>
+                      <p className="text-sm text-white/70 drop-shadow">/{league.slug}</p>
                     </div>
                     <div
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        league.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                      className={`px-2 py-1 rounded-full text-xs backdrop-blur-md ${
+                        league.is_active ? "bg-green-500/80 text-white" : "bg-white/20 text-white/80"
                       }`}
                     >
                       {league.is_active ? "Activa" : "Inactiva"}
@@ -165,38 +165,38 @@ export function SystemStats() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 py-4">No hay ligas registradas</p>
+                <p className="text-sm text-white/70 drop-shadow py-4">No hay ligas registradas</p>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
-            <CardDescription>Últimas acciones en el sistema</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Actividad Reciente</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Últimas acciones en el sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="flex items-center space-x-3 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
+                <div className="w-2 h-2 bg-green-400 rounded-full shadow-lg"></div>
                 <div>
-                  <p className="text-sm font-medium">Nueva liga creada</p>
-                  <p className="text-xs text-gray-500">Liga Premier Mexicana - hace 2 horas</p>
+                  <p className="text-sm font-medium text-white drop-shadow">Nueva liga creada</p>
+                  <p className="text-xs text-white/70 drop-shadow">Liga Premier Mexicana - hace 2 horas</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="flex items-center space-x-3 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
+                <div className="w-2 h-2 bg-blue-400 rounded-full shadow-lg"></div>
                 <div>
-                  <p className="text-sm font-medium">Torneo iniciado</p>
-                  <p className="text-xs text-gray-500">Temporada 2024 - Apertura - hace 1 día</p>
+                  <p className="text-sm font-medium text-white drop-shadow">Torneo iniciado</p>
+                  <p className="text-xs text-white/70 drop-shadow">Temporada 2024 - Apertura - hace 1 día</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <div className="flex items-center space-x-3 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
+                <div className="w-2 h-2 bg-purple-400 rounded-full shadow-lg"></div>
                 <div>
-                  <p className="text-sm font-medium">Nuevo equipo registrado</p>
-                  <p className="text-xs text-gray-500">Águilas FC - hace 3 días</p>
+                  <p className="text-sm font-medium text-white drop-shadow">Nuevo equipo registrado</p>
+                  <p className="text-xs text-white/70 drop-shadow">Águilas FC - hace 3 días</p>
                 </div>
               </div>
             </div>

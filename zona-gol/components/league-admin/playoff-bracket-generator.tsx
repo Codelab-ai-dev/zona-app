@@ -491,51 +491,51 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Fase de Liguilla</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Fase de Liguilla</h2>
+          <p className="text-white/80 drop-shadow">
             Configura y genera el bracket de playoffs al finalizar la fase regular
           </p>
         </div>
         <Dialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-soccer-gold hover:bg-soccer-gold-dark dark:bg-soccer-gold dark:hover:bg-soccer-gold-light">
+            <Button className="backdrop-blur-md bg-yellow-500/80 hover:bg-yellow-500/90 text-white border-0 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
               Generar Liguilla
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
             <DialogHeader className="pb-4">
-              <DialogTitle className="flex items-center gap-2 text-2xl">
-                <Trophy className="w-7 h-7 text-soccer-gold" />
+              <DialogTitle className="flex items-center gap-2 text-2xl text-white drop-shadow-lg">
+                <Trophy className="w-7 h-7 text-yellow-300" />
                 Configurar Liguilla
               </DialogTitle>
-              <DialogDescription className="text-base">
+              <DialogDescription className="text-base text-white/80 drop-shadow">
                 Selecciona los equipos clasificados y configura el formato de la liguilla
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-8 py-2">
               {message && (
-                <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50 dark:bg-green-900/20' : 'border-red-200 bg-red-50 dark:bg-red-900/20'}>
-                  <AlertDescription className={message.type === 'success' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
+                <Alert className={`backdrop-blur-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'} shadow-xl`}>
+                  <AlertDescription className="text-white drop-shadow">
                     {message.text}
                   </AlertDescription>
                 </Alert>
               )}
 
               {/* Tournament Selection */}
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Seleccionar Torneo</CardTitle>
+                  <CardTitle className="text-xl text-white drop-shadow-lg">Seleccionar Torneo</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <Select value={selectedTournamentId} onValueChange={setSelectedTournamentId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                       <SelectValue placeholder="Selecciona un torneo" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
                       {activeTournaments.map(tournament => (
-                        <SelectItem key={tournament.id} value={tournament.id}>
+                        <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
                           {tournament.name}
                         </SelectItem>
                       ))}
@@ -545,15 +545,15 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
               </Card>
 
               {/* Playoff Format Configuration */}
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Formato de Liguilla</CardTitle>
+                  <CardTitle className="text-xl text-white drop-shadow-lg">Formato de Liguilla</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8 pt-0">
                   <div className="space-y-8">
                     <div className="grid grid-cols-2 gap-12">
                       <div className="space-y-3">
-                        <Label className="text-base font-medium block">Número de Equipos</Label>
+                        <Label className="text-base font-medium block text-white/90 drop-shadow">Número de Equipos</Label>
                         <Select
                           value={numTeams.toString()}
                           onValueChange={(val) => {
@@ -561,40 +561,40 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                             setSelectedTeams([])
                           }}
                         >
-                          <SelectTrigger className="h-12 w-full">
+                          <SelectTrigger className="h-12 w-full backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="4">4 equipos (Semifinales)</SelectItem>
-                            <SelectItem value="8">8 equipos (Cuartos de Final)</SelectItem>
+                          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                            <SelectItem value="4" className="text-white hover:bg-white/10">4 equipos (Semifinales)</SelectItem>
+                            <SelectItem value="8" className="text-white hover:bg-white/10">8 equipos (Cuartos de Final)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-base font-medium block">Fecha de Inicio</Label>
+                        <Label className="text-base font-medium block text-white/90 drop-shadow">Fecha de Inicio</Label>
                         <Input
                           type="date"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
-                          className="h-12 w-full"
+                          className="h-12 w-full backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-12">
                       <div className="space-y-3">
-                        <Label className="text-base font-medium block">Hora de Inicio</Label>
+                        <Label className="text-base font-medium block text-white/90 drop-shadow">Hora de Inicio</Label>
                         <Input
                           type="time"
                           value={startTime}
                           onChange={(e) => setStartTime(e.target.value)}
-                          className="h-12 w-full"
+                          className="h-12 w-full backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label className="text-base font-medium block">Cancha</Label>
+                        <Label className="text-base font-medium block text-white/90 drop-shadow">Cancha</Label>
                         <Select value={fieldNumber.toString()} onValueChange={(val) => setFieldNumber(parseInt(val))}>
-                          <SelectTrigger className="h-12 w-full">
+                          <SelectTrigger className="h-12 w-full backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -635,10 +635,10 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
               </Card>
 
               {/* Load Standings */}
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Clasificación de la Fase Regular</CardTitle>
-                  <CardDescription className="text-base mt-2">
+                  <CardTitle className="text-xl text-white drop-shadow-lg">Clasificación de la Fase Regular</CardTitle>
+                  <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
                     Carga la tabla de posiciones para seleccionar equipos automáticamente
                   </CardDescription>
                 </CardHeader>
@@ -646,8 +646,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                   <Button
                     onClick={loadStandings}
                     disabled={loading || !selectedTournamentId}
-                    variant="outline"
-                    className="w-full"
+                    className="w-full backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                   >
                     {loading ? (
                       <>
@@ -664,16 +663,16 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
 
                   {standings.length > 0 && (
                     <div className="mt-6 space-y-3">
-                      <p className="text-base font-semibold">Tabla de Posiciones:</p>
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
+                      <p className="text-base font-semibold text-white drop-shadow">Tabla de Posiciones:</p>
+                      <div className="border border-white/20 rounded-lg overflow-hidden shadow-xl backdrop-blur-md bg-white/5">
                         <table className="w-full">
-                          <thead className="bg-muted">
+                          <thead className="backdrop-blur-md bg-white/10">
                             <tr>
-                              <th className="text-left p-3 font-semibold">Pos</th>
-                              <th className="text-left p-3 font-semibold">Equipo</th>
-                              <th className="text-center p-3 font-semibold">PJ</th>
-                              <th className="text-center p-3 font-semibold">Pts</th>
-                              <th className="text-center p-3 font-semibold">DG</th>
+                              <th className="text-left p-3 font-semibold text-white">Pos</th>
+                              <th className="text-left p-3 font-semibold text-white">Equipo</th>
+                              <th className="text-center p-3 font-semibold text-white">PJ</th>
+                              <th className="text-center p-3 font-semibold text-white">Pts</th>
+                              <th className="text-center p-3 font-semibold text-white">DG</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -682,21 +681,21 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                                 key={standing.team.id}
                                 className={
                                   index < numTeams
-                                    ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500'
-                                    : 'hover:bg-muted/50'
+                                    ? 'bg-green-500/20 border-l-4 border-l-green-400'
+                                    : 'hover:bg-white/5'
                                 }
                               >
-                                <td className="p-3 font-medium">{index + 1}</td>
-                                <td className="p-3">{standing.team.name}</td>
-                                <td className="p-3 text-center">{standing.played}</td>
-                                <td className="p-3 text-center font-bold">{standing.points}</td>
-                                <td className="p-3 text-center">{standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}</td>
+                                <td className="p-3 font-medium text-white">{index + 1}</td>
+                                <td className="p-3 text-white">{standing.team.name}</td>
+                                <td className="p-3 text-center text-white/90">{standing.played}</td>
+                                <td className="p-3 text-center font-bold text-white">{standing.points}</td>
+                                <td className="p-3 text-center text-white/90">{standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                      <p className="text-sm text-muted-foreground italic">
+                      <p className="text-sm text-white/70 drop-shadow italic">
                         Los primeros {numTeams} equipos están seleccionados automáticamente (resaltados en verde)
                       </p>
                     </div>
@@ -706,10 +705,10 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
 
               {/* Manual Team Selection */}
               {selectedTeams.length > 0 && (
-                <Card>
+                <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl">Equipos Clasificados</CardTitle>
-                    <CardDescription className="text-base mt-2">
+                    <CardTitle className="text-xl text-white drop-shadow-lg">Equipos Clasificados</CardTitle>
+                    <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
                       Ajusta manualmente el orden si es necesario
                     </CardDescription>
                   </CardHeader>
@@ -900,28 +899,28 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
       </Dialog>
 
       {/* Info Card */}
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-soccer-gold" />
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <Trophy className="w-5 h-5 text-yellow-300" />
             ¿Cómo funciona la Liguilla?
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 text-sm text-white/80 drop-shadow">
           <p>
-            <strong>1. Finaliza la fase regular:</strong> Asegúrate de que todos los partidos de
+            <strong className="text-white">1. Finaliza la fase regular:</strong> Asegúrate de que todos los partidos de
             la fase regular estén finalizados y los resultados ingresados correctamente.
           </p>
           <p>
-            <strong>2. Genera la liguilla:</strong> El sistema cargará automáticamente la tabla
+            <strong className="text-white">2. Genera la liguilla:</strong> El sistema cargará automáticamente la tabla
             de posiciones y seleccionará los primeros 4 u 8 equipos según el formato elegido.
           </p>
           <p>
-            <strong>3. Ajusta manualmente:</strong> Puedes modificar el orden de los equipos
+            <strong className="text-white">3. Ajusta manualmente:</strong> Puedes modificar el orden de los equipos
             clasificados si hay criterios especiales de desempate.
           </p>
           <p>
-            <strong>4. Formato automático:</strong> Los emparejamientos se crean automáticamente:
+            <strong className="text-white">4. Formato automático:</strong> Los emparejamientos se crean automáticamente:
             1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).
           </p>
         </CardContent>
