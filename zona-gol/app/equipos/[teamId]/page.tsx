@@ -1333,7 +1333,7 @@ export default function TeamDetailPage() {
 
       {/* Modal de Información del Jugador */}
       <Dialog open={playerModalOpen} onOpenChange={setPlayerModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3 text-white drop-shadow-lg">
               {selectedPlayer && (
@@ -1350,11 +1350,11 @@ export default function TeamDetailPage() {
                   <div>
                     <div className="flex items-center space-x-2">
                       <span>{selectedPlayer.name}</span>
-                      <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">
+                      <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0 shadow-lg">
                         #{selectedPlayer.jersey_number}
                       </Badge>
                     </div>
-                    <p className="text-sm font-normal text-white/70">{selectedPlayer.position}</p>
+                    <p className="text-sm font-normal text-white/70 drop-shadow">{selectedPlayer.position}</p>
                   </div>
                 </>
               )}
@@ -1367,33 +1367,33 @@ export default function TeamDetailPage() {
           {selectedPlayer && (
             <div className="space-y-6 mt-4">
               {/* Información Personal */}
-              <div>
+              <div className="backdrop-blur-md bg-blue-500/20 p-4 rounded-xl border border-blue-300/30 shadow-lg">
                 <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
                   <Users className="w-5 h-5 mr-2 text-blue-300" />
                   Información Personal
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-white/70">Nombre Completo</p>
+                    <p className="text-sm text-white/70 drop-shadow">Nombre Completo</p>
                     <p className="font-medium text-white drop-shadow">{selectedPlayer.name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-white/70">Posición</p>
+                    <p className="text-sm text-white/70 drop-shadow">Posición</p>
                     <p className="font-medium text-white drop-shadow">{selectedPlayer.position}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-white/70">Número de Camiseta</p>
+                    <p className="text-sm text-white/70 drop-shadow">Número de Camiseta</p>
                     <p className="font-medium text-green-300 text-lg drop-shadow-lg">#{selectedPlayer.jersey_number}</p>
                   </div>
                   {(selectedPlayer as any).cedula && (
                     <div>
-                      <p className="text-sm text-white/70">Cédula</p>
+                      <p className="text-sm text-white/70 drop-shadow">Cédula</p>
                       <p className="font-medium text-white drop-shadow">{(selectedPlayer as any).cedula}</p>
                     </div>
                   )}
                   {selectedPlayer.birth_date && (
                     <div>
-                      <p className="text-sm text-white/70">Fecha de Nacimiento</p>
+                      <p className="text-sm text-white/70 drop-shadow">Fecha de Nacimiento</p>
                       <p className="font-medium text-white drop-shadow">
                         {new Date(selectedPlayer.birth_date).toLocaleDateString('es-ES', {
                           year: 'numeric',
@@ -1413,48 +1413,48 @@ export default function TeamDetailPage() {
                   Estadísticas del Torneo
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_games}</p>
-                      <p className="text-sm text-white/70 mt-1">Partidos Jugados</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Partidos Jugados</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <p className="text-3xl font-bold text-green-300 drop-shadow-lg">{selectedPlayer.total_goals}</p>
-                      <p className="text-sm text-white/70 mt-1">Goles</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Goles</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <p className="text-3xl font-bold text-blue-300 drop-shadow-lg">{selectedPlayer.total_assists}</p>
-                      <p className="text-sm text-white/70 mt-1">Asistencias</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Asistencias</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <p className="text-3xl font-bold text-yellow-300 drop-shadow-lg">{selectedPlayer.total_yellow_cards}</p>
-                      <p className="text-sm text-white/70 mt-1">Tarjetas Amarillas</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Amarillas</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <p className="text-3xl font-bold text-red-300 drop-shadow-lg">{selectedPlayer.total_red_cards}</p>
-                      <p className="text-sm text-white/70 mt-1">Tarjetas Rojas</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Rojas</p>
                     </CardContent>
                   </Card>
 
-                  <Card className="backdrop-blur-md bg-white/10 border-white/20">
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="pt-6 text-center">
                       <div className="flex items-center justify-center">
                         <Clock className="w-5 h-5 mr-2 text-gray-300" />
                         <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_minutes_played}</p>
                       </div>
-                      <p className="text-sm text-white/70 mt-1">Minutos Jugados</p>
+                      <p className="text-sm text-white/70 mt-1 drop-shadow">Minutos Jugados</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -1468,22 +1468,22 @@ export default function TeamDetailPage() {
                     Promedios
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                      <p className="text-sm text-white/70">Goles por Partido</p>
+                    <div className="p-4 backdrop-blur-xl bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
+                      <p className="text-sm text-white/70 drop-shadow">Goles por Partido</p>
                       <p className="text-2xl font-bold text-green-300 drop-shadow-lg">
                         {(selectedPlayer.total_goals / selectedPlayer.total_games).toFixed(2)}
                       </p>
                     </div>
 
-                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                      <p className="text-sm text-white/70">Asistencias por Partido</p>
+                    <div className="p-4 backdrop-blur-xl bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
+                      <p className="text-sm text-white/70 drop-shadow">Asistencias por Partido</p>
                       <p className="text-2xl font-bold text-blue-300 drop-shadow-lg">
                         {(selectedPlayer.total_assists / selectedPlayer.total_games).toFixed(2)}
                       </p>
                     </div>
 
-                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                      <p className="text-sm text-white/70">Minutos por Partido</p>
+                    <div className="p-4 backdrop-blur-xl bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                      <p className="text-sm text-white/70 drop-shadow">Minutos por Partido</p>
                       <p className="text-2xl font-bold text-white drop-shadow-lg">
                         {Math.round(selectedPlayer.total_minutes_played / selectedPlayer.total_games)}'
                       </p>
@@ -1499,19 +1499,19 @@ export default function TeamDetailPage() {
                     <AlertTriangle className="w-5 h-5 mr-2 text-yellow-300" />
                     Disciplina
                   </h3>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                  <div className="p-4 backdrop-blur-xl bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2">
-                          <div className="w-8 h-12 bg-yellow-400 rounded"></div>
+                          <div className="w-8 h-12 bg-yellow-400 rounded shadow-lg"></div>
                           <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_yellow_cards}</span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <div className="w-8 h-12 bg-red-500 rounded"></div>
+                          <div className="w-8 h-12 bg-red-500 rounded shadow-lg"></div>
                           <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_red_cards}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-white/70">
+                      <p className="text-sm text-white/70 drop-shadow">
                         Total de tarjetas recibidas en el torneo
                       </p>
                     </div>

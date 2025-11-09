@@ -263,8 +263,8 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin mr-2" />
-          <span>Cargando configuración de uniformes...</span>
+          <Loader2 className="w-8 h-8 animate-spin mr-2 text-white" />
+          <span className="text-white drop-shadow">Cargando configuración de uniformes...</span>
         </div>
       </div>
     )
@@ -273,11 +273,11 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
   if (error || !team) {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error</h3>
-            <p className="text-red-600">{error || 'Equipo no encontrado'}</p>
+            <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">Error</h3>
+            <p className="text-red-400 drop-shadow">{error || 'Equipo no encontrado'}</p>
           </CardContent>
         </Card>
       </div>
@@ -289,11 +289,11 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg flex items-center">
             <Shirt className="w-6 h-6 mr-2" />
             Gestión de Uniformes
           </h2>
-          <p className="text-gray-600">
+          <p className="text-white/80 drop-shadow">
             Configura los colores de los uniformes de {team.name}
           </p>
         </div>
@@ -304,6 +304,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
               variant="outline"
               onClick={handleResetColors}
               disabled={saving}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Restablecer
@@ -311,7 +312,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
             <Button
               onClick={handleSaveColors}
               disabled={saving}
-              className="bg-green-600 hover:bg-green-700"
+              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
             >
               {saving ? (
                 <>
@@ -332,13 +333,13 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
       {/* Uniform Previews */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Home Uniform */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-white drop-shadow-lg">
               <Shirt className="w-5 h-5 mr-2" />
               Uniforme Local
             </CardTitle>
-            <CardDescription>Colores para partidos en casa</CardDescription>
+            <CardDescription className="text-white/70 drop-shadow">Colores para partidos en casa</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Home Uniform Preview */}
@@ -373,7 +374,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
             {/* Home Color Controls */}
             <div className="space-y-3">
               <div>
-                <Label htmlFor="home-shirt">Color de Camiseta</Label>
+                <Label htmlFor="home-shirt" className="text-white drop-shadow">Color de Camiseta</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="home-shirt"
@@ -386,14 +387,14 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.home_shirt_color}
                     onChange={(e) => handleColorChange('home_shirt_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#3B82F6"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="home-shorts">Color de Short</Label>
+                <Label htmlFor="home-shorts" className="text-white drop-shadow">Color de Short</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="home-shorts"
@@ -406,7 +407,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.home_shorts_color}
                     onChange={(e) => handleColorChange('home_shorts_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#FFFFFF"
                   />
                 </div>
@@ -416,13 +417,13 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
         </Card>
 
         {/* Away Uniform */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-white drop-shadow-lg">
               <Shirt className="w-5 h-5 mr-2" />
               Uniforme Visitante
             </CardTitle>
-            <CardDescription>Colores para partidos fuera de casa</CardDescription>
+            <CardDescription className="text-white/70 drop-shadow">Colores para partidos fuera de casa</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Away Uniform Preview */}
@@ -457,7 +458,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
             {/* Away Color Controls */}
             <div className="space-y-3">
               <div>
-                <Label htmlFor="away-shirt">Color de Camiseta</Label>
+                <Label htmlFor="away-shirt" className="text-white drop-shadow">Color de Camiseta</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="away-shirt"
@@ -470,14 +471,14 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.away_shirt_color}
                     onChange={(e) => handleColorChange('away_shirt_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#EF4444"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="away-shorts">Color de Short</Label>
+                <Label htmlFor="away-shorts" className="text-white drop-shadow">Color de Short</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="away-shorts"
@@ -490,7 +491,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.away_shorts_color}
                     onChange={(e) => handleColorChange('away_shorts_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#FFFFFF"
                   />
                 </div>
@@ -500,13 +501,13 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
         </Card>
 
         {/* Alternate Uniform 1 */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-white drop-shadow-lg">
               <Shirt className="w-5 h-5 mr-2" />
               Alternativo 1
             </CardTitle>
-            <CardDescription>Primer uniforme alternativo</CardDescription>
+            <CardDescription className="text-white/70 drop-shadow">Primer uniforme alternativo</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Alt1 Uniform Preview */}
@@ -541,7 +542,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
             {/* Alt1 Color Controls */}
             <div className="space-y-3">
               <div>
-                <Label htmlFor="alt1-shirt">Color de Camiseta</Label>
+                <Label htmlFor="alt1-shirt" className="text-white drop-shadow">Color de Camiseta</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="alt1-shirt"
@@ -554,14 +555,14 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.alt1_shirt_color}
                     onChange={(e) => handleColorChange('alt1_shirt_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#10B981"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="alt1-shorts">Color de Short</Label>
+                <Label htmlFor="alt1-shorts" className="text-white drop-shadow">Color de Short</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="alt1-shorts"
@@ -574,7 +575,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.alt1_shorts_color}
                     onChange={(e) => handleColorChange('alt1_shorts_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#1F2937"
                   />
                 </div>
@@ -584,13 +585,13 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
         </Card>
 
         {/* Alternate Uniform 2 */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-white drop-shadow-lg">
               <Shirt className="w-5 h-5 mr-2" />
               Alternativo 2
             </CardTitle>
-            <CardDescription>Segundo uniforme alternativo</CardDescription>
+            <CardDescription className="text-white/70 drop-shadow">Segundo uniforme alternativo</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Alt2 Uniform Preview */}
@@ -625,7 +626,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
             {/* Alt2 Color Controls */}
             <div className="space-y-3">
               <div>
-                <Label htmlFor="alt2-shirt">Color de Camiseta</Label>
+                <Label htmlFor="alt2-shirt" className="text-white drop-shadow">Color de Camiseta</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="alt2-shirt"
@@ -638,14 +639,14 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.alt2_shirt_color}
                     onChange={(e) => handleColorChange('alt2_shirt_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#F59E0B"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="alt2-shorts">Color de Short</Label>
+                <Label htmlFor="alt2-shorts" className="text-white drop-shadow">Color de Short</Label>
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     id="alt2-shorts"
@@ -658,7 +659,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                     type="text"
                     value={colors.alt2_shorts_color}
                     onChange={(e) => handleColorChange('alt2_shorts_color', e.target.value)}
-                    className="flex-1 font-mono text-sm"
+                    className="flex-1 font-mono text-sm backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     placeholder="#1F2937"
                   />
                 </div>
@@ -670,11 +671,11 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
 
 
       {/* Information Card */}
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardContent className="pt-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">💡 Consejos para elegir colores</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+          <div className="backdrop-blur-md bg-blue-500/20 border border-blue-300/30 rounded-xl p-4 shadow-lg">
+            <h4 className="font-medium text-white mb-2 drop-shadow-lg">💡 Consejos para elegir colores</h4>
+            <ul className="text-sm text-white/80 drop-shadow space-y-1">
               <li>• <strong>Color de Camiseta:</strong> Color principal del uniforme</li>
               <li>• <strong>Color de Short:</strong> Color de los pantalones cortos</li>
               <li>• Asegúrate de que haya buen contraste entre colores para mejor visibilidad</li>

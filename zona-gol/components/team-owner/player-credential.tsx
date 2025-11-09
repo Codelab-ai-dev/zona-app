@@ -404,20 +404,20 @@ export function PlayerCredential({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IdCard className="w-5 h-5 text-blue-600" />
+          <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <IdCard className="w-5 h-5 text-green-300" />
             Credencial de Jugador
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80 drop-shadow">
             Credencial imprimible para {player.name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Vista previa de la credencial */}
-          <div className="flex justify-center p-6 bg-gray-50 rounded-lg">
+          <div className="flex justify-center p-6 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
             <div
               id="credential-content"
               className="border-2 border-blue-600 rounded-lg p-4 bg-gradient-to-br from-slate-50 to-slate-200 shadow-lg relative overflow-hidden"
@@ -526,23 +526,23 @@ export function PlayerCredential({
           </div>
 
           {/* Información adicional */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
             <div>
-              <h4 className="font-semibold text-blue-800 mb-2">Información del Jugador</h4>
+              <h4 className="font-semibold text-white mb-2 drop-shadow-lg">Información del Jugador</h4>
               <div className="space-y-1 text-sm">
-                <div><span className="text-gray-600">Nombre:</span> {player.name}</div>
-                <div><span className="text-gray-600">Posición:</span> {player.position}</div>
-                <div><span className="text-gray-600">Número:</span> #{player.jersey_number}</div>
-                <div><span className="text-gray-600">Equipo:</span> {team.name}</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Nombre:</span> {player.name}</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Posición:</span> {player.position}</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Número:</span> #{player.jersey_number}</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Equipo:</span> {team.name}</div>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-blue-800 mb-2">Especificaciones</h4>
+              <h4 className="font-semibold text-white mb-2 drop-shadow-lg">Especificaciones</h4>
               <div className="space-y-1 text-sm">
-                <div><span className="text-gray-600">Tamaño:</span> 85.6 x 53.98 mm</div>
-                <div><span className="text-gray-600">Formato:</span> Tarjeta estándar</div>
-                <div><span className="text-gray-600">QR:</span> Código de identificación</div>
-                <div><span className="text-gray-600">Logo:</span> {team.logo ? 'Incluido' : 'No disponible'}</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Tamaño:</span> 85.6 x 53.98 mm</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Formato:</span> Tarjeta estándar</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">QR:</span> Código de identificación</div>
+                <div className="text-white/90 drop-shadow"><span className="text-white/70">Logo:</span> {team.logo ? 'Incluido' : 'No disponible'}</div>
               </div>
             </div>
           </div>
@@ -552,7 +552,7 @@ export function PlayerCredential({
             <Button
               onClick={handlePrint}
               disabled={printing}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 shadow-lg rounded-xl"
             >
               <Printer className="w-4 h-4 mr-2" />
               {printing ? 'Imprimiendo...' : 'Imprimir'}
@@ -562,7 +562,7 @@ export function PlayerCredential({
               onClick={handleDownload}
               disabled={downloading}
               variant="outline"
-              className="flex-1"
+              className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-xl"
             >
               <Download className="w-4 h-4 mr-2" />
               {downloading ? 'Descargando...' : 'Descargar PNG'}
@@ -570,12 +570,12 @@ export function PlayerCredential({
           </div>
 
           {/* Instrucciones */}
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="p-4 backdrop-blur-md bg-amber-500/20 border border-amber-300/30 rounded-xl shadow-lg">
             <div className="flex items-start gap-2">
-              <IdCard className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <IdCard className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="text-amber-800 font-medium mb-1">Instrucciones:</p>
-                <ul className="text-amber-700 space-y-1 list-disc list-inside">
+                <p className="text-white font-medium mb-1 drop-shadow-lg">Instrucciones:</p>
+                <ul className="text-white/90 space-y-1 list-disc list-inside drop-shadow">
                   <li>Imprime en papel de alta calidad o cartulina</li>
                   <li>Utiliza una plastificadora para mayor durabilidad</li>
                   <li>El código QR debe ser legible para escáneres</li>

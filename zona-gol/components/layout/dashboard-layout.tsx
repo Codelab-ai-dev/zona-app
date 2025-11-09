@@ -6,7 +6,6 @@ import { useState } from "react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { Menu, LogOut, User, Smartphone } from "lucide-react"
@@ -62,7 +61,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-black via-black-200 to-black">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Contenido */}
       <div className="relative z-10">
         <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-50 shadow-xl">
@@ -97,11 +96,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Right side - Actions */}
             <div className="flex items-center space-x-3">
-              {/* Theme Toggle - always visible */}
-              <div className="backdrop-blur-md bg-white/10 rounded-lg p-1 border border-white/20">
-                <ThemeToggle />
-              </div>
-
               {/* Desktop - App Mobile + Logout Button together */}
               <div className="hidden md:flex items-center gap-2">
                 {/* App Mobile - Only for League Admins */}
@@ -113,13 +107,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         App Móvil
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
                       <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Smartphone className="h-5 w-5 text-soccer-green" />
+                        <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                          <Smartphone className="h-5 w-5 text-green-400" />
                           Descargar App Móvil
                         </DialogTitle>
-                        <DialogDescription>
+                        <DialogDescription className="text-white/80 drop-shadow">
                           Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
                         </DialogDescription>
                       </DialogHeader>
@@ -212,13 +206,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                                 Descargar App Móvil
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
                               <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2">
-                                  <Smartphone className="h-5 w-5 text-soccer-green" />
+                                <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                                  <Smartphone className="h-5 w-5 text-green-400" />
                                   Descargar App Móvil
                                 </DialogTitle>
-                                <DialogDescription>
+                                <DialogDescription className="text-white/80 drop-shadow">
                                   Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
                                 </DialogDescription>
                               </DialogHeader>

@@ -3,8 +3,6 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Orbitron } from 'next/font/google'
 import { SupabaseProvider } from '@/lib/providers/supabase-provider'
-import { ThemeProvider } from '@/lib/contexts/theme-context'
-import { ThemeScript } from '@/components/theme-script'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -12,17 +10,14 @@ const orbitron = Orbitron({
   subsets: ['latin'],
   variable: '--font-orbitron',
   weight: ['400', '700', '900'],
-})  
+})
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#27AE60' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a1a' },
-  ],
+  themeColor: '#27AE60',
 }
 
 export const metadata: Metadata = {
@@ -43,17 +38,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
+    <html lang="es">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${orbitron.variable}`}>
-        <ThemeProvider>
-          <SupabaseProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </SupabaseProvider>
-        </ThemeProvider>
+        <SupabaseProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </SupabaseProvider>
       </body>
     </html>
   )

@@ -512,14 +512,14 @@ export function LeagueManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Ligas</h2>
-          <p className="text-gray-600">Administra todas las ligas del sistema</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Ligas</h2>
+          <p className="text-white/80 drop-shadow">Administra todas las ligas del sistema</p>
         </div>
         <div className="flex space-x-3">
           <Button
             variant="outline"
             onClick={debugLeaguesStatus}
-            className="text-gray-600 hover:text-gray-700 border-gray-600"
+            className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
             size="sm"
           >
             Debug BD
@@ -527,33 +527,34 @@ export function LeagueManagement() {
           <Button
             variant="outline"
             onClick={activateAllLeagues}
-            className="text-blue-600 hover:text-blue-700 border-blue-600"
+            className="backdrop-blur-md bg-blue-500/20 border-blue-300/30 text-blue-300 hover:bg-blue-500/30"
           >
             <Eye className="w-4 h-4 mr-2" />
             Activar Todas
           </Button>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl">
                 <Plus className="w-4 h-4 mr-2" />
                 Nueva Liga
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nueva Liga</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-white drop-shadow-lg">Crear Nueva Liga</DialogTitle>
+              <DialogDescription className="text-white/80 drop-shadow">
                 Completa la información para crear una nueva liga y su administrador
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Nombre de la Liga</Label>
+                <Label htmlFor="name" className="text-white drop-shadow">Nombre de la Liga</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Liga Premier Mexicana"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
               <div>
@@ -572,61 +573,66 @@ export function LeagueManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="slug">URL Personalizada</Label>
+                <Label htmlFor="slug" className="text-white drop-shadow">URL Personalizada</Label>
                 <Input
                   id="slug"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   placeholder="liga-premier-mexicana"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
               <div>
-                <Label htmlFor="description">Descripción</Label>
+                <Label htmlFor="description" className="text-white drop-shadow">Descripción</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Descripción de la liga..."
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-900 mb-3">Información del Administrador</h4>
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Administrador</h4>
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="adminName">Nombre Completo</Label>
+                    <Label htmlFor="adminName" className="text-white drop-shadow">Nombre Completo</Label>
                     <Input
                       id="adminName"
                       value={formData.adminName}
                       onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
                       placeholder="Juan Pérez"
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="adminEmail">Correo Electrónico</Label>
+                    <Label htmlFor="adminEmail" className="text-white drop-shadow">Correo Electrónico</Label>
                     <Input
                       id="adminEmail"
                       type="email"
                       value={formData.adminEmail}
                       onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
                       placeholder="juan@ejemplo.com"
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="adminPhone">Teléfono</Label>
+                    <Label htmlFor="adminPhone" className="text-white drop-shadow">Teléfono</Label>
                     <Input
                       id="adminPhone"
                       value={formData.adminPhone}
                       onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
                       placeholder="+52 555 123 4567"
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                     />
                   </div>
                 </div>
               </div>
 
-              <Button 
-                onClick={handleCreateLeague} 
-                className="w-full bg-green-600 hover:bg-green-700"
+              <Button
+                onClick={handleCreateLeague}
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
                 disabled={creating}
               >
                 {creating ? (
@@ -717,14 +723,14 @@ export function LeagueManagement() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {leagues.map((league) => (
-          <Card key={league.id} className="relative">
+          <Card key={league.id} className="relative backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{league.name}</CardTitle>
-                  <CardDescription className="text-sm text-gray-500">/{league.slug}</CardDescription>
+                  <CardTitle className="text-lg text-white drop-shadow-lg">{league.name}</CardTitle>
+                  <CardDescription className="text-sm text-white/70 drop-shadow">/{league.slug}</CardDescription>
                 </div>
-                <Badge variant={league.is_active ? "default" : "secondary"}>
+                <Badge variant={league.is_active ? "default" : "secondary"} className={league.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0" : "backdrop-blur-md bg-gray-500/80 text-white border-0"}>
                   {league.is_active ? "Activa" : "Inactiva"}
                 </Badge>
               </div>
@@ -743,23 +749,23 @@ export function LeagueManagement() {
                   />
                 </div>
               )}
-              <p className="text-sm text-gray-600 mb-4">{league.description}</p>
-              <div className="flex items-center text-sm text-gray-500 mb-4">
+              <p className="text-sm text-white/80 drop-shadow mb-4">{league.description}</p>
+              <div className="flex items-center text-sm text-white/80 drop-shadow mb-4">
                 <Users className="w-4 h-4 mr-1" />
                 Admin: {getAdminName(league.admin_id)}
               </div>
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" onClick={() => handleEditLeague(league)}>
+                <Button variant="outline" size="sm" onClick={() => handleEditLeague(league)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => toggleLeagueStatus(league.id)}>
+                <Button variant="outline" size="sm" onClick={() => toggleLeagueStatus(league.id)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                   {league.is_active ? "Desactivar" : "Activar"}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleDeleteLeague(league.id)}
-                  className="text-red-600 hover:text-red-700"
+                  className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -771,18 +777,19 @@ export function LeagueManagement() {
 
       {/* Edit League Dialog */}
       <Dialog open={!!editingLeague} onOpenChange={() => setEditingLeague(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Liga</DialogTitle>
-            <DialogDescription>Modifica la información de la liga y su administrador</DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Editar Liga</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">Modifica la información de la liga y su administrador</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">Nombre de la Liga</Label>
+              <Label htmlFor="edit-name" className="text-white drop-shadow">Nombre de la Liga</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
             <div>
@@ -801,54 +808,59 @@ export function LeagueManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-slug">URL Personalizada</Label>
+              <Label htmlFor="edit-slug" className="text-white drop-shadow">URL Personalizada</Label>
               <Input
                 id="edit-slug"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
             <div>
-              <Label htmlFor="edit-description">Descripción</Label>
+              <Label htmlFor="edit-description" className="text-white drop-shadow">Descripción</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
 
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-gray-900 mb-3">Información del Administrador</h4>
+            <div className="border-t border-white/20 pt-4">
+              <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Administrador</h4>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="edit-adminName">Nombre Completo</Label>
+                  <Label htmlFor="edit-adminName" className="text-white drop-shadow">Nombre Completo</Label>
                   <Input
                     id="edit-adminName"
                     value={formData.adminName}
                     onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-adminEmail">Correo Electrónico</Label>
+                  <Label htmlFor="edit-adminEmail" className="text-white drop-shadow">Correo Electrónico</Label>
                   <Input
                     id="edit-adminEmail"
                     type="email"
                     value={formData.adminEmail}
                     onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-adminPhone">Teléfono</Label>
+                  <Label htmlFor="edit-adminPhone" className="text-white drop-shadow">Teléfono</Label>
                   <Input
                     id="edit-adminPhone"
                     value={formData.adminPhone}
                     onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                   />
                 </div>
               </div>
             </div>
 
-            <Button onClick={handleUpdateLeague} className="w-full bg-green-600 hover:bg-green-700">
+            <Button onClick={handleUpdateLeague} className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl">
               Actualizar Liga
             </Button>
           </div>
@@ -860,69 +872,69 @@ export function LeagueManagement() {
         console.log('🔄 Modal state changing:', { from: showSuccessDialog, to: open })
         setShowSuccessDialog(open)
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-green-700 flex items-center">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <DialogTitle className="text-xl font-bold text-green-400 flex items-center drop-shadow-lg">
+              <div className="w-8 h-8 backdrop-blur-md bg-green-500/20 rounded-full flex items-center justify-center mr-3 border border-green-300/30">
+                <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                 </svg>
               </div>
               Liga Creada Exitosamente
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
+            <DialogDescription className="text-white/80 drop-shadow">
               Se ha creado la liga y el usuario administrador correctamente
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Debug info - remove in production */}
             {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-50 p-2 rounded text-xs">
+              <div className="backdrop-blur-md bg-white/10 p-2 rounded-xl text-xs text-white/70">
                 Debug: Password={generatedPassword || 'No password'}, Admin={!!createdAdmin ? 'Yes' : 'No'}, Email={createdAdmin?.email || 'No email'}
               </div>
             )}
-            
+
             {/* Información de la Liga */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">Liga Creada</h4>
-              <p className="text-sm text-blue-700">
-                <span className="font-medium">Liga ID:</span> {createdAdmin?.league_id || 'Sin ID'}
+            <div className="backdrop-blur-md bg-blue-500/20 p-4 rounded-xl border border-blue-300/30 shadow-lg">
+              <h4 className="font-semibold text-blue-300 mb-2 drop-shadow">Liga Creada</h4>
+              <p className="text-sm text-white/80 drop-shadow">
+                <span className="font-medium text-white">Liga ID:</span> {createdAdmin?.league_id || 'Sin ID'}
               </p>
             </div>
 
             {/* Credenciales del Administrador */}
-            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-              <h4 className="font-semibold text-amber-800 mb-3 flex items-center">
+            <div className="backdrop-blur-md bg-amber-500/20 p-4 rounded-xl border border-amber-300/30 shadow-lg">
+              <h4 className="font-semibold text-amber-300 mb-3 flex items-center drop-shadow">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2H7v-2H4a1 1 0 01-1-1v-4c0-5.523 4.477-10 10-10s10 4.477 10 10z"></path>
                 </svg>
                 Credenciales del Administrador
               </h4>
-              
+
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-amber-700 uppercase tracking-wide">Usuario</label>
+                  <label className="text-xs font-medium text-amber-300 uppercase tracking-wide drop-shadow">Usuario</label>
                   <div className="flex items-center space-x-2 mt-1">
-                    <code className="bg-white px-3 py-2 rounded border text-sm font-mono flex-1">
+                    <code className="backdrop-blur-md bg-white/10 px-3 py-2 rounded-xl border border-white/20 text-sm font-mono flex-1 text-white">
                       {createdAdmin?.email}
                     </code>
-                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(createdAdmin?.email || '')}>
+                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(createdAdmin?.email || '')} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="text-xs font-medium text-amber-700 uppercase tracking-wide">Contraseña</label>
+                  <label className="text-xs font-medium text-amber-300 uppercase tracking-wide drop-shadow">Contraseña</label>
                   <div className="flex items-center space-x-2 mt-1">
-                    <code className="bg-white px-3 py-2 rounded border text-sm font-mono flex-1">
+                    <code className="backdrop-blur-md bg-white/10 px-3 py-2 rounded-xl border border-white/20 text-sm font-mono flex-1 text-white">
                       {showPassword ? generatedPassword : "••••••••••••"}
                     </code>
-                    <Button variant="outline" size="sm" onClick={() => setShowPassword(!showPassword)}>
+                    <Button variant="outline" size="sm" onClick={() => setShowPassword(!showPassword)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedPassword)}>
+                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(generatedPassword)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
@@ -931,14 +943,14 @@ export function LeagueManagement() {
             </div>
 
             {/* Aviso Importante */}
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div className="backdrop-blur-md bg-red-500/20 p-4 rounded-xl border border-red-300/30 shadow-lg">
               <div className="flex">
-                <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-300 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                 </svg>
                 <div>
-                  <h4 className="text-sm font-medium text-red-800">¡Importante!</h4>
-                  <p className="text-sm text-red-700 mt-1">
+                  <h4 className="text-sm font-medium text-white drop-shadow">¡Importante!</h4>
+                  <p className="text-sm text-white/80 drop-shadow mt-1">
                     Guarda estas credenciales de forma segura. El administrador podrá cambiar su contraseña después del primer inicio de sesión.
                   </p>
                 </div>
@@ -946,26 +958,26 @@ export function LeagueManagement() {
             </div>
 
             <div className="flex space-x-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => copyToClipboard(`Usuario: ${createdAdmin?.email}\nContraseña: ${generatedPassword}`)}
-                className="flex-1"
+                className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
               >
                 <Copy className="w-4 h-4 mr-2" />
                 Copiar Todo
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   // Cerrar el modal y limpiar estado
                   setShowSuccessDialog(false)
                   setGeneratedPassword("")
                   setCreatedAdmin(null)
                   setShowPassword(false)
-                  
+
                   // Mantener al super admin en el panel para crear más ligas
                   console.log('✅ Modal cerrado, listo para crear otra liga')
-                }} 
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                }}
+                className="flex-1 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
               >
                 Crear Otra Liga
               </Button>

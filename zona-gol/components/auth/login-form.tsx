@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { SimpleThemeToggle } from "@/components/ui/theme-toggle"
 import { ArrowLeft, Mail } from "lucide-react"
 
 export function LoginForm() {
@@ -155,14 +154,7 @@ export function LoginForm() {
     <div className="relative min-h-screen flex items-center justify-center bg-[url('/zona-fondo.png')] bg-cover bg-center p-4 overflow-hidden">
       {/* Overlay oscuro */}
       <div className="absolute inset-0 bg-black/70 dark:bg-black/80"></div>
-      
-      {/* Theme toggle button */}
-      <div className="absolute top-4 right-4 z-20">
-        <div className="backdrop-blur-md bg-white/10 rounded-lg p-1 border border-white/20">
-          <SimpleThemeToggle />
-        </div>
-      </div>
-      
+
       {/* Card con efecto glass */}
       <div className="w-full max-w-md relative z-10">
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">

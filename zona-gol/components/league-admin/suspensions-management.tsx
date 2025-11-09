@@ -467,7 +467,7 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Create Suspension Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
+        <DialogContent className="max-w-2xl backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-white drop-shadow-lg">Nueva Suspensión</DialogTitle>
             <DialogDescription className="text-white/80 drop-shadow">
@@ -566,46 +566,46 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Edit Suspension Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Suspensión</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Editar Suspensión</DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
               Modifica el número de partidos de suspensión
             </DialogDescription>
           </DialogHeader>
 
           {editingSuspension && (
             <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
+              <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Jugador:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-white/80 drop-shadow">Jugador:</span>
+                    <span className="font-medium text-white drop-shadow">
                       {editingSuspension.player_name}
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" className="ml-2 backdrop-blur-md bg-white/10 border-white/30 text-white">
                         #{editingSuspension.jersey_number}
                       </Badge>
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Equipo:</span>
-                    <span className="font-medium">{editingSuspension.team_name}</span>
+                    <span className="text-sm text-white/80 drop-shadow">Equipo:</span>
+                    <span className="font-medium text-white drop-shadow">{editingSuspension.team_name}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Tipo:</span>
-                    <Badge variant="secondary">
+                    <span className="text-sm text-white/80 drop-shadow">Tipo:</span>
+                    <Badge variant="secondary" className="backdrop-blur-md bg-blue-500/30 text-blue-300 border-blue-300/50">
                       {getSuspensionTypeLabel(editingSuspension.suspension_type)}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Partidos cumplidos:</span>
-                    <span className="font-medium">{editingSuspension.matches_served}</span>
+                    <span className="text-sm text-white/80 drop-shadow">Partidos cumplidos:</span>
+                    <span className="font-medium text-white drop-shadow">{editingSuspension.matches_served}</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-matches">Número de Partidos a Cumplir *</Label>
+                <Label htmlFor="edit-matches" className="text-white drop-shadow">Número de Partidos a Cumplir *</Label>
                 <Input
                   id="edit-matches"
                   type="number"
@@ -613,17 +613,18 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                   max={20}
                   value={editMatchesToServe}
                   onChange={(e) => setEditMatchesToServe(parseInt(e.target.value) || 1)}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/70 drop-shadow">
                   Partidos restantes: {Math.max(0, editMatchesToServe - editingSuspension.matches_served)}
                 </p>
               </div>
 
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="p-4 backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded-xl shadow-lg">
                 <div className="flex gap-2">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                  <div className="text-sm text-yellow-800">
-                    <p className="font-medium">Nota:</p>
+                  <AlertTriangle className="w-5 h-5 text-yellow-300 flex-shrink-0" />
+                  <div className="text-sm text-white/90 drop-shadow">
+                    <p className="font-medium text-white">Nota:</p>
                     <p className="mt-1">
                       Al modificar el número de partidos, se actualizará el total de partidos a cumplir.
                       Los partidos ya cumplidos ({editingSuspension.matches_served}) no se modificarán.
@@ -635,10 +636,10 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               Cancelar
             </Button>
-            <Button onClick={handleUpdateSuspension} disabled={editing}>
+            <Button onClick={handleUpdateSuspension} disabled={editing} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl">
               {editing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

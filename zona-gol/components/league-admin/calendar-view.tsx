@@ -1433,7 +1433,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
       {/* Dialog de ajuste de calendario */}
       <Dialog open={isAdjustDialogOpen} onOpenChange={setIsAdjustDialogOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-white drop-shadow-lg">
               <Settings className="w-6 h-6 text-yellow-300" />

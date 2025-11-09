@@ -123,7 +123,7 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-white/80 drop-shadow">
         Cargando archivos...
       </div>
     )
@@ -131,8 +131,8 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
 
   if (files.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <div className="text-center py-8 text-white/80 drop-shadow">
+        <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50 text-white" />
         <p>No hay APKs disponibles</p>
         <p className="text-sm mt-2">Contacta al administrador para que suba la aplicación</p>
       </div>
@@ -142,26 +142,26 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
   return (
     <div className="space-y-4">
       {/* Latest version highlight */}
-      <Alert className="bg-soccer-green/10 border-soccer-green">
-        <Smartphone className="h-4 w-4 text-soccer-green" />
-        <AlertDescription>
-          <strong>Versión más reciente:</strong> {files[0]?.name}
+      <Alert className="backdrop-blur-md bg-green-500/20 border-green-300/30 shadow-lg">
+        <Smartphone className="h-4 w-4 text-green-300" />
+        <AlertDescription className="text-white/90 drop-shadow">
+          <strong className="text-white">Versión más reciente:</strong> {files[0]?.name}
         </AlertDescription>
       </Alert>
 
       {/* Files list */}
       <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
         {files.map((file, index) => (
-          <Card key={file.id} className={index === 0 ? "border-soccer-green" : ""}>
+          <Card key={file.id} className={index === 0 ? "backdrop-blur-xl bg-white/10 border-green-300/30 shadow-xl" : "backdrop-blur-xl bg-white/10 border-white/20 shadow-xl"}>
             <CardContent className="p-4">
               <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                 <div className="flex items-start space-x-3 flex-1 min-w-0">
-                  <div className="bg-soccer-green/10 p-2 rounded flex-shrink-0">
-                    <Smartphone className="h-5 w-5 text-soccer-green" />
+                  <div className="backdrop-blur-md bg-green-500/20 p-2 rounded-xl border border-green-300/30 flex-shrink-0">
+                    <Smartphone className="h-5 w-5 text-green-300" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm break-words">{file.name}</h4>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                    <h4 className="font-medium text-sm break-words text-white drop-shadow">{file.name}</h4>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/70 drop-shadow mt-1">
                       <span className="flex items-center whitespace-nowrap">
                         <FileArchive className="h-3 w-3 mr-1" />
                         {formatFileSize(file.metadata.size)}
@@ -171,7 +171,7 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
                         {formatDate(file.created_at)}
                       </span>
                       {index === 0 && (
-                        <span className="px-2 py-0.5 bg-soccer-green text-white rounded-full text-xs font-medium whitespace-nowrap">
+                        <span className="px-2 py-0.5 backdrop-blur-md bg-green-500/80 text-white rounded-full text-xs font-medium whitespace-nowrap border-0 shadow-lg">
                           Última versión
                         </span>
                       )}
@@ -183,7 +183,7 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
                     variant="default"
                     size="sm"
                     onClick={() => handleDownload(file)}
-                    className="bg-soccer-green hover:bg-soccer-green-dark w-full lg:w-auto"
+                    className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl w-full lg:w-auto"
                   >
                     <Download className="h-4 w-4 mr-1" />
                     Descargar
@@ -192,7 +192,7 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => handleGetPublicLink(file)}
-                    className="w-full lg:w-auto"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 w-full lg:w-auto"
                   >
                     <ExternalLink className="h-4 w-4 mr-1 lg:mr-0" />
                     <span className="lg:hidden">Copiar link</span>
@@ -205,9 +205,9 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
       </div>
 
       {/* Instructions */}
-      <Alert>
-        <AlertDescription>
-          <h4 className="font-medium mb-2">📱 Instrucciones de instalación:</h4>
+      <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30 shadow-xl">
+        <AlertDescription className="text-white/90 drop-shadow">
+          <h4 className="font-medium mb-2 text-white">📱 Instrucciones de instalación:</h4>
           <ol className="list-decimal list-inside space-y-1 text-sm">
             <li>Descarga el APK más reciente</li>
             <li>En tu dispositivo Android, ve a Configuración → Seguridad</li>

@@ -379,18 +379,18 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
   return (
     <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-700">{error}</p>
+        <div className="backdrop-blur-xl bg-red-500/20 border border-red-400/50 rounded-xl p-4 mb-6 shadow-xl">
+          <p className="text-white drop-shadow">{error}</p>
         </div>
       )}
 
       {!registrationOpen && (
-        <div className="border-2 border-red-400 rounded-lg p-4 bg-red-50">
+        <div className="border-2 border-red-400/50 rounded-xl p-4 backdrop-blur-xl bg-red-500/20 shadow-xl">
           <div className="flex items-start">
-            <Lock className="w-6 h-6 mr-3 mt-0.5 text-red-600 flex-shrink-0" />
+            <Lock className="w-6 h-6 mr-3 mt-0.5 text-red-300 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="font-bold text-red-900 text-lg">Registro de Cuerpo Técnico Cerrado</h3>
-              <p className="text-sm mt-2 text-red-700">
+              <h3 className="font-bold text-white text-lg drop-shadow-lg">Registro de Cuerpo Técnico Cerrado</h3>
+              <p className="text-sm mt-2 text-white/80 drop-shadow">
                 La liga ha cerrado el periodo de registro del cuerpo técnico para este torneo.
               </p>
             </div>
@@ -399,14 +399,14 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
       )}
 
       {maxCoachingStaffLimit && registrationOpen && (
-        <div className={`border rounded-lg p-4 ${isAtLimit ? 'bg-red-50 border-red-300' : 'bg-blue-50 border-blue-300'}`}>
+        <div className={`border rounded-xl p-4 backdrop-blur-xl shadow-xl ${isAtLimit ? 'bg-red-500/20 border-red-400/50' : 'bg-blue-500/20 border-blue-400/50'}`}>
           <div className="flex items-start">
-            <AlertCircle className={`w-5 h-5 mr-3 mt-0.5 ${isAtLimit ? 'text-red-600' : 'text-blue-600'}`} />
+            <AlertCircle className={`w-5 h-5 mr-3 mt-0.5 ${isAtLimit ? 'text-red-300' : 'text-blue-300'}`} />
             <div className="flex-1">
-              <h3 className={`font-semibold ${isAtLimit ? 'text-red-900' : 'text-blue-900'}`}>
+              <h3 className={`font-semibold drop-shadow-lg ${isAtLimit ? 'text-white' : 'text-white'}`}>
                 {isAtLimit ? 'Límite de cuerpo técnico alcanzado' : 'Límite de cuerpo técnico'}
               </h3>
-              <p className={`text-sm mt-1 ${isAtLimit ? 'text-red-700' : 'text-blue-700'}`}>
+              <p className={`text-sm mt-1 drop-shadow ${isAtLimit ? 'text-white/80' : 'text-white/80'}`}>
                 {isAtLimit
                   ? `Has registrado el máximo de ${maxCoachingStaffLimit} miembros del cuerpo técnico permitidos para este torneo.`
                   : `Tienes ${remainingSlots} ${remainingSlots === 1 ? 'espacio disponible' : 'espacios disponibles'} de ${maxCoachingStaffLimit} miembros permitidos.`
@@ -419,27 +419,27 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
 
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Cuerpo Técnico</h2>
-          <p className="text-gray-600">Administra el cuerpo técnico de tu equipo</p>
+          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Cuerpo Técnico</h2>
+          <p className="text-white/80 drop-shadow">Administra el cuerpo técnico de tu equipo</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
               disabled={!canRegister}
             >
               <Plus className="w-4 h-4 mr-2" />
               {!registrationOpen ? 'Registros Cerrados' : isAtLimit ? 'Límite Alcanzado' : 'Nuevo Miembro'}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Registrar Nuevo Miembro del Cuerpo Técnico</DialogTitle>
-              <DialogDescription>Completa la información del miembro</DialogDescription>
+              <DialogTitle className="text-white drop-shadow-lg">Registrar Nuevo Miembro del Cuerpo Técnico</DialogTitle>
+              <DialogDescription className="text-white/70 drop-shadow">Completa la información del miembro</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Fotografía</Label>
+                <Label className="text-white drop-shadow">Fotografía</Label>
                 <FileUpload
                   variant="avatar"
                   value={formData.photo}
@@ -447,24 +447,25 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
                 />
               </div>
               <div>
-                <Label htmlFor="name">Nombre Completo</Label>
+                <Label htmlFor="name" className="text-white drop-shadow">Nombre Completo</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Juan Pérez"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
               <div>
-                <Label htmlFor="role">Rol / Cargo</Label>
+                <Label htmlFor="role" className="text-white drop-shadow">Rol / Cargo</Label>
                 <Select
                   value={formData.role}
                   onValueChange={(value) => setFormData({ ...formData, role: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-xl">
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
                     {roles.map((role) => (
                       <SelectItem key={role} value={role}>
                         {role}
@@ -474,27 +475,29 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
                 </Select>
               </div>
               <div>
-                <Label htmlFor="cedula">Cédula / DNI (opcional)</Label>
+                <Label htmlFor="cedula" className="text-white drop-shadow">Cédula / DNI (opcional)</Label>
                 <Input
                   id="cedula"
                   value={formData.cedula}
                   onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
                   placeholder="12345678"
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
               <div>
-                <Label htmlFor="birthDate">Fecha de Nacimiento (opcional)</Label>
+                <Label htmlFor="birthDate" className="text-white drop-shadow">Fecha de Nacimiento (opcional)</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={formData.birthDate}
                   onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
                 />
               </div>
               <Button
                 onClick={handleCreateStaff}
                 disabled={!formData.name.trim() || !formData.role || creating}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
               >
                 {creating ? (
                   <>
@@ -512,19 +515,19 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          <span>Cargando cuerpo técnico...</span>
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
+          <span className="text-white drop-shadow">Cargando cuerpo técnico...</span>
         </div>
       ) : coachingStaff.length === 0 ? (
         <div className="text-center py-12">
-          <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay miembros del cuerpo técnico registrados</h3>
-          <p className="text-gray-600">Comienza registrando miembros del cuerpo técnico para tu equipo</p>
+          <User className="w-12 h-12 text-white/60 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">No hay miembros del cuerpo técnico registrados</h3>
+          <p className="text-white/80 drop-shadow">Comienza registrando miembros del cuerpo técnico para tu equipo</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {coachingStaff.map((staff) => (
-            <Card key={staff.id}>
+            <Card key={staff.id} className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
               <CardHeader>
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12">
@@ -534,32 +537,32 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
                         alt={staff.name}
                       />
                     )}
-                    <AvatarFallback className="bg-blue-100 text-blue-800 font-bold">
+                    <AvatarFallback className="bg-blue-500/30 text-blue-300 font-bold border border-blue-300/50">
                       {getStaffInitials(staff.name)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg">{staff.name}</CardTitle>
-                    <CardDescription>{staff.role}</CardDescription>
+                    <CardTitle className="text-lg text-white drop-shadow-lg">{staff.name}</CardTitle>
+                    <CardDescription className="text-white/70 drop-shadow">{staff.role}</CardDescription>
                   </div>
                 </div>
-                <Badge variant={staff.is_active ? "default" : "secondary"} className="w-fit">
+                <Badge variant={staff.is_active ? "default" : "secondary"} className={`w-fit backdrop-blur-md ${staff.is_active ? 'bg-green-500/80 text-white border-0' : 'bg-gray-500/80 text-white border-0'}`}>
                   {staff.is_active ? "Activo" : "Inactivo"}
                 </Badge>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {staff.cedula && (
-                    <p className="text-sm text-gray-600">Cédula: {staff.cedula}</p>
+                    <p className="text-sm text-white/80 drop-shadow">Cédula: {staff.cedula}</p>
                   )}
                   {staff.birth_date && (
-                    <p className="text-sm text-gray-600">Edad: {calculateAge(staff.birth_date)} años</p>
+                    <p className="text-sm text-white/80 drop-shadow">Edad: {calculateAge(staff.birth_date)} años</p>
                   )}
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-white/70 drop-shadow">
                     Registrado: {new Date(staff.created_at).toLocaleDateString("es-ES")}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditStaff(staff)}>
+                    <Button variant="outline" size="sm" onClick={() => handleEditStaff(staff)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
@@ -567,17 +570,18 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
                       size="sm"
                       onClick={() => handleGenerateQR(staff)}
                       disabled={generatingQR}
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                     >
                       <QrCode className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => toggleStaffStatus(staff.id)}>
+                    <Button variant="outline" size="sm" onClick={() => toggleStaffStatus(staff.id)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                       {staff.is_active ? "Desactivar" : "Activar"}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteStaff(staff.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -591,14 +595,14 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
 
       {/* Edit Staff Dialog */}
       <Dialog open={!!editingStaff} onOpenChange={() => setEditingStaff(null)}>
-        <DialogContent>
+        <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Editar Miembro del Cuerpo Técnico</DialogTitle>
-            <DialogDescription>Modifica la información del miembro</DialogDescription>
+            <DialogTitle className="text-white drop-shadow-lg">Editar Miembro del Cuerpo Técnico</DialogTitle>
+            <DialogDescription className="text-white/70 drop-shadow">Modifica la información del miembro</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Fotografía</Label>
+              <Label className="text-white drop-shadow">Fotografía</Label>
               <FileUpload
                 variant="avatar"
                 value={formData.photo}
@@ -606,23 +610,24 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
               />
             </div>
             <div>
-              <Label htmlFor="edit-name">Nombre Completo</Label>
+              <Label htmlFor="edit-name" className="text-white drop-shadow">Nombre Completo</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
             <div>
-              <Label htmlFor="edit-role">Rol / Cargo</Label>
+              <Label htmlFor="edit-role" className="text-white drop-shadow">Rol / Cargo</Label>
               <Select
                 value={formData.role}
                 onValueChange={(value) => setFormData({ ...formData, role: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
                   {roles.map((role) => (
                     <SelectItem key={role} value={role}>
                       {role}
@@ -632,26 +637,28 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-cedula">Cédula / DNI (opcional)</Label>
+              <Label htmlFor="edit-cedula" className="text-white drop-shadow">Cédula / DNI (opcional)</Label>
               <Input
                 id="edit-cedula"
                 value={formData.cedula}
                 onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
             <div>
-              <Label htmlFor="edit-birthDate">Fecha de Nacimiento (opcional)</Label>
+              <Label htmlFor="edit-birthDate" className="text-white drop-shadow">Fecha de Nacimiento (opcional)</Label>
               <Input
                 id="edit-birthDate"
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>
             <Button
               onClick={handleUpdateStaff}
               disabled={!formData.name.trim() || !formData.role || updating}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
             >
               {updating ? (
                 <>

@@ -142,8 +142,8 @@ export function TeamStats({ teamId }: TeamStatsProps) {
   if (!teamId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Equipo No Encontrado</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Equipo No Encontrado</h2>
+        <p className="text-white/80 drop-shadow">
           No se pudo cargar la información del equipo.
         </p>
       </div>
@@ -153,8 +153,8 @@ export function TeamStats({ teamId }: TeamStatsProps) {
   if (loadingStats || loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin mr-3" />
-        <span className="text-lg">Cargando estadísticas del equipo...</span>
+        <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
+        <span className="text-lg text-white drop-shadow">Cargando estadísticas del equipo...</span>
       </div>
     )
   }
@@ -234,35 +234,35 @@ export function TeamStats({ teamId }: TeamStatsProps) {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-700">{error}</p>
+        <div className="backdrop-blur-xl bg-red-500/20 border border-red-300/30 rounded-xl p-4 mb-6 shadow-xl">
+          <p className="text-white drop-shadow">{error}</p>
         </div>
       )}
-      
+
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Estadísticas del Equipo</h2>
-        <p className="text-gray-600">{currentTeam?.name || 'Mi Equipo'} - Resumen de rendimiento</p>
+        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas del Equipo</h2>
+        <p className="text-white/80 drop-shadow">{currentTeam?.name || 'Mi Equipo'} - Resumen de rendimiento</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title}>
+            <Card key={stat.title} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all shadow-xl">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-full ${stat.bgColor}`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
+                <CardTitle className="text-sm font-medium text-white/90 drop-shadow">{stat.title}</CardTitle>
+                <div className={`p-2 rounded-full backdrop-blur-md bg-white/20 border border-white/30`}>
+                  <Icon className={`w-4 h-4 text-white`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-white drop-shadow-lg">
                   {stat.value}
                   {stat.total > 0 && stat.title !== "Próximos Partidos" && (
-                    <span className="text-sm font-normal text-gray-500">/{stat.total}</span>
+                    <span className="text-sm font-normal text-white/60">/{stat.total}</span>
                   )}
                 </div>
-                <CardDescription className="text-xs">
+                <CardDescription className="text-xs text-white/70 drop-shadow">
                   {stat.title === "Victorias" && finishedMatches.length > 0
                     ? `${draws} empates, ${losses} derrotas`
                     : stat.title === "Próximos Partidos"
@@ -277,13 +277,13 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
       {/* Team Detailed Statistics Section */}
       {playersWithStats.length > 0 && (
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-white drop-shadow-lg">
               <Trophy className="w-5 h-5 mr-2" />
               Estadísticas Detalladas del Equipo
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-white/70 drop-shadow">
               Análisis completo del rendimiento colectivo e individual
             </CardDescription>
           </CardHeader>
@@ -291,32 +291,32 @@ export function TeamStats({ teamId }: TeamStatsProps) {
             <div className="space-y-6">
               {/* Rendimiento Ofensivo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Target className="w-5 h-5 mr-2 text-green-600" />
+                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                  <Target className="w-5 h-5 mr-2 text-green-400" />
                   Rendimiento Ofensivo
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-muted-foreground mb-1">Goles Totales</p>
-                    <p className="text-3xl font-bold text-green-600">
+                  <div className="p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-1">Goles Totales</p>
+                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
                     </p>
                   </div>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm text-muted-foreground mb-1">Asistencias Totales</p>
-                    <p className="text-3xl font-bold text-blue-600">
+                  <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
+                    <p className="text-3xl font-bold text-blue-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
                     </p>
                   </div>
-                  <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <p className="text-sm text-muted-foreground mb-1">Goles por Jugador</p>
-                    <p className="text-3xl font-bold text-purple-600">
+                  <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
+                    <p className="text-3xl font-bold text-purple-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                    <p className="text-sm text-muted-foreground mb-1">Asistencias por Jugador</p>
-                    <p className="text-3xl font-bold text-indigo-600">
+                  <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
+                    <p className="text-3xl font-bold text-indigo-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
@@ -332,18 +332,18 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
                 return topScorers.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <Trophy className="w-5 h-5 mr-2 text-yellow-600" />
+                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                      <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                       Máximos Goleadores
                     </h3>
                     <div className="grid gap-3 md:grid-cols-3">
                       {topScorers.map((player, index) => (
-                        <div key={player.id} className="p-4 bg-muted/30 rounded-lg border hover:shadow-md transition-shadow">
+                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 hover:shadow-xl transition-all">
                           <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                              index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                              index === 1 ? 'bg-gray-300 text-gray-900' :
-                              'bg-orange-400 text-orange-900'
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md border ${
+                              index === 0 ? 'bg-yellow-500/30 text-yellow-300 border-yellow-300/50' :
+                              index === 1 ? 'bg-gray-500/30 text-gray-300 border-gray-300/50' :
+                              'bg-orange-500/30 text-orange-300 border-orange-300/50'
                             }`}>
                               {index + 1}
                             </div>
@@ -351,18 +351,18 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                               {player.photo ? (
                                 <AvatarImage src={player.photo} alt={player.name} />
                               ) : (
-                                <AvatarFallback className="bg-green-100 text-green-800">
+                                <AvatarFallback className="backdrop-blur-md bg-green-500/30 text-white border border-green-300/50">
                                   {getPlayerInitials(player.name)}
                                 </AvatarFallback>
                               )}
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate">{player.name}</p>
-                              <p className="text-xs text-muted-foreground">#{player.jersey_number}</p>
+                              <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
+                              <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-green-600">{player.total_goals}</p>
-                              <p className="text-xs text-muted-foreground">goles</p>
+                              <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{player.total_goals}</p>
+                              <p className="text-xs text-white/70 drop-shadow">goles</p>
                             </div>
                           </div>
                         </div>
@@ -381,18 +381,18 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
                 return topAssisters.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <Target className="w-5 h-5 mr-2 text-blue-600" />
+                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                      <Target className="w-5 h-5 mr-2 text-blue-400" />
                       Máximos Asistidores
                     </h3>
                     <div className="grid gap-3 md:grid-cols-3">
                       {topAssisters.map((player, index) => (
-                        <div key={player.id} className="p-4 bg-muted/30 rounded-lg border hover:shadow-md transition-shadow">
+                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 hover:shadow-xl transition-all">
                           <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                              index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                              index === 1 ? 'bg-gray-300 text-gray-900' :
-                              'bg-orange-400 text-orange-900'
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md border ${
+                              index === 0 ? 'bg-yellow-500/30 text-yellow-300 border-yellow-300/50' :
+                              index === 1 ? 'bg-gray-500/30 text-gray-300 border-gray-300/50' :
+                              'bg-orange-500/30 text-orange-300 border-orange-300/50'
                             }`}>
                               {index + 1}
                             </div>
@@ -400,18 +400,18 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                               {player.photo ? (
                                 <AvatarImage src={player.photo} alt={player.name} />
                               ) : (
-                                <AvatarFallback className="bg-blue-100 text-blue-800">
+                                <AvatarFallback className="backdrop-blur-md bg-blue-500/30 text-white border border-blue-300/50">
                                   {getPlayerInitials(player.name)}
                                 </AvatarFallback>
                               )}
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-sm truncate">{player.name}</p>
-                              <p className="text-xs text-muted-foreground">#{player.jersey_number}</p>
+                              <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-blue-600">{player.total_assists}</p>
-                              <p className="text-xs text-muted-foreground">asist.</p>
+                              <p className="text-2xl font-bold text-blue-400 drop-shadow-lg">{player.total_assists}</p>
+                              <p className="text-xs text-white/70 drop-shadow">asist.</p>
                             </div>
                           </div>
                         </div>
@@ -423,38 +423,38 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
               {/* Disciplina del Equipo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" />
+                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
                   Disciplina
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="p-4 backdrop-blur-md bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-4 h-6 bg-yellow-400 rounded"></div>
-                      <p className="text-sm text-muted-foreground">Tarjetas Amarillas</p>
+                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
                     </div>
-                    <p className="text-3xl font-bold text-yellow-600">
+                    <p className="text-3xl font-bold text-yellow-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
                     </p>
                   </div>
-                  <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="p-4 backdrop-blur-md bg-red-500/20 rounded-xl border border-red-300/30 shadow-lg">
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-4 h-6 bg-red-600 rounded"></div>
-                      <p className="text-sm text-muted-foreground">Tarjetas Rojas</p>
+                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
                     </div>
-                    <p className="text-3xl font-bold text-red-600">
+                    <p className="text-3xl font-bold text-red-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Tarjetas por Jugador</p>
-                    <p className="text-3xl font-bold text-gray-700">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Tarjetas por Jugador</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-lg">
                       {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Jugadores sin Tarjetas</p>
-                    <p className="text-3xl font-bold text-green-600">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores sin Tarjetas</p>
+                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
                     </p>
                   </div>
@@ -463,32 +463,32 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
               {/* Participación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-gray-600" />
+                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                  <Clock className="w-5 h-5 mr-2 text-white/80" />
                   Participación
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Partidos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Partidos Jugados (Total)</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Minutos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Minutos Jugados (Total)</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Promedio Minutos por Jugador</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Promedio Minutos por Jugador</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-lg">
                       {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
                     </p>
                   </div>
-                  <div className="p-4 bg-muted/50 rounded-lg border">
-                    <p className="text-sm text-muted-foreground mb-2">Jugadores Activos</p>
-                    <p className="text-3xl font-bold text-green-600">
+                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores Activos</p>
+                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_games > 0).length}
                     </p>
                   </div>
@@ -500,27 +500,27 @@ export function TeamStats({ teamId }: TeamStatsProps) {
       )}
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle>Distribución por Posición</CardTitle>
-            <CardDescription>Jugadores activos por posición</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Distribución por Posición</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Jugadores activos por posición</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {positionStats.map((stat) => (
-                <div key={stat.position} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="font-medium text-gray-900">{stat.position}</span>
-                  <span className="text-sm font-bold text-blue-600">{stat.count} jugadores</span>
+                <div key={stat.position} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
+                  <span className="font-medium text-white drop-shadow">{stat.position}</span>
+                  <span className="text-sm font-bold text-blue-400 drop-shadow">{stat.count} jugadores</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
-            <CardTitle>Últimos Resultados</CardTitle>
-            <CardDescription>Resultados de partidos recientes</CardDescription>
+            <CardTitle className="text-white drop-shadow-lg">Últimos Resultados</CardTitle>
+            <CardDescription className="text-white/70 drop-shadow">Resultados de partidos recientes</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -543,14 +543,14 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       : "bg-red-100 text-red-800"
 
                 return (
-                  <div key={match.id} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <div key={match.id} className="p-3 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 space-y-2 shadow-lg">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">vs {opponentTeam?.name || 'Equipo Rival'}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="font-medium text-white drop-shadow">vs {opponentTeam?.name || 'Equipo Rival'}</p>
+                        <p className="text-sm text-white/70 drop-shadow">
                           {teamScore} - {opponentScore}
                         </p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 mt-1 text-xs text-white/60 drop-shadow">
                           <Calendar className="w-3 h-3" />
                           <span>{matchDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
                           {match.round && <span>• Jornada {match.round}</span>}
@@ -564,10 +564,10 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewRefereeReport(match)}
-                          className="p-2 h-8 w-8"
+                          className="p-2 h-8 w-8 backdrop-blur-md bg-white/10 border-white/30 hover:bg-white/20"
                           title="Ver cédula arbitral"
                         >
-                          <FileText className="w-4 h-4" />
+                          <FileText className="w-4 h-4 text-white" />
                         </Button>
                       </div>
                     </div>
@@ -575,7 +575,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                 )
               })}
               {finishedMatches.length === 0 && (
-                <p className="text-center text-gray-500 py-4">No hay partidos jugados aún</p>
+                <p className="text-center text-white/70 drop-shadow py-4">No hay partidos jugados aún</p>
               )}
             </div>
           </CardContent>

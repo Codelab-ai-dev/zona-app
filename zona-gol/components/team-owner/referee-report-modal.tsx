@@ -107,28 +107,28 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <FileText className="w-5 h-5" />
             Cédula Arbitral
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/80 drop-shadow">
             {match.home_team?.name} vs {match.away_team?.name} - {formatMatchDate(match.match_date)}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mr-3" />
-            <span>Cargando cédula arbitral...</span>
+            <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
+            <span className="text-white drop-shadow">Cargando cédula arbitral...</span>
           </div>
         ) : (
           <div className="space-y-6">
             {/* Match Header */}
-            <Card>
+            <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex items-center justify-between text-white drop-shadow-lg">
                   <span className="flex items-center gap-2">
                     <Trophy className="w-5 h-5" />
                     Resultado Final
@@ -141,11 +141,11 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
               <CardContent>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-3 mb-2">
-                    <span className="text-lg font-semibold">{match.home_team?.name}</span>
-                    <span className="text-3xl font-bold">{match.home_score} - {match.away_score}</span>
-                    <span className="text-lg font-semibold">{match.away_team?.name}</span>
+                    <span className="text-lg font-semibold text-white drop-shadow">{match.home_team?.name}</span>
+                    <span className="text-3xl font-bold text-white drop-shadow-lg">{match.home_score} - {match.away_score}</span>
+                    <span className="text-lg font-semibold text-white drop-shadow">{match.away_team?.name}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-white/70 drop-shadow">
                     <Calendar className="w-4 h-4 inline mr-1" />
                     {formatMatchDate(match.match_date)}
                   </div>
@@ -155,9 +155,9 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* Referee Information */}
             {refereeReport && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                     <Users className="w-5 h-5" />
                     Información del Árbitro
                   </CardTitle>
@@ -165,25 +165,25 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent className="space-y-3">
                   {refereeReport.referee_name && (
                     <div>
-                      <span className="font-medium">Árbitro Principal: </span>
+                      <span className="font-medium text-white drop-shadow">Árbitro Principal: </span>
                       {refereeReport.referee_name}
                     </div>
                   )}
                   {refereeReport.assistant_referee_1 && (
                     <div>
-                      <span className="font-medium">Asistente 1: </span>
+                      <span className="font-medium text-white drop-shadow">Asistente 1: </span>
                       {refereeReport.assistant_referee_1}
                     </div>
                   )}
                   {refereeReport.assistant_referee_2 && (
                     <div>
-                      <span className="font-medium">Asistente 2: </span>
+                      <span className="font-medium text-white drop-shadow">Asistente 2: </span>
                       {refereeReport.assistant_referee_2}
                     </div>
                   )}
                   {refereeReport.fourth_official && (
                     <div>
-                      <span className="font-medium">Cuarto Árbitro: </span>
+                      <span className="font-medium text-white drop-shadow">Cuarto Árbitro: </span>
                       {refereeReport.fourth_official}
                     </div>
                   )}
@@ -192,12 +192,12 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                     <>
                       <Separator className="my-4" />
                       <div>
-                        <div className="font-medium mb-2 flex items-center gap-2">
+                        <div className="font-medium mb-2 flex items-center gap-2 text-white drop-shadow">
                           <FileText className="w-4 h-4" />
                           Observaciones Generales:
                         </div>
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-700 whitespace-pre-wrap">
+                        <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
+                          <p className="text-white/90 drop-shadow whitespace-pre-wrap">
                             {refereeReport.general_observations}
                           </p>
                         </div>
@@ -210,9 +210,9 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* Goals */}
             {goals.length > 0 && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                     <Trophy className="w-5 h-5" />
                     Goles ({goals.length})
                   </CardTitle>
@@ -220,20 +220,20 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent>
                   <div className="space-y-3">
                     {goals.map((goal) => (
-                      <div key={goal.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border">
+                      <div key={goal.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="bg-green-100 border-green-300">
                             {goal.minute}'
                           </Badge>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium text-white drop-shadow">
                               {goal.player?.name} (#{goal.player?.jersey_number})
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-white/70 drop-shadow">
                               {goal.team?.name} - {goal.goal_type}
                             </div>
                             {goal.description && (
-                              <div className="text-sm text-gray-600 mt-1">{goal.description}</div>
+                              <div className="text-sm text-white/80 drop-shadow mt-1">{goal.description}</div>
                             )}
                           </div>
                         </div>
@@ -246,9 +246,9 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* Cards */}
             {cards.length > 0 && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                     <AlertTriangle className="w-5 h-5" />
                     Tarjetas ({cards.length})
                   </CardTitle>
@@ -256,22 +256,21 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent>
                   <div className="space-y-3">
                     {cards.map((card) => (
-                      <div key={card.id} className="flex items-center justify-between p-3 rounded-lg border"
-                           style={{ backgroundColor: card.card_type === 'yellow' ? '#fef3c7' : '#fee2e2' }}>
+                      <div key={card.id} className={`flex items-center justify-between p-3 rounded-xl backdrop-blur-md border ${card.card_type === 'yellow' ? 'bg-yellow-500/20 border-yellow-300/30' : 'bg-red-500/20 border-red-300/30'}`}>
                         <div className="flex items-center gap-3">
                           <Badge variant="outline"
-                                 className={card.card_type === 'yellow' ? 'bg-yellow-100 border-yellow-300' : 'bg-red-100 border-red-300'}>
+                                 className={card.card_type === 'yellow' ? 'backdrop-blur-md bg-yellow-500/30 border-yellow-300/50 text-white' : 'backdrop-blur-md bg-red-500/30 border-red-300/50 text-white'}>
                             {card.minute}'
                           </Badge>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium text-white drop-shadow">
                               {card.player?.name} (#{card.player?.jersey_number})
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-white/70 drop-shadow">
                               {card.team?.name} - Tarjeta {card.card_type === 'yellow' ? 'Amarilla' : 'Roja'}
                             </div>
                             {card.reason && (
-                              <div className="text-sm text-gray-600 mt-1">{card.reason}</div>
+                              <div className="text-sm text-white/80 drop-shadow mt-1">{card.reason}</div>
                             )}
                           </div>
                         </div>
@@ -284,9 +283,9 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* Incidents */}
             {incidents.length > 0 && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                     <Clock className="w-5 h-5" />
                     Incidencias ({incidents.length})
                   </CardTitle>
@@ -294,7 +293,7 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent>
                   <div className="space-y-3">
                     {incidents.map((incident) => (
-                      <div key={incident.id} className="p-3 bg-blue-50 rounded-lg border">
+                      <div key={incident.id} className="p-3 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30">
                         <div className="flex items-start gap-2">
                           {incident.minute && (
                             <Badge variant="outline" className="bg-blue-100 border-blue-300">
@@ -302,8 +301,8 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                             </Badge>
                           )}
                           <div className="flex-1">
-                            <div className="font-medium">{incident.incident_type}</div>
-                            <div className="text-sm text-gray-600 mt-1">{incident.description}</div>
+                            <div className="font-medium text-white drop-shadow">{incident.incident_type}</div>
+                            <div className="text-sm text-white/80 drop-shadow mt-1">{incident.description}</div>
                           </div>
                         </div>
                       </div>
@@ -315,20 +314,20 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* Match Conditions */}
             {refereeReport && (refereeReport.weather_conditions || refereeReport.field_conditions) && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardHeader>
-                  <CardTitle>Condiciones del Partido</CardTitle>
+                  <CardTitle className="text-white drop-shadow-lg">Condiciones del Partido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {refereeReport.weather_conditions && (
                     <div>
-                      <span className="font-medium">Clima: </span>
+                      <span className="font-medium text-white drop-shadow">Clima: </span>
                       {refereeReport.weather_conditions}
                     </div>
                   )}
                   {refereeReport.field_conditions && (
                     <div>
-                      <span className="font-medium">Campo: </span>
+                      <span className="font-medium text-white drop-shadow">Campo: </span>
                       {refereeReport.field_conditions}
                     </div>
                   )}
@@ -338,13 +337,13 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
 
             {/* No data message */}
             {!refereeReport && goals.length === 0 && cards.length === 0 && incidents.length === 0 && (
-              <Card>
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardContent className="text-center py-12">
-                  <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <FileText className="w-12 h-12 mx-auto text-white/60 mb-4" />
+                  <h3 className="text-lg font-medium text-white drop-shadow mb-2">
                     No hay cédula arbitral disponible
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-white/70 drop-shadow">
                     Este partido no tiene información de cédula arbitral registrada.
                   </p>
                 </CardContent>

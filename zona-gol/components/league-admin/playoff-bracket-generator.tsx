@@ -503,7 +503,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
               Generar Liguilla
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
             <DialogHeader className="pb-4">
               <DialogTitle className="flex items-center gap-2 text-2xl text-white drop-shadow-lg">
                 <Trophy className="w-7 h-7 text-yellow-300" />

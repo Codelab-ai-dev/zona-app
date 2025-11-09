@@ -136,8 +136,8 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-8 h-8 animate-spin mr-2" />
-          <span>Cargando estadísticas de jugadores...</span>
+          <Loader2 className="w-8 h-8 animate-spin mr-2 text-white" />
+          <span className="text-white drop-shadow">Cargando estadísticas de jugadores...</span>
         </div>
       </div>
     )
@@ -146,11 +146,11 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="text-center py-8">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error</h3>
-            <p className="text-red-600">{error}</p>
+            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">Error</h3>
+            <p className="text-red-400 drop-shadow">{error}</p>
           </CardContent>
         </Card>
       </div>
@@ -161,55 +161,55 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
     <div className="space-y-6">
       {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
-            <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{playersWithStats.length}</p>
-            <p className="text-sm text-gray-600">Jugadores</p>
+            <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white drop-shadow-lg">{playersWithStats.length}</p>
+            <p className="text-sm text-white/80 drop-shadow">Jugadores</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
-            <Target className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{totalTeamGoals}</p>
-            <p className="text-sm text-gray-600">Goles Totales</p>
+            <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamGoals}</p>
+            <p className="text-sm text-white/80 drop-shadow">Goles Totales</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
-            <AlertTriangle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{totalTeamYellowCards}</p>
-            <p className="text-sm text-gray-600">Tarjetas Amarillas</p>
+            <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamYellowCards}</p>
+            <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
-            <AlertTriangle className="w-8 h-8 text-red-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{totalTeamRedCards}</p>
-            <p className="text-sm text-gray-600">Tarjetas Rojas</p>
+            <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamRedCards}</p>
+            <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Players Statistics Table */}
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-white drop-shadow-lg">
             <Trophy className="w-5 h-5 mr-2" />
             Estadísticas de Jugadores
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white/70 drop-shadow">
             Rendimiento individual de cada jugador del equipo
           </CardDescription>
         </CardHeader>
         <CardContent>
           {playersWithStats.length === 0 ? (
             <div className="text-center py-8">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Users className="w-12 h-12 text-white/60 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
                 No hay jugadores registrados
               </h3>
-              <p className="text-gray-600">
+              <p className="text-white/80 drop-shadow">
                 Los jugadores y sus estadísticas aparecerán aquí cuando se registren en el equipo
               </p>
             </div>
@@ -218,13 +218,13 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Jugador</TableHead>
-                    <TableHead className="text-center">PJ</TableHead>
-                    <TableHead className="text-center">Goles</TableHead>
-                    <TableHead className="text-center">Asistencias</TableHead>
-                    <TableHead className="text-center">TA</TableHead>
-                    <TableHead className="text-center">TR</TableHead>
-                    <TableHead className="text-center">Min</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">PJ</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">Goles</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">Asistencias</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">TA</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">TR</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow">Min</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,44 +242,44 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
                             )}
                           </Avatar>
                           <div>
-                            <p className="font-medium text-gray-900 flex items-center">
+                            <p className="font-medium text-white drop-shadow flex items-center">
                               {player.name}
-                              <span className="ml-2 text-sm font-bold text-green-600">
+                              <span className="ml-2 text-sm font-bold text-green-400 drop-shadow">
                                 #{player.jersey_number}
                               </span>
                             </p>
-                            <p className="text-sm text-gray-600">{player.position}</p>
+                            <p className="text-sm text-white/70 drop-shadow">{player.position}</p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-medium">
+                      <TableCell className="text-center font-medium text-white drop-shadow">
                         {player.total_games}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <Badge variant="outline" className="backdrop-blur-md bg-green-500/20 text-green-300 border-green-300/50">
                           {player.total_goals}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge variant="outline" className="backdrop-blur-md bg-blue-500/20 text-blue-300 border-blue-300/50">
                           {player.total_assists}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         {player.total_yellow_cards > 0 && (
-                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                          <Badge variant="outline" className="backdrop-blur-md bg-yellow-500/20 text-yellow-300 border-yellow-300/50">
                             {player.total_yellow_cards}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
                         {player.total_red_cards > 0 && (
-                          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          <Badge variant="outline" className="backdrop-blur-md bg-red-500/20 text-red-300 border-red-300/50">
                             {player.total_red_cards}
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-center text-sm text-gray-600">
+                      <TableCell className="text-center text-sm text-white/80 drop-shadow">
                         <div className="flex items-center justify-center">
                           <Clock className="w-3 h-3 mr-1" />
                           {player.total_minutes_played}'

@@ -211,13 +211,13 @@ export function AppManagement({ leagueId }: AppManagementProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <Smartphone className="h-6 w-6 text-soccer-green" />
+            <Smartphone className="h-6 w-6 text-green-400" />
             <div>
-              <CardTitle>Gestión de Aplicación Móvil</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white drop-shadow-lg">Gestión de Aplicación Móvil</CardTitle>
+              <CardDescription className="text-white/80 drop-shadow">
                 Sube y administra las versiones del APK de Zona-Gol para tu liga
               </CardDescription>
             </div>
@@ -226,29 +226,30 @@ export function AppManagement({ leagueId }: AppManagementProps) {
         <CardContent className="space-y-6">
           {/* Upload Section */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
               <FileArchive className="h-4 w-4" />
               <span>Formatos permitidos: APK (máx. 150MB)</span>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apk-upload">Seleccionar APK</Label>
+              <Label htmlFor="apk-upload" className="text-white drop-shadow">Seleccionar APK</Label>
               <Input
                 id="apk-upload"
                 type="file"
                 accept=".apk"
                 onChange={handleFileSelect}
                 disabled={uploading}
+                className="backdrop-blur-md bg-white/10 border-white/30 text-white file:text-white rounded-xl"
               />
             </div>
 
             {selectedFile && (
-              <Alert>
+              <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30 shadow-xl">
                 <AlertDescription>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium text-white drop-shadow">{selectedFile.name}</p>
+                      <p className="text-sm text-white/70 drop-shadow">
                         {formatFileSize(selectedFile.size)}
                       </p>
                     </div>
@@ -256,6 +257,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                       onClick={handleUpload}
                       disabled={uploading}
                       size="sm"
+                      className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
                     >
                       {uploading ? (
                         <>Subiendo...</>
@@ -275,35 +277,35 @@ export function AppManagement({ leagueId }: AppManagementProps) {
           {/* Files List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">APKs Disponibles</h3>
-              <Button variant="ghost" size="sm" onClick={loadFiles}>
+              <h3 className="text-lg font-semibold text-white drop-shadow-lg">APKs Disponibles</h3>
+              <Button variant="ghost" size="sm" onClick={loadFiles} className="text-white hover:bg-white/10">
                 Actualizar
               </Button>
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-white/80 drop-shadow">
                 Cargando archivos...
               </div>
             ) : files.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <div className="text-center py-8 text-white/80 drop-shadow">
+                <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50 text-white" />
                 <p>No hay APKs disponibles</p>
                 <p className="text-sm mt-2">Sube el primer APK para comenzar</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {files.map((file) => (
-                  <Card key={file.id}>
+                  <Card key={file.id} className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-start space-x-4 flex-1">
-                          <div className="bg-soccer-green/10 p-2 rounded">
-                            <Smartphone className="h-6 w-6 text-soccer-green" />
+                          <div className="backdrop-blur-md bg-green-500/20 p-2 rounded-xl border border-green-300/30">
+                            <Smartphone className="h-6 w-6 text-green-300" />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium">{file.name}</h4>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
+                            <h4 className="font-medium text-white drop-shadow">{file.name}</h4>
+                            <div className="flex items-center space-x-4 text-sm text-white/70 drop-shadow mt-1">
                               <span className="flex items-center">
                                 <FileArchive className="h-3 w-3 mr-1" />
                                 {formatFileSize(file.metadata.size)}
@@ -320,6 +322,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownload(file)}
+                            className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                           >
                             <Download className="h-4 w-4 mr-1" />
                             Descargar
@@ -328,6 +331,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleGetPublicLink(file)}
+                            className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                           >
                             Copiar Link
                           </Button>
@@ -335,7 +339,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(file)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -349,9 +353,9 @@ export function AppManagement({ leagueId }: AppManagementProps) {
           </div>
 
           {/* Instructions */}
-          <Alert>
-            <AlertDescription>
-              <h4 className="font-medium mb-2">📱 Instrucciones para usuarios:</h4>
+          <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30 shadow-xl">
+            <AlertDescription className="text-white/90 drop-shadow">
+              <h4 className="font-medium mb-2 text-white">📱 Instrucciones para usuarios:</h4>
               <ol className="list-decimal list-inside space-y-1 text-sm">
                 <li>Descarga el APK más reciente desde esta sección</li>
                 <li>En tu dispositivo Android, ve a Configuración → Seguridad</li>

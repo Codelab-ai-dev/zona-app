@@ -367,7 +367,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
       {/* Generator Dialog */}
       <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
-        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none bg-gradient-to-br from-black via-gray-900 to-black">
+        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
           <DialogHeader className="pb-4 border-b border-white/20 px-8 pt-2">
             <DialogTitle className="text-xl text-white drop-shadow-lg">Configurar Generación de Jornadas</DialogTitle>
             <DialogDescription className="text-white/80 drop-shadow">

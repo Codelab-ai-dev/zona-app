@@ -110,21 +110,7 @@ export function LeagueDirectory() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Video de fondo */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="fixed top-0 left-0 w-full h-full object-cover z-0"
-      >
-        <source src="/video/zona-gol.mp4" type="video/mp4" />
-      </video>
-
-      {/* Overlay oscuro para mejorar legibilidad */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-0"></div>
-
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Contenido */}
       <div className="relative z-10">
         <header className="relative" style={{marginTop: '-1px'}}>

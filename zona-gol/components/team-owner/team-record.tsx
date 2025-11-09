@@ -41,18 +41,18 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <Trophy className="w-5 h-5" />
             Récord del Equipo
           </CardTitle>
-          <CardDescription>Estadísticas generales</CardDescription>
+          <CardDescription className="text-white/70 drop-shadow">Estadísticas generales</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin mr-2" />
-            <span>Cargando estadísticas...</span>
+            <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
+            <span className="text-white drop-shadow">Cargando estadísticas...</span>
           </div>
         </CardContent>
       </Card>
@@ -61,16 +61,16 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
 
   if (!stats) {
     return (
-      <Card>
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <Trophy className="w-5 h-5" />
             Récord del Equipo
           </CardTitle>
-          <CardDescription>Estadísticas generales</CardDescription>
+          <CardDescription className="text-white/70 drop-shadow">Estadísticas generales</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-gray-500 py-8">No hay estadísticas disponibles</p>
+          <p className="text-center text-white/70 drop-shadow py-8">No hay estadísticas disponibles</p>
         </CardContent>
       </Card>
     )
@@ -128,17 +128,17 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
   ]
 
   return (
-    <Card>
+    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
           <Trophy className="w-5 h-5" />
           Récord del Equipo
         </CardTitle>
-        <CardDescription>Estadísticas de la temporada</CardDescription>
+        <CardDescription className="text-white/70 drop-shadow">Estadísticas de la temporada</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Points Display */}
-        <div className="p-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg text-white">
+        <div className="p-6 backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-blue-600/80 rounded-xl text-white border border-blue-300/30 shadow-lg">
           <div className="text-center">
             <p className="text-sm font-medium opacity-90">Puntos Totales</p>
             <p className="text-5xl font-bold mt-2">{stats.points}</p>
@@ -150,15 +150,25 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
 
         {/* Match Record */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Récord de Partidos</h3>
+          <h3 className="text-sm font-semibold text-white drop-shadow-lg mb-3">Récord de Partidos</h3>
           <div className="grid grid-cols-2 gap-3">
             {recordStats.map((stat) => (
               <div
                 key={stat.label}
-                className={`p-4 rounded-lg ${stat.bgColor} border border-gray-200`}
+                className={`p-4 rounded-xl backdrop-blur-md border shadow-lg ${
+                  stat.label === "Partidos Jugados" ? "bg-gray-500/20 border-gray-300/30" :
+                  stat.label === "Victorias" ? "bg-green-500/20 border-green-300/30" :
+                  stat.label === "Empates" ? "bg-yellow-500/20 border-yellow-300/30" :
+                  "bg-red-500/20 border-red-300/30"
+                }`}
               >
-                <p className="text-xs text-gray-600 mb-1">{stat.label}</p>
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-xs text-white/80 drop-shadow mb-1">{stat.label}</p>
+                <p className={`text-2xl font-bold drop-shadow-lg ${
+                  stat.label === "Partidos Jugados" ? "text-white" :
+                  stat.label === "Victorias" ? "text-green-400" :
+                  stat.label === "Empates" ? "text-yellow-400" :
+                  "text-red-400"
+                }`}>{stat.value}</p>
               </div>
             ))}
           </div>
@@ -166,22 +176,27 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
 
         {/* Goals Stats */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Estadísticas de Goles</h3>
+          <h3 className="text-sm font-semibold text-white drop-shadow-lg mb-3">Estadísticas de Goles</h3>
           <div className="space-y-3">
             {goalStats.map((stat) => {
               const Icon = stat.icon
+              const isPositive = stat.label === "Goles a Favor" || (stat.label === "Diferencia de Goles" && stats.goalDifference >= 0)
               return (
                 <div
                   key={stat.label}
-                  className={`flex items-center justify-between p-4 rounded-lg ${stat.bgColor} border border-gray-200`}
+                  className={`flex items-center justify-between p-4 rounded-xl backdrop-blur-md border shadow-lg ${
+                    isPositive ? "bg-green-500/20 border-green-300/30" : "bg-red-500/20 border-red-300/30"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full bg-white`}>
-                      <Icon className={`w-4 h-4 ${stat.color}`} />
+                    <div className={`p-2 rounded-full backdrop-blur-md border ${
+                      isPositive ? "bg-green-500/30 border-green-300/50" : "bg-red-500/30 border-red-300/50"
+                    }`}>
+                      <Icon className={`w-4 h-4 ${isPositive ? "text-green-300" : "text-red-300"}`} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{stat.label}</span>
+                    <span className="text-sm font-medium text-white drop-shadow">{stat.label}</span>
                   </div>
-                  <span className={`text-2xl font-bold ${stat.color}`}>{stat.value}</span>
+                  <span className={`text-2xl font-bold drop-shadow-lg ${isPositive ? "text-green-400" : "text-red-400"}`}>{stat.value}</span>
                 </div>
               )
             })}
@@ -190,14 +205,14 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
 
         {/* Win Percentage */}
         {stats.matchesCount > 0 && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-white/20">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Porcentaje de Victorias</span>
-              <span className="font-bold text-green-600">
+              <span className="text-white/80 drop-shadow">Porcentaje de Victorias</span>
+              <span className="font-bold text-green-400 drop-shadow">
                 {((stats.wins / stats.matchesCount) * 100).toFixed(1)}%
               </span>
             </div>
-            <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-2 h-2 backdrop-blur-md bg-white/20 rounded-full overflow-hidden border border-white/30">
               <div
                 className="h-full bg-green-500 transition-all duration-500"
                 style={{ width: `${(stats.wins / stats.matchesCount) * 100}%` }}

@@ -344,7 +344,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               Agregar Equipo
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl">
+          <DialogContent className="sm:max-w-[800px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-white drop-shadow-lg">Crear Nuevo Equipo</DialogTitle>
               <DialogDescription className="text-white/80 drop-shadow">
@@ -409,7 +409,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                       <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
                         <SelectValue placeholder="Seleccionar torneo" />
                       </SelectTrigger>
-                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                      <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
                         <SelectItem value="none" className="text-white hover:bg-white/10">Sin torneo asignado</SelectItem>
                         {tournaments?.map((tournament) => (
                           <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
@@ -604,7 +604,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Edit Team Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] backdrop-blur-xl bg-gray-700/95 border-white/20 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white drop-shadow-lg">Editar Equipo</DialogTitle>
             <DialogDescription className="text-white/80 drop-shadow">
