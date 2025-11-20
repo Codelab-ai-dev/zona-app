@@ -207,7 +207,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
     return (
       <div className="text-center py-12">
         <Loader2 className="w-12 h-12 text-white/60 mx-auto mb-4 animate-spin" />
-        <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">Cargando equipo...</h3>
+        <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">Cargando equipo...</h3>
         <p className="text-white/80 drop-shadow">Obteniendo información del equipo</p>
       </div>
     )
@@ -217,7 +217,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
     return (
       <div className="text-center py-12">
         <Shield className="w-12 h-12 text-white/60 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">
+        <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">
           {error || 'Equipo no encontrado'}
         </h3>
         <p className="text-white/80 drop-shadow mb-4">
@@ -237,7 +237,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Información del Equipo</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Información del Equipo</h2>
         <p className="text-white/80 drop-shadow">
           {canEditTeam ? "Gestiona los detalles del equipo" : "Visualiza los detalles de tu equipo"}
         </p>
@@ -245,16 +245,16 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
 
       <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Avatar className="w-16 h-16">
-                <AvatarFallback className="bg-green-500/30 text-green-300 font-bold text-lg border border-green-300/50">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-2 sm:space-x-4">
+              <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
+                <AvatarFallback className="bg-green-500/30 text-green-300 font-bold text-base sm:text-base sm:text-lg border border-green-300/50">
                   {getTeamInitials(team.name)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-2xl text-white drop-shadow-lg">{team.name}</CardTitle>
-                <CardDescription className="text-base text-white/70 drop-shadow">/{team.slug}</CardDescription>
+                <CardTitle className="text-xl sm:text-2xl text-white drop-shadow-lg">{team.name}</CardTitle>
+                <CardDescription className="text-sm sm:text-base text-white/70 drop-shadow">/{team.slug}</CardDescription>
               </div>
             </div>
             {canEditTeam && (
@@ -262,6 +262,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() =>
                       setFormData({
                         name: team.name,
@@ -269,7 +270,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                         slug: team.slug,
                       })
                     }
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto"
                   >
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
@@ -325,29 +326,29 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
           <div className="space-y-4">
             <p className="text-white/80 drop-shadow">{team.description || "Sin descripción disponible"}</p>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                <Calendar className="w-4 h-4" />
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/80 drop-shadow">
+                <Calendar className="w-4 h-4 flex-shrink-0" />
                 <span>Fundado: {new Date(team.created_at).toLocaleDateString("es-ES")}</span>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                <Globe className="w-4 h-4" />
-                <span>URL: /{team.slug}</span>
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/80 drop-shadow">
+                <Globe className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">URL: /{team.slug}</span>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                <Shield className="w-4 h-4" />
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/80 drop-shadow">
+                <Shield className="w-4 h-4 flex-shrink-0" />
                 <span>Estado: {team.is_active ? "Activo" : "Inactivo"}</span>
               </div>
               {(team as any).league?.name && (
-                <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                  <Shield className="w-4 h-4" />
-                  <span>Liga: {(team as any).league.name}</span>
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/80 drop-shadow">
+                  <Shield className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Liga: {(team as any).league.name}</span>
                 </div>
               )}
               {(team as any).owner?.name && (
-                <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                  <Shield className="w-4 h-4" />
-                  <span>Propietario: {(team as any).owner.name}</span>
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/80 drop-shadow">
+                  <Shield className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Propietario: {(team as any).owner.name}</span>
                 </div>
               )}
             </div>
@@ -371,32 +372,32 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
             <div className="space-y-6">
               {/* Rendimiento Ofensivo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <Target className="w-5 h-5 mr-2 text-green-400" />
                   Rendimiento Ofensivo
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Goles Totales</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Goles Totales</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
-                    <p className="text-3xl font-bold text-blue-400 drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-blue-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
-                    <p className="text-3xl font-bold text-purple-400 drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-purple-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
-                    <p className="text-3xl font-bold text-indigo-400 drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-indigo-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
@@ -412,36 +413,36 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
 
                 return topScorers.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                       <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                       Máximos Goleadores
                     </h3>
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <div className="grid gap-3 sm:gap-3 grid-cols-1 md:grid-cols-3">
                       {topScorers.map((player, index) => (
-                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                        <div key={player.id} className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-base sm:text-lg ${
                               index === 0 ? 'bg-yellow-400/80 text-yellow-900' :
                               index === 1 ? 'bg-gray-400/80 text-gray-900' :
                               'bg-orange-400/80 text-orange-900'
                             }`}>
                               {index + 1}
                             </div>
-                            <Avatar className="w-10 h-10">
+                            <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
                               {player.photo ? (
                                 <AvatarImage src={player.photo} alt={player.name} />
                               ) : (
-                                <AvatarFallback className="bg-green-500/30 text-green-300 border border-green-300/50">
+                                <AvatarFallback className="bg-green-500/30 text-green-300 border border-green-300/50 text-xs sm:text-sm">
                                   {getPlayerInitials(player.name)}
                                 </AvatarFallback>
                               )}
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
+                              <p className="font-semibold text-xs sm:text-sm truncate text-white drop-shadow">{player.name}</p>
                               <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{player.total_goals}</p>
+                              <p className="text-xl sm:text-2xl font-bold text-green-400 drop-shadow-lg">{player.total_goals}</p>
                               <p className="text-xs text-white/70 drop-shadow">goles</p>
                             </div>
                           </div>
@@ -461,36 +462,36 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
 
                 return topAssisters.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                       <Target className="w-5 h-5 mr-2 text-blue-400" />
                       Máximos Asistidores
                     </h3>
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <div className="grid gap-3 sm:gap-3 grid-cols-1 md:grid-cols-3">
                       {topAssisters.map((player, index) => (
-                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                        <div key={player.id} className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
+                          <div className="flex items-center space-x-2 sm:space-x-3">
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-base sm:text-lg ${
                               index === 0 ? 'bg-yellow-400/80 text-yellow-900' :
                               index === 1 ? 'bg-gray-400/80 text-gray-900' :
                               'bg-orange-400/80 text-orange-900'
                             }`}>
                               {index + 1}
                             </div>
-                            <Avatar className="w-10 h-10">
+                            <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
                               {player.photo ? (
                                 <AvatarImage src={player.photo} alt={player.name} />
                               ) : (
-                                <AvatarFallback className="bg-blue-500/30 text-blue-300 border border-blue-300/50">
+                                <AvatarFallback className="bg-blue-500/30 text-blue-300 border border-blue-300/50 text-xs sm:text-sm">
                                   {getPlayerInitials(player.name)}
                                 </AvatarFallback>
                               )}
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
+                              <p className="font-semibold text-xs sm:text-sm truncate text-white drop-shadow">{player.name}</p>
                               <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-blue-400 drop-shadow-lg">{player.total_assists}</p>
+                              <p className="text-xl sm:text-2xl font-bold text-blue-400 drop-shadow-lg">{player.total_assists}</p>
                               <p className="text-xs text-white/70 drop-shadow">asist.</p>
                             </div>
                           </div>
@@ -503,38 +504,38 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
 
               {/* Disciplina del Equipo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
                   Disciplina
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
                     <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-4 h-6 bg-yellow-400 rounded"></div>
-                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
+                      <div className="w-3 h-5 sm:w-4 sm:h-6 bg-yellow-400 rounded"></div>
+                      <p className="text-xs sm:text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
                     </div>
-                    <p className="text-3xl font-bold text-yellow-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-red-500/20 rounded-xl border border-red-300/30 shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-red-500/20 rounded-xl border border-red-300/30 shadow-lg">
                     <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-4 h-6 bg-red-600 rounded"></div>
-                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
+                      <div className="w-3 h-5 sm:w-4 sm:h-6 bg-red-600 rounded"></div>
+                      <p className="text-xs sm:text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
                     </div>
-                    <p className="text-3xl font-bold text-red-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Tarjetas por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Tarjetas por Jugador</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores sin Tarjetas</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Jugadores sin Tarjetas</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
                     </p>
                   </div>
@@ -543,32 +544,32 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
 
               {/* Participación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <Clock className="w-5 h-5 mr-2 text-gray-400" />
                   Participación
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Partidos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Partidos Jugados (Total)</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Minutos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Minutos Jugados (Total)</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Promedio Minutos por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Promedio Minutos por Jugador</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores Activos</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                  <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                    <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Jugadores Activos</p>
+                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_games > 0).length}
                     </p>
                   </div>

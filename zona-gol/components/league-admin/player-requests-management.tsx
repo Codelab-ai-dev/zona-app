@@ -217,7 +217,7 @@ export function PlayerRequestsManagement({ leagueId }: PlayerRequestsManagementP
         <>
           {/* Pending Requests */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 flex items-center">
               <Clock className="w-5 h-5 mr-2 text-yellow-600" />
               Pendientes de Revisión ({pendingRequests.length})
             </h3>
@@ -227,13 +227,13 @@ export function PlayerRequestsManagement({ leagueId }: PlayerRequestsManagementP
                 <p>No hay solicitudes pendientes</p>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                 {pendingRequests.map((request) => (
                   <Card key={request.id} className="border-l-4 border-l-yellow-500">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-lg">
+                          <CardTitle className="text-base sm:text-lg">
                             {request.player_name}
                           </CardTitle>
                           <CardDescription>
@@ -285,16 +285,16 @@ export function PlayerRequestsManagement({ leagueId }: PlayerRequestsManagementP
           {/* Reviewed Requests */}
           {reviewedRequests.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-3">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3">
                 Historial de Solicitudes ({reviewedRequests.length})
               </h3>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                 {reviewedRequests.map((request) => (
                   <Card key={request.id} className={`border-l-4 ${request.status === 'approved' ? 'border-l-green-500' : 'border-l-red-500'}`}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-lg">
+                          <CardTitle className="text-base sm:text-lg">
                             {request.player_name}
                           </CardTitle>
                           <CardDescription>

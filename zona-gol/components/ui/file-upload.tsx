@@ -136,7 +136,7 @@ export function FileUpload({
       {label && <Label>{label}</Label>}
       <div
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+          "border-2 border-dashed rounded-lg p-4 sm:p-6 text-center transition-colors",
           dragActive ? "border-primary bg-primary/5" : "border-gray-300",
           "hover:border-gray-400 cursor-pointer",
         )}

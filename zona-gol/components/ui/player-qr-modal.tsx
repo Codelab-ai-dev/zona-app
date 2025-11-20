@@ -185,7 +185,7 @@ export function PlayerQRModal({
           </div>
 
           {/* Código QR */}
-          <div className="flex justify-center p-6 bg-white border-2 border-gray-200 rounded-lg">
+          <div className="flex justify-center p-4 sm:p-6 bg-white border-2 border-gray-200 rounded-lg">
             <QRCode
               id="qr-code-svg"
               value={qrData}

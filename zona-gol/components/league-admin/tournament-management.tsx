@@ -24,8 +24,18 @@ import {
 } from "@/components/ui/dialog"
 import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { Database } from "@/lib/supabase/database.types"
-import { Plus, Edit, Calendar, Trophy, Loader2, Users, Lock, Unlock } from "lucide-react"
+import { Plus, Edit, Calendar, Trophy, Loader2, Users, Lock, Unlock, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type Tournament = Database['public']['Tables']['tournaments']['Row']
 
@@ -34,20 +44,23 @@ interface TournamentManagementProps {
 }
 
 export function TournamentManagement({ leagueId }: TournamentManagementProps) {
-  const { 
-    tournaments, 
-    loading, 
+  const {
+    tournaments,
+    loading,
     error,
     getTournamentsByLeague,
     createTournament,
     updateTournament,
-    deleteTournament
+    deleteTournament,
+    permanentlyDeleteTournament
   } = useTournaments()
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null)
+  const [deletingTournament, setDeletingTournament] = useState<Tournament | null>(null)
   const [creating, setCreating] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
@@ -75,7 +88,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
   if (!leagueId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
         <p className="text-white/80 drop-shadow">
           No se pudo cargar la información de la liga.
         </p>
@@ -225,6 +238,23 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     }
   }
 
+  const handlePermanentDelete = async () => {
+    if (!deletingTournament) return
+
+    setDeleting(true)
+    try {
+      await permanentlyDeleteTournament(deletingTournament.id)
+      toast.success(`Torneo "${deletingTournament.name}" eliminado permanentemente`)
+      console.log('✅ Torneo eliminado permanentemente')
+      setDeletingTournament(null)
+    } catch (error: any) {
+      console.error('❌ Error eliminando torneo:', error)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {
       year: "numeric",
@@ -237,7 +267,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Torneos</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Torneos</h2>
           <p className="text-white/80 drop-shadow">Administra los torneos de tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -455,13 +485,13 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
           <p className="text-sm text-white/70 drop-shadow">Crea tu primer torneo para comenzar</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2">
           {tournaments.map((tournament) => (
           <Card key={tournament.id} className="backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg flex items-center text-white drop-shadow-lg">
+                  <CardTitle className="text-base sm:text-lg flex items-center text-white drop-shadow-lg">
                     <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                     {tournament.name}
                   </CardTitle>
@@ -502,7 +532,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20" size="sm" onClick={() => handleEditTournament(tournament)}>
                   <Edit className="w-4 h-4 mr-1" />
                   Editar
@@ -526,6 +556,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                       Abrir Registros
                     </>
                   )}
+                </Button>
+                <Button
+                  className="backdrop-blur-md bg-red-600/80 hover:bg-red-600/90 text-white border-0"
+                  size="sm"
+                  onClick={() => setDeletingTournament(tournament)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Borrar Torneo
                 </Button>
               </div>
             </CardContent>
@@ -718,6 +756,61 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingTournament} onOpenChange={() => setDeletingTournament(null)}>
+        <AlertDialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-950/95 border-red-500/30 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Confirmar Eliminación Permanente
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/90 drop-shadow space-y-3">
+              <p className="font-semibold text-base sm:text-lg">
+                ¿Estás seguro de que quieres eliminar permanentemente el torneo "{deletingTournament?.name}"?
+              </p>
+              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 space-y-2">
+                <p className="font-bold text-red-300">⚠️ ADVERTENCIA: Esta acción es IRREVERSIBLE</p>
+                <p className="text-sm">Se eliminarán permanentemente:</p>
+                <ul className="text-sm list-disc list-inside space-y-1 ml-2">
+                  <li>Todos los partidos del torneo</li>
+                  <li>Todas las estadísticas de jugadores</li>
+                  <li>Los equipos perderán su vinculación al torneo</li>
+                  <li>Toda la información relacionada con este torneo</li>
+                </ul>
+              </div>
+              <p className="text-sm text-white/70">
+                Si solo quieres ocultar temporalmente el torneo, usa la opción "Desactivar" en su lugar.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+              disabled={deleting}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePermanentDelete}
+              className="backdrop-blur-md bg-red-600/80 hover:bg-red-600/90 text-white border-0"
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Sí, Eliminar Permanentemente
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   )

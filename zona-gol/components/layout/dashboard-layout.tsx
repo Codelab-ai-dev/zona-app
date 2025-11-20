@@ -123,6 +123,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 )}
 
                 <Button variant="outline" onClick={handleSignOut} size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <LogOut className="w-4 h-4 mr-2" />
                   Cerrar Sesión
                 </Button>
               </div>
@@ -138,30 +139,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[320px] p-0">
                     {/* Header with gradient */}
-                    <SheetHeader className="p-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
+                    <SheetHeader className="p-4 sm:p-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
                       <div className="flex items-center space-x-3">
                         <div className="relative">
                           <img
                             src="/zona-gol-final.webp"
                             alt="Zona-Gol"
-                            className="w-14 h-14 rounded-lg shadow-sm"
+                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shadow-sm"
                           />
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
                         </div>
                         <div>
-                          <SheetTitle className="text-lg font-bold">Zona Gol</SheetTitle>
+                          <SheetTitle className="text-base sm:text-lg font-bold">Zona Gol</SheetTitle>
                           <p className="text-xs text-muted-foreground mt-0.5">Panel de control</p>
                         </div>
                       </div>
                     </SheetHeader>
 
-                    <div className="flex flex-col h-[calc(100%-100px)] justify-between p-6">
+                    <div className="flex flex-col h-[calc(100%-100px)] justify-between p-4 sm:p-6">
                       <div className="flex flex-col space-y-6">
                         {/* User Info Card */}
                         {profile && (
                           <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-start space-x-3">
-                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-md flex-shrink-0">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-md flex-shrink-0">
                                 <User className="w-7 h-7 text-primary-foreground" />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -249,7 +250,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-6">
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-4 sm:p-6">
             {children}
           </div>
         </main>

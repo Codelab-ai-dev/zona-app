@@ -117,12 +117,12 @@ export function LeagueDirectory() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl">
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-4">
+                <div className="flex flex-col md:flex-row items-center justify-center gap-4 sm:p-6 mb-4">
                   <img src="/zona-gol.png" alt="Logo" className="w-44 h-44 md:w-48 md:h-48 drop-shadow-2xl" />
                   <h1 className="text-7xl md:text-8xl font-bold text-white mt-4 md:mt-0 drop-shadow-lg" style={{fontFamily: "var(--font-orbitron), sans-serif"}}>Zona-Gol</h1>
                 </div>
                 
-                <div className="absolute top-6 right-6">
+                <div className="absolute top-4 sm:p-6 right-6">
                   <Button asChild variant="outline" size="lg" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white transition-all duration-300 shadow-lg">
                     <Link href="/login" className="flex items-center gap-2">
                       <LogIn size={18} />
@@ -137,11 +137,11 @@ export function LeagueDirectory() {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header con efecto glass */}
-          <div className="mb-10 backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="mb-10 backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
             <div className="flex flex-col md:flex-row justify-between items-start">
               <div>
                 <h2 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">Ligas Disponibles</h2>
-                <p className="text-white/80 text-lg drop-shadow">Explora y únete a las competiciones activas</p>
+                <p className="text-white/80 text-base sm:text-lg drop-shadow">Explora y únete a las competiciones activas</p>
               </div>
               <div className="mt-4 md:mt-0">
                 <Button
@@ -172,7 +172,7 @@ export function LeagueDirectory() {
           )}
 
           {/* Grid de ligas con efecto glass */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {activeLeagues && activeLeagues.map((league) => {
               const stats = leagueStats[league.id] || { teamsCount: 0, tournamentsCount: 0, activeTournament: null };
               return (
@@ -180,12 +180,12 @@ export function LeagueDirectory() {
                   key={league.id} 
                   className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl hover:bg-white/20 hover:border-white/40 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform"
                 >
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-start gap-4">
                           <div className="flex flex-col items-center gap-2">
-                            <Avatar className="w-16 h-16 border-2 border-white/30 shadow-lg">
+                            <Avatar className="w-12 h-12 sm:w-16 sm:h-16 border-2 border-white/30 shadow-lg">
                               {league.logo && (
                                 <AvatarImage
                                   src={league.logo}

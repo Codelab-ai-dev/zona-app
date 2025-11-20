@@ -658,7 +658,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 <Users className="w-6 h-6" />
                 Resumen de Configuración
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6">
                 <ul className="text-sm text-white/90 drop-shadow space-y-3">
                   <li className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-blue-300" />
@@ -710,7 +710,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="flex gap-6 pt-6 border-t border-white/20 mt-8">
+            <div className="flex gap-4 sm:p-6 pt-6 border-t border-white/20 mt-8">
               <Button
                 type="button"
                 onClick={() => setIsGeneratorOpen(false)}
@@ -774,7 +774,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                   <CardContent className="pt-6">
                     <div className="grid gap-4">
                       {matches.map((match, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border hover:bg-muted/50 dark:hover:bg-soccer-green/5 transition-colors">
+                        <div key={index} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 border hover:bg-muted/50 dark:hover:bg-soccer-green/5 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="text-center">
                               <Badge variant="outline" className="text-xs bg-soccer-blue/10 text-soccer-blue border-soccer-blue/30">
@@ -800,7 +800,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 </Card>
               ))}
 
-              <div className="flex gap-6 pt-6 border-t mt-8 max-w-7xl mx-auto">
+              <div className="flex gap-4 sm:p-6 pt-6 border-t mt-8 max-w-7xl mx-auto">
                 <Button
                   type="button"
                   variant="outline"

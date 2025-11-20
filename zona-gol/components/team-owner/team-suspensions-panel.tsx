@@ -155,14 +155,14 @@ export function TeamSuspensionsPanel({ teamId }: TeamSuspensionsPanelProps) {
                   </div>
 
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                       <span className="text-white/80 drop-shadow">Tipo:</span>
                       <Badge variant="secondary" className="text-xs backdrop-blur-md bg-white/20 border-white/30 text-white">
                         {getSuspensionTypeLabel(suspension.suspension_type)}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                       <span className="text-white/80 drop-shadow">Partidos pendientes:</span>
                       <span className="font-bold text-red-300 drop-shadow">
                         {matchesRemaining} de {suspension.matches_to_serve}

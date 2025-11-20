@@ -169,8 +169,8 @@ export function MatchQRGenerator({ matchId, showAllMatches = false }: MatchQRGen
             return (
               <Card key={match.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                    <CardTitle className="text-base sm:text-lg">
                       {match.home_teams.name} vs {match.away_teams.name}
                     </CardTitle>
                     <Badge variant={match.status === 'in_progress' ? 'default' : 'secondary'}>
@@ -182,7 +182,7 @@ export function MatchQRGenerator({ matchId, showAllMatches = false }: MatchQRGen
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <div className="flex flex-col items-center space-y-2">
                       <div id={`qr-${match.id}`}>
                         <QRCode

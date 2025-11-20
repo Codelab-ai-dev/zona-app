@@ -38,6 +38,10 @@ export function useTournaments() {
     return tournamentActions.deleteTournament(tournamentId)
   }, [])
 
+  const permanentlyDeleteTournament = useCallback(async (tournamentId: string) => {
+    return tournamentActions.permanentlyDeleteTournament(tournamentId)
+  }, [])
+
   const getTournament = useCallback(async (tournamentId: string) => {
     return tournamentActions.getTournament(tournamentId)
   }, [])
@@ -50,6 +54,7 @@ export function useTournaments() {
     createTournament,
     updateTournament,
     deleteTournament,
+    permanentlyDeleteTournament,
     getTournament,
   }
 }

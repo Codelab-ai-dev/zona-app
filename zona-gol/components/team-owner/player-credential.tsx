@@ -417,7 +417,7 @@ export function PlayerCredential({
 
         <div className="space-y-6">
           {/* Vista previa de la credencial */}
-          <div className="flex justify-center p-6 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
+          <div className="flex justify-center p-4 sm:p-6 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
             <div
               id="credential-content"
               className="border-2 border-blue-600 rounded-lg p-4 bg-gradient-to-br from-slate-50 to-slate-200 shadow-lg relative overflow-hidden"
@@ -486,7 +486,7 @@ export function PlayerCredential({
 
                 {/* Información del jugador */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <h4 className="text-lg font-bold text-slate-800 m-0 mb-2 leading-tight truncate">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-800 m-0 mb-2 leading-tight truncate">
                     {player.name}
                   </h4>
                   <p className="text-sm text-slate-600 m-0 mb-3 truncate font-medium">
@@ -495,7 +495,7 @@ export function PlayerCredential({
 
                   {/* Número de camiseta */}
                   <div className="inline-flex items-center justify-center w-10 h-10 bg-white border-3 border-blue-600 rounded-full self-start">
-                    <span className="text-lg font-bold text-blue-600">
+                    <span className="text-base sm:text-lg font-bold text-blue-600">
                       {player.jersey_number}
                     </span>
                   </div>

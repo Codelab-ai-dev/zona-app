@@ -164,7 +164,7 @@ export function DisciplineTable({ leagueId }: DisciplineTableProps) {
         ) : disciplineRecords.length === 0 ? (
           <div className="text-center py-12">
             <AlertTriangle className="w-12 h-12 mx-auto text-white/50 mb-4" />
-            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
+            <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">
               No hay registros disciplinarios
             </h3>
             <p className="text-white/80 drop-shadow">

@@ -179,7 +179,7 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Goleadores del Equipo</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Goleadores del Equipo</h2>
         <p className="text-white/80 drop-shadow">Tabla de goleo de tus jugadores</p>
       </div>
 
@@ -197,11 +197,11 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
-              <span className="text-lg text-white drop-shadow">Cargando goleadores...</span>
+              <span className="text-base sm:text-lg text-white drop-shadow">Cargando goleadores...</span>
             </div>
           ) : scorers.length === 0 ? (
             <div className="text-center py-12">
-              <Target className="w-16 h-16 mx-auto text-white/60 mb-4" />
+              <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-white/60 mb-4" />
               <p className="text-white/80 drop-shadow">No hay goles registrados todavía</p>
               <p className="text-sm text-white/70 drop-shadow mt-2">Los goles aparecerán aquí cuando se registren en los partidos</p>
             </div>
@@ -280,7 +280,7 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
                   <span className="text-4xl">🥈</span>
                 </div>
                 <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-gray-400/50 border border-white/20">
-                  <p className="font-bold text-lg truncate text-white drop-shadow">{scorers[1].player_name}</p>
+                  <p className="font-bold text-base sm:text-lg truncate text-white drop-shadow">{scorers[1].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">#{scorers[1].jersey_number}</p>
                   <p className="text-2xl font-bold text-gray-300 drop-shadow-lg mt-2">
                     {scorers[1].total_goals} ⚽
@@ -296,7 +296,7 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
                 <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-yellow-400/50 border border-white/20">
                   <p className="font-bold text-xl truncate text-white drop-shadow-lg">{scorers[0].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">#{scorers[0].jersey_number}</p>
-                  <p className="text-3xl font-bold text-yellow-400 drop-shadow-lg mt-2">
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg mt-2">
                     {scorers[0].total_goals} ⚽
                   </p>
                 </div>
@@ -305,10 +305,10 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
               {/* 3rd Place */}
               <div className="text-center order-3">
                 <div className="h-24 backdrop-blur-md bg-orange-600/40 border border-orange-400/50 rounded-t-xl flex items-end justify-center pb-4">
-                  <span className="text-3xl">🥉</span>
+                  <span className="text-2xl sm:text-3xl">🥉</span>
                 </div>
                 <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-orange-500/50 border border-white/20">
-                  <p className="font-bold text-lg truncate text-white drop-shadow">{scorers[2].player_name}</p>
+                  <p className="font-bold text-base sm:text-lg truncate text-white drop-shadow">{scorers[2].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">#{scorers[2].jersey_number}</p>
                   <p className="text-2xl font-bold text-orange-400 drop-shadow-lg mt-2">
                     {scorers[2].total_goals} ⚽

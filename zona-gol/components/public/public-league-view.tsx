@@ -96,7 +96,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
           <div className="animate-pulse space-y-6">
             <div className="h-8 backdrop-blur-xl bg-white/10 rounded w-1/3" />
             <div className="h-4 backdrop-blur-xl bg-white/10 rounded w-1/2" />
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-4 sm:p-6 md:grid-cols-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="h-32 backdrop-blur-xl bg-white/10 rounded" />
               ))}
@@ -193,9 +193,9 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
         {/* Header */}
         <header className="backdrop-blur-xl bg-white/10 shadow-xl border-b border-white/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
               <div>
-                <h1 className="text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
                 <p className="text-white/80 mt-1 drop-shadow">{league.description}</p>
               </div>
               <div className="text-right">
@@ -211,14 +211,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
+        <div className="grid gap-4 sm:p-6 md:grid-cols-4 mb-8">
           <Card className="backdrop-blur-xl bg-white/10 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-white/90 drop-shadow">Equipos</CardTitle>
               <Shield className="w-4 h-4 text-blue-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.teamsCount || 0}</div>
+              <div className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{data.stats?.teamsCount || 0}</div>
               <p className="text-xs text-white/70 drop-shadow">Equipos activos</p>
             </CardContent>
           </Card>
@@ -229,7 +229,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
               <Users className="w-4 h-4 text-green-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.playersCount || 0}</div>
+              <div className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{data.stats?.playersCount || 0}</div>
               <p className="text-xs text-white/70 drop-shadow">Jugadores registrados</p>
             </CardContent>
           </Card>
@@ -240,7 +240,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
               <Calendar className="w-4 h-4 text-purple-300" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white drop-shadow-lg">{data.stats?.matchesCount || 0}</div>
+              <div className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{data.stats?.matchesCount || 0}</div>
               <p className="text-xs text-white/70 drop-shadow">Total de partidos</p>
             </CardContent>
           </Card>
@@ -251,7 +251,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
               <Trophy className="w-4 h-4 text-soccer-gold" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg font-bold text-foreground">{activeTournament ? "Activo" : "Inactivo"}</div>
+              <div className="text-base sm:text-lg font-bold text-foreground">{activeTournament ? "Activo" : "Inactivo"}</div>
               <p className="text-xs text-muted-foreground">{activeTournament?.name || "Sin torneo activo"}</p>
             </CardContent>
           </Card>
@@ -373,7 +373,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
           </TabsContent>
 
           <TabsContent value="matches">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2">
               <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader>
                   <CardTitle className="text-white drop-shadow-lg">Próximos Partidos</CardTitle>
@@ -389,8 +389,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </h3>
                         <div className="space-y-3">
                           {upcomingRegularMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                              <div className="flex items-center space-x-4">
+                            <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
+                              <div className="flex items-center space-x-2 sm:space-x-4">
                                 <div className="text-center">
                                   <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                   <p className="text-xs text-white/70">vs</p>
@@ -418,8 +418,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </h3>
                         <div className="space-y-3">
                           {upcomingPlayoffMatches.map((match) => (
-            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-yellow-500/20 rounded-lg border border-yellow-400/30">
-                              <div className="flex items-center space-x-4 flex-1">
+            <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 backdrop-blur-md bg-yellow-500/20 rounded-lg border border-yellow-400/30">
+                              <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                 <div className="text-center min-w-[120px]">
                                   <p className="font-medium text-sm text-foreground">{getTeamName(match.home_team_id, match.home_team)}</p>
                                   <p className="text-xs text-muted-foreground">vs</p>
@@ -473,11 +473,11 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </h3>
                         <div className="space-y-3">
                           {recentRegularMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                              <div className="flex items-center space-x-4">
+                            <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
+                              <div className="flex items-center space-x-2 sm:space-x-4">
                                 <div className="text-center">
                                   <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
-                                  <p className="text-lg font-bold text-green-300 drop-shadow">
+                                  <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow">
                                     {match.home_score || 0} - {match.away_score || 0}
                                   </p>
                                   <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
@@ -504,11 +504,11 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </h3>
                         <div className="space-y-3">
                           {recentPlayoffMatches.map((match) => (
-                            <div key={match.id} className="flex items-center justify-between p-4 backdrop-blur-md bg-green-500/20 rounded-lg border border-green-400/30">
-                              <div className="flex items-center space-x-4 flex-1">
+                            <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 backdrop-blur-md bg-green-500/20 rounded-lg border border-green-400/30">
+                              <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                 <div className="text-center min-w-[120px]">
                                   <p className="font-medium text-sm">{getTeamName(match.home_team_id, match.home_team)}</p>
-                                  <p className="text-lg font-bold text-soccer-green">
+                                  <p className="text-base sm:text-lg font-bold text-soccer-green">
                                     {match.home_score || 0} - {match.away_score || 0}
                                   </p>
                                   <p className="font-medium text-sm">{getTeamName(match.away_team_id, match.away_team)}</p>
@@ -560,7 +560,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                 {/* Round Selector */}
                 <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-white drop-shadow-lg">
+                    <CardTitle className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 text-white drop-shadow-lg">
                       <span>Seleccionar Jornada</span>
                       <Badge className="text-xs backdrop-blur-md bg-white/10 text-white border-white/30">
                         {roundNumbers.length} jornadas disponibles
@@ -627,7 +627,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Cuartos de Final */}
                           {playoffsByRound['quarterfinals'] && playoffsByRound['quarterfinals'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                              <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
                                 <Trophy className="w-5 h-5 mr-2 text-orange-300" />
                                 Cuartos de Final
                               </h3>
@@ -635,14 +635,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                 {playoffsByRound['quarterfinals'].map((match: any) => {
                                   const isFinished = match.status === 'finished'
                                   return (
-                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                    <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
                                       isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
-                                      <div className="flex items-center space-x-4 flex-1">
+                                      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
                                           <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
+                                            <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
@@ -682,7 +682,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Semifinales */}
                           {playoffsByRound['semifinals'] && playoffsByRound['semifinals'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                              <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
                                 <Trophy className="w-5 h-5 mr-2 text-amber-300" />
                                 Semifinales
                               </h3>
@@ -690,14 +690,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                 {playoffsByRound['semifinals'].map((match: any) => {
                                   const isFinished = match.status === 'finished'
                                   return (
-                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                    <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
                                       isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
-                                      <div className="flex items-center space-x-4 flex-1">
+                                      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
                                           <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
+                                            <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
@@ -737,7 +737,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           {/* Tercer Lugar */}
                           {playoffsByRound['third_place'] && playoffsByRound['third_place'].length > 0 && (
                             <div>
-                              <h3 className="font-semibold text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                              <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
                                 <Trophy className="w-5 h-5 mr-2 text-orange-300" />
                                 Tercer Lugar
                               </h3>
@@ -745,14 +745,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                 {playoffsByRound['third_place'].map((match: any) => {
                                   const isFinished = match.status === 'finished'
                                   return (
-                                    <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                                    <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
                                       isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                                     }`}>
-                                      <div className="flex items-center space-x-4 flex-1">
+                                      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                         <div className="text-center min-w-[140px]">
                                           <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
-                                            <p className="text-lg font-bold text-green-300 drop-shadow my-1">
+                                            <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
                                               {match.home_score || 0} - {match.away_score || 0}
                                             </p>
                                           ) : (
@@ -795,10 +795,10 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                                 {playoffsByRound['final'].map((match: any) => {
                                   const isFinished = match.status === 'finished'
                                   return (
-                                    <div key={match.id} className={`flex items-center justify-between p-5 rounded-lg border-2 ${
+                                    <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-5 rounded-lg border-2 ${
                                       isFinished ? 'backdrop-blur-xl bg-yellow-500/30 border-yellow-400/50' : 'backdrop-blur-xl bg-yellow-500/20 border-yellow-400/40'
                                     }`}>
-                                      <div className="flex items-center space-x-4 flex-1">
+                                      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
                                         <div className="text-center min-w-[160px]">
                                           <p className="font-bold text-base text-white drop-shadow-lg">{getTeamName(match.home_team_id, match.home_team)}</p>
                                           {isFinished ? (
@@ -848,7 +848,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                   return (
                     <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                       <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                           <div>
                             <CardTitle className="flex items-center space-x-2 text-white drop-shadow-lg">
                               <span>Jornada {selectedRound}</span>
@@ -880,14 +880,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                             const isFinished = match.status === 'finished'
 
                             return (
-                              <div key={match.id} className={`flex items-center justify-between p-4 rounded-lg border ${
+                              <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
                                 isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
                               }`}>
-                                <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-2 sm:space-x-4">
                                   <div className="text-center min-w-[120px]">
                                     <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
                                     {isFinished ? (
-                                      <p className="text-lg font-bold text-green-300 drop-shadow my-1">
+                                      <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
                                         {match.home_score || 0} - {match.away_score || 0}
                                       </p>
                                     ) : (
@@ -945,7 +945,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
           </TabsContent>
 
           <TabsContent value="teams">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {data.teams.map((team) => (
                 <Card key={team.id} className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader>
@@ -962,14 +962,14 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <CardTitle className="text-lg text-white drop-shadow-lg">{team.name}</CardTitle>
+                        <CardTitle className="text-base sm:text-lg text-white drop-shadow-lg">{team.name}</CardTitle>
                         <CardDescription className="text-white/70 drop-shadow">/{team.slug}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-white/80 drop-shadow mb-3">{team.description || "Sin descripción"}</p>
-                    <div className="flex items-center justify-between text-sm text-white/80">
+                    <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 text-sm text-white/80">
                       <span className="flex items-center drop-shadow">
                         <Users className="w-4 h-4 mr-1" />
                         Equipo registrado

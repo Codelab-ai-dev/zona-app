@@ -491,7 +491,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Fase de Liguilla</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Fase de Liguilla</h2>
           <p className="text-white/80 drop-shadow">
             Configura y genera el bracket de playoffs al finalizar la fase regular
           </p>
@@ -816,7 +816,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                       {roundMatches.map((match, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-5 border rounded-lg hover:bg-muted/50 transition-colors"
+                          className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-5 border rounded-lg hover:bg-muted/50 transition-colors"
                         >
                           <div className="flex items-center gap-4 flex-1">
                             <Badge variant="outline" className="bg-soccer-blue/10 px-3 py-1">
@@ -837,7 +837,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-4 sm:p-6 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4" />
                               <span className="font-medium">{new Date(match.date).toLocaleDateString('es-ES')}</span>

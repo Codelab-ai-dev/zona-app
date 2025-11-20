@@ -389,7 +389,7 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
           <div className="flex items-start">
             <Lock className="w-6 h-6 mr-3 mt-0.5 text-red-300 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="font-bold text-white text-lg drop-shadow-lg">Registro de Cuerpo Técnico Cerrado</h3>
+              <h3 className="font-bold text-white text-base sm:text-lg drop-shadow-lg">Registro de Cuerpo Técnico Cerrado</h3>
               <p className="text-sm mt-2 text-white/80 drop-shadow">
                 La liga ha cerrado el periodo de registro del cuerpo técnico para este torneo.
               </p>
@@ -419,7 +419,7 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
 
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Cuerpo Técnico</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Cuerpo Técnico</h2>
           <p className="text-white/80 drop-shadow">Administra el cuerpo técnico de tu equipo</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -521,11 +521,11 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
       ) : coachingStaff.length === 0 ? (
         <div className="text-center py-12">
           <User className="w-12 h-12 text-white/60 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">No hay miembros del cuerpo técnico registrados</h3>
+          <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">No hay miembros del cuerpo técnico registrados</h3>
           <p className="text-white/80 drop-shadow">Comienza registrando miembros del cuerpo técnico para tu equipo</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {coachingStaff.map((staff) => (
             <Card key={staff.id} className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
               <CardHeader>
@@ -542,7 +542,7 @@ export function CoachingStaffManagement({ teamId, teamName = "Equipo" }: Coachin
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg text-white drop-shadow-lg">{staff.name}</CardTitle>
+                    <CardTitle className="text-base sm:text-lg text-white drop-shadow-lg">{staff.name}</CardTitle>
                     <CardDescription className="text-white/70 drop-shadow">{staff.role}</CardDescription>
                   </div>
                 </div>

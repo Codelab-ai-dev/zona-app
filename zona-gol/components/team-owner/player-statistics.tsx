@@ -149,7 +149,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="text-center py-8">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">Error</h3>
+            <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">Error</h3>
             <p className="text-red-400 drop-shadow">{error}</p>
           </CardContent>
         </Card>
@@ -164,28 +164,28 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white drop-shadow-lg">{playersWithStats.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{playersWithStats.length}</p>
             <p className="text-sm text-white/80 drop-shadow">Jugadores</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamGoals}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamGoals}</p>
             <p className="text-sm text-white/80 drop-shadow">Goles Totales</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamYellowCards}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamYellowCards}</p>
             <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white drop-shadow-lg">{totalTeamRedCards}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamRedCards}</p>
             <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
           </CardContent>
         </Card>
@@ -206,7 +206,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
           {playersWithStats.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-white/60 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
+              <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">
                 No hay jugadores registrados
               </h3>
               <p className="text-white/80 drop-shadow">

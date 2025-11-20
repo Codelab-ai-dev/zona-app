@@ -140,7 +140,7 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Monitoreo de Asistencias
@@ -181,7 +181,7 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
             {attendance.map((record) => (
               <div
                 key={record.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">

@@ -481,7 +481,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
   if (!teamId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Equipo No Encontrado</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-4">Equipo No Encontrado</h2>
         <p className="text-white/80 drop-shadow">
           No se pudo cargar la información del equipo.
         </p>
@@ -514,7 +514,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
           <div className="flex items-start">
             <Lock className="w-6 h-6 mr-3 mt-0.5 text-red-300 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="font-bold text-white drop-shadow-lg text-lg">Registro de Jugadores Cerrado</h3>
+              <h3 className="font-bold text-white drop-shadow-lg text-base sm:text-lg">Registro de Jugadores Cerrado</h3>
               <p className="text-sm mt-2 text-white/90 drop-shadow">
                 La liga ha cerrado el periodo de registro de jugadores para este torneo.
                 Si necesitas registrar un jugador debido a una lesión u otra circunstancia excepcional,
@@ -546,7 +546,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
 
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Jugadores</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Jugadores</h2>
           <p className="text-white/80 drop-shadow">Administra los jugadores de tu equipo</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -654,11 +654,11 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       ) : players.length === 0 ? (
         <div className="text-center py-12">
           <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay jugadores registrados</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No hay jugadores registrados</h3>
           <p className="text-gray-600">Comienza registrando jugadores para tu equipo</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {players.map((player) => {
           const isSuspended = suspendedPlayers.has(player.id)
           return (
@@ -677,7 +677,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-lg flex items-center">
+                  <CardTitle className="text-base sm:text-lg flex items-center">
                     {player.name}
                     <span className="ml-2 text-sm font-bold text-green-600">#{player.jersey_number}</span>
                   </CardTitle>
@@ -837,7 +837,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         <div className="border-t-2 border-white/20 pt-6">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-lg font-bold text-white drop-shadow-lg">Solicitar Jugador Excepcional</h3>
+              <h3 className="text-base sm:text-lg font-bold text-white drop-shadow-lg">Solicitar Jugador Excepcional</h3>
               <p className="text-sm text-white/80 drop-shadow">Por lesión u otra circunstancia excepcional</p>
             </div>
             <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>

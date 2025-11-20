@@ -138,7 +138,7 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Points Display */}
-        <div className="p-6 backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-blue-600/80 rounded-xl text-white border border-blue-300/30 shadow-lg">
+        <div className="p-4 sm:p-6 backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-blue-600/80 rounded-xl text-white border border-blue-300/30 shadow-lg">
           <div className="text-center">
             <p className="text-sm font-medium opacity-90">Puntos Totales</p>
             <p className="text-5xl font-bold mt-2">{stats.points}</p>
@@ -184,7 +184,7 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
               return (
                 <div
                   key={stat.label}
-                  className={`flex items-center justify-between p-4 rounded-xl backdrop-blur-md border shadow-lg ${
+                  className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-xl backdrop-blur-md border shadow-lg ${
                     isPositive ? "bg-green-500/20 border-green-300/30" : "bg-red-500/20 border-red-300/30"
                   }`}
                 >
@@ -206,7 +206,7 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
         {/* Win Percentage */}
         {stats.matchesCount > 0 && (
           <div className="pt-4 border-t border-white/20">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 text-sm">
               <span className="text-white/80 drop-shadow">Porcentaje de Victorias</span>
               <span className="font-bold text-green-400 drop-shadow">
                 {((stats.wins / stats.matchesCount) * 100).toFixed(1)}%

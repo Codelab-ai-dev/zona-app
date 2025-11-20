@@ -276,7 +276,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">Error</h3>
+            <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">Error</h3>
             <p className="text-red-400 drop-shadow">{error || 'Equipo no encontrado'}</p>
           </CardContent>
         </Card>
@@ -287,9 +287,9 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg flex items-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg flex items-center">
             <Shirt className="w-6 h-6 mr-2" />
             Gestión de Uniformes
           </h2>
@@ -331,7 +331,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
       </div>
 
       {/* Uniform Previews */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {/* Home Uniform */}
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
@@ -349,7 +349,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                   {/* Shirt */}
                   <div className="relative">
                     <Shirt
-                      className="w-16 h-16"
+                      className="w-12 h-12 sm:w-16 sm:h-16"
                       style={{
                         color: colors.home_shirt_color,
                         stroke: "#000000",
@@ -433,7 +433,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                   {/* Shirt */}
                   <div className="relative">
                     <Shirt
-                      className="w-16 h-16"
+                      className="w-12 h-12 sm:w-16 sm:h-16"
                       style={{
                         color: colors.away_shirt_color,
                         stroke: "#000000",
@@ -517,7 +517,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                   {/* Shirt */}
                   <div className="relative">
                     <Shirt
-                      className="w-16 h-16"
+                      className="w-12 h-12 sm:w-16 sm:h-16"
                       style={{
                         color: colors.alt1_shirt_color,
                         stroke: "#000000",
@@ -601,7 +601,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
                   {/* Shirt */}
                   <div className="relative">
                     <Shirt
-                      className="w-16 h-16"
+                      className="w-12 h-12 sm:w-16 sm:h-16"
                       style={{
                         color: colors.alt2_shirt_color,
                         stroke: "#000000",

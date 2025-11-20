@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Ban, Plus, CheckCircle, XCircle, Loader2, AlertTriangle, Pencil } from "lucide-react"
+import { Ban, Plus, CheckCircle, XCircle, Loader2, AlertTriangle, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Table,
@@ -74,6 +74,8 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
   const [editing, setEditing] = useState(false)
   const [editingSuspension, setEditingSuspension] = useState<Suspension | null>(null)
   const [editMatchesToServe, setEditMatchesToServe] = useState(1)
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   const supabase = createClientSupabaseClient()
 
@@ -217,8 +219,6 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
   }
 
   const handleCancelSuspension = async (suspensionId: string) => {
-    if (!confirm('¿Estás seguro de cancelar esta suspensión?')) return
-
     try {
       const { error } = await (supabase
         .from('player_suspensions') as any)
@@ -240,8 +240,6 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
   }
 
   const handleCompleteSuspension = async (suspensionId: string) => {
-    if (!confirm('¿Marcar esta suspensión como completada?')) return
-
     try {
       // First, get the suspension to know matches_to_serve
       const { data: suspension, error: fetchError } = await supabase
@@ -322,6 +320,31 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
     }
   }
 
+  const handleClearAllSuspensions = async () => {
+    setClearing(true)
+    try {
+      const { error } = await supabase
+        .from('player_suspensions')
+        .delete()
+        .eq('league_id', leagueId)
+
+      if (error) {
+        console.error('Error clearing suspensions:', error)
+        toast.error('Error al limpiar las suspensiones')
+        return
+      }
+
+      toast.success('Todas las suspensiones han sido eliminadas')
+      setClearDialogOpen(false)
+      await loadSuspensions()
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Error al limpiar las suspensiones')
+    } finally {
+      setClearing(false)
+    }
+  }
+
   const getSuspensionTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       red_card: 'Tarjeta Roja',
@@ -346,7 +369,7 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
     <div className="space-y-6">
       <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div>
               <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                 <Ban className="w-5 h-5 text-red-300" />
@@ -356,10 +379,21 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                 Administra las suspensiones de jugadores por tarjetas o decisiones disciplinarias
               </CardDescription>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Suspensión
-            </Button>
+            <div className="flex gap-2">
+              {suspensions.length > 0 && (
+                <Button
+                  onClick={() => setClearDialogOpen(true)}
+                  className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Limpiar Suspensiones
+                </Button>
+              )}
+              <Button onClick={() => setCreateDialogOpen(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Suspensión
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -371,7 +405,7 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
           ) : suspensions.length === 0 ? (
             <div className="text-center py-12">
               <Ban className="w-12 h-12 mx-auto text-white/50 mb-4" />
-              <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">
+              <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">
                 No hay suspensiones registradas
               </h3>
               <p className="text-white/80 drop-shadow mb-4">
@@ -564,6 +598,70 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
         </DialogContent>
       </Dialog>
 
+      {/* Clear All Suspensions Dialog */}
+      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-900/95 border-red-300/30 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Limpiar Todas las Suspensiones
+            </DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="backdrop-blur-md bg-red-500/20 border border-red-300/30 rounded-lg p-4 space-y-3">
+              <p className="text-white drop-shadow">
+                ¿Estás seguro de que quieres eliminar <span className="font-bold text-red-300">todas las suspensiones</span> de la liga?
+              </p>
+              <div className="space-y-2 text-sm text-white/90 drop-shadow">
+                <p className="font-medium">Esta acción eliminará:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Todas las suspensiones activas ({suspensions.filter(s => s.status === 'active').length})</li>
+                  <li>Todas las suspensiones completadas ({suspensions.filter(s => s.status === 'completed').length})</li>
+                  <li>Todas las suspensiones canceladas ({suspensions.filter(s => s.status === 'cancelled').length})</li>
+                  <li>El historial completo de suspensiones</li>
+                </ul>
+                <p className="font-medium mt-3">Total a eliminar: <span className="text-red-300">{suspensions.length} suspensiones</span></p>
+              </div>
+              <div className="backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded p-3 mt-3">
+                <p className="text-xs text-yellow-200 drop-shadow">
+                  <strong>Advertencia:</strong> Esta acción es permanente y no se puede deshacer.
+                  Todos los registros de suspensiones serán eliminados de la base de datos.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={() => setClearDialogOpen(false)}
+              disabled={clearing}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleClearAllSuspensions}
+              disabled={clearing}
+              className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+            >
+              {clearing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar Todas
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Suspension Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
@@ -578,7 +676,7 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
             <div className="space-y-4">
               <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <span className="text-sm text-white/80 drop-shadow">Jugador:</span>
                     <span className="font-medium text-white drop-shadow">
                       {editingSuspension.player_name}
@@ -587,17 +685,17 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                       </Badge>
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <span className="text-sm text-white/80 drop-shadow">Equipo:</span>
                     <span className="font-medium text-white drop-shadow">{editingSuspension.team_name}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <span className="text-sm text-white/80 drop-shadow">Tipo:</span>
                     <Badge variant="secondary" className="backdrop-blur-md bg-blue-500/30 text-blue-300 border-blue-300/50">
                       {getSuspensionTypeLabel(editingSuspension.suspension_type)}
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <span className="text-sm text-white/80 drop-shadow">Partidos cumplidos:</span>
                     <span className="font-medium text-white drop-shadow">{editingSuspension.matches_served}</span>
                   </div>

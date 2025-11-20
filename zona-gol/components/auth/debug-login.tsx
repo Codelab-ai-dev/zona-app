@@ -71,7 +71,7 @@ export function DebugLogin() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="flex space-x-4">
+          <div className="flex space-x-2 sm:space-x-4">
             <Button 
               onClick={testConnection} 
               disabled={loading}

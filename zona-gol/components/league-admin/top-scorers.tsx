@@ -207,7 +207,7 @@ export function TopScorers({ leagueId }: TopScorerProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Tabla de Goleadores</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Tabla de Goleadores</h2>
         <p className="text-white/80 drop-shadow">Ranking de goleadores de la liga</p>
       </div>
 
@@ -225,11 +225,11 @@ export function TopScorers({ leagueId }: TopScorerProps) {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
-              <span className="text-lg text-white drop-shadow">Cargando goleadores...</span>
+              <span className="text-base sm:text-lg text-white drop-shadow">Cargando goleadores...</span>
             </div>
           ) : scorers.length === 0 ? (
             <div className="text-center py-12">
-              <Target className="w-16 h-16 mx-auto text-white/50 mb-4" />
+              <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-white/50 mb-4" />
               <p className="text-white/80 drop-shadow">No hay goles registrados en la liga todavía</p>
             </div>
           ) : (
@@ -311,7 +311,7 @@ export function TopScorers({ leagueId }: TopScorerProps) {
                   <span className="text-4xl">🥈</span>
                 </div>
                 <div className="backdrop-blur-xl bg-white/10 p-4 rounded-b-lg border-t-4 border-gray-300">
-                  <p className="font-bold text-lg text-white drop-shadow">{scorers[1].player_name}</p>
+                  <p className="font-bold text-base sm:text-lg text-white drop-shadow">{scorers[1].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">{scorers[1].team_name}</p>
                   <p className="text-2xl font-bold text-gray-300 mt-2 drop-shadow">
                     {scorers[1].total_goals} ⚽
@@ -327,7 +327,7 @@ export function TopScorers({ leagueId }: TopScorerProps) {
                 <div className="backdrop-blur-xl bg-white/10 p-4 rounded-b-lg border-t-4 border-yellow-400">
                   <p className="font-bold text-xl text-white drop-shadow">{scorers[0].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">{scorers[0].team_name}</p>
-                  <p className="text-3xl font-bold text-yellow-300 mt-2 drop-shadow">
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-300 mt-2 drop-shadow">
                     {scorers[0].total_goals} ⚽
                   </p>
                 </div>
@@ -336,10 +336,10 @@ export function TopScorers({ leagueId }: TopScorerProps) {
               {/* 3rd Place */}
               <div className="text-center order-3">
                 <div className="h-24 backdrop-blur-md bg-orange-500/80 rounded-t-lg flex items-end justify-center pb-4">
-                  <span className="text-3xl">🥉</span>
+                  <span className="text-2xl sm:text-3xl">🥉</span>
                 </div>
                 <div className="backdrop-blur-xl bg-white/10 p-4 rounded-b-lg border-t-4 border-orange-500">
-                  <p className="font-bold text-lg text-white drop-shadow">{scorers[2].player_name}</p>
+                  <p className="font-bold text-base sm:text-lg text-white drop-shadow">{scorers[2].player_name}</p>
                   <p className="text-sm text-white/70 drop-shadow">{scorers[2].team_name}</p>
                   <p className="text-2xl font-bold text-orange-400 mt-2 drop-shadow">
                     {scorers[2].total_goals} ⚽

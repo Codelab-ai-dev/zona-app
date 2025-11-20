@@ -54,10 +54,10 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
           <p className="text-white/80 drop-shadow">Cargando datos...</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="backdrop-blur-xl bg-white/10 border-white/20">
               <CardHeader>
@@ -111,11 +111,11 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
         <p className="text-white/80 drop-shadow">Resumen de actividad y participación</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {statsData.map((stat) => {
           const Icon = stat.icon
           return (
@@ -127,7 +127,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white drop-shadow-lg">
+                <div className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
                   {stat.value}
                   {stat.total > stat.value && <span className="text-sm font-normal text-white/70">/{stat.total}</span>}
                 </div>
@@ -141,7 +141,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
         })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2">
         <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardHeader>
             <CardTitle className="text-white drop-shadow-lg">Equipos Recientes</CardTitle>
@@ -151,7 +151,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
             <div className="space-y-3">
               {stats.recentTeams.length > 0 ? (
                 stats.recentTeams.map((team) => (
-                  <div key={team.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
+                  <div key={team.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
                       <p className="font-medium text-white drop-shadow">{team.name}</p>
                       <p className="text-sm text-white/70 drop-shadow">
@@ -183,7 +183,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
             <div className="space-y-3">
               {stats.upcomingMatches.length > 0 ? (
                 stats.upcomingMatches.map((match) => (
-                  <div key={match.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
+                  <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
                       <p className="font-medium text-white drop-shadow">
                         {match.home_team?.name} vs {match.away_team?.name}

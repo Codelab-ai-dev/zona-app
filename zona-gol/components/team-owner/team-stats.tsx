@@ -142,7 +142,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
   if (!teamId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Equipo No Encontrado</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-4">Equipo No Encontrado</h2>
         <p className="text-white/80 drop-shadow">
           No se pudo cargar la información del equipo.
         </p>
@@ -154,7 +154,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
-        <span className="text-lg text-white drop-shadow">Cargando estadísticas del equipo...</span>
+        <span className="text-base sm:text-lg text-white drop-shadow">Cargando estadísticas del equipo...</span>
       </div>
     )
   }
@@ -240,11 +240,11 @@ export function TeamStats({ teamId }: TeamStatsProps) {
       )}
 
       <div>
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg">Estadísticas del Equipo</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas del Equipo</h2>
         <p className="text-white/80 drop-shadow">{currentTeam?.name || 'Mi Equipo'} - Resumen de rendimiento</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -256,7 +256,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white drop-shadow-lg">
+                <div className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
                   {stat.value}
                   {stat.total > 0 && stat.title !== "Próximos Partidos" && (
                     <span className="text-sm font-normal text-white/60">/{stat.total}</span>
@@ -291,32 +291,32 @@ export function TeamStats({ teamId }: TeamStatsProps) {
             <div className="space-y-6">
               {/* Rendimiento Ofensivo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <Target className="w-5 h-5 mr-2 text-green-400" />
                   Rendimiento Ofensivo
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-1">Goles Totales</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
-                    <p className="text-3xl font-bold text-blue-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
-                    <p className="text-3xl font-bold text-purple-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
-                    <p className="text-3xl font-bold text-indigo-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-indigo-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
@@ -332,7 +332,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
                 return topScorers.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                       <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                       Máximos Goleadores
                     </h3>
@@ -340,7 +340,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       {topScorers.map((player, index) => (
                         <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 hover:shadow-xl transition-all">
                           <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md border ${
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md border ${
                               index === 0 ? 'bg-yellow-500/30 text-yellow-300 border-yellow-300/50' :
                               index === 1 ? 'bg-gray-500/30 text-gray-300 border-gray-300/50' :
                               'bg-orange-500/30 text-orange-300 border-orange-300/50'
@@ -381,7 +381,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
                 return topAssisters.length > 0 ? (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                       <Target className="w-5 h-5 mr-2 text-blue-400" />
                       Máximos Asistidores
                     </h3>
@@ -389,7 +389,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       {topAssisters.map((player, index) => (
                         <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 hover:shadow-xl transition-all">
                           <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md border ${
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md border ${
                               index === 0 ? 'bg-yellow-500/30 text-yellow-300 border-yellow-300/50' :
                               index === 1 ? 'bg-gray-500/30 text-gray-300 border-gray-300/50' :
                               'bg-orange-500/30 text-orange-300 border-orange-300/50'
@@ -423,7 +423,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
               {/* Disciplina del Equipo */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
                   Disciplina
                 </h3>
@@ -433,7 +433,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       <div className="w-4 h-6 bg-yellow-400 rounded"></div>
                       <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
                     </div>
-                    <p className="text-3xl font-bold text-yellow-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
                     </p>
                   </div>
@@ -442,19 +442,19 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       <div className="w-4 h-6 bg-red-600 rounded"></div>
                       <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
                     </div>
-                    <p className="text-3xl font-bold text-red-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Tarjetas por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores sin Tarjetas</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
                     </p>
                   </div>
@@ -463,32 +463,32 @@ export function TeamStats({ teamId }: TeamStatsProps) {
 
               {/* Participación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
                   <Clock className="w-5 h-5 mr-2 text-white/80" />
                   Participación
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Partidos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Minutos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Promedio Minutos por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
                     </p>
                   </div>
                   <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-2">Jugadores Activos</p>
-                    <p className="text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_games > 0).length}
                     </p>
                   </div>
@@ -499,7 +499,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:p-6 md:grid-cols-3">
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
             <CardTitle className="text-white drop-shadow-lg">Distribución por Posición</CardTitle>
@@ -508,7 +508,7 @@ export function TeamStats({ teamId }: TeamStatsProps) {
           <CardContent>
             <div className="space-y-3">
               {positionStats.map((stat) => (
-                <div key={stat.position} className="flex items-center justify-between p-3 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
+                <div key={stat.position} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
                   <span className="font-medium text-white drop-shadow">{stat.position}</span>
                   <span className="text-sm font-bold text-blue-400 drop-shadow">{stat.count} jugadores</span>
                 </div>

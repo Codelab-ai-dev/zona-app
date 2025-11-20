@@ -116,25 +116,59 @@ export const tournamentActions = {
   async deleteTournament(tournamentId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, removeTournament } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       // Soft delete by setting is_active to false
       const { error } = await supabase
         .from('tournaments')
         .update({ is_active: false })
         .eq('id', tournamentId)
-      
+
       if (error) {
         throw error
       }
-      
+
       removeTournament(tournamentId)
     } catch (error) {
       console.error('Delete tournament error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete tournament'
+      setError(errorMessage)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  },
+
+  // Permanently delete tournament (hard delete)
+  async permanentlyDeleteTournament(tournamentId: string) {
+    const supabase = createClientSupabaseClient()
+    const { setLoading, setError, removeTournament } = useLeagueStore.getState()
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Hard delete - this will cascade delete all related data:
+      // - Teams (tournament_id references tournaments with ON DELETE SET NULL)
+      // - Matches (tournament_id references tournaments with ON DELETE CASCADE)
+      // - Player stats (through matches cascade)
+      // - All other related data through cascading foreign keys
+      const { error } = await supabase
+        .from('tournaments')
+        .delete()
+        .eq('id', tournamentId)
+
+      if (error) {
+        throw error
+      }
+
+      removeTournament(tournamentId)
+    } catch (error) {
+      console.error('Permanently delete tournament error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to permanently delete tournament'
       setError(errorMessage)
       throw error
     } finally {

@@ -43,16 +43,17 @@ interface TeamManagementProps {
 export function TeamManagement({ leagueId }: TeamManagementProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const { 
-    teams, 
-    loading, 
+  const {
+    teams,
+    loading,
     error,
     getTeamsByLeague,
     createTeamWithOwner,
     createTeamWithNewOwner,
-    updateTeam
+    updateTeam,
+    deleteTeam
   } = useTeams()
-  
+
   const {
     tournaments,
     getTournamentsByLeague
@@ -60,9 +61,16 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const [deletingTeam, setDeletingTeam] = useState<Team | null>(null)
+  const [activatingTeam, setActivatingTeam] = useState<Team | null>(null)
   const [creating, setCreating] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [toggling, setToggling] = useState(false)
+  const [selectedTournamentFilter, setSelectedTournamentFilter] = useState<string>("all")
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -91,7 +99,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   if (!leagueId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Encontrada</h2>
         <p className="text-white/80 drop-shadow">
           No se pudo cargar la información de la liga.
         </p>
@@ -301,27 +309,35 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     }
   }
 
-  const handleDeactivateTeam = async (teamId: string) => {
-    const team = teams.find(t => t.id === teamId)
-    if (!team) return
+  const handleToggleActivateClick = (team: Team) => {
+    setActivatingTeam(team)
+    setIsActivateDialogOpen(true)
+  }
 
-    const action = team.is_active ? 'desactivar' : 'activar'
-    const confirmMessage = `¿Estás seguro de que quieres ${action} este equipo?`
-    
-    if (!confirm(confirmMessage)) return
+  const handleConfirmToggleActivate = async () => {
+    if (!activatingTeam) return
+
+    const action = activatingTeam.is_active ? 'desactivar' : 'activar'
+    setToggling(true)
 
     try {
-      await updateTeam(teamId, {
-        is_active: !team.is_active
+      await updateTeam(activatingTeam.id, {
+        is_active: !activatingTeam.is_active
       })
       toast.success(`Equipo ${action}do exitosamente`)
       console.log(`✅ Equipo ${action}do exitosamente`)
+
+      // Close dialog and reset state
+      setIsActivateDialogOpen(false)
+      setActivatingTeam(null)
 
       // Reload teams to show the updated status
       await getTeamsByLeague(leagueId)
     } catch (error: any) {
       console.error(`❌ Error al ${action} equipo:`, error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setToggling(false)
     }
   }
 
@@ -330,11 +346,47 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     router.push(`/equipos/${teamId}`)
   }
 
+  const handleDeleteTeamClick = (team: Team) => {
+    setDeletingTeam(team)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingTeam) return
+
+    setDeleting(true)
+
+    try {
+      await deleteTeam(deletingTeam.id)
+      toast.success('Equipo eliminado exitosamente')
+      console.log('✅ Equipo eliminado exitosamente')
+
+      // Close dialog and reset state
+      setIsDeleteDialogOpen(false)
+      setDeletingTeam(null)
+
+      // Reload teams to show the updated list
+      await getTeamsByLeague(leagueId)
+    } catch (error: any) {
+      console.error('❌ Error al eliminar equipo:', error)
+      toast.error(`Error: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Filter teams by tournament
+  const filteredTeams = selectedTournamentFilter === "all"
+    ? teams
+    : selectedTournamentFilter === "none"
+    ? teams.filter(team => !team.tournament_id)
+    : teams.filter(team => team.tournament_id === selectedTournamentFilter)
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Equipos</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Equipos</h2>
           <p className="text-white/80 drop-shadow">Administra los equipos registrados en tu liga</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -352,7 +404,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="max-h-[70vh] overflow-y-auto px-2">
-              <div className="grid gap-6 py-4 px-4 lg:grid-cols-2">
+              <div className="grid gap-4 sm:p-6 py-4 px-4 lg:grid-cols-2">
                 {/* Columna izquierda - Información del Equipo */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-white drop-shadow-lg border-b border-white/20 pb-2">Información del Equipo</h4>
@@ -496,6 +548,34 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
         </Dialog>
       </div>
 
+      {/* Tournament Filter */}
+      <div className="flex items-center gap-4">
+        <Label htmlFor="tournament-filter" className="text-white/90 drop-shadow whitespace-nowrap">
+          Filtrar por torneo:
+        </Label>
+        <Select value={selectedTournamentFilter} onValueChange={setSelectedTournamentFilter}>
+          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg w-64">
+            <SelectValue placeholder="Todos los torneos" />
+          </SelectTrigger>
+          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+            <SelectItem value="all" className="text-white hover:bg-white/10">
+              Todos los equipos
+            </SelectItem>
+            <SelectItem value="none" className="text-white hover:bg-white/10">
+              Sin torneo asignado
+            </SelectItem>
+            {tournaments?.map((tournament) => (
+              <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
+                {tournament.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-white/70 drop-shadow text-sm">
+          {filteredTeams.length} equipo{filteredTeams.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
       {error && (
         <div className="backdrop-blur-xl bg-red-500/20 border border-red-300/30 rounded-md p-4 mb-6 shadow-xl">
           <p className="text-white drop-shadow">{error}</p>
@@ -507,15 +587,21 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
           <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
           <span className="text-white drop-shadow">Cargando equipos...</span>
         </div>
-      ) : teams.length === 0 ? (
+      ) : filteredTeams.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="w-12 h-12 text-white/50 mx-auto mb-4 drop-shadow" />
-          <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">No hay equipos registrados</h3>
-          <p className="text-white/80 drop-shadow">Los equipos aparecerán aquí cuando se registren en tu liga</p>
+          <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">
+            {teams.length === 0 ? 'No hay equipos registrados' : 'No hay equipos en este torneo'}
+          </h3>
+          <p className="text-white/80 drop-shadow">
+            {teams.length === 0
+              ? 'Los equipos aparecerán aquí cuando se registren en tu liga'
+              : 'Selecciona otro torneo o agrega equipos a este torneo'}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {teams.map((team) => (
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredTeams.map((team) => (
             <Card key={team.id} className="cursor-pointer backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
               <CardHeader onClick={() => handleTeamClick(team.id)}>
                 <div className="flex items-center space-x-3">
@@ -529,7 +615,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                     )}
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg text-white drop-shadow-lg hover:text-blue-300">{team.name}</CardTitle>
+                    <CardTitle className="text-base sm:text-lg text-white drop-shadow-lg hover:text-blue-300">{team.name}</CardTitle>
                     <CardDescription className="text-white/70 drop-shadow">/{team.slug}</CardDescription>
                   </div>
                 </div>
@@ -562,37 +648,50 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                   </div>
                   
                   {/* Team action buttons */}
-                  <div className="flex space-x-2 pt-2">
-                    <Button 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditTeam(team)
-                      }}
-                      className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditTeam(team)
+                        }}
+                        className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleActivateClick(team)
+                        }}
+                        className={team.is_active ? "flex-1 backdrop-blur-md bg-yellow-500/80 hover:bg-yellow-500/90 text-white border-0" : "flex-1 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"}
+                      >
+                        {team.is_active ? (
+                          <>
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Desactivar
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Activar
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <Button
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeactivateTeam(team.id)
+                        handleDeleteTeamClick(team)
                       }}
-                      className={team.is_active ? "flex-1 backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0" : "flex-1 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"}
+                      className="w-full backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0"
                     >
-                      {team.is_active ? (
-                        <>
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Desactivar
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Activar
-                        </>
-                      )}
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Eliminar Equipo
                     </Button>
                   </div>
                 </div>
@@ -787,6 +886,175 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               className="bg-green-600 hover:bg-green-700 w-full"
             >
               Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activate/Deactivate Team Confirmation Dialog */}
+      <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
+        <DialogContent className={`sm:max-w-[500px] backdrop-blur-xl ${activatingTeam?.is_active ? 'bg-gradient-to-br from-slate-900/95 via-yellow-900/95 to-yellow-900/95 border-yellow-300/30' : 'bg-gradient-to-br from-slate-900/95 via-green-900/95 to-green-900/95 border-green-300/30'} shadow-2xl`}>
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              {activatingTeam?.is_active ? (
+                <>
+                  <XCircle className="w-5 h-5 text-yellow-400" />
+                  Desactivar Equipo
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  Activar Equipo
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
+              {activatingTeam?.is_active
+                ? 'El equipo será ocultado temporalmente'
+                : 'El equipo será visible nuevamente'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-yellow-500/20 border-yellow-300/30' : 'bg-green-500/20 border-green-300/30'} border rounded-lg p-4 space-y-3`}>
+              <p className="text-white drop-shadow">
+                ¿Estás seguro de que quieres {activatingTeam?.is_active ? 'desactivar' : 'activar'} el equipo{' '}
+                <span className={`font-bold ${activatingTeam?.is_active ? 'text-yellow-300' : 'text-green-300'}`}>
+                  "{activatingTeam?.name}"
+                </span>?
+              </p>
+              {activatingTeam?.is_active ? (
+                <div className="space-y-2 text-sm text-white/90 drop-shadow">
+                  <p className="font-medium">Al desactivar el equipo:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>No será visible en la lista de equipos activos</li>
+                    <li>No podrá participar en nuevos partidos</li>
+                    <li>Los datos del equipo se conservarán</li>
+                    <li>Podrás reactivarlo en cualquier momento</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="space-y-2 text-sm text-white/90 drop-shadow">
+                  <p className="font-medium">Al activar el equipo:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Será visible en la lista de equipos activos</li>
+                    <li>Podrá participar en partidos</li>
+                    <li>Todos sus datos estarán disponibles</li>
+                    <li>El propietario podrá gestionar el equipo</li>
+                  </ul>
+                </div>
+              )}
+              <div className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-blue-500/20 border-blue-300/30' : 'bg-blue-500/20 border-blue-300/30'} border rounded p-3 mt-3`}>
+                <p className="text-xs text-blue-200 drop-shadow">
+                  <strong>Nota:</strong> {activatingTeam?.is_active
+                    ? 'Esta es una acción reversible. Puedes activar el equipo nuevamente cuando lo necesites.'
+                    : 'Esta es una acción reversible. Puedes desactivar el equipo nuevamente si es necesario.'}
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={() => {
+                setIsActivateDialogOpen(false)
+                setActivatingTeam(null)
+              }}
+              disabled={toggling}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmToggleActivate}
+              disabled={toggling}
+              className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-yellow-500/80 hover:bg-yellow-500/90' : 'bg-green-500/80 hover:bg-green-500/90'} text-white border-0 shadow-lg`}
+            >
+              {toggling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {activatingTeam?.is_active ? 'Desactivando...' : 'Activando...'}
+                </>
+              ) : (
+                <>
+                  {activatingTeam?.is_active ? (
+                    <>
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Desactivar Equipo
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Activar Equipo
+                    </>
+                  )}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Team Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-900/95 border-red-300/30 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="backdrop-blur-md bg-red-500/20 border border-red-300/30 rounded-lg p-4 space-y-3">
+              <p className="text-white drop-shadow">
+                ¿Estás seguro de que quieres eliminar permanentemente el equipo{' '}
+                <span className="font-bold text-red-300">"{deletingTeam?.name}"</span>?
+              </p>
+              <div className="space-y-2 text-sm text-white/90 drop-shadow">
+                <p className="font-medium">Esta acción eliminará:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Todos los jugadores del equipo</li>
+                  <li>Todas las estadísticas asociadas</li>
+                  <li>El historial de partidos</li>
+                  <li>Toda la información del equipo</li>
+                </ul>
+              </div>
+              <div className="backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded p-3 mt-3">
+                <p className="text-xs text-yellow-200 drop-shadow">
+                  <strong>Advertencia:</strong> Esta acción es permanente y no se puede deshacer.
+                  Considera desactivar el equipo en lugar de eliminarlo si solo deseas ocultarlo temporalmente.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setDeletingTeam(null)
+              }}
+              disabled={deleting}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar Permanentemente
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

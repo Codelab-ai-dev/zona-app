@@ -128,7 +128,7 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
             {/* Match Header */}
             <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between text-white drop-shadow-lg">
+                <CardTitle className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 text-white drop-shadow-lg">
                   <span className="flex items-center gap-2">
                     <Trophy className="w-5 h-5" />
                     Resultado Final
@@ -141,9 +141,9 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
               <CardContent>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-3 mb-2">
-                    <span className="text-lg font-semibold text-white drop-shadow">{match.home_team?.name}</span>
-                    <span className="text-3xl font-bold text-white drop-shadow-lg">{match.home_score} - {match.away_score}</span>
-                    <span className="text-lg font-semibold text-white drop-shadow">{match.away_team?.name}</span>
+                    <span className="text-base sm:text-lg font-semibold text-white drop-shadow">{match.home_team?.name}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{match.home_score} - {match.away_score}</span>
+                    <span className="text-base sm:text-lg font-semibold text-white drop-shadow">{match.away_team?.name}</span>
                   </div>
                   <div className="text-sm text-white/70 drop-shadow">
                     <Calendar className="w-4 h-4 inline mr-1" />
@@ -220,7 +220,7 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent>
                   <div className="space-y-3">
                     {goals.map((goal) => (
-                      <div key={goal.id} className="flex items-center justify-between p-3 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30">
+                      <div key={goal.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30">
                         <div className="flex items-center gap-3">
                           <Badge variant="outline" className="bg-green-100 border-green-300">
                             {goal.minute}'
@@ -256,7 +256,7 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
                 <CardContent>
                   <div className="space-y-3">
                     {cards.map((card) => (
-                      <div key={card.id} className={`flex items-center justify-between p-3 rounded-xl backdrop-blur-md border ${card.card_type === 'yellow' ? 'bg-yellow-500/20 border-yellow-300/30' : 'bg-red-500/20 border-red-300/30'}`}>
+                      <div key={card.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 rounded-xl backdrop-blur-md border ${card.card_type === 'yellow' ? 'bg-yellow-500/20 border-yellow-300/30' : 'bg-red-500/20 border-red-300/30'}`}>
                         <div className="flex items-center gap-3">
                           <Badge variant="outline"
                                  className={card.card_type === 'yellow' ? 'backdrop-blur-md bg-yellow-500/30 border-yellow-300/50 text-white' : 'backdrop-blur-md bg-red-500/30 border-red-300/50 text-white'}>
@@ -340,7 +340,7 @@ export function RefereeReportModal({ open, onOpenChange, match }: RefereeReportM
               <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                 <CardContent className="text-center py-12">
                   <FileText className="w-12 h-12 mx-auto text-white/60 mb-4" />
-                  <h3 className="text-lg font-medium text-white drop-shadow mb-2">
+                  <h3 className="text-base sm:text-lg font-medium text-white drop-shadow mb-2">
                     No hay cédula arbitral disponible
                   </h3>
                   <p className="text-white/70 drop-shadow">

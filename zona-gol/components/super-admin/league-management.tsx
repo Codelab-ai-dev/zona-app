@@ -512,7 +512,7 @@ export function LeagueManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Gestión de Ligas</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Ligas</h2>
           <p className="text-white/80 drop-shadow">Administra todas las ligas del sistema</p>
         </div>
         <div className="flex space-x-3">
@@ -721,13 +721,13 @@ export function LeagueManagement() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {leagues.map((league) => (
           <Card key={league.id} className="relative backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg text-white drop-shadow-lg">{league.name}</CardTitle>
+                  <CardTitle className="text-base sm:text-lg text-white drop-shadow-lg">{league.name}</CardTitle>
                   <CardDescription className="text-sm text-white/70 drop-shadow">/{league.slug}</CardDescription>
                 </div>
                 <Badge variant={league.is_active ? "default" : "secondary"} className={league.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0" : "backdrop-blur-md bg-gray-500/80 text-white border-0"}>
@@ -741,7 +741,7 @@ export function LeagueManagement() {
                   <img
                     src={league.logo}
                     alt={`Logo de ${league.name}`}
-                    className="w-16 h-16 object-contain mx-auto rounded-lg"
+                    className="w-12 h-12 sm:w-16 sm:h-16 object-contain mx-auto rounded-lg"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'

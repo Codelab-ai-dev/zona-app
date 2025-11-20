@@ -246,7 +246,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
             {selectedFile && (
               <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30 shadow-xl">
                 <AlertDescription>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                     <div>
                       <p className="font-medium text-white drop-shadow">{selectedFile.name}</p>
                       <p className="text-sm text-white/70 drop-shadow">
@@ -276,8 +276,8 @@ export function AppManagement({ leagueId }: AppManagementProps) {
 
           {/* Files List */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white drop-shadow-lg">APKs Disponibles</h3>
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <h3 className="text-base sm:text-lg font-semibold text-white drop-shadow-lg">APKs Disponibles</h3>
               <Button variant="ghost" size="sm" onClick={loadFiles} className="text-white hover:bg-white/10">
                 Actualizar
               </Button>
@@ -298,14 +298,14 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                 {files.map((file) => (
                   <Card key={file.id} className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-start space-x-4 flex-1">
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                        <div className="flex items-start space-x-2 sm:space-x-4 flex-1">
                           <div className="backdrop-blur-md bg-green-500/20 p-2 rounded-xl border border-green-300/30">
                             <Smartphone className="h-6 w-6 text-green-300" />
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium text-white drop-shadow">{file.name}</h4>
-                            <div className="flex items-center space-x-4 text-sm text-white/70 drop-shadow mt-1">
+                            <div className="flex items-center space-x-2 sm:space-x-4 text-sm text-white/70 drop-shadow mt-1">
                               <span className="flex items-center">
                                 <FileArchive className="h-3 w-3 mr-1" />
                                 {formatFileSize(file.metadata.size)}

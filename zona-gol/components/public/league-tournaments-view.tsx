@@ -114,7 +114,7 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
         <div className="relative z-10 container mx-auto px-4 py-8">
           <div className="text-center py-12 backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
-            <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">Error</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 drop-shadow-lg">Error</h2>
             <p className="text-red-300 drop-shadow">{error}</p>
             <Button onClick={() => router.back()} className="mt-4 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -130,17 +130,17 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       <div className="relative z-10 container mx-auto px-4 py-8 space-y-6">
         {/* Header with League Info */}
-        <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
-          <div className="flex items-center space-x-4">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Button onClick={() => router.back()} size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <div className="flex items-center space-x-4">
-              <Avatar className="w-16 h-16 border-2 border-white/30 shadow-lg">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Avatar className="w-12 h-12 sm:w-16 sm:h-16 border-2 border-white/30 shadow-lg">
                 {league.logo ? (
                   <AvatarImage src={league.logo} alt={`${league.name} logo`} />
                 ) : (
-                  <AvatarFallback className="backdrop-blur-md bg-white/20 text-white font-bold text-lg">
+                  <AvatarFallback className="backdrop-blur-md bg-white/20 text-white font-bold text-base sm:text-lg">
                     {league.name
                       .split(" ")
                       .map((word) => word[0])
@@ -151,7 +151,7 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
                 )}
               </Avatar>
               <div>
-                <h1 className="text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
                 <p className="text-white/70 drop-shadow">/{league.slug}</p>
               </div>
             </div>
@@ -160,20 +160,20 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
 
         {/* League Description */}
         {league.description && (
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
             <p className="text-white/90 drop-shadow">{league.description}</p>
           </div>
         )}
 
         {/* Tournaments List */}
         <div>
-          <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">Torneos</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 drop-shadow-lg">Torneos</h2>
 
           {tournaments.length === 0 ? (
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
               <div className="py-12 text-center">
                 <Trophy className="w-12 h-12 text-white/70 mx-auto mb-4 drop-shadow-lg" />
-                <h3 className="text-lg font-medium text-white mb-2 drop-shadow">
+                <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow">
                   No hay torneos disponibles
                 </h3>
                 <p className="text-white/80 drop-shadow">
@@ -182,13 +182,13 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {tournaments.map((tournament) => (
                 <div key={tournament.id} className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform">
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white drop-shadow-lg">{tournament.name}</h3>
+                        <h3 className="text-base sm:text-lg font-semibold text-white drop-shadow-lg">{tournament.name}</h3>
                         <p className="text-white/70 text-sm drop-shadow">
                           {new Date(tournament.start_date).toLocaleDateString('es-ES', {
                             year: 'numeric',

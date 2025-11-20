@@ -604,7 +604,7 @@ export const teamActions = {
   // Get team statistics
   async getTeamStats(teamId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       // Get players count
       const { count: playersCount } = await supabase
@@ -612,13 +612,13 @@ export const teamActions = {
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
         .eq('is_active', true)
-      
+
       // Get matches count
       const { count: matchesCount } = await supabase
         .from('matches')
         .select('*', { count: 'exact', head: true })
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-      
+
       // Get wins, losses, draws, goals for, goals against, and points
       const { data: matches } = await supabase
         .from('matches')
@@ -662,6 +662,43 @@ export const teamActions = {
     } catch (error) {
       console.error('Get team stats error:', error)
       throw error
+    }
+  },
+
+  // Delete team (hard delete)
+  async deleteTeam(teamId: string) {
+    const supabase = createClientSupabaseClient()
+    const { setLoading, setError, removeTeam } = useTeamStore.getState()
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      console.log('🗑️ Deleting team:', teamId)
+
+      // Delete the team completely
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId)
+
+      if (error) {
+        throw error
+      }
+
+      // Remove from store
+      if (removeTeam) {
+        removeTeam(teamId)
+      }
+
+      console.log('✅ Team deleted successfully')
+    } catch (error) {
+      console.error('Delete team error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete team'
+      setError(errorMessage)
+      throw error
+    } finally {
+      setLoading(false)
     }
   }
 }

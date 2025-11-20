@@ -163,7 +163,7 @@ export function LoginForm() {
             <div className="flex items-center justify-center gap-3 mb-4">
               <img src="/zona-gol.png" alt="Logo" className="w-32 h-32 drop-shadow-2xl" />
             </div>
-            <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-1">Panel de Administración</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-1">Panel de Administración</h2>
             <p className="text-white/70 text-sm drop-shadow">Zona-Gol</p>
           </div>
         
@@ -212,7 +212,7 @@ export function LoginForm() {
               )}
               <Button 
                 type="submit" 
-                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-base sm:text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]" 
                 disabled={loading || configError}
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}

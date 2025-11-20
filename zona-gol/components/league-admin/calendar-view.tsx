@@ -754,7 +754,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white drop-shadow-lg">Calendario de Partidos</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Calendario de Partidos</h2>
           <p className="text-white/80 drop-shadow">Visualiza y edita los partidos programados</p>
         </div>
         <div className="flex gap-2">
@@ -779,7 +779,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
       <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div>
               <CardTitle className="text-white drop-shadow-lg">Seleccionar Torneo</CardTitle>
               <CardDescription className="text-white/80 drop-shadow">Elige el torneo para ver sus partidos</CardDescription>
@@ -891,7 +891,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardContent className="text-center py-8">
             <Calendar className="w-12 h-12 mx-auto mb-4 text-white/50 drop-shadow" />
-            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">No hay partidos en esta jornada</h3>
+            <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">No hay partidos en esta jornada</h3>
             <p className="text-white/80 drop-shadow mb-4">La jornada {selectedRound} no tiene partidos programados</p>
             <Button variant="outline" onClick={() => setSelectedRound('all')}>
               Ver todas las jornadas
@@ -904,7 +904,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20">
           <CardContent className="text-center py-8">
             <Calendar className="w-12 h-12 mx-auto mb-4 text-white/50 drop-shadow" />
-            <h3 className="text-lg font-medium text-white drop-shadow-lg mb-2">No hay partidos programados</h3>
+            <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">No hay partidos programados</h3>
             <p className="text-white/80 drop-shadow mb-4">Este torneo aún no tiene partidos generados</p>
             <Button onClick={() => window.location.href = '#tournaments'} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
               Ir a Torneos para generar partidos
@@ -918,7 +918,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           {Object.entries(groupMatchesByRound(getFilteredMatches(matches))).map(([round, roundMatches]) => (
             <Card key={round} className="backdrop-blur-xl bg-white/10 border-white/20">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow-lg">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white drop-shadow-lg">
                   <Trophy className="w-5 h-5 text-yellow-300" />
                   Jornada {round}
                   <Badge className="ml-2 backdrop-blur-md bg-white/10 text-white border-white/30">
@@ -934,7 +934,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                     const isEditing = editingMatch?.isEditing || false
                     
                     return (
-                      <div key={match.id} className="flex items-center justify-between p-4 border border-white/20 rounded-lg hover:bg-white/5 transition-colors backdrop-blur-md bg-white/5">
+                      <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 border border-white/20 rounded-lg hover:bg-white/5 transition-colors backdrop-blur-md bg-white/5">
                         <div className="flex items-center gap-4 flex-1">
                           {/* Status Badge */}
                           <div className="flex-shrink-0">
@@ -1205,7 +1205,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                       const isEditing = editingMatch?.isEditing || false
 
                       return (
-                        <div key={match.id} className="flex items-center justify-between p-4 border border-green-400/20 rounded-lg hover:bg-green-500/5 transition-colors backdrop-blur-md bg-white/5">
+                        <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 border border-green-400/20 rounded-lg hover:bg-green-500/5 transition-colors backdrop-blur-md bg-white/5">
                           <div className="flex items-center gap-4 flex-1">
                             {/* Status Badge */}
                             <div className="flex-shrink-0">
@@ -1422,7 +1422,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         <Card>
           <CardContent className="text-center py-8">
             <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium text-foreground mb-2">No hay torneos disponibles</h3>
+            <h3 className="text-base sm:text-lg font-medium text-foreground mb-2">No hay torneos disponibles</h3>
             <p className="text-muted-foreground mb-4">Crea un torneo primero para generar partidos</p>
             <Button variant="outline" onClick={() => window.location.href = '#tournaments'}>
               Crear Torneo
@@ -1464,14 +1464,14 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               {(adjustmentAnalysis as any).finishedRoundsCount > 0 && (
                 <Card className="backdrop-blur-xl bg-white/10 border-blue-400/30 shadow-xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow-lg">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white drop-shadow-lg">
                       <Trophy className="w-5 h-5 text-blue-300" />
                       Jornadas Finalizadas
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <span className="text-sm font-medium text-white/90 drop-shadow">
                           Jornadas completadas:
                         </span>
@@ -1479,7 +1479,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                           {(adjustmentAnalysis as any).finishedRoundsCount} jornadas
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <span className="text-sm font-medium text-white/90 drop-shadow">
                           Última jornada finalizada:
                         </span>
@@ -1487,7 +1487,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                           Jornada {(adjustmentAnalysis as any).lastFinishedRound}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                         <span className="text-sm font-medium text-white/90 drop-shadow">
                           Nuevas jornadas empezarán desde:
                         </span>
@@ -1509,7 +1509,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               {/* Estadísticas de equipos activos */}
               <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow-lg">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white drop-shadow-lg">
                     <Users className="w-5 h-5 text-green-300" />
                     Equipos Activos ({adjustmentAnalysis.activeTeams.length})
                   </CardTitle>
@@ -1521,7 +1521,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                       .map(stat => (
                         <div
                           key={stat.teamId}
-                          className="flex items-center justify-between p-3 border border-white/20 rounded-lg backdrop-blur-md bg-green-500/10"
+                          className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 border border-white/20 rounded-lg backdrop-blur-md bg-green-500/10"
                         >
                           <div className="flex items-center gap-2">
                             <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0 flex-shrink-0">
@@ -1542,7 +1542,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               {adjustmentAnalysis.inactiveTeams.length > 0 && (
                 <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow-lg">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white drop-shadow-lg">
                       <AlertTriangle className="w-5 h-5 text-orange-300" />
                       Equipos Inactivos ({adjustmentAnalysis.inactiveTeams.length})
                     </CardTitle>
@@ -1556,7 +1556,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                             key={stat.teamId}
                             className="flex flex-col gap-2 p-3 border border-white/20 rounded-lg backdrop-blur-md bg-red-500/10"
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                               <div className="flex items-center gap-2">
                                 <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">
                                   ✗
@@ -1592,7 +1592,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               {/* Configuración del nuevo calendario */}
               <Card className="backdrop-blur-xl bg-white/10 border-purple-400/30 shadow-xl">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2 text-white drop-shadow-lg">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white drop-shadow-lg">
                     <Clock className="w-5 h-5 text-purple-300" />
                     Configuración del Nuevo Calendario
                   </CardTitle>

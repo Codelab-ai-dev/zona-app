@@ -22,7 +22,7 @@ export function LandingPage() {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-soccer-green rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-white" />
@@ -276,7 +276,7 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-soccer-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-soccer-green rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 1
               </div>
               <h3 className="text-xl font-semibold mb-4">Crea tu Liga</h3>
@@ -286,7 +286,7 @@ export function LandingPage() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-soccer-blue rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-soccer-blue rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 2
               </div>
               <h3 className="text-xl font-semibold mb-4">Agrega Equipos</h3>
@@ -296,7 +296,7 @@ export function LandingPage() {
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-soccer-gold-dark rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-soccer-gold-dark rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                 3
               </div>
               <h3 className="text-xl font-semibold mb-4">Programa Torneos</h3>
@@ -353,7 +353,7 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-soccer-green rounded-lg flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-white" />

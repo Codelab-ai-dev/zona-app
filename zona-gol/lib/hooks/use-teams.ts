@@ -71,6 +71,10 @@ export function useTeams() {
     return teamActions.getTeamStats(teamId)
   }, [])
 
+  const deleteTeam = useCallback(async (teamId: string) => {
+    return teamActions.deleteTeam(teamId)
+  }, [])
+
   return {
     teams,
     currentTeam,
@@ -87,6 +91,7 @@ export function useTeams() {
     createTeamWithOwner,
     createTeamWithNewOwner,
     updateTeam,
+    deleteTeam,
     getPlayersByTeam,
     createPlayer,
     updatePlayer,
