@@ -1,12 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { authActions } from "@/lib/actions/auth-actions"
 import { Button } from "@/components/ui/button"
 import { ProtectedRoute } from "@/components/layout/protected-route"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { toast } from "sonner"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { Database } from "@/lib/supabase/database.types"
+
+type Tournament = Database['public']['Tables']['tournaments']['Row']
 import { SystemStats } from "@/components/super-admin/system-stats"
 import { LeagueManagement } from "@/components/super-admin/league-management"
 import { LeagueStats } from "@/components/league-admin/league-stats"
@@ -19,6 +23,7 @@ import { DisciplineTable } from "@/components/league-admin/discipline-table"
 import { SuspensionsManagement } from "@/components/league-admin/suspensions-management"
 import { TopScorers } from "@/components/league-admin/top-scorers"
 import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-bracket-generator"
+import { GroupsManagement } from "@/components/league-admin/groups-management"
 import { AppManagementSuperAdmin } from "@/components/super-admin/app-management-super-admin"
 import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
@@ -33,6 +38,8 @@ export default function DashboardPage() {
   const { user, profile } = useAuth()
   const [assigning, setAssigning] = useState(false)
   const [leagueIdInput, setLeagueIdInput] = useState("")
+  const [activeTournament, setActiveTournament] = useState<Tournament | null>(null)
+  const [loadingTournament, setLoadingTournament] = useState(false)
 
   // Debug logging
   console.log('🔍 Dashboard Debug:', {
@@ -45,6 +52,37 @@ export default function DashboardPage() {
       name: profile?.name
     }
   })
+
+  // Load active tournament for league admin
+  useEffect(() => {
+    const loadActiveTournament = async () => {
+      if (profile?.role === 'league_admin' && profile?.league_id) {
+        setLoadingTournament(true)
+        try {
+          const supabase = createClientSupabaseClient()
+          const { data, error } = await supabase
+            .from('tournaments')
+            .select('*')
+            .eq('league_id', profile.league_id)
+            .eq('is_active', true)
+            .single()
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            console.error('Error loading active tournament:', error)
+          } else if (data) {
+            setActiveTournament(data)
+            console.log('🏆 Active tournament loaded:', data.name, 'Format:', data.tournament_format)
+          }
+        } catch (error) {
+          console.error('Error loading active tournament:', error)
+        } finally {
+          setLoadingTournament(false)
+        }
+      }
+    }
+
+    loadActiveTournament()
+  }, [profile?.role, profile?.league_id])
 
   // Función temporal para asignar liga manualmente
   const handleAssignToLeague = async (leagueId: string) => {
@@ -160,15 +198,41 @@ export default function DashboardPage() {
           )
         }
 
+        // Determine tournament format for dynamic tabs
+        const tournamentFormat = activeTournament?.tournament_format || 'league'
+        const isGroupKnockout = tournamentFormat === 'group_knockout'
+        const isKnockout = tournamentFormat === 'knockout'
+        const isLeague = tournamentFormat === 'league'
+
         return (
           <Tabs defaultValue="overview" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 lg:grid-cols-10 gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30">
+              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${
+                isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-11' :
+                isKnockout ? 'md:grid-cols-5 lg:grid-cols-9' :
+                'md:grid-cols-5 lg:grid-cols-10'
+              }`}>
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Torneos</TabsTrigger>
                 <TabsTrigger value="teams" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Equipos</TabsTrigger>
-                <TabsTrigger value="fixtures" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Jornadas</TabsTrigger>
-                <TabsTrigger value="playoffs" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Liguilla</TabsTrigger>
+
+                {/* Dynamic tabs based on tournament format */}
+                {isGroupKnockout && (
+                  <TabsTrigger value="groups" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Grupos</TabsTrigger>
+                )}
+
+                {(isLeague || isGroupKnockout) && (
+                  <TabsTrigger value="fixtures" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">
+                    {isGroupKnockout ? 'Partidos Grupos' : 'Jornadas'}
+                  </TabsTrigger>
+                )}
+
+                {(isKnockout || isGroupKnockout) && (
+                  <TabsTrigger value="playoffs" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">
+                    {isGroupKnockout ? 'Eliminación' : 'Liguilla'}
+                  </TabsTrigger>
+                )}
+
                 <TabsTrigger value="calendar" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Calendario</TabsTrigger>
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Disciplina</TabsTrigger>
@@ -185,6 +249,11 @@ export default function DashboardPage() {
             <TabsContent value="teams">
               <TeamManagement leagueId={profile.league_id} />
             </TabsContent>
+            {isGroupKnockout && (
+              <TabsContent value="groups">
+                <GroupsManagement leagueId={profile.league_id} />
+              </TabsContent>
+            )}
             <TabsContent value="fixtures">
               <FixtureGenerator leagueId={profile.league_id} />
             </TabsContent>

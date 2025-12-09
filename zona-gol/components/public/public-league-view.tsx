@@ -108,6 +108,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
   }
 
   const activeTournament = data.tournaments.find((t) => t.is_active)
+  const tournamentFormat = activeTournament?.tournament_format || 'league'
   const upcomingMatches = data.stats?.upcomingMatches || []
   const recentMatches = data.stats?.recentMatches || []
   const leagueMatches = data.stats?.allMatches || []
@@ -258,13 +259,391 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
         </div>
 
         {/* Tabs Content */}
-        <Tabs defaultValue="standings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 backdrop-blur-xl bg-white/10 border-white/20">
-            <TabsTrigger value="standings" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Tabla de Posiciones</TabsTrigger>
-            <TabsTrigger value="matches" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Partidos</TabsTrigger>
-            <TabsTrigger value="rounds" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Jornadas</TabsTrigger>
-            <TabsTrigger value="teams" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Equipos</TabsTrigger>
+        <Tabs defaultValue={tournamentFormat === 'group_knockout' ? 'groups' : 'standings'} className="space-y-6">
+          <TabsList className={`grid w-full backdrop-blur-xl bg-white/10 border-white/20 ${
+            tournamentFormat === 'group_knockout' ? 'grid-cols-4' : 'grid-cols-4'
+          }`}>
+            {tournamentFormat === 'group_knockout' ? (
+              <>
+                <TabsTrigger value="groups" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Grupos</TabsTrigger>
+                <TabsTrigger value="knockout" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Eliminación</TabsTrigger>
+                <TabsTrigger value="matches" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Partidos</TabsTrigger>
+                <TabsTrigger value="teams" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Equipos</TabsTrigger>
+              </>
+            ) : tournamentFormat === 'knockout' ? (
+              <>
+                <TabsTrigger value="knockout" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Eliminación</TabsTrigger>
+                <TabsTrigger value="matches" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Partidos</TabsTrigger>
+                <TabsTrigger value="teams" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Equipos</TabsTrigger>
+              </>
+            ) : (
+              <>
+                <TabsTrigger value="standings" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Tabla de Posiciones</TabsTrigger>
+                <TabsTrigger value="matches" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Partidos</TabsTrigger>
+                <TabsTrigger value="rounds" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Jornadas</TabsTrigger>
+                <TabsTrigger value="teams" className="data-[state=active]:backdrop-blur-md data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">Equipos</TabsTrigger>
+              </>
+            )}
           </TabsList>
+
+          {/* Groups Tab - for group_knockout tournaments */}
+          <TabsContent value="groups">
+            {(() => {
+              if (!activeTournament || !activeTournament.number_of_groups) {
+                return (
+                  <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+                    <CardContent className="text-center py-12">
+                      <p className="text-white/80 drop-shadow mb-2">No hay grupos configurados</p>
+                      <p className="text-sm text-white/70 drop-shadow">Configura los grupos en la administración del torneo</p>
+                    </CardContent>
+                  </Card>
+                )
+              }
+
+              // Group teams by group_name
+              const teamsByGroup: Record<string, typeof data.teams> = {}
+              const numberOfGroups = activeTournament.number_of_groups
+
+              // Initialize groups
+              for (let i = 0; i < numberOfGroups; i++) {
+                const groupLetter = String.fromCharCode(65 + i) // A, B, C, D, etc.
+                teamsByGroup[groupLetter] = []
+              }
+
+              // Assign teams to their groups
+              data.teams.forEach(team => {
+                if (team.group_name && teamsByGroup[team.group_name]) {
+                  teamsByGroup[team.group_name].push(team)
+                }
+              })
+
+              // Get standings for each group
+              const groupStandings: Record<string, any[]> = {}
+              Object.keys(teamsByGroup).forEach(groupName => {
+                groupStandings[groupName] = teamsByGroup[groupName].map(team => {
+                  const standing = teamStandings.find(s => s.team.id === team.id)
+                  return standing || {
+                    team,
+                    matches_played: 0,
+                    matches_won: 0,
+                    matches_drawn: 0,
+                    matches_lost: 0,
+                    goals_for: 0,
+                    goals_against: 0,
+                    goal_difference: 0,
+                    points: 0
+                  }
+                }).sort((a, b) => {
+                  // Sort by points, then goal difference, then goals for
+                  if (b.points !== a.points) return b.points - a.points
+                  if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
+                  return b.goals_for - a.goals_for
+                })
+              })
+
+              return (
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                  {Object.keys(teamsByGroup).sort().map(groupName => (
+                    <Card key={groupName} className="backdrop-blur-xl bg-white/10 border-white/20">
+                      <CardHeader>
+                        <CardTitle className="text-xl text-white drop-shadow-lg flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-full backdrop-blur-md bg-blue-500/80 flex items-center justify-center text-white font-bold">
+                            {groupName}
+                          </div>
+                          Grupo {groupName}
+                        </CardTitle>
+                        <CardDescription className="text-white/80 drop-shadow">
+                          {teamsByGroup[groupName].length} equipos • Top {activeTournament.teams_advancing_per_group} avanzan
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {teamsByGroup[groupName].length === 0 ? (
+                          <div className="text-center py-8">
+                            <p className="text-white/70 drop-shadow">No hay equipos asignados a este grupo</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b border-white/20 text-left">
+                                  <th className="pb-2 text-xs font-medium text-white/90 drop-shadow">Pos</th>
+                                  <th className="pb-2 text-xs font-medium text-white/90 drop-shadow">Equipo</th>
+                                  <th className="pb-2 text-xs font-medium text-white/90 drop-shadow text-center">PJ</th>
+                                  <th className="pb-2 text-xs font-medium text-white/90 drop-shadow text-center">Pts</th>
+                                  <th className="pb-2 text-xs font-medium text-white/90 drop-shadow text-center">DG</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {groupStandings[groupName].map((standing, index) => {
+                                  const isQualified = index < (activeTournament.teams_advancing_per_group || 2)
+                                  return (
+                                    <tr
+                                      key={standing.team.id}
+                                      className={`border-b border-white/20 hover:bg-white/5 ${
+                                        isQualified ? 'bg-green-500/10' : ''
+                                      }`}
+                                    >
+                                      <td className="py-2 text-sm">
+                                        <span className={`font-bold drop-shadow ${
+                                          isQualified ? 'text-green-300' : 'text-white'
+                                        }`}>
+                                          {index + 1}
+                                        </span>
+                                      </td>
+                                      <td className="py-2">
+                                        <div className="flex items-center space-x-2">
+                                          <Avatar className="w-6 h-6 border border-white/30">
+                                            {standing.team.logo && (
+                                              <AvatarImage src={standing.team.logo} alt={standing.team.name} />
+                                            )}
+                                            <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white text-xs font-bold">
+                                              {getTeamInitials(standing.team.name)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <span className="text-sm font-medium text-white drop-shadow">{standing.team.name}</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2 text-center text-sm text-white/80">{standing.matches_played || 0}</td>
+                                      <td className="py-2 text-center text-sm font-bold text-white drop-shadow">{standing.points || 0}</td>
+                                      <td className="py-2 text-center text-sm">
+                                        <span className={
+                                          (standing.goal_difference || 0) > 0 ? "text-green-300" :
+                                          (standing.goal_difference || 0) < 0 ? "text-red-300" : "text-white/50"
+                                        }>
+                                          {(standing.goal_difference || 0) > 0 ? "+" : ""}{standing.goal_difference || 0}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )
+            })()}
+          </TabsContent>
+
+          {/* Knockout Tab - for knockout and group_knockout tournaments */}
+          <TabsContent value="knockout">
+            <Card className="backdrop-blur-xl bg-transparent border-2 border-yellow-400/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-white drop-shadow-lg">
+                  <Trophy className="w-6 h-6 text-yellow-300" />
+                  <span>Fase de Eliminación Directa</span>
+                </CardTitle>
+                <CardDescription className="text-white/80 drop-shadow">
+                  {playoffMatches.length} partido(s) de eliminación
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 mt-4">
+                {playoffMatches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Trophy className="w-12 h-12 text-white/50 mx-auto mb-4 drop-shadow-lg" />
+                    <p className="text-white/80 drop-shadow mb-2">No hay partidos de eliminación programados</p>
+                    <p className="text-sm text-white/70 drop-shadow">
+                      {tournamentFormat === 'group_knockout'
+                        ? 'Los partidos de eliminación se generarán cuando termine la fase de grupos'
+                        : 'Los partidos de eliminación aparecerán cuando se programen'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Cuartos de Final */}
+                    {playoffsByRound['quarterfinals'] && playoffsByRound['quarterfinals'].length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                          <Trophy className="w-5 h-5 mr-2 text-orange-300" />
+                          Cuartos de Final
+                        </h3>
+                        <div className="space-y-3">
+                          {playoffsByRound['quarterfinals'].map((match: any) => {
+                            const isFinished = match.status === 'finished'
+                            return (
+                              <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
+                                isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
+                              }`}>
+                                <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+                                  <div className="text-center min-w-[140px]">
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                    {isFinished ? (
+                                      <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
+                                        {match.home_score || 0} - {match.away_score || 0}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-white/70 my-1">vs</p>
+                                    )}
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  </div>
+                                  {match.leg && (
+                                    <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
+                                      {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <p className="text-sm font-medium text-white drop-shadow">
+                                      {formatDate(match.match_date)}
+                                    </p>
+                                    <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
+                                      {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Semifinales */}
+                    {playoffsByRound['semifinals'] && playoffsByRound['semifinals'].length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                          <Trophy className="w-5 h-5 mr-2 text-amber-300" />
+                          Semifinales
+                        </h3>
+                        <div className="space-y-3">
+                          {playoffsByRound['semifinals'].map((match: any) => {
+                            const isFinished = match.status === 'finished'
+                            return (
+                              <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
+                                isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
+                              }`}>
+                                <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+                                  <div className="text-center min-w-[140px]">
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                    {isFinished ? (
+                                      <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
+                                        {match.home_score || 0} - {match.away_score || 0}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-white/70 my-1">vs</p>
+                                    )}
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  </div>
+                                  {match.leg && (
+                                    <Badge className="text-xs backdrop-blur-md bg-blue-500/80 text-white border-0">
+                                      {match.leg === 'first' ? 'IDA' : 'VUELTA'}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <p className="text-sm font-medium text-white drop-shadow">
+                                      {formatDate(match.match_date)}
+                                    </p>
+                                    <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
+                                      {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tercer Lugar */}
+                    {playoffsByRound['third_place'] && playoffsByRound['third_place'].length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-base sm:text-lg mb-3 flex items-center text-white drop-shadow-lg">
+                          <Trophy className="w-5 h-5 mr-2 text-orange-300" />
+                          Tercer Lugar
+                        </h3>
+                        <div className="space-y-3">
+                          {playoffsByRound['third_place'].map((match: any) => {
+                            const isFinished = match.status === 'finished'
+                            return (
+                              <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${
+                                isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
+                              }`}>
+                                <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+                                  <div className="text-center min-w-[140px]">
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                    {isFinished ? (
+                                      <p className="text-base sm:text-lg font-bold text-green-300 drop-shadow my-1">
+                                        {match.home_score || 0} - {match.away_score || 0}
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-white/70 my-1">vs</p>
+                                    )}
+                                    <p className="font-medium text-sm text-white drop-shadow">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <p className="text-sm font-medium text-white drop-shadow">
+                                      {formatDate(match.match_date)}
+                                    </p>
+                                    <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
+                                      {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Final */}
+                    {playoffsByRound['final'] && playoffsByRound['final'].length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-xl mb-3 flex items-center text-white drop-shadow-lg">
+                          <Trophy className="w-6 h-6 mr-2 text-yellow-300" />
+                          FINAL
+                        </h3>
+                        <div className="space-y-3">
+                          {playoffsByRound['final'].map((match: any) => {
+                            const isFinished = match.status === 'finished'
+                            return (
+                              <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-5 rounded-lg border-2 ${
+                                isFinished ? 'backdrop-blur-xl bg-yellow-500/30 border-yellow-400/50' : 'backdrop-blur-xl bg-yellow-500/20 border-yellow-400/40'
+                              }`}>
+                                <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+                                  <div className="text-center min-w-[160px]">
+                                    <p className="font-bold text-base text-white drop-shadow-lg">{getTeamName(match.home_team_id, match.home_team)}</p>
+                                    {isFinished ? (
+                                      <p className="text-2xl font-bold text-yellow-300 drop-shadow-lg my-2">
+                                        {match.home_score || 0} - {match.away_score || 0}
+                                      </p>
+                                    ) : (
+                                      <p className="text-sm text-white/70 my-2">vs</p>
+                                    )}
+                                    <p className="font-bold text-base text-white drop-shadow-lg">{getTeamName(match.away_team_id, match.away_team)}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <p className="text-base font-bold text-white drop-shadow">
+                                      {formatDate(match.match_date)}
+                                    </p>
+                                    <Badge className={`text-sm backdrop-blur-md border-0 ${isFinished ? 'bg-green-500/80 text-white' : 'bg-yellow-500/80 text-white'}`}>
+                                      {isFinished ? "✅ FINALIZADO" : match.status === 'in_progress' ? "⚽ EN VIVO" : "📅 PROGRAMADO"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="standings">
             <Card className="backdrop-blur-xl bg-white/10 border-white/20">

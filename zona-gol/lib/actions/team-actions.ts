@@ -16,59 +16,59 @@ export const teamActions = {
   async getTeamsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setTeams } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       console.log('🔵 Fetching teams for league:', leagueId)
       const startTime = performance.now()
-      
+
       // Optimized query: Load teams first without JOINs for faster initial load
       const { data: teams, error } = await supabase
         .from('teams')
         .select('*')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       const loadTime = performance.now() - startTime
       console.log(`✅ Teams loaded in ${loadTime.toFixed(2)}ms`)
-      
+
       // Set teams immediately for faster UI update
       setTeams(teams || [])
-      
+
       // Load owner and tournament data in parallel (optional enhancement)
       if (teams && teams.length > 0) {
         const ownerIds = [...new Set(teams.map((t: any) => t.owner_id).filter(Boolean))]
         const tournamentIds = [...new Set(teams.map((t: any) => t.tournament_id).filter(Boolean))]
-        
+
         const [ownersResult, tournamentsResult] = await Promise.all([
-          ownerIds.length > 0 
+          ownerIds.length > 0
             ? supabase.from('users').select('id, name, email').in('id', ownerIds)
             : Promise.resolve({ data: [] }),
           tournamentIds.length > 0
             ? supabase.from('tournaments').select('id, name').in('id', tournamentIds)
             : Promise.resolve({ data: [] })
         ])
-        
+
         // Enrich teams with owner and tournament data
         const ownersMap = new Map(ownersResult.data?.map((o: any) => [o.id, o]) || [])
         const tournamentsMap = new Map(tournamentsResult.data?.map((t: any) => [t.id, t]) || [])
-        
+
         const enrichedTeams = teams.map((team: any) => ({
           ...team,
           owner: team.owner_id ? ownersMap.get(team.owner_id) : null,
           tournament: team.tournament_id ? tournamentsMap.get(team.tournament_id) : null
         }))
-        
+
         setTeams(enrichedTeams)
         console.log('✅ Teams enriched with owner and tournament data')
       }
-      
+
       return teams
     } catch (error) {
       console.error('Get teams by league error:', error)
@@ -84,13 +84,13 @@ export const teamActions = {
   async createTeamWithOwner(teamData: TeamInsert) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, addTeam } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: team, error } = await supabase
-        .from('teams')
+
+      const { data: team, error } = await (supabase
+        .from('teams') as any)
         .insert(teamData)
         .select(`
           *,
@@ -98,11 +98,11 @@ export const teamActions = {
           tournament:tournaments(id, name)
         `)
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       if (addTeam) {
         addTeam(team)
       }
@@ -126,23 +126,23 @@ export const teamActions = {
   }) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, addTeam } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       console.log('🔐 Iniciando creación de equipo con nuevo propietario...')
-      
+
       // Usar la contraseña proporcionada o generar una nueva
       const ownerPassword = ownerData.password || generatePassword()
       console.log('🔑 Contraseña para propietario del equipo:', ownerData.password ? 'proporcionada' : 'generada')
-      
+
       let ownerProfile: any
-      
+
       // Intentar crear usuario con admin API primero
       try {
         console.log('🔵 Intentando crear usuario propietario con admin API...')
-        
+
         const authResponse = await fetch('/api/auth/create-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -155,16 +155,16 @@ export const teamActions = {
             }
           })
         })
-        
+
         console.log('🔵 Response status:', authResponse.status)
-        
+
         if (authResponse.ok) {
           const { user: authUser } = await authResponse.json()
           console.log('✅ Usuario de autenticación creado con admin API:', authUser)
-          
+
           // Esperar un poco para que los triggers se ejecuten
           await new Promise(resolve => setTimeout(resolve, 1000))
-          
+
           // Crear el perfil del usuario propietario
           const { data: profile, error: profileError } = await (supabase
             .from('users') as any)
@@ -179,7 +179,7 @@ export const teamActions = {
             }, { onConflict: 'id' })
             .select()
             .single()
-          
+
           if (!profileError && profile) {
             ownerProfile = profile
             console.log('✅ Perfil de propietario creado:', ownerProfile)
@@ -195,14 +195,14 @@ export const teamActions = {
           })
           throw new Error(`Admin API failed: ${errorData.error || 'Unknown error'}`)
         }
-      } catch (adminApiError) {
+      } catch (adminApiError: any) {
         console.error('❌ Error creando usuario propietario:', adminApiError)
         throw new Error(`Failed to create team owner: ${adminApiError.message}`)
       }
-      
+
       // Crear el equipo con el nuevo propietario
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
+      const { data: team, error: teamError } = await (supabase
+        .from('teams') as any)
         .insert({
           ...teamData,
           owner_id: ownerProfile.id,
@@ -213,7 +213,7 @@ export const teamActions = {
           tournament:tournaments(id, name)
         `)
         .single()
-      
+
       if (teamError) {
         throw teamError
       }
@@ -230,13 +230,13 @@ export const teamActions = {
       if (updateOwnerError) {
         console.warn('⚠️ Error asignando team_id al propietario:', updateOwnerError)
       }
-      
+
       if (addTeam) {
         addTeam(team)
       }
 
       console.log('✅ Equipo y propietario creados correctamente')
-      
+
       // Return both the team and the credentials for display
       return {
         team,
@@ -261,26 +261,26 @@ export const teamActions = {
     const supabase = createClientSupabaseClient()
     const { user } = useAuthStore.getState()
     const { setLoading, setError, setTeams } = useTeamStore.getState()
-    
+
     if (!user) {
       throw new Error('User not authenticated')
     }
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: teams, error } = await supabase
         .from('teams')
         .select('*')
         .eq('owner_id', user.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setTeams(teams || [])
       return teams
     } catch (error) {
@@ -297,11 +297,11 @@ export const teamActions = {
   async getTeamBySlug(slug: string, leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setCurrentTeam } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: team, error } = await supabase
         .from('teams')
         .select('*')
@@ -309,14 +309,14 @@ export const teamActions = {
         .eq('league_id', leagueId)
         .eq('is_active', true)
         .single()
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           throw new Error('Team not found')
         }
         throw error
       }
-      
+
       setCurrentTeam(team)
       return team
     } catch (error) {
@@ -335,28 +335,28 @@ export const teamActions = {
     const supabase = createClientSupabaseClient()
     const { user } = useAuthStore.getState()
     const { setLoading, setError } = useTeamStore.getState()
-    
+
     if (!user) {
       throw new Error('User not authenticated')
     }
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: team, error } = await supabase
-        .from('teams')
+
+      const { data: team, error } = await (supabase
+        .from('teams') as any)
         .insert({
           ...teamData,
           owner_id: user.id,
         })
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       return team
     } catch (error) {
       console.error('Create team error:', error)
@@ -372,13 +372,13 @@ export const teamActions = {
   async updateTeam(teamId: string, updates: TeamUpdate) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, updateTeam } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: team, error } = await supabase
-        .from('teams')
+
+      const { data: team, error } = await (supabase
+        .from('teams') as any)
         .update(updates)
         .eq('id', teamId)
         .select(`
@@ -387,11 +387,11 @@ export const teamActions = {
           tournament:tournaments(id, name)
         `)
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       updateTeam(team)
       return team
     } catch (error) {
@@ -408,22 +408,22 @@ export const teamActions = {
   async getPlayersByTeam(teamId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setPlayers } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: players, error } = await supabase
         .from('players')
         .select('*')
         .eq('team_id', teamId)
         .eq('is_active', true)
         .order('jersey_number', { ascending: true })
-      
+
       if (error) {
         throw error
       }
-      
+
       setPlayers(players || [])
       return players
     } catch (error) {
@@ -440,21 +440,21 @@ export const teamActions = {
   async createPlayer(playerData: PlayerInsert) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, addPlayer } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: player, error } = await supabase
-        .from('players')
+
+      const { data: player, error } = await (supabase
+        .from('players') as any)
         .insert(playerData)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       addPlayer(player)
       return player
     } catch (error) {
@@ -471,22 +471,22 @@ export const teamActions = {
   async updatePlayer(playerId: string, updates: PlayerUpdate) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, updatePlayer } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: player, error } = await supabase
-        .from('players')
+
+      const { data: player, error } = await (supabase
+        .from('players') as any)
         .update(updates)
         .eq('id', playerId)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       updatePlayer(player)
       return player
     } catch (error) {
@@ -503,20 +503,20 @@ export const teamActions = {
   async deletePlayer(playerId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, removePlayer } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { error } = await supabase
-        .from('players')
+
+      const { error } = await (supabase
+        .from('players') as any)
         .update({ is_active: false })
         .eq('id', playerId)
-      
+
       if (error) {
         throw error
       }
-      
+
       removePlayer(playerId)
     } catch (error) {
       console.error('Delete player error:', error)
@@ -532,11 +532,11 @@ export const teamActions = {
   async getMatchesByTeam(teamId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setMatches } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: matches, error } = await supabase
         .from('matches')
         .select(`
@@ -547,11 +547,11 @@ export const teamActions = {
         `)
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
         .order('match_date', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setMatches(matches || [])
       return matches
     } catch (error) {
@@ -568,11 +568,11 @@ export const teamActions = {
   async getTeamById(teamId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setCurrentTeam } = useTeamStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: team, error } = await supabase
         .from('teams')
         .select(`
@@ -582,11 +582,11 @@ export const teamActions = {
         `)
         .eq('id', teamId)
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       if (setCurrentTeam) {
         setCurrentTeam(team)
       }
@@ -628,7 +628,8 @@ export const teamActions = {
 
       let wins = 0, losses = 0, draws = 0, goalsFor = 0, goalsAgainst = 0
 
-      matches?.forEach(match => {
+      const teamMatches: any[] = matches || []
+      teamMatches.forEach(match => {
         if (match.home_score === null || match.away_score === null) return
 
         const isHome = match.home_team_id === teamId
@@ -677,8 +678,8 @@ export const teamActions = {
       console.log('🗑️ Deleting team:', teamId)
 
       // Delete the team completely
-      const { error } = await supabase
-        .from('teams')
+      const { error } = await (supabase
+        .from('teams') as any)
         .delete()
         .eq('id', teamId)
 

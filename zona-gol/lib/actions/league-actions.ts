@@ -6,6 +6,8 @@ import { Database } from '../supabase/database.types'
 type League = Database['public']['Tables']['leagues']['Row']
 type LeagueInsert = Database['public']['Tables']['leagues']['Insert']
 type LeagueUpdate = Database['public']['Tables']['leagues']['Update']
+type Tournament = Database['public']['Tables']['tournaments']['Row']
+type Team = Database['public']['Tables']['teams']['Row']
 
 export const leagueActions = {
   // Get all active leagues (public)
@@ -24,6 +26,7 @@ export const leagueActions = {
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
+        .returns<League[]>()
 
       if (error) {
         console.error('❌ Database error:', error)
@@ -54,25 +57,25 @@ export const leagueActions = {
     const supabase = createClientSupabaseClient()
     const { user } = useAuthStore.getState()
     const { setLoading, setError, setLeagues } = useLeagueStore.getState()
-    
+
     if (!user) {
       throw new Error('User not authenticated')
     }
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: leagues, error } = await supabase
         .from('leagues')
         .select('*')
         .eq('admin_id', user.id)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setLeagues(leagues || [])
       return leagues
     } catch (error) {
@@ -89,20 +92,21 @@ export const leagueActions = {
   async getAllLeagues() {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setLeagues } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: leagues, error } = await supabase
         .from('leagues')
         .select('*')
         .order('created_at', { ascending: false })
-      
+        .returns<League[]>()
+
       if (error) {
         throw error
       }
-      
+
       setLeagues(leagues || [])
       console.log('📋 Todas las ligas obtenidas:', leagues?.map(l => ({
         name: l.name,
@@ -124,25 +128,25 @@ export const leagueActions = {
   async getLeagueBySlug(slug: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setCurrentLeague } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: league, error } = await supabase
         .from('leagues')
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           throw new Error('League not found')
         }
         throw error
       }
-      
+
       setCurrentLeague(league)
       return league
     } catch (error) {
@@ -161,15 +165,15 @@ export const leagueActions = {
     const supabase = createClientSupabaseClient()
     const { user, setProfile } = useAuthStore.getState()
     const { setLoading, setError, addLeague } = useLeagueStore.getState()
-    
+
     if (!user) {
       throw new Error('User not authenticated')
     }
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       // 1. Crear la liga con el usuario actual como administrador (asegurar que sea activa)
       const { data: league, error } = await (supabase
         .from('leagues') as any)
@@ -180,24 +184,25 @@ export const leagueActions = {
         })
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       console.log('🏆 Liga creada por administrador:', league)
-      
+
       // 2. Asignar automáticamente la liga al administrador creador
       try {
-        console.log('🔄 Asignando liga al administrador creador:', { 
-          leagueId: league.id, 
-          adminId: user.id 
+        console.log('🔄 Asignando liga al administrador creador:', {
+          leagueId: league.id,
+          adminId: user.id
         })
-        
+
         const { data: updatedAdmin, error: updateError } = await (supabase
           .from('users') as any)
           .update({
             league_id: league.id,
+            role: 'league_admin',
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id)
@@ -214,7 +219,7 @@ export const leagueActions = {
       } catch (assignError) {
         console.warn('⚠️ Excepción asignando liga al administrador creador:', assignError)
       }
-      
+
       addLeague(league)
       return league
     } catch (error) {
@@ -231,11 +236,11 @@ export const leagueActions = {
   async createLeagueWithAdmin(leagueData: LeagueInsert): Promise<League> {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, addLeague } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       // 1. Crear la liga (asegurar que siempre sea activa)
       const leagueDataWithDefaults = {
         ...leagueData,
@@ -247,26 +252,27 @@ export const leagueActions = {
         .insert(leagueDataWithDefaults)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       console.log('🏆 Liga creada:', league)
       console.log('🔍 Estado is_active de la liga creada:', league.is_active)
 
       // 2. Asignar automáticamente la liga al administrador
       if (league && leagueData.admin_id) {
         try {
-          console.log('🔄 Asignando liga al administrador:', { 
-            leagueId: league.id, 
-            adminId: leagueData.admin_id 
+          console.log('🔄 Asignando liga al administrador:', {
+            leagueId: league.id,
+            adminId: leagueData.admin_id
           })
-          
+
           const { data: updatedAdmin, error: updateError } = await (supabase
             .from('users') as any)
             .update({
               league_id: league.id,
+              role: 'league_admin',
               updated_at: new Date().toISOString()
             })
             .eq('id', leagueData.admin_id)
@@ -284,7 +290,7 @@ export const leagueActions = {
           // No lanzar error aquí para no fallar la creación de la liga
         }
       }
-      
+
       addLeague(league)
       return league
     } catch (error) {
@@ -301,22 +307,22 @@ export const leagueActions = {
   async updateLeague(leagueId: string, updates: LeagueUpdate) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, updateLeague } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: league, error } = await (supabase
         .from('leagues') as any)
         .update(updates)
         .eq('id', leagueId)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       console.log('🔄 Liga actualizada en BD:', {
         id: league.id,
         name: league.name,
@@ -365,21 +371,21 @@ export const leagueActions = {
   async deleteLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, removeLeague } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       // Soft delete by setting is_active to false
       const { error } = await (supabase
         .from('leagues') as any)
         .update({ is_active: false })
         .eq('id', leagueId)
-      
+
       if (error) {
         throw error
       }
-      
+
       removeLeague(leagueId)
     } catch (error) {
       console.error('Delete league error:', error)
@@ -395,21 +401,21 @@ export const leagueActions = {
   async getTournamentsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setTournaments } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: tournaments, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setTournaments(tournaments || [])
       return tournaments
     } catch (error) {
@@ -426,22 +432,22 @@ export const leagueActions = {
   async getTeamsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setTeams } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: teams, error } = await supabase
         .from('teams')
         .select('*')
         .eq('league_id', leagueId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setTeams(teams || [])
       return teams
     } catch (error) {
@@ -457,7 +463,7 @@ export const leagueActions = {
   // Get league statistics
   async getLeagueStats(leagueId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       // Get teams count and recent teams
       const { data: teams, count: teamsCount } = await supabase
@@ -466,29 +472,29 @@ export const leagueActions = {
         .eq('league_id', leagueId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+
       // Get tournaments count and active tournament
       const { data: tournaments, count: tournamentsCount } = await supabase
         .from('tournaments')
         .select('*', { count: 'exact' })
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+
       const activeTournament = tournaments?.find((t: any) => t.is_active)
-      
+
       // Get players count for the league
       const { count: playersCount } = await supabase
         .from('players')
         .select('team_id', { count: 'exact', head: true })
         .in('team_id', teams?.map((t: any) => t.id) || [])
         .eq('is_active', true)
-      
+
       // Get matches count for the league (through tournaments)
       const { count: matchesCount } = await supabase
         .from('matches')
         .select('*', { count: 'exact', head: true })
         .in('tournament_id', tournaments?.map((t: any) => t.id) || [])
-      
+
       // Get recent matches
       const { data: recentMatches } = await supabase
         .from('matches')
@@ -501,7 +507,7 @@ export const leagueActions = {
         .eq('status', 'scheduled')
         .order('match_date', { ascending: true })
         .limit(3)
-      
+
       return {
         teamsCount: teamsCount || 0,
         tournamentsCount: tournamentsCount || 0,
@@ -520,46 +526,46 @@ export const leagueActions = {
   // Get system-wide statistics (for super admin)
   async getSystemStats() {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       // Get all leagues with counts
       const { data: leagues, count: totalLeagues } = await supabase
         .from('leagues')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-      
+
       const activeLeagues = leagues?.filter((l: any) => l.is_active).length || 0
-      
+
       // Get all tournaments
       const { count: totalTournaments } = await supabase
         .from('tournaments')
         .select('*', { count: 'exact', head: true })
-      
+
       const { count: activeTournaments } = await supabase
         .from('tournaments')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true)
-      
+
       // Get all teams
       const { count: totalTeams } = await supabase
         .from('teams')
         .select('*', { count: 'exact', head: true })
-      
+
       const { count: activeTeams } = await supabase
         .from('teams')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true)
-      
+
       // Get all players
       const { count: totalPlayers } = await supabase
         .from('players')
         .select('*', { count: 'exact', head: true })
-      
+
       const { count: activePlayers } = await supabase
         .from('players')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true)
-      
+
       return {
         leagues: {
           active: activeLeagues,
@@ -590,18 +596,18 @@ export const leagueActions = {
 export const serverLeagueActions = {
   async getActiveLeagues() {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       const { data: leagues, error } = await supabase
         .from('leagues')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       return leagues || []
     } catch (error) {
       console.error('Get active leagues error:', error)
@@ -611,7 +617,7 @@ export const serverLeagueActions = {
 
   async getLeagueBySlug(slug: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       const { data: league, error } = await supabase
         .from('leagues')
@@ -619,11 +625,11 @@ export const serverLeagueActions = {
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       return league
     } catch (error) {
       console.error('Get league by slug error:', error)
@@ -633,18 +639,18 @@ export const serverLeagueActions = {
 
   async getTournamentsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       const { data: tournaments, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       return tournaments || []
     } catch (error) {
       console.error('Get tournaments by league error:', error)
@@ -654,7 +660,7 @@ export const serverLeagueActions = {
 
   async getTeamsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       const { data: teams, error } = await supabase
         .from('teams')
@@ -662,11 +668,11 @@ export const serverLeagueActions = {
         .eq('league_id', leagueId)
         .eq('is_active', true)
         .order('name', { ascending: true })
-      
+
       if (error) {
         throw error
       }
-      
+
       return teams || []
     } catch (error) {
       console.error('Get teams by league error:', error)
@@ -676,7 +682,7 @@ export const serverLeagueActions = {
 
   async getLeagueStats(leagueId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       // Get teams count
       const { count: teamsCount } = await supabase
@@ -684,20 +690,21 @@ export const serverLeagueActions = {
         .select('*', { count: 'exact', head: true })
         .eq('league_id', leagueId)
         .eq('is_active', true)
-      
+
       // Get tournaments
       const { data: tournaments, count: tournamentsCount } = await supabase
         .from('tournaments')
         .select('*', { count: 'exact' })
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+        .returns<Tournament[]>()
+
       // Get players count
       const { count: playersCount } = await supabase
         .from('players')
         .select('*, team:teams!inner(*)', { count: 'exact', head: true })
         .eq('team.league_id', leagueId)
-      
+
       // First get tournament IDs for this league to filter matches correctly
       const tournamentIds = tournaments?.map(t => t.id) || []
 
@@ -738,7 +745,7 @@ export const serverLeagueActions = {
         matches = matchesData || []
         matchesCount = matchesCountData || 0
       }
-      
+
       // Debug: Log all matches to understand the data
       console.log('🔍 All matches for league:', leagueId, {
         totalMatches: matches.length,
@@ -764,7 +771,7 @@ export const serverLeagueActions = {
       const recentMatches = matches.filter(match =>
         match.status === 'finished'
       ).sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
-      .slice(0, 5)
+        .slice(0, 5)
 
       // Organize matches by rounds/matchdays
       const matchesByRound = matches.reduce((acc: any, match) => {
@@ -814,6 +821,7 @@ export const serverLeagueActions = {
         .select('id, name, slug, logo')
         .eq('league_id', leagueId)
         .eq('is_active', true)
+        .returns<Pick<Team, 'id' | 'name' | 'slug' | 'logo'>[]>()
 
       // Get team standings from team_stats table
       const { data: teamStatsData } = await supabase
@@ -830,8 +838,8 @@ export const serverLeagueActions = {
       // Create a complete team standings list that includes all teams
       const teamStandings = (allTeams || []).map(team => {
         // Find existing stats for this team
-        const existingStats = teamStatsData?.find(stats => stats.team_id === team.id)
-        
+        const existingStats = teamStatsData?.find((stats: any) => stats.team_id === team.id)
+
         if (existingStats) {
           // Return existing stats with team info
           return existingStats
@@ -872,7 +880,7 @@ export const serverLeagueActions = {
         if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
         return b.goals_for - a.goals_for
       })
-      
+
       return {
         teamsCount: teamsCount || 0,
         tournamentsCount: tournamentsCount || 0,
@@ -963,7 +971,7 @@ export const serverLeagueActions = {
         .eq('tournament_id', tournamentId)
         .order('match_date', { ascending: false })
 
-      const allMatches = matches || []
+      const allMatches: any[] = matches || []
 
       // Get upcoming matches
       const upcomingMatches = allMatches.filter(match => {
@@ -976,7 +984,7 @@ export const serverLeagueActions = {
       const recentMatches = allMatches.filter(match =>
         match.status === 'finished'
       ).sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime())
-      .slice(0, 5)
+        .slice(0, 5)
 
       // Organize matches by rounds
       const matchesByRound = allMatches.reduce((acc: any, match) => {
@@ -1064,7 +1072,8 @@ export const serverLeagueActions = {
 
       // Initialize standings
       const standings: any = {}
-      teams?.forEach(team => {
+      const tournamentTeams: any[] = teams || []
+      tournamentTeams.forEach(team => {
         standings[team.id] = {
           team,
           played: 0,
@@ -1079,7 +1088,8 @@ export const serverLeagueActions = {
       })
 
       // Calculate standings from matches
-      matches?.forEach(match => {
+      const tournamentMatches: any[] = matches || []
+      tournamentMatches.forEach(match => {
         if (match.home_score !== null && match.away_score !== null) {
           const homeId = match.home_team_id
           const awayId = match.away_team_id

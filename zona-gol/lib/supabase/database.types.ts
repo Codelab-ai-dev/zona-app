@@ -129,6 +129,7 @@ export interface Database {
           logo: string | null
           description: string | null
           is_active: boolean
+          group_name: string | null
           home_primary_color: string | null
           home_secondary_color: string | null
           home_accent_color: string | null
@@ -148,6 +149,7 @@ export interface Database {
           logo?: string | null
           description?: string | null
           is_active?: boolean
+          group_name?: string | null
           home_primary_color?: string | null
           home_secondary_color?: string | null
           home_accent_color?: string | null
@@ -167,6 +169,7 @@ export interface Database {
           logo?: string | null
           description?: string | null
           is_active?: boolean
+          group_name?: string | null
           home_primary_color?: string | null
           home_secondary_color?: string | null
           home_accent_color?: string | null
@@ -788,6 +791,109 @@ export interface Database {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
+      team_stats: {
+        Row: {
+          id: string
+          team_id: string
+          league_id: string
+          tournament_id: string | null
+          matches_played: number
+          matches_won: number
+          matches_drawn: number
+          matches_lost: number
+          goals_for: number
+          goals_against: number
+          goal_difference: number
+          points: number
+          clean_sheets: number
+          biggest_win_margin: number
+          biggest_loss_margin: number
+          yellow_cards: number
+          red_cards: number
+          total_attendance: number
+          average_attendance: number
+          recent_form: string | null
+          last_match_date: string | null
+          last_win_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          league_id: string
+          tournament_id?: string | null
+          matches_played?: number
+          matches_won?: number
+          matches_drawn?: number
+          matches_lost?: number
+          goals_for?: number
+          goals_against?: number
+          goal_difference?: number
+          points?: number
+          clean_sheets?: number
+          biggest_win_margin?: number
+          biggest_loss_margin?: number
+          yellow_cards?: number
+          red_cards?: number
+          total_attendance?: number
+          average_attendance?: number
+          recent_form?: string | null
+          last_match_date?: string | null
+          last_win_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          league_id?: string
+          tournament_id?: string | null
+          matches_played?: number
+          matches_won?: number
+          matches_drawn?: number
+          matches_lost?: number
+          goals_for?: number
+          goals_against?: number
+          goal_difference?: number
+          points?: number
+          clean_sheets?: number
+          biggest_win_margin?: number
+          biggest_loss_margin?: number
+          yellow_cards?: number
+          red_cards?: number
+          total_attendance?: number
+          average_attendance?: number
+          recent_form?: string | null
+          last_match_date?: string | null
+          last_win_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_stats_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_stats_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
             referencedColumns: ["id"]
           }
         ]

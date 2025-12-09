@@ -34,6 +34,7 @@ import { Database } from "@/lib/supabase/database.types"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
+type Tournament = Database['public']['Tables']['tournaments']['Row']
 
 interface PlayoffBracketGeneratorProps {
   leagueId: string
@@ -67,6 +68,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
   const { tournaments, getTournamentsByLeague } = useTournaments()
 
   const [selectedTournamentId, setSelectedTournamentId] = useState("")
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -99,8 +101,17 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
     if (tournaments.length > 0 && !selectedTournamentId) {
       const activeTournament = tournaments.find(t => t.is_active) || tournaments[0]
       setSelectedTournamentId(activeTournament.id)
+      setSelectedTournament(activeTournament)
     }
   }, [tournaments, selectedTournamentId])
+
+  // Update selected tournament when ID changes
+  useEffect(() => {
+    if (selectedTournamentId) {
+      const tournament = tournaments.find(t => t.id === selectedTournamentId)
+      setSelectedTournament(tournament || null)
+    }
+  }, [selectedTournamentId, tournaments])
 
   // Calculate standings from regular season matches
   const calculateStandings = async (tournamentId: string): Promise<StandingsTeam[]> => {
@@ -206,6 +217,141 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
     } catch (error: any) {
       console.error('Error loading standings:', error)
       setMessage({ type: 'error', text: `Error cargando tabla: ${error.message}` })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load teams qualified from groups (for group_knockout format)
+  const loadQualifiedTeamsFromGroups = async () => {
+    if (!selectedTournamentId || !selectedTournament) return
+
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // Get tournament details
+      const numberOfGroups = selectedTournament.number_of_groups || 4
+      const teamsPerGroup = selectedTournament.teams_advancing_per_group || 2
+
+      // Get all teams in this tournament with their groups
+      const { data: tournamentTeams, error: teamsError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('tournament_id', selectedTournamentId)
+        .eq('is_active', true)
+        .not('group_name', 'is', null)
+
+      if (teamsError) throw teamsError
+
+      // Get matches for group phase
+      const { data: matches, error: matchesError } = await supabase
+        .from('matches')
+        .select(`
+          id,
+          home_team_id,
+          away_team_id,
+          home_score,
+          away_score,
+          status
+        `)
+        .eq('tournament_id', selectedTournamentId)
+        .eq('status', 'finished')
+        .or('phase.is.null,phase.eq.groups')
+
+      if (matchesError) throw matchesError
+
+      // Calculate standings per group
+      const groupStandings: Record<string, StandingsTeam[]> = {}
+
+      // Initialize groups
+      tournamentTeams?.forEach(team => {
+        const groupName = team.group_name
+        if (!groupName) return
+
+        if (!groupStandings[groupName]) {
+          groupStandings[groupName] = []
+        }
+
+        groupStandings[groupName].push({
+          team,
+          points: 0,
+          played: 0,
+          won: 0,
+          drawn: 0,
+          lost: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDifference: 0
+        })
+      })
+
+      // Calculate stats from matches
+      matches?.forEach((match: any) => {
+        const homeTeam = tournamentTeams?.find(t => t.id === match.home_team_id)
+        const awayTeam = tournamentTeams?.find(t => t.id === match.away_team_id)
+
+        if (!homeTeam || !awayTeam || match.home_score === null || match.away_score === null) return
+        if (homeTeam.group_name !== awayTeam.group_name) return // Only count matches within same group
+
+        const groupName = homeTeam.group_name
+        if (!groupName || !groupStandings[groupName]) return
+
+        const homeStats = groupStandings[groupName].find(s => s.team.id === homeTeam.id)
+        const awayStats = groupStandings[groupName].find(s => s.team.id === awayTeam.id)
+
+        if (!homeStats || !awayStats) return
+
+        homeStats.played++
+        awayStats.played++
+        homeStats.goalsFor += match.home_score
+        homeStats.goalsAgainst += match.away_score
+        awayStats.goalsFor += match.away_score
+        awayStats.goalsAgainst += match.home_score
+
+        if (match.home_score > match.away_score) {
+          homeStats.won++
+          homeStats.points += 3
+          awayStats.lost++
+        } else if (match.home_score < match.away_score) {
+          awayStats.won++
+          awayStats.points += 3
+          homeStats.lost++
+        } else {
+          homeStats.drawn++
+          awayStats.drawn++
+          homeStats.points += 1
+          awayStats.points += 1
+        }
+
+        homeStats.goalDifference = homeStats.goalsFor - homeStats.goalsAgainst
+        awayStats.goalDifference = awayStats.goalsFor - awayStats.goalsAgainst
+      })
+
+      // Sort each group and select top teams
+      const qualifiedTeams: Team[] = []
+      Object.keys(groupStandings).sort().forEach(groupName => {
+        const sorted = groupStandings[groupName].sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points
+          if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+          return b.goalsFor - a.goalsFor
+        })
+
+        // Take top N teams from this group
+        sorted.slice(0, teamsPerGroup).forEach(s => qualifiedTeams.push(s.team))
+      })
+
+      setSelectedTeams(qualifiedTeams.slice(0, numTeams))
+
+      setMessage({
+        type: 'success',
+        text: `${qualifiedTeams.length} equipos clasificados de la fase de grupos cargados automáticamente`
+      })
+    } catch (error: any) {
+      console.error('Error loading qualified teams from groups:', error)
+      setMessage({ type: 'error', text: `Error cargando equipos clasificados: ${error.message}` })
     } finally {
       setLoading(false)
     }
@@ -487,30 +633,70 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
 
   const activeTournaments = tournaments.filter(t => t.is_active)
 
+  // Determine the mode based on tournament format
+  const tournamentFormat = selectedTournament?.tournament_format
+  const isLeagueFormat = tournamentFormat === 'league'
+  const isKnockoutFormat = tournamentFormat === 'knockout'
+  const isGroupKnockoutFormat = tournamentFormat === 'group_knockout'
+
+  // Get appropriate labels based on format
+  const getLabels = () => {
+    if (isKnockoutFormat) {
+      return {
+        title: 'Fase de Eliminación Directa',
+        description: 'Configura y genera el bracket de eliminación directa',
+        buttonText: 'Generar Eliminación',
+        dialogTitle: 'Configurar Eliminación Directa',
+        dialogDescription: 'Selecciona los equipos participantes y configura el formato de eliminación',
+        successMessage: 'eliminación directa'
+      }
+    } else if (isGroupKnockoutFormat) {
+      return {
+        title: 'Fase de Eliminación',
+        description: 'Configura y genera el bracket de eliminación para los equipos clasificados de la fase de grupos',
+        buttonText: 'Generar Eliminación',
+        dialogTitle: 'Configurar Fase de Eliminación',
+        dialogDescription: 'Selecciona los equipos que avanzaron de la fase de grupos y configura el bracket',
+        successMessage: 'fase de eliminación'
+      }
+    } else {
+      return {
+        title: 'Fase de Liguilla',
+        description: 'Configura y genera el bracket de playoffs al finalizar la fase regular',
+        buttonText: 'Generar Liguilla',
+        dialogTitle: 'Configurar Liguilla',
+        dialogDescription: 'Selecciona los equipos clasificados y configura el formato de la liguilla',
+        successMessage: 'liguilla'
+      }
+    }
+  }
+
+  const labels = getLabels()
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Fase de Liguilla</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{labels.title}</h2>
           <p className="text-white/80 drop-shadow">
-            Configura y genera el bracket de playoffs al finalizar la fase regular
+            {labels.description}
           </p>
         </div>
         <Dialog open={isSetupDialogOpen} onOpenChange={setIsSetupDialogOpen}>
           <DialogTrigger asChild>
             <Button className="backdrop-blur-md bg-yellow-500/80 hover:bg-yellow-500/90 text-white border-0 shadow-lg">
               <Plus className="w-4 h-4 mr-2" />
-              Generar Liguilla
+              {labels.buttonText}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
             <DialogHeader className="pb-4">
               <DialogTitle className="flex items-center gap-2 text-2xl text-white drop-shadow-lg">
                 <Trophy className="w-7 h-7 text-yellow-300" />
-                Configurar Liguilla
+                {labels.dialogTitle}
               </DialogTitle>
               <DialogDescription className="text-base text-white/80 drop-shadow">
-                Selecciona los equipos clasificados y configura el formato de la liguilla
+                {labels.dialogDescription}
               </DialogDescription>
             </DialogHeader>
 
@@ -547,7 +733,9 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
               {/* Playoff Format Configuration */}
               <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white drop-shadow-lg">Formato de Liguilla</CardTitle>
+                  <CardTitle className="text-xl text-white drop-shadow-lg">
+                    {isKnockoutFormat || isGroupKnockoutFormat ? 'Formato de Eliminación' : 'Formato de Liguilla'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8 pt-0">
                   <div className="space-y-8">
@@ -634,14 +822,58 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                 </CardContent>
               </Card>
 
-              {/* Load Standings */}
-              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white drop-shadow-lg">Clasificación de la Fase Regular</CardTitle>
-                  <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
-                    Carga la tabla de posiciones para seleccionar equipos automáticamente
-                  </CardDescription>
-                </CardHeader>
+              {/* Load Qualified Teams from Groups - Only for group_knockout format */}
+              {isGroupKnockoutFormat && (
+                <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-white drop-shadow-lg">Equipos Clasificados de Grupos</CardTitle>
+                    <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
+                      Carga automáticamente los equipos que avanzaron de la fase de grupos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Button
+                      onClick={loadQualifiedTeamsFromGroups}
+                      disabled={loading || !selectedTournamentId}
+                      className="w-full backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Cargando equipos clasificados...
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="w-4 h-4 mr-2" />
+                          Cargar Equipos Clasificados
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* For pure knockout format - just show info card */}
+              {isKnockoutFormat && (
+                <Card className="backdrop-blur-xl bg-blue-500/10 border-blue-400/30">
+                  <CardContent className="py-4">
+                    <p className="text-sm text-white/80 drop-shadow">
+                      <strong>Nota:</strong> En torneos de eliminación directa, selecciona manualmente los equipos participantes en la sección de abajo.
+                      Los equipos se emparejarán automáticamente según el orden seleccionado.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Load Standings - Only for league format */}
+              {isLeagueFormat && (
+                <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl text-white drop-shadow-lg">Clasificación de la Fase Regular</CardTitle>
+                    <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
+                      Carga la tabla de posiciones para seleccionar equipos automáticamente
+                    </CardDescription>
+                  </CardHeader>
                 <CardContent className="pt-0">
                   <Button
                     onClick={loadStandings}
@@ -702,14 +934,19 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                   )}
                 </CardContent>
               </Card>
+              )}
 
-              {/* Manual Team Selection */}
-              {selectedTeams.length > 0 && (
+              {/* Manual Team Selection or Group-based Selection */}
+              {(selectedTeams.length > 0 || isKnockoutFormat) && (
                 <Card className="backdrop-blur-xl bg-white/10 border-white/20">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl text-white drop-shadow-lg">Equipos Clasificados</CardTitle>
+                    <CardTitle className="text-xl text-white drop-shadow-lg">
+                      {isKnockoutFormat || isGroupKnockoutFormat ? 'Equipos Participantes' : 'Equipos Clasificados'}
+                    </CardTitle>
                     <CardDescription className="text-base mt-2 text-white/80 drop-shadow">
-                      Ajusta manualmente el orden si es necesario
+                      {isKnockoutFormat
+                        ? 'Selecciona los equipos que participarán en la eliminación directa'
+                        : 'Ajusta manualmente el orden si es necesario'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -775,18 +1012,18 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewDialogOpen} onOpenChange={setIsPreviewDialogOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-4">
+        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none">
+          <DialogHeader className="pb-4 border-b px-8 pt-6">
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <Trophy className="w-7 h-7 text-soccer-gold" />
-              Vista Previa - Bracket de Liguilla
+              Vista Previa - Bracket de {isKnockoutFormat ? 'Eliminación Directa' : isGroupKnockoutFormat ? 'Eliminación' : 'Liguilla'}
             </DialogTitle>
-            <DialogDescription className="text-base">
+            <DialogDescription className="text-base text-muted-foreground">
               Revisa el bracket generado antes de guardarlo
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-2">
+          <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
             {message && (
               <Alert className={message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
                 <AlertDescription className={message.type === 'success' ? 'text-green-700' : 'text-red-700'}>
@@ -880,7 +1117,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
                 ) : (
                   <>
                     <Save className="w-5 h-5 mr-2" />
-                    Guardar Liguilla
+                    {isKnockoutFormat || isGroupKnockoutFormat ? 'Guardar Eliminación' : 'Guardar Liguilla'}
                   </>
                 )}
               </Button>
@@ -891,7 +1128,7 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
               <AlertDescription className="ml-2 text-blue-800 dark:text-blue-200 text-base">
                 <strong>Nota importante:</strong> Los partidos marcados como "Por definir" se crearán con equipos temporales.
                 Deberás editarlos desde el Calendario de Partidos una vez que se completen las rondas anteriores
-                y conozcas los equipos que realmente avanzaron a la Final y Tercer Lugar.
+                y conozcas los equipos que realmente avanzaron a la {isKnockoutFormat || isGroupKnockoutFormat ? 'Fase de Eliminación' : 'Final y Tercer Lugar'}.
               </AlertDescription>
             </Alert>
           </div>
@@ -903,26 +1140,72 @@ export function PlayoffBracketGenerator({ leagueId }: PlayoffBracketGeneratorPro
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <Trophy className="w-5 h-5 text-yellow-300" />
-            ¿Cómo funciona la Liguilla?
+            {isKnockoutFormat
+              ? '¿Cómo funciona la Eliminación Directa?'
+              : isGroupKnockoutFormat
+              ? '¿Cómo funciona la Fase de Eliminación?'
+              : '¿Cómo funciona la Liguilla?'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-white/80 drop-shadow">
-          <p>
-            <strong className="text-white">1. Finaliza la fase regular:</strong> Asegúrate de que todos los partidos de
-            la fase regular estén finalizados y los resultados ingresados correctamente.
-          </p>
-          <p>
-            <strong className="text-white">2. Genera la liguilla:</strong> El sistema cargará automáticamente la tabla
-            de posiciones y seleccionará los primeros 4 u 8 equipos según el formato elegido.
-          </p>
-          <p>
-            <strong className="text-white">3. Ajusta manualmente:</strong> Puedes modificar el orden de los equipos
-            clasificados si hay criterios especiales de desempate.
-          </p>
-          <p>
-            <strong className="text-white">4. Formato automático:</strong> Los emparejamientos se crean automáticamente:
-            1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).
-          </p>
+          {isKnockoutFormat ? (
+            <>
+              <p>
+                <strong className="text-white">1. Selecciona los equipos:</strong> Elige manualmente los 4 u 8 equipos
+                que participarán en el torneo de eliminación directa.
+              </p>
+              <p>
+                <strong className="text-white">2. Configura el formato:</strong> Define si habrá partidos de ida y vuelta,
+                partido por el tercer lugar, fechas y horarios.
+              </p>
+              <p>
+                <strong className="text-white">3. Genera el bracket:</strong> El sistema creará automáticamente los
+                emparejamientos según el orden seleccionado.
+              </p>
+              <p>
+                <strong className="text-white">4. Formato automático:</strong> Los emparejamientos se crean automáticamente:
+                1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).
+              </p>
+            </>
+          ) : isGroupKnockoutFormat ? (
+            <>
+              <p>
+                <strong className="text-white">1. Finaliza la fase de grupos:</strong> Asegúrate de que todos los partidos de
+                la fase de grupos estén finalizados y los resultados ingresados correctamente.
+              </p>
+              <p>
+                <strong className="text-white">2. Carga equipos clasificados:</strong> El sistema cargará automáticamente los
+                equipos que avanzaron de cada grupo según la configuración del torneo.
+              </p>
+              <p>
+                <strong className="text-white">3. Ajusta manualmente:</strong> Puedes modificar el orden de los equipos
+                clasificados si es necesario.
+              </p>
+              <p>
+                <strong className="text-white">4. Genera la eliminación:</strong> Los emparejamientos se crean automáticamente
+                basándose en las posiciones de los grupos.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                <strong className="text-white">1. Finaliza la fase regular:</strong> Asegúrate de que todos los partidos de
+                la fase regular estén finalizados y los resultados ingresados correctamente.
+              </p>
+              <p>
+                <strong className="text-white">2. Genera la liguilla:</strong> El sistema cargará automáticamente la tabla
+                de posiciones y seleccionará los primeros 4 u 8 equipos según el formato elegido.
+              </p>
+              <p>
+                <strong className="text-white">3. Ajusta manualmente:</strong> Puedes modificar el orden de los equipos
+                clasificados si hay criterios especiales de desempate.
+              </p>
+              <p>
+                <strong className="text-white">4. Formato automático:</strong> Los emparejamientos se crean automáticamente:
+                1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

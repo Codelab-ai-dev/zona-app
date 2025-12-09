@@ -34,15 +34,17 @@ interface FixtureGeneratorProps {
 interface FixtureConfig {
   tournamentId: string
   startDate: string
+  endDate: string // fecha límite para completar el torneo
   matchDays: string[] // ['saturday', 'sunday', etc.]
-  matchTimes: string[] // ['10:00', '12:00', '14:00', etc.]
+  startTime: string // Horario de inicio (ej: '08:00')
+  endTime: string // Horario de fin (ej: '22:00')
   fieldsAvailable: number
   doubleRound: boolean // ida y vuelta
   matchDuration: {
     halfTime: number // duration in minutes (20-45)
     breakTime: number // break time in minutes (10-15)
   }
-  scheduleType: 'morning' | 'afternoon' | 'evening' | 'custom'
+  breakBetweenMatches: number // Tiempo de descanso entre partidos en minutos
   championFixedSchedule: boolean
   championPreferredTime?: string
 }
@@ -65,19 +67,23 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const [saving, setSaving] = useState(false)
   const [generatedFixtures, setGeneratedFixtures] = useState<GeneratedMatch[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [selectedTournament, setSelectedTournament] = useState<Database['public']['Tables']['tournaments']['Row'] | null>(null)
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]) // For group_knockout tournaments
   
   const [config, setConfig] = useState<FixtureConfig>({
     tournamentId: "",
     startDate: "",
+    endDate: "",
     matchDays: ["saturday"],
-    matchTimes: ["10:00"],
+    startTime: "08:00",
+    endTime: "22:00",
     fieldsAvailable: 1,
     doubleRound: false,
     matchDuration: {
       halfTime: 20,
       breakTime: 10
     },
-    scheduleType: 'morning',
+    breakBetweenMatches: 15, // 15 minutos de descanso entre partidos
     championFixedSchedule: false
   })
 
@@ -88,8 +94,45 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     }
   }, [leagueId])
 
+  // Load selected tournament details when tournament ID changes
+  useEffect(() => {
+    if (config.tournamentId) {
+      const tournament = tournaments.find(t => t.id === config.tournamentId)
+      setSelectedTournament(tournament || null)
+
+      // For group_knockout, initialize with all groups selected
+      if (tournament?.tournament_format === 'group_knockout' && tournament.number_of_groups) {
+        const allGroups = Array.from({ length: tournament.number_of_groups }, (_, i) =>
+          String.fromCharCode(65 + i) // A, B, C, D, etc.
+        )
+        setSelectedGroups(allGroups)
+      } else {
+        setSelectedGroups([])
+      }
+    } else {
+      setSelectedTournament(null)
+      setSelectedGroups([])
+    }
+  }, [config.tournamentId, tournaments])
+
   const activeTournaments = tournaments.filter(t => t.is_active)
   const activeTeams = teams.filter(t => t.is_active)
+
+  // Filter teams based on tournament format and selected groups
+  const getFilteredTeams = (): Team[] => {
+    if (!selectedTournament) return activeTeams
+
+    // For group_knockout, filter by selected groups
+    if (selectedTournament.tournament_format === 'group_knockout') {
+      if (selectedGroups.length === 0) return []
+      return activeTeams.filter(team =>
+        team.group_name && selectedGroups.includes(team.group_name)
+      )
+    }
+
+    // For other formats, return all active teams
+    return activeTeams
+  }
 
   // Generate round-robin fixtures
   const generateRoundRobinFixtures = (teams: Team[], doubleRound = false): Array<{round: number, matches: Array<{home: Team, away: Team}>}> => {
@@ -148,25 +191,65 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     return rounds
   }
 
-  // Generate schedule times based on league type
-  const getScheduleTimesByType = (type: string): string[] => {
-    switch(type) {
-      case 'morning':
-        return ['08:00', '09:30', '11:00', '12:30']
-      case 'afternoon':
-        return ['14:00', '15:30', '17:00', '18:30']
-      case 'evening':
-        return ['19:00', '20:30', '22:00']
-      case 'custom':
-        return config.matchTimes
-      default:
-        return ['10:00', '12:00', '14:00']
+  // Helper function to format date as YYYY-MM-DD in local timezone
+  const formatDateToYYYYMMDD = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // Generate available time slots based on start time, end time, and match duration
+  const generateAvailableTimeSlots = (): string[] => {
+    if (!config.startTime || !config.endTime) return []
+
+    const timeSlots: string[] = []
+
+    // Parse start time
+    const [startHour, startMinute] = config.startTime.split(':').map(Number)
+    const [endHour, endMinute] = config.endTime.split(':').map(Number)
+
+    // Convert to minutes from midnight
+    let currentMinutes = startHour * 60 + startMinute
+    const endMinutes = endHour * 60 + endMinute
+
+    // Calculate total match duration (including halftime, break, and rest between matches)
+    const matchDurationMinutes = (config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches
+
+    // Generate time slots
+    while (currentMinutes + (config.matchDuration.halfTime * 2) + config.matchDuration.breakTime <= endMinutes) {
+      const hours = Math.floor(currentMinutes / 60)
+      const minutes = currentMinutes % 60
+      const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      timeSlots.push(timeString)
+
+      // Move to next slot
+      currentMinutes += matchDurationMinutes
     }
+
+    return timeSlots
   }
 
   const generateFixtures = () => {
-    if (!config.tournamentId || !config.startDate || activeTeams.length < 2) {
-      setMessage({ type: 'error', text: 'Faltan datos requeridos o no hay suficientes equipos activos (mínimo 2)' })
+    const filteredTeams = getFilteredTeams()
+
+    // Validations
+    if (!config.tournamentId || !config.startDate || !config.endDate || filteredTeams.length < 2) {
+      const errorMsg = selectedTournament?.tournament_format === 'group_knockout'
+        ? 'Faltan datos requeridos (incluye fecha de inicio Y fecha de fin), no hay suficientes equipos en los grupos seleccionados (mínimo 2), o los equipos no han sido asignados a grupos'
+        : 'Faltan datos requeridos (incluye fecha de inicio Y fecha de fin) o no hay suficientes equipos activos (mínimo 2)'
+      setMessage({ type: 'error', text: errorMsg })
+      return
+    }
+
+    // Validate that end date is after start date
+    const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
+    const [endYear, endMonth, endDay] = config.endDate.split('-').map(Number)
+    const startDate = new Date(startYear, startMonth - 1, startDay)
+    const endDate = new Date(endYear, endMonth - 1, endDay)
+
+    if (endDate <= startDate) {
+      setMessage({ type: 'error', text: 'La fecha de fin debe ser posterior a la fecha de inicio' })
       return
     }
 
@@ -174,44 +257,152 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     setMessage(null)
 
     try {
-      const rounds = generateRoundRobinFixtures(activeTeams, config.doubleRound)
-      const generatedMatches: GeneratedMatch[] = []
-      
-      // Use schedule type times if not custom
-      const availableTimes = config.scheduleType === 'custom' ? config.matchTimes : getScheduleTimesByType(config.scheduleType)
-      
-      let currentDate = new Date(config.startDate)
-      let timeIndex = 0
-      let fieldIndex = 1
-      
-      // Helper function to get next available match date
-      const getNextMatchDate = () => {
-        const dayOfWeek = currentDate.getDay() // 0 = Sunday, 6 = Saturday
-        const targetDays = config.matchDays.map(day => {
-          switch(day) {
-            case 'sunday': return 0
-            case 'monday': return 1
-            case 'tuesday': return 2
-            case 'wednesday': return 3
-            case 'thursday': return 4
-            case 'friday': return 5
-            case 'saturday': return 6
-            default: return 6
+      let allRounds: Array<{round: number, matches: Array<{home: Team, away: Team}>}> = []
+
+      // For group_knockout format, generate fixtures per group
+      if (selectedTournament?.tournament_format === 'group_knockout') {
+        let roundOffset = 0
+
+        selectedGroups.forEach(groupName => {
+          const groupTeams = filteredTeams.filter(team => team.group_name === groupName)
+          if (groupTeams.length >= 2) {
+            const groupRounds = generateRoundRobinFixtures(groupTeams, config.doubleRound)
+            // Adjust round numbers to be sequential across all groups
+            const adjustedRounds = groupRounds.map(round => ({
+              ...round,
+              round: round.round + roundOffset
+            }))
+            allRounds.push(...adjustedRounds)
+            roundOffset = Math.max(...allRounds.map(r => r.round))
           }
         })
-        
-        // Find next available day
-        let daysToAdd = 1
-        while (!targetDays.includes(((dayOfWeek + daysToAdd) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
-          daysToAdd++
-        }
-        
-        const nextDate = new Date(currentDate)
-        nextDate.setDate(currentDate.getDate() + daysToAdd)
-        return nextDate
+      } else {
+        // For league and knockout formats, generate normal round-robin
+        allRounds = generateRoundRobinFixtures(filteredTeams, config.doubleRound)
       }
 
-      rounds.forEach(round => {
+      const generatedMatches: GeneratedMatch[] = []
+
+      // Generate available time slots based on configuration
+      const availableTimes = generateAvailableTimeSlots()
+
+      if (availableTimes.length === 0) {
+        setMessage({
+          type: 'error',
+          text: 'No se pueden generar horarios con la configuración actual. Verifica el horario de inicio, fin y duración de partidos.'
+        })
+        setGenerating(false)
+        return
+      }
+
+      // Calculate total available match slots within the date range
+      // Parse dates correctly to avoid timezone issues
+      const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
+      const [endYear, endMonth, endDay] = config.endDate.split('-').map(Number)
+      const startDateObj = new Date(startYear, startMonth - 1, startDay)
+      const endDateObj = new Date(endYear, endMonth - 1, endDay)
+      const totalMatches = allRounds.reduce((sum, round) => sum + round.matches.length, 0)
+
+      // Calculate available days
+      const targetDays = config.matchDays.map(day => {
+        switch(day) {
+          case 'sunday': return 0
+          case 'monday': return 1
+          case 'tuesday': return 2
+          case 'wednesday': return 3
+          case 'thursday': return 4
+          case 'friday': return 5
+          case 'saturday': return 6
+          default: return 6
+        }
+      })
+
+      // Count available match days in the date range
+      let availableMatchDays = 0
+      let tempDate = new Date(startDateObj.getTime()) // Use getTime() for proper copy
+      while (tempDate <= endDateObj) {
+        if (targetDays.includes(tempDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
+          availableMatchDays++
+        }
+        tempDate.setDate(tempDate.getDate() + 1)
+      }
+
+      // Calculate slots per day
+      const slotsPerDay = availableTimes.length * config.fieldsAvailable
+      const totalAvailableSlots = availableMatchDays * slotsPerDay
+
+      // Check if we have enough slots
+      if (totalAvailableSlots < totalMatches) {
+        const daysNeeded = Math.ceil(totalMatches / slotsPerDay)
+        setMessage({
+          type: 'error',
+          text: `No hay suficientes espacios en el rango de fechas seleccionado. Se necesitan ${daysNeeded} días de partido pero solo hay ${availableMatchDays} disponibles. Aumenta la fecha de fin, agrega más días de partido, más horarios, o más canchas.`
+        })
+        setGenerating(false)
+        return
+      }
+
+      // Initialize current date - make sure it's on a valid match day
+      let currentDate = new Date(startDateObj.getTime()) // Use getTime() for proper copy
+
+      console.log('🔍 DEBUG: Inicialización de fechas:', {
+        configStartDate: config.startDate,
+        configEndDate: config.endDate,
+        startDateObj: startDateObj,
+        currentDate: currentDate,
+        currentDay: currentDate.getDate(),
+        currentMonth: currentDate.getMonth() + 1,
+        currentYear: currentDate.getFullYear(),
+        targetDays: config.matchDays
+      })
+
+      // If the start date is not a valid match day, find the next valid day
+      if (!targetDays.includes(currentDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
+        let tempCheckDate = new Date(currentDate.getTime())
+        let found = false
+
+        while (tempCheckDate <= endDateObj) {
+          tempCheckDate.setDate(tempCheckDate.getDate() + 1)
+          if (targetDays.includes(tempCheckDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
+            currentDate = tempCheckDate
+            found = true
+            break
+          }
+        }
+
+        if (!found) {
+          setMessage({
+            type: 'error',
+            text: 'No hay días de partido disponibles en el rango de fechas seleccionado.'
+          })
+          setGenerating(false)
+          return
+        }
+      }
+
+      let timeIndex = 0
+      let fieldIndex = 1
+
+      // Helper function to get next available match date within the end date range
+      const getNextMatchDate = () => {
+        // Start from the next day
+        let checkDate = new Date(currentDate.getTime())
+        checkDate.setDate(checkDate.getDate() + 1)
+
+        // Find next available day within the end date range
+        while (checkDate <= endDateObj) {
+          // Check if this day is in our target days
+          if (targetDays.includes(checkDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
+            return checkDate
+          }
+          checkDate.setDate(checkDate.getDate() + 1)
+        }
+
+        // No more available days
+        return null
+      }
+
+      allRounds.forEach(round => {
         round.matches.forEach(match => {
           // Check if champion team has fixed schedule preference
           let assignedTime = availableTimes[timeIndex % availableTimes.length]
@@ -230,41 +421,62 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
           }
           
           const field = fieldIndex
-          
+
+          // Check if current date is still within range
+          if (currentDate > endDateObj) {
+            throw new Error('Se excedió la fecha límite al generar partidos. Aumenta la fecha de fin o reduce el número de partidos.')
+          }
+
+          const formattedDate = formatDateToYYYYMMDD(currentDate)
+          console.log('🔍 DEBUG: Generando partido:', {
+            currentDate: currentDate,
+            formattedDate: formattedDate,
+            day: currentDate.getDate(),
+            month: currentDate.getMonth() + 1,
+            year: currentDate.getFullYear()
+          })
+
           generatedMatches.push({
             round: round.round,
             homeTeam: match.home,
             awayTeam: match.away,
-            date: currentDate.toISOString().split('T')[0],
+            date: formattedDate,
             time: assignedTime,
             field
           })
-          
+
           // Move to next time slot
           timeIndex++
-          
+
           // If we've used all time slots, move to next field
           if (timeIndex >= availableTimes.length) {
             timeIndex = 0
             fieldIndex++
-            
+
             // If we've used all fields, move to next match day
             if (fieldIndex > config.fieldsAvailable) {
               fieldIndex = 1
-              currentDate = getNextMatchDate()
+              const nextDate = getNextMatchDate()
+              if (nextDate === null) {
+                throw new Error('Se excedió la fecha límite al generar partidos. Aumenta la fecha de fin.')
+              }
+              currentDate = nextDate
             }
           }
         })
-        
-        // After each round, reset time and field, move to next available day
-        timeIndex = 0
-        fieldIndex = 1
-        currentDate = getNextMatchDate()
+
+        // After each round, reset time and field, move to next available day (optional)
+        // We don't force a new day after each round to optimize space usage
       })
       
       setGeneratedFixtures(generatedMatches)
       setIsPreviewOpen(true)
-      setMessage({ type: 'success', text: `Se generaron ${generatedMatches.length} partidos en ${rounds.length} jornadas` })
+
+      const successMsg = selectedTournament?.tournament_format === 'group_knockout'
+        ? `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas para ${selectedGroups.length} grupo(s)`
+        : `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas`
+
+      setMessage({ type: 'success', text: successMsg })
       
     } catch (error: any) {
       console.error('Error generating fixtures:', error)
@@ -404,32 +616,132 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                           {activeTournaments.map(tournament => (
                             <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
                               {tournament.name}
+                              {tournament.tournament_format === 'group_knockout' && ' (Grupos + Eliminación)'}
+                              {tournament.tournament_format === 'knockout' && ' (Eliminación)'}
+                              {tournament.tournament_format === 'league' && ' (Liga)'}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div>
-                      <Label htmlFor="startDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={config.startDate}
-                        onChange={(e) => setConfig({...config, startDate: e.target.value})}
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
-                      />
+                    {/* Group Selection for group_knockout tournaments */}
+                    {selectedTournament?.tournament_format === 'group_knockout' && selectedTournament.number_of_groups && (
+                      <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-4">
+                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-3 block">
+                          Seleccionar Grupos para Generar Partidos
+                        </Label>
+                        <p className="text-xs text-white/70 drop-shadow mb-3">
+                          Los partidos se generarán solo para equipos dentro de los mismos grupos (todos contra todos por grupo)
+                        </p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {Array.from({ length: selectedTournament.number_of_groups }, (_, i) => {
+                            const groupLetter = String.fromCharCode(65 + i)
+                            const isSelected = selectedGroups.includes(groupLetter)
+                            const groupTeams = activeTeams.filter(t => t.group_name === groupLetter)
+
+                            return (
+                              <Button
+                                key={groupLetter}
+                                type="button"
+                                variant={isSelected ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedGroups(selectedGroups.filter(g => g !== groupLetter))
+                                  } else {
+                                    setSelectedGroups([...selectedGroups, groupLetter])
+                                  }
+                                }}
+                                className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                                  isSelected
+                                    ? 'bg-blue-500/80 hover:bg-blue-500/90 text-white border-0'
+                                    : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                                }`}
+                              >
+                                <span className="text-lg font-bold">Grupo {groupLetter}</span>
+                                <span className="text-xs opacity-75">{groupTeams.length} equipos</span>
+                              </Button>
+                            )
+                          })}
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const allGroups = Array.from({ length: selectedTournament.number_of_groups || 0 }, (_, i) =>
+                                String.fromCharCode(65 + i)
+                              )
+                              setSelectedGroups(allGroups)
+                            }}
+                            className="text-xs backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                          >
+                            Todos los grupos
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedGroups([])}
+                            className="text-xs backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                          >
+                            Ninguno
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="startDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={config.startDate}
+                          onChange={(e) => setConfig({...config, startDate: e.target.value})}
+                          className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Fin</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={config.endDate}
+                          onChange={(e) => setConfig({...config, endDate: e.target.value})}
+                          min={config.startDate || undefined}
+                          className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                        />
+                      </div>
                     </div>
+                    {config.startDate && config.endDate && (
+                      <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-3">
+                        <p className="text-xs text-white/80 drop-shadow">
+                          <strong>Duración del torneo:</strong> {
+                            (() => {
+                              const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
+                              const [endYear, endMonth, endDay] = config.endDate.split('-').map(Number)
+                              const start = new Date(startYear, startMonth - 1, startDay)
+                              const end = new Date(endYear, endMonth - 1, endDay)
+                              const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                              return `${days} día${days !== 1 ? 's' : ''}`
+                            })()
+                          }
+                        </p>
+                      </div>
+                    )}
 
                     <div>
                       <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Duración de Partidos</Label>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div>
                           <Label className="text-xs text-white/70 drop-shadow mb-2 block">Tiempo por tiempo</Label>
-                          <Select 
-                            value={config.matchDuration.halfTime.toString()} 
+                          <Select
+                            value={config.matchDuration.halfTime.toString()}
                             onValueChange={(value) => setConfig({
-                              ...config, 
+                              ...config,
                               matchDuration: {
                                 ...config.matchDuration,
                                 halfTime: parseInt(value),
@@ -441,6 +753,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
                               <SelectItem value="20" className="text-white hover:bg-white/10">20 min</SelectItem>
                               <SelectItem value="25" className="text-white hover:bg-white/10">25 min</SelectItem>
                               <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
@@ -452,10 +765,10 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                         </div>
                         <div>
                           <Label className="text-xs text-white/70 drop-shadow mb-2 block">Descanso</Label>
-                          <Select 
-                            value={config.matchDuration.breakTime.toString()} 
+                          <Select
+                            value={config.matchDuration.breakTime.toString()}
                             onValueChange={(value) => setConfig({
-                              ...config, 
+                              ...config,
                               matchDuration: {...config.matchDuration, breakTime: parseInt(value)}
                             })}
                           >
@@ -463,27 +776,78 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                              <SelectItem value="5" className="text-white hover:bg-white/10">5 min</SelectItem>
                               <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
                               <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
+                        <div>
+                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Entre partidos</Label>
+                          <Select
+                            value={config.breakBetweenMatches.toString()}
+                            onValueChange={(value) => setConfig({...config, breakBetweenMatches: parseInt(value)})}
+                          >
+                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                              <SelectItem value="0" className="text-white hover:bg-white/10">0 min</SelectItem>
+                              <SelectItem value="5" className="text-white hover:bg-white/10">5 min</SelectItem>
+                              <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
+                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
+                              <SelectItem value="20" className="text-white hover:bg-white/10">20 min</SelectItem>
+                              <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
+                      <p className="text-xs text-white/60 drop-shadow mt-2">
+                        Duración total por partido: {(config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches} minutos
+                      </p>
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Tipo de Liga</Label>
-                      <Select value={config.scheduleType} onValueChange={(value: any) => setConfig({...config, scheduleType: value})}>
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                          <SelectItem value="morning" className="text-white hover:bg-white/10">Liga Matutina (8:00 - 12:30)</SelectItem>
-                          <SelectItem value="afternoon" className="text-white hover:bg-white/10">Liga Vespertina (14:00 - 18:30)</SelectItem>
-                          <SelectItem value="evening" className="text-white hover:bg-white/10">Liga Nocturna (19:00 - 22:00)</SelectItem>
-                          <SelectItem value="custom" className="text-white hover:bg-white/10">Horarios Personalizados</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Horarios</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Horario Inicio</Label>
+                          <Input
+                            type="time"
+                            value={config.startTime}
+                            onChange={(e) => setConfig({...config, startTime: e.target.value})}
+                            className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Horario Fin</Label>
+                          <Input
+                            type="time"
+                            value={config.endTime}
+                            onChange={(e) => setConfig({...config, endTime: e.target.value})}
+                            className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      {config.startTime && config.endTime && (
+                        <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-3 mt-3">
+                          <p className="text-xs text-white/80 drop-shadow">
+                            <strong>Horarios generados:</strong> {generateAvailableTimeSlots().length} espacios disponibles
+                          </p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {generateAvailableTimeSlots().slice(0, 10).map((time, idx) => (
+                              <span key={idx} className="text-xs backdrop-blur-md bg-white/10 px-2 py-1 rounded text-white">
+                                {time}
+                              </span>
+                            ))}
+                            {generateAvailableTimeSlots().length > 10 && (
+                              <span className="text-xs text-white/60">
+                                +{generateAvailableTimeSlots().length - 10} más
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -520,12 +884,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 </div>
               </div>
 
-              {/* Right Column - Schedule Configuration */}
+              {/* Right Column - Days Configuration */}
               <div className="space-y-8">
                 <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20">
                   <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-8 flex items-center gap-3">
-                    <Clock className="w-6 h-6" />
-                    Configuración de Horarios
+                    <Calendar className="w-6 h-6" />
+                    Días de Partidos
                   </h3>
                   <div className="space-y-6">
 
@@ -582,72 +946,6 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                         </Button>
                       </div>
                     </div>
-
-                    {config.scheduleType === 'custom' && (
-                      <div>
-                        <Label className="text-sm font-medium text-foreground">Horarios Personalizados</Label>
-                        <div className="grid grid-cols-5 gap-3 mt-3">
-                          {['08:00', '09:30', '11:00', '12:30', '14:00', '15:30', '17:00', '18:30', '19:00', '20:30', '22:00'].map(time => (
-                            <Button
-                              key={time}
-                              type="button"
-                              variant={config.matchTimes.includes(time) ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => {
-                                const times = config.matchTimes.includes(time)
-                                  ? config.matchTimes.filter(t => t !== time)
-                                  : [...config.matchTimes, time]
-                                setConfig({...config, matchTimes: times})
-                              }}
-                              className="h-11 text-sm"
-                            >
-                              {time}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-muted/30 dark:bg-soccer-gold/5 p-8 rounded-xl shadow-sm border border-muted">
-                  <h3 className="text-xl font-semibold text-soccer-gold dark:text-soccer-gold-light mb-8 flex items-center gap-3">
-                    <Trophy className="w-6 h-6" />
-                    Preferencia del Campeón
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="championFixedSchedule"
-                        checked={config.championFixedSchedule}
-                        onChange={(e) => setConfig({...config, championFixedSchedule: e.target.checked})}
-                        className="rounded"
-                      />
-                      <Label htmlFor="championFixedSchedule" className="text-sm text-foreground">
-                        Horario fijo para el campeón
-                      </Label>
-                    </div>
-                    {config.championFixedSchedule && (
-                      <div>
-                        <Label className="text-sm text-foreground">Horario preferido</Label>
-                        <Select 
-                          value={config.championPreferredTime || ''} 
-                          onValueChange={(value) => setConfig({...config, championPreferredTime: value})}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecciona horario" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(config.scheduleType === 'custom' ? config.matchTimes : getScheduleTimesByType(config.scheduleType)).map(time => (
-                              <SelectItem key={time} value={time}>
-                                {time}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -660,10 +958,23 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6">
                 <ul className="text-sm text-white/90 drop-shadow space-y-3">
-                  <li className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-blue-300" />
-                    <span><strong className="font-medium">Equipos:</strong> {activeTeams.length} participantes</span>
-                  </li>
+                  {selectedTournament?.tournament_format === 'group_knockout' ? (
+                    <>
+                      <li className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-300" />
+                        <span><strong className="font-medium">Grupos seleccionados:</strong> {selectedGroups.length} de {selectedTournament.number_of_groups}</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-300" />
+                        <span><strong className="font-medium">Equipos en grupos:</strong> {getFilteredTeams().length} participantes</span>
+                      </li>
+                    </>
+                  ) : (
+                    <li className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-blue-300" />
+                      <span><strong className="font-medium">Equipos:</strong> {activeTeams.length} participantes</span>
+                    </li>
+                  )}
                   <li className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-blue-300" />
                     <span><strong className="font-medium">Jornadas:</strong> {config.doubleRound ? activeTeams.length * 2 - 2 : activeTeams.length - 1}</span>
@@ -680,32 +991,95 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">⚽</span>
                     <span><strong className="font-medium">Canchas:</strong> {config.fieldsAvailable} disponibles</span>
                   </li>
+                  {config.startDate && config.endDate && (
+                    <>
+                      <li className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-300" />
+                        <span>
+                          <strong className="font-medium">Duración:</strong>{' '}
+                          {(() => {
+                            const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
+                            const [endYear, endMonth, endDay] = config.endDate.split('-').map(Number)
+                            const start = new Date(startYear, startMonth - 1, startDay)
+                            const end = new Date(endYear, endMonth - 1, endDay)
+                            const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                            return `${days} día${days !== 1 ? 's' : ''}`
+                          })()}
+                        </span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">📅</span>
+                        <span>
+                          <strong className="font-medium">Capacidad:</strong>{' '}
+                          {(() => {
+                            const targetDays = config.matchDays.map(day => {
+                              switch(day) {
+                                case 'sunday': return 0
+                                case 'monday': return 1
+                                case 'tuesday': return 2
+                                case 'wednesday': return 3
+                                case 'thursday': return 4
+                                case 'friday': return 5
+                                case 'saturday': return 6
+                                default: return 6
+                              }
+                            })
+                            let availableMatchDays = 0
+                            const [startYr, startMo, startDy] = config.startDate.split('-').map(Number)
+                            const [endYr, endMo, endDy] = config.endDate.split('-').map(Number)
+                            let tempDate = new Date(startYr, startMo - 1, startDy)
+                            const endDate = new Date(endYr, endMo - 1, endDy)
+                            while (tempDate <= endDate) {
+                              if (targetDays.includes(tempDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6)) {
+                                availableMatchDays++
+                              }
+                              tempDate.setDate(tempDate.getDate() + 1)
+                            }
+                            const availableTimes = generateAvailableTimeSlots()
+                            const totalSlots = availableMatchDays * availableTimes.length * config.fieldsAvailable
+                            const totalMatches = config.doubleRound
+                              ? (selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) * ((selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) - 1)
+                              : (selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) * ((selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) - 1) / 2
+                            const percentageUsed = totalMatches > 0 ? Math.round((totalMatches / totalSlots) * 100) : 0
+                            return `${totalSlots} espacios (${percentageUsed}% usado)`
+                          })()}
+                        </span>
+                      </li>
+                    </>
+                  )}
                 </ul>
                 <ul className="text-sm text-white/90 drop-shadow space-y-3">
                   <li className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-300" />
-                    <span><strong className="font-medium">Duración:</strong> {config.matchDuration.halfTime}min + {config.matchDuration.breakTime}min descanso + {config.matchDuration.halfTime}min</span>
+                    <span>
+                      <strong className="font-medium">Duración del partido:</strong>{' '}
+                      {config.matchDuration.halfTime}min + {config.matchDuration.breakTime}min + {config.matchDuration.halfTime}min
+                      {' = '}{(config.matchDuration.halfTime * 2) + config.matchDuration.breakTime}min
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">⏱</span>
                     <span>
-                      <strong className="font-medium">Tipo de liga:</strong> {
-                        config.scheduleType === 'morning' ? 'Matutina' :
-                        config.scheduleType === 'afternoon' ? 'Vespertina' :
-                        config.scheduleType === 'evening' ? 'Nocturna' : 'Personalizada'
-                      }
+                      <strong className="font-medium">Descanso entre partidos:</strong> {config.breakBetweenMatches}min
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-300" />
-                    <span><strong className="font-medium">Horarios:</strong> {config.scheduleType === 'custom' ? config.matchTimes.length : getScheduleTimesByType(config.scheduleType).length} disponibles</span>
+                    <span>
+                      <strong className="font-medium">Total por espacio:</strong>{' '}
+                      {(config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches}min
+                    </span>
                   </li>
-                  {config.championFixedSchedule && (
-                    <li className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-blue-300" />
-                      <span><strong className="font-medium">Campeón:</strong> Horario fijo {config.championPreferredTime}</span>
-                    </li>
-                  )}
+                  <li className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-300" />
+                    <span>
+                      <strong className="font-medium">Ventana horaria:</strong> {config.startTime} - {config.endTime}
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-300" />
+                    <span><strong className="font-medium">Horarios generados:</strong> {generateAvailableTimeSlots().length} por día</span>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -718,9 +1092,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               >
                 Cancelar
               </Button>
-              <Button 
+              <Button
                 onClick={generateFixtures}
-                disabled={generating || !config.tournamentId || !config.startDate || config.matchDays.length === 0 || (config.scheduleType === 'custom' && config.matchTimes.length === 0)}
+                disabled={generating || !config.tournamentId || !config.startDate || !config.endDate || !config.startTime || !config.endTime || config.matchDays.length === 0 || generateAvailableTimeSlots().length === 0}
                 className="flex-1 h-12 text-base backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
               >
                 {generating ? (
@@ -789,7 +1163,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="w-4 h-4" />
-                            <span>{new Date(match.date).toLocaleDateString('es-ES')}</span>
+                            <span>{(() => {
+                              // Parse date correctly to avoid timezone issues
+                              const [year, month, day] = match.date.split('-').map(Number)
+                              const date = new Date(year, month - 1, day)
+                              return date.toLocaleDateString('es-ES')
+                            })()}</span>
                             <Clock className="w-4 h-4" />
                             <span>{match.time}</span>
                           </div>

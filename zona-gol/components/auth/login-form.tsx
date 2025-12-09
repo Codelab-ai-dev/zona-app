@@ -108,7 +108,7 @@ export function LoginForm() {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault()
     setResetMessage(null)
-    
+
     if (!resetEmail) {
       setResetMessage({ type: 'error', text: 'Por favor, ingresa tu correo electrónico' })
       return
@@ -123,22 +123,57 @@ export function LoginForm() {
 
     try {
       const supabase = createClientSupabaseClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+
+      // Usar generateLink para Supabase autoalojado
+      const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       })
 
       if (error) {
-        setResetMessage({ type: 'error', text: `Error: ${error.message}` })
+        // Detectar si es un error de SMTP no configurado
+        if (error.message.includes('SMTP') ||
+            error.message.includes('mail') ||
+            error.message.includes('email service')) {
+          setResetMessage({
+            type: 'error',
+            text: 'El servidor de correo no está configurado. Por favor, contacta al administrador del sistema para que configure el servicio SMTP en Supabase.'
+          })
+        } else {
+          setResetMessage({ type: 'error', text: `Error: ${error.message}` })
+        }
       } else {
-        setResetMessage({ 
-          type: 'success', 
-          text: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña. Revisa tu bandeja de entrada.' 
+        setResetMessage({
+          type: 'success',
+          text: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña. Revisa tu bandeja de entrada y la carpeta de spam.'
         })
         setResetEmail("")
+
+        // Cerrar el diálogo después de 3 segundos
+        setTimeout(() => {
+          setIsResetDialogOpen(false)
+          setResetMessage(null)
+        }, 3000)
       }
     } catch (err: any) {
       console.error('Password reset error:', err)
-      setResetMessage({ type: 'error', text: err.message || 'Error al enviar correo de recuperación' })
+
+      // Mensajes de error más descriptivos
+      if (err.message?.includes('SMTP') || err.message?.includes('mail')) {
+        setResetMessage({
+          type: 'error',
+          text: 'El servidor de correo no está configurado correctamente. Contacta al administrador para configurar SMTP en Supabase.'
+        })
+      } else if (err.message?.includes('network')) {
+        setResetMessage({
+          type: 'error',
+          text: 'Error de conexión. Verifica tu conexión a internet.'
+        })
+      } else {
+        setResetMessage({
+          type: 'error',
+          text: err.message || 'Error al enviar correo de recuperación'
+        })
+      }
     } finally {
       setResetLoading(false)
     }

@@ -12,21 +12,21 @@ export const tournamentActions = {
   async getTournamentsByLeague(leagueId: string) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, setTournaments } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data: tournaments, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('league_id', leagueId)
         .order('created_at', { ascending: false })
-      
+
       if (error) {
         throw error
       }
-      
+
       setTournaments(tournaments || [])
       return tournaments || []
     } catch (error) {
@@ -44,27 +44,27 @@ export const tournamentActions = {
     const supabase = createClientSupabaseClient()
     const { user } = useAuthStore.getState()
     const { setLoading, setError, addTournament } = useLeagueStore.getState()
-    
+
     if (!user) {
       throw new Error('User not authenticated')
     }
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: tournament, error } = await supabase
-        .from('tournaments')
+
+      const { data: tournament, error } = await (supabase
+        .from('tournaments') as any)
         .insert({
           ...tournamentData,
         })
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       addTournament(tournament)
       return tournament
     } catch (error) {
@@ -81,13 +81,13 @@ export const tournamentActions = {
   async updateTournament(tournamentId: string, updates: TournamentUpdate) {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, updateTournament } = useLeagueStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
-      const { data: tournament, error } = await supabase
-        .from('tournaments')
+
+      const { data: tournament, error } = await (supabase
+        .from('tournaments') as any)
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -95,11 +95,11 @@ export const tournamentActions = {
         .eq('id', tournamentId)
         .select()
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       updateTournament(tournament)
       return tournament
     } catch (error) {
@@ -122,8 +122,8 @@ export const tournamentActions = {
       setError(null)
 
       // Soft delete by setting is_active to false
-      const { error } = await supabase
-        .from('tournaments')
+      const { error } = await (supabase
+        .from('tournaments') as any)
         .update({ is_active: false })
         .eq('id', tournamentId)
 
@@ -156,8 +156,8 @@ export const tournamentActions = {
       // - Matches (tournament_id references tournaments with ON DELETE CASCADE)
       // - Player stats (through matches cascade)
       // - All other related data through cascading foreign keys
-      const { error } = await supabase
-        .from('tournaments')
+      const { error } = await (supabase
+        .from('tournaments') as any)
         .delete()
         .eq('id', tournamentId)
 
@@ -179,18 +179,18 @@ export const tournamentActions = {
   // Get single tournament
   async getTournament(tournamentId: string) {
     const supabase = createClientSupabaseClient()
-    
+
     try {
       const { data: tournament, error } = await supabase
         .from('tournaments')
         .select('*')
         .eq('id', tournamentId)
         .single()
-      
+
       if (error) {
         throw error
       }
-      
+
       return tournament
     } catch (error) {
       console.error('Get tournament error:', error)

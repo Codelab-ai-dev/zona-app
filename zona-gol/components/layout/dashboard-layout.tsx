@@ -4,6 +4,8 @@ import type React from "react"
 import { useState } from "react"
 
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useIdleTimeout } from "@/lib/hooks/use-idle-timeout"
+import { authConfig } from "@/lib/config/auth-config"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -28,6 +30,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile, signOut } = useAuth()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Activar detector de inactividad (20 minutos por defecto)
+  useIdleTimeout({
+    timeout: authConfig.idleTimeout,
+    promptBeforeIdle: authConfig.idleWarningTime,
+  })
 
   const handleSignOut = async () => {
     await signOut()
