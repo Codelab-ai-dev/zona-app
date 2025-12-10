@@ -71,7 +71,6 @@ export default function DashboardPage() {
             console.error('Error loading active tournament:', error)
           } else if (data) {
             setActiveTournament(data)
-            console.log('🏆 Active tournament loaded:', data.name, 'Format:', data.tournament_format)
           }
         } catch (error) {
           console.error('Error loading active tournament:', error)
@@ -163,15 +162,15 @@ export default function DashboardPage() {
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Liga No Asignada</h2>
               <p className="text-white/80 drop-shadow mb-4">
-                No tienes una liga asignada todavía. 
+                No tienes una liga asignada todavía.
               </p>
               <p className="text-white/70 drop-shadow text-sm mb-6">
                 Contacta al super administrador para que te asigne una liga.
               </p>
-              
+
               {/* Herramientas de debugging temporales */}
               <div className="space-y-3">
-                <Button 
+                <Button
                   onClick={handleFindAvailableLeagues}
                   variant="outline"
                   className="mx-2 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
@@ -179,13 +178,13 @@ export default function DashboardPage() {
                   Ver Leagues Disponibles
                 </Button>
                 <div className="flex items-center space-x-2 justify-center">
-                  <input 
-                    type="text" 
-                    placeholder="ID de Liga" 
+                  <input
+                    type="text"
+                    placeholder="ID de Liga"
                     className="backdrop-blur-md bg-white/20 border border-white/30 text-white placeholder:text-white/50 px-3 py-2 rounded focus:border-green-400 focus:ring-green-400/50"
                     onChange={(e) => setLeagueIdInput(e.target.value)}
                   />
-                  <Button 
+                  <Button
                     onClick={() => leagueIdInput && handleAssignToLeague(leagueIdInput)}
                     disabled={assigning || !leagueIdInput}
                     className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
@@ -207,11 +206,10 @@ export default function DashboardPage() {
         return (
           <Tabs defaultValue="overview" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${
-                isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-11' :
+              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-11' :
                 isKnockout ? 'md:grid-cols-5 lg:grid-cols-9' :
-                'md:grid-cols-5 lg:grid-cols-10'
-              }`}>
+                  'md:grid-cols-5 lg:grid-cols-10'
+                }`}>
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Torneos</TabsTrigger>
                 <TabsTrigger value="teams" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Equipos</TabsTrigger>
@@ -296,7 +294,7 @@ export default function DashboardPage() {
         return (
           <Tabs defaultValue="overview" className="space-y-6">
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-7 gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30">
+              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-8 gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30">
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="record" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Estadísticas</TabsTrigger>
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Goleadores</TabsTrigger>
@@ -304,6 +302,7 @@ export default function DashboardPage() {
                 <TabsTrigger value="coaching" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Cuerpo Técnico</TabsTrigger>
                 <TabsTrigger value="team" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Mi Equipo</TabsTrigger>
                 <TabsTrigger value="uniforms" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Uniformes</TabsTrigger>
+                <TabsTrigger value="settings" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Configuración</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="overview">
@@ -326,6 +325,9 @@ export default function DashboardPage() {
             </TabsContent>
             <TabsContent value="uniforms">
               <TeamUniforms teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="settings">
+              <ProfileSettings />
             </TabsContent>
           </Tabs>
         )
