@@ -7,9 +7,15 @@ interface InputProps extends React.ComponentProps<"input"> {
 }
 
 function Input({ className, type, onChange, forceLowercase, ...props }: InputProps) {
+  // Check if this is a password field by id or name
+  const isPasswordField =
+    props.id?.toLowerCase().includes('password') ||
+    props.name?.toLowerCase().includes('password')
+
   // Fields that should NOT be uppercased
   const isExcluded =
     forceLowercase || // Respect the prop explicitly
+    isPasswordField || // Password fields (even when type is "text" for visibility toggle)
     type === "password" ||
     type === "email" ||
     type === "url" ||
