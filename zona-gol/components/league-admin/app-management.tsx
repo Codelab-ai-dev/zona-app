@@ -28,6 +28,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
   const [files, setFiles] = useState<AppFile[]>([])
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [isDownloading, setIsDownloading] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const supabase = createClientSupabaseClient()
@@ -53,7 +54,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
         return
       }
 
-      setFiles(data || [])
+      setFiles((data as unknown as AppFile[]) || [])
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al cargar los archivos')
@@ -124,6 +125,7 @@ export function AppManagement({ leagueId }: AppManagementProps) {
 
   const handleDownload = async (file: AppFile) => {
     try {
+      setIsDownloading(file.id)
       const { data, error } = await supabase.storage
         .from('app-releases')
         .download(`${leagueId}/${file.name}`)
@@ -148,6 +150,8 @@ export function AppManagement({ leagueId }: AppManagementProps) {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al descargar el archivo')
+    } finally {
+      setIsDownloading(null)
     }
   }
 
@@ -322,10 +326,11 @@ export function AppManagement({ leagueId }: AppManagementProps) {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownload(file)}
+                            disabled={isDownloading === file.id}
                             className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
                           >
-                            <Download className="h-4 w-4 mr-1" />
-                            Descargar
+                            <Download className={`h-4 w-4 mr-1 ${isDownloading === file.id ? 'animate-pulse' : ''}`} />
+                            {isDownloading === file.id ? 'Descargando...' : 'Descargar'}
                           </Button>
                           <Button
                             variant="outline"

@@ -33,6 +33,13 @@ import { CoachingStaffManagement } from "@/components/team-owner/coaching-staff-
 import { TeamInfo } from "@/components/team-owner/team-info"
 import { TeamUniforms } from "@/components/team-owner/team-uniforms"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function DashboardPage() {
   const { user, profile } = useAuth()
@@ -40,6 +47,7 @@ export default function DashboardPage() {
   const [leagueIdInput, setLeagueIdInput] = useState("")
   const [activeTournament, setActiveTournament] = useState<Tournament | null>(null)
   const [loadingTournament, setLoadingTournament] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
 
   // Debug logging
   console.log('🔍 Dashboard Debug:', {
@@ -138,8 +146,21 @@ export default function DashboardPage() {
     switch (profile?.role) {
       case "super_admin":
         return (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 backdrop-blur-md bg-white/20 border border-white/30">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="w-full md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full backdrop-blur-md bg-white/20 border-white/30 text-white">
+                  <SelectValue placeholder="Seleccionar vista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overview">Resumen</SelectItem>
+                  <SelectItem value="leagues">Gestión de Ligas</SelectItem>
+                  <SelectItem value="apps">App Móvil</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <TabsList className="hidden md:grid w-full grid-cols-3 backdrop-blur-md bg-white/20 border border-white/30">
               <TabsTrigger value="overview" className="text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
               <TabsTrigger value="leagues" className="text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Gestión de Ligas</TabsTrigger>
               <TabsTrigger value="apps" className="text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">App Móvil</TabsTrigger>
@@ -204,8 +225,29 @@ export default function DashboardPage() {
         const isLeague = tournamentFormat === 'league'
 
         return (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="w-full md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full backdrop-blur-md bg-white/20 border-white/30 text-white">
+                  <SelectValue placeholder="Seleccionar vista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overview">Resumen</SelectItem>
+                  <SelectItem value="tournaments">Torneos</SelectItem>
+                  <SelectItem value="teams">Equipos</SelectItem>
+                  {isGroupKnockout && <SelectItem value="groups">Grupos</SelectItem>}
+                  {(isLeague || isGroupKnockout) && <SelectItem value="fixtures">{isGroupKnockout ? 'Partidos Grupos' : 'Jornadas'}</SelectItem>}
+                  {(isKnockout || isGroupKnockout) && <SelectItem value="playoffs">{isGroupKnockout ? 'Eliminación' : 'Liguilla'}</SelectItem>}
+                  <SelectItem value="calendar">Calendario</SelectItem>
+                  <SelectItem value="scorers">Goleadores</SelectItem>
+                  <SelectItem value="discipline">Disciplina</SelectItem>
+                  <SelectItem value="suspensions">Suspensiones</SelectItem>
+                  <SelectItem value="settings">Configuración</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="hidden md:block overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
               <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-11' :
                 isKnockout ? 'md:grid-cols-5 lg:grid-cols-9' :
                   'md:grid-cols-5 lg:grid-cols-10'
@@ -292,8 +334,26 @@ export default function DashboardPage() {
         }
 
         return (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="w-full md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full backdrop-blur-md bg-white/20 border-white/30 text-white">
+                  <SelectValue placeholder="Seleccionar vista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overview">Resumen</SelectItem>
+                  <SelectItem value="record">Estadísticas</SelectItem>
+                  <SelectItem value="scorers">Goleadores</SelectItem>
+                  <SelectItem value="players">Jugadores</SelectItem>
+                  <SelectItem value="coaching">Cuerpo Técnico</SelectItem>
+                  <SelectItem value="team">Mi Equipo</SelectItem>
+                  <SelectItem value="uniforms">Uniformes</SelectItem>
+                  <SelectItem value="settings">Configuración</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="hidden md:block overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
               <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-8 gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30">
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="record" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Estadísticas</TabsTrigger>

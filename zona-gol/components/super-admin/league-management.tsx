@@ -73,7 +73,7 @@ export function LeagueManagement() {
         // Load all users
         const allUsers = await authActions.getAllProfiles()
         setUsers(allUsers)
-        
+
         // Load all leagues
         await getAllLeagues()
       } catch (error) {
@@ -100,14 +100,14 @@ export function LeagueManagement() {
     }
 
     setCreating(true)
-    
+
     try {
       console.log('🚀 Iniciando creación de liga y administrador...')
-      
+
       // 1. Generar una contraseña segura para el administrador
       const adminPassword = generatePassword()
       console.log('🔑 Contraseña generada para administrador')
-      
+
       // 2. Guardar la información para el modal antes de cualquier operación async
       const adminEmail = formData.adminEmail
       const adminName = formData.adminName
@@ -115,10 +115,10 @@ export function LeagueManagement() {
       const leagueName = formData.name
       const leagueSlug = formData.slug
       const leagueDescription = formData.description
-      
+
       // 3. Preparar datos para el modal ANTES de crear nada
       setGeneratedPassword(adminPassword)
-      
+
       const tempAdminProfile = {
         id: crypto.randomUUID(),
         email: adminEmail,
@@ -131,34 +131,34 @@ export function LeagueManagement() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
-      
+
       setCreatedAdmin(tempAdminProfile)
-      
+
       console.log('📋 Datos preparados para modal ANTES de operaciones async')
-      
+
       // 4. Limpiar formulario y cerrar diálogo de creación INMEDIATAMENTE
       setFormData({ name: "", slug: "", description: "", adminName: "", adminEmail: "", adminPhone: "", logo: "" })
       setLogoFile(null)
       setIsCreateDialogOpen(false)
-      
+
       // 5. Mostrar modal de credenciales INMEDIATAMENTE
       setShowSuccessDialog(true)
-      
+
       console.log('✅ Modal mostrado inmediatamente')
-      
+
       // 6. Crear todo en background sin bloquear el modal
       setTimeout(async () => {
         try {
           console.log('🔄 Iniciando creación real en background...')
-          
+
           const supabase = createClientSupabaseClient()
           let adminProfile: any
           let logoUrl = ''
-          
+
           // Opción 1: Intentar crear usuario con admin API
           try {
             console.log('🔵 Intentando crear usuario con admin API...')
-            
+
             const authResponse = await fetch('/api/auth/create-user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -171,16 +171,16 @@ export function LeagueManagement() {
                 }
               })
             })
-            
+
             console.log('🔵 Response status:', authResponse.status)
-            
+
             if (authResponse.ok) {
               const { user: authUser } = await authResponse.json()
               console.log('✅ Usuario de autenticación creado con admin API:', authUser)
-              
+
               // Esperar un poco para que los triggers se ejecuten
               await new Promise(resolve => setTimeout(resolve, 1000))
-              
+
               // Crear el perfil del usuario
               const { data: profile, error: profileError } = await (supabase
                 .from('users') as any)
@@ -194,7 +194,7 @@ export function LeagueManagement() {
                 }, { onConflict: 'id' })
                 .select()
                 .single()
-              
+
               if (!profileError && profile) {
                 adminProfile = profile
                 console.log('✅ Perfil de administrador creado:', adminProfile)
@@ -211,16 +211,16 @@ export function LeagueManagement() {
           } catch (adminApiError) {
             console.error('❌ Excepción en admin API:', adminApiError)
           }
-          
+
           // Opción 2: Si falla la admin API, usar el super admin actual como admin temporal
           if (!adminProfile) {
             console.log('📋 Creando liga con super admin como administrador temporal...')
-            
+
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
               throw new Error('No hay usuario autenticado')
             }
-            
+
             adminProfile = {
               id: user.id,
               email: adminEmail, // Mostrar el email del admin que se pretendía crear
@@ -229,16 +229,16 @@ export function LeagueManagement() {
               phone: adminPhone,
               is_active: true
             }
-            
+
             console.log('👤 Usando super admin como administrador temporal:', adminProfile)
           }
-          
+
           // Upload logo if provided
           if (logoFile) {
             try {
               console.log('📸 Uploading league logo...')
               const uploadResult = await fileUploadService.uploadLogo(
-                logoFile, 
+                logoFile,
                 `league-${generateSlug(leagueName)}-${Date.now()}`
               )
               logoUrl = uploadResult.publicUrl
@@ -250,7 +250,7 @@ export function LeagueManagement() {
 
           // Crear la liga con el admin disponible
           const slug = leagueSlug || generateSlug(leagueName)
-          
+
           const league = await leagueActions.createLeagueWithAdmin({
             name: leagueName,
             slug: slug,
@@ -259,15 +259,15 @@ export function LeagueManagement() {
             logo: logoUrl || null,
             is_active: true
           })
-          
+
           console.log('🏆 Liga creada en background:', league)
-          
+
           // Si estamos usando el super admin como admin temporal, asignar la liga al usuario actual
           if (adminProfile.role === 'super_admin') {
             try {
               await authActions.assignLeagueToCurrentUser(league.id)
               console.log('✅ Liga asignada al super admin actual')
-              
+
               // Opcional: recargar el perfil del usuario para reflejar el cambio
               // Esto ayudará a que el dashboard se actualice inmediatamente
               setTimeout(() => {
@@ -277,7 +277,7 @@ export function LeagueManagement() {
               console.warn('⚠️ Error asignando liga al super admin:', assignError)
             }
           }
-          
+
           // Actualizar el perfil mostrado en el modal con datos reales
           setCreatedAdmin({
             ...adminProfile,
@@ -286,22 +286,22 @@ export function LeagueManagement() {
             email: adminEmail,
             name: adminName
           })
-          
+
           // Recargar ligas con un pequeño delay para asegurar consistencia
           setTimeout(async () => {
             await getAllLeagues()
             console.log('🔄 Ligas recargadas después de crear nueva liga')
           }, 500)
-          
+
           console.log('🎉 Liga creada exitosamente en background')
-          
+
         } catch (backgroundError) {
           console.error('❌ Error en background:', backgroundError)
           // El modal ya se mostró, así que el usuario puede copiar las credenciales
           // Las tareas de background fallaron, pero no afectan la experiencia del usuario
         }
       }, 100)
-      
+
     } catch (error: any) {
       console.error('❌ Error en creación de liga:', error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
@@ -330,7 +330,7 @@ export function LeagueManagement() {
 
     try {
       let logoUrl = formData.logo
-      
+
       // Upload new logo if provided
       if (logoFile) {
         try {
@@ -367,7 +367,7 @@ export function LeagueManagement() {
       await getAllLeagues()
       const allUsers = await authActions.getAllProfiles()
       setUsers(allUsers)
-      
+
       // Close edit dialog
       setEditingLeague(null)
       setFormData({ name: "", slug: "", description: "", adminName: "", adminEmail: "", adminPhone: "", logo: "" })
@@ -416,22 +416,28 @@ export function LeagueManagement() {
   const debugLeaguesStatus = async () => {
     try {
       const supabase = createClientSupabaseClient()
-      const { data: leagues, error } = await supabase
+      const { data: leaguesData, error } = await supabase
         .from('leagues')
         .select('id, name, is_active, created_at, updated_at')
         .order('created_at', { ascending: false })
+        .returns<League[]>()
 
       if (error) {
         throw error
       }
 
+      if (!leaguesData) {
+        console.log('No data returned from leagues query')
+        return
+      }
+
       console.log('🔍 Estado real de las ligas en BD:')
-      leagues.forEach(league => {
+      leaguesData.forEach(league => {
         console.log(`${league.is_active ? '✅' : '❌'} ${league.name} (${league.is_active ? 'ACTIVA' : 'INACTIVA'})`)
       })
 
-      const inactiveCount = leagues.filter(l => !l.is_active).length
-      const activeCount = leagues.filter(l => l.is_active).length
+      const inactiveCount = leaguesData.filter(l => !l.is_active).length
+      const activeCount = leaguesData.filter(l => l.is_active).length
 
       toast.info('Estado de la base de datos', {
         description: `${activeCount} ligas activas, ${inactiveCount} ligas inactivas. Ver consola para detalles.`,
@@ -540,113 +546,114 @@ export function LeagueManagement() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-white drop-shadow-lg">Crear Nueva Liga</DialogTitle>
-              <DialogDescription className="text-white/80 drop-shadow">
-                Completa la información para crear una nueva liga y su administrador
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-white drop-shadow">Nombre de la Liga</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Liga Premier Mexicana"
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                />
-              </div>
-              <div>
-                <FileUpload
-                  label="Logo de la Liga"
-                  accept="image/*"
-                  maxSize={2}
-                  value={formData.logo}
-                  onChange={(file, dataUrl) => {
-                    setLogoFile(file)
-                    if (dataUrl) {
-                      setFormData({ ...formData, logo: dataUrl })
-                    }
-                  }}
-                  variant="default"
-                />
-              </div>
-              <div>
-                <Label htmlFor="slug" className="text-white drop-shadow">URL Personalizada</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="liga-premier-mexicana"
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description" className="text-white drop-shadow">Descripción</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descripción de la liga..."
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                />
-              </div>
+              <DialogHeader>
+                <DialogTitle className="text-white drop-shadow-lg">Crear Nueva Liga</DialogTitle>
+                <DialogDescription className="text-white/80 drop-shadow">
+                  Completa la información para crear una nueva liga y su administrador
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name" className="text-white drop-shadow">Nombre de la Liga</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Liga Premier Mexicana"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <FileUpload
+                    label="Logo de la Liga"
+                    accept="image/*"
+                    maxSize={2}
+                    value={formData.logo}
+                    onChange={(file, dataUrl) => {
+                      setLogoFile(file)
+                      if (dataUrl) {
+                        setFormData({ ...formData, logo: dataUrl })
+                      }
+                    }}
+                    variant="default"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="slug" className="text-white drop-shadow">URL Personalizada</Label>
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase() })}
+                    placeholder="liga-premier-mexicana"
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                    forceLowercase={true}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description" className="text-white drop-shadow">Descripción</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descripción de la liga..."
+                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  />
+                </div>
 
-              <div className="border-t border-white/20 pt-4">
-                <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Administrador</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="adminName" className="text-white drop-shadow">Nombre Completo</Label>
-                    <Input
-                      id="adminName"
-                      value={formData.adminName}
-                      onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                      placeholder="Juan Pérez"
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="adminEmail" className="text-white drop-shadow">Correo Electrónico</Label>
-                    <Input
-                      id="adminEmail"
-                      type="email"
-                      value={formData.adminEmail}
-                      onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                      placeholder="juan@ejemplo.com"
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="adminPhone" className="text-white drop-shadow">Teléfono</Label>
-                    <Input
-                      id="adminPhone"
-                      value={formData.adminPhone}
-                      onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
-                      placeholder="+52 555 123 4567"
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
-                    />
+                <div className="border-t border-white/20 pt-4">
+                  <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Administrador</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="adminName" className="text-white drop-shadow">Nombre Completo</Label>
+                      <Input
+                        id="adminName"
+                        value={formData.adminName}
+                        onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+                        placeholder="Juan Pérez"
+                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="adminEmail" className="text-white drop-shadow">Correo Electrónico</Label>
+                      <Input
+                        id="adminEmail"
+                        type="email"
+                        value={formData.adminEmail}
+                        onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                        placeholder="juan@ejemplo.com"
+                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="adminPhone" className="text-white drop-shadow">Teléfono</Label>
+                      <Input
+                        id="adminPhone"
+                        value={formData.adminPhone}
+                        onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
+                        placeholder="+52 555 123 4567"
+                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <Button
-                onClick={handleCreateLeague}
-                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
-                disabled={creating}
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  'Crear Liga y Administrador'
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+                <Button
+                  onClick={handleCreateLeague}
+                  className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creando...
+                    </>
+                  ) : (
+                    'Crear Liga y Administrador'
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -658,7 +665,7 @@ export function LeagueManagement() {
               La liga ha sido creada exitosamente. Estas son las credenciales del administrador:
             </DialogDescription>
           </DialogHeader>
-          
+
           {createdAdmin && generatedPassword ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
@@ -677,7 +684,7 @@ export function LeagueManagement() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="font-semibold">Contraseña:</div>
                 <div className="flex items-center gap-2">
@@ -703,7 +710,7 @@ export function LeagueManagement() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="bg-yellow-50 p-3 rounded-md text-yellow-800 text-sm">
                 <p className="font-semibold">Importante:</p>
                 <p>Guarda estas credenciales en un lugar seguro. No se mostrarán nuevamente.</p>
@@ -714,7 +721,7 @@ export function LeagueManagement() {
               Error: No se pudieron cargar las credenciales. Por favor contacta al soporte.
             </div>
           )}
-          
+
           <DialogFooter>
             <Button onClick={() => setShowSuccessDialog(false)}>Cerrar</Button>
           </DialogFooter>
@@ -812,7 +819,8 @@ export function LeagueManagement() {
               <Input
                 id="edit-slug"
                 value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase() })}
+                forceLowercase={true}
                 className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
               />
             </div>

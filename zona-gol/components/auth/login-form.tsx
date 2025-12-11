@@ -33,14 +33,14 @@ export function LoginForm() {
   const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const { signIn, loading, error, isAuthenticated } = useAuth()
   const router = useRouter()
-  
+
   // Verificar si Supabase está configurado correctamente
   useEffect(() => {
     const checkSupabase = async () => {
       try {
         const supabase = createClientSupabaseClient()
         const { data, error } = await supabase.from('users').select('count').limit(1)
-        
+
         if (error) {
           console.error('Error de conexión a Supabase:', error)
           setLocalError('Error de conexión a la base de datos. Por favor, contacta al administrador.')
@@ -52,10 +52,10 @@ export function LoginForm() {
         setLocalError('Error al inicializar la autenticación. Por favor, contacta al administrador.')
       }
     }
-    
+
     checkSupabase()
   }, [])
-  
+
   // Redireccionar si ya está autenticado
   useEffect(() => {
     if (isAuthenticated) {
@@ -67,22 +67,22 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLocalError("")
-    
+
     if (!email || !password) {
       setLocalError("Por favor, ingresa tu correo y contraseña")
       return
     }
-    
+
     if (!supabaseReady) {
       setLocalError("El sistema de autenticación no está listo. Por favor, intenta de nuevo en unos momentos.")
       return
     }
-    
+
     try {
       console.log('Intentando login con:', { email, password: '***' })
       const result = await signIn(email, password)
       console.log('Login exitoso:', result)
-      
+
       // Verificar si el usuario fue autenticado correctamente
       if (result?.user) {
         console.log('Usuario autenticado, esperando redirección...')
@@ -93,7 +93,7 @@ export function LoginForm() {
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      
+
       // Mejorar los mensajes de error para el usuario
       if (err.message?.includes('Invalid login credentials')) {
         setLocalError("Credenciales inválidas. Por favor, verifica tu correo y contraseña.")
@@ -126,14 +126,14 @@ export function LoginForm() {
 
       // Usar generateLink para Supabase autoalojado
       const { data, error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: 'https://admin.zona-gol.com/reset-password',
       })
 
       if (error) {
         // Detectar si es un error de SMTP no configurado
         if (error.message.includes('SMTP') ||
-            error.message.includes('mail') ||
-            error.message.includes('email service')) {
+          error.message.includes('mail') ||
+          error.message.includes('email service')) {
           setResetMessage({
             type: 'error',
             text: 'El servidor de correo no está configurado. Por favor, contacta al administrador del sistema para que configure el servicio SMTP en Supabase.'
@@ -181,7 +181,7 @@ export function LoginForm() {
 
   // Mostrar error local o del store
   const displayError = localError || error
-  
+
   // Determinar si hay un problema de configuración
   const configError = !supabaseReady && !loading
 
@@ -201,7 +201,7 @@ export function LoginForm() {
             <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-1">Panel de Administración</h2>
             <p className="text-white/70 text-sm drop-shadow">Zona-Gol</p>
           </div>
-        
+
           {/* Formulario */}
           <div className="px-8 pb-6">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,7 +236,7 @@ export function LoginForm() {
                   <AlertDescription className="text-white drop-shadow">{displayError}</AlertDescription>
                 </Alert>
               )}
-              
+
               {configError && (
                 <Alert className="backdrop-blur-md bg-yellow-500/20 border-yellow-300/30 shadow-lg">
                   <AlertDescription className="text-white drop-shadow">
@@ -245,15 +245,15 @@ export function LoginForm() {
                   </AlertDescription>
                 </Alert>
               )}
-              <Button 
-                type="submit" 
-                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-base sm:text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+              <Button
+                type="submit"
+                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-base sm:text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 disabled={loading || configError}
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
-            
+
             {/* Recuperar contraseña */}
             <div className="flex justify-center mt-4">
               <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
@@ -307,7 +307,7 @@ export function LoginForm() {
                       >
                         Cancelar
                       </Button>
-                      <Button 
+                      <Button
                         type="submit"
                         className="flex-1 bg-green-600 hover:bg-green-700"
                         disabled={resetLoading || !resetEmail}
@@ -320,7 +320,7 @@ export function LoginForm() {
               </Dialog>
             </div>
           </div>
-          
+
           {/* Footer */}
           <div className="flex justify-center border-t border-white/10 backdrop-blur-md bg-white/5 py-4">
             <Button asChild variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10 transition-all">

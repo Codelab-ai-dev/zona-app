@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './use-auth'
 import { toast } from 'sonner'
+import { authConfig } from '../config/auth-config'
 
 interface UseIdleTimeoutOptions {
   timeout?: number // Timeout en milisegundos (por defecto 20 minutos)
@@ -18,9 +19,15 @@ export function useIdleTimeout({
 }: UseIdleTimeoutOptions = {}) {
   const { signOut, isAuthenticated } = useAuth()
   const router = useRouter()
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
-  const warningTimeoutIdRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Usamos ref para el timestamp de última actividad para evitar re-renders
   const lastActivityRef = useRef<number>(Date.now())
+
+  // Para controlar si ya mostramos el warning y evitar múltiples toasts
+  const warningShownRef = useRef<boolean>(false)
+
+  // Intervalo de chequeo
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleLogout = useCallback(async () => {
     console.log('🔴 Sesión cerrada por inactividad')
@@ -39,84 +46,101 @@ export function useIdleTimeout({
   }, [signOut, router, onIdle])
 
   const showWarning = useCallback(() => {
+    if (warningShownRef.current) return
+
     const remainingTime = Math.floor(promptBeforeIdle / 1000 / 60)
+    warningShownRef.current = true
+
     toast.warning(
       `Tu sesión se cerrará en ${remainingTime} minutos por inactividad. Haz clic en cualquier lugar para continuar.`,
       {
         duration: promptBeforeIdle,
         id: 'idle-warning',
+        onDismiss: () => {
+          // Si el usuario cierra el toast manualmente, consideramos que está activo
+          lastActivityRef.current = Date.now()
+          warningShownRef.current = false
+        },
+        action: {
+          label: "Continuar",
+          onClick: () => {
+            // El click ya actualizará la actividad, pero forzamos por seguridad
+            lastActivityRef.current = Date.now()
+            warningShownRef.current = false
+          }
+        }
       }
     )
   }, [promptBeforeIdle])
 
-  const resetTimer = useCallback(() => {
+  // Actualizar timestamp de actividad
+  const updateActivity = useCallback(() => {
     lastActivityRef.current = Date.now()
 
-    // Limpiar timers existentes
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current)
+    // Si mostramos el warning, lo ocultamos porque el usuario ya interactuó
+    if (warningShownRef.current) {
+      warningShownRef.current = false
+      toast.dismiss('idle-warning')
     }
-    if (warningTimeoutIdRef.current) {
-      clearTimeout(warningTimeoutIdRef.current)
-    }
-
-    // Dismiss warning toast if active
-    toast.dismiss('idle-warning')
-
-    // Solo configurar timers si el usuario está autenticado
-    if (!isAuthenticated) {
-      return
-    }
-
-    // Configurar warning timer (advertencia antes del cierre)
-    const warningTime = timeout - promptBeforeIdle
-    if (warningTime > 0) {
-      warningTimeoutIdRef.current = setTimeout(() => {
-        showWarning()
-      }, warningTime)
-    }
-
-    // Configurar logout timer (cierre de sesión)
-    timeoutIdRef.current = setTimeout(() => {
-      handleLogout()
-    }, timeout)
-  }, [timeout, promptBeforeIdle, isAuthenticated, handleLogout, showWarning])
+  }, [])
 
   useEffect(() => {
-    // Solo activar el detector de inactividad si el usuario está autenticado
     if (!isAuthenticated) {
-      // Limpiar timers si el usuario no está autenticado
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current)
-      }
-      if (warningTimeoutIdRef.current) {
-        clearTimeout(warningTimeoutIdRef.current)
-      }
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current)
       return
     }
 
-    // Eventos que indican actividad del usuario
+    // Inicializar timestamp
+    lastActivityRef.current = Date.now()
+    warningShownRef.current = false
+
+    // Eventos que indican actividad
     const events = [
       'mousedown',
       'mousemove',
-      'keypress',
+      'keydown',
       'scroll',
       'touchstart',
       'click',
     ]
 
-    // Resetear timer en cualquier actividad
+    // Throttling básico para no actualizar en cada pixel de movimiento de mouse
+    let throttleTimer: NodeJS.Timeout | null = null
+
     const handleActivity = () => {
-      resetTimer()
+      if (!throttleTimer) {
+        updateActivity()
+        throttleTimer = setTimeout(() => {
+          throttleTimer = null
+        }, 1000) // Solo actualizar máximo 1 vez por segundo
+      }
     }
 
-    // Agregar event listeners
+    // Agregar listeners
     events.forEach((event) => {
       window.addEventListener(event, handleActivity)
     })
 
-    // Iniciar el timer
-    resetTimer()
+    // Iniciar intervalo de chequeo
+    // Chequeamos cada 5 segundos
+    checkIntervalRef.current = setInterval(() => {
+      const now = Date.now()
+      const timeSinceLastActivity = now - lastActivityRef.current
+      const timeUntilTimeout = timeout - timeSinceLastActivity
+
+      // Caso 1: Se acabó el tiempo
+      if (timeUntilTimeout <= 0) {
+        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current)
+        handleLogout()
+        return
+      }
+
+      // Caso 2: Estamos en rango de advertencia
+      if (timeUntilTimeout <= promptBeforeIdle) {
+        showWarning()
+      }
+
+    }, 5000)
 
     // Cleanup
     return () => {
@@ -124,19 +148,20 @@ export function useIdleTimeout({
         window.removeEventListener(event, handleActivity)
       })
 
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current)
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current)
       }
-      if (warningTimeoutIdRef.current) {
-        clearTimeout(warningTimeoutIdRef.current)
+
+      if (throttleTimer) {
+        clearTimeout(throttleTimer)
       }
 
       toast.dismiss('idle-warning')
     }
-  }, [isAuthenticated, resetTimer])
+  }, [isAuthenticated, timeout, promptBeforeIdle, handleLogout, showWarning, updateActivity])
 
   return {
     lastActivity: lastActivityRef.current,
-    resetTimer,
+    resetTimer: updateActivity,
   }
 }

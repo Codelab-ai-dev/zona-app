@@ -2,9 +2,14 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, onChange, ...props }: React.ComponentProps<"input">) {
+interface InputProps extends React.ComponentProps<"input"> {
+  forceLowercase?: boolean
+}
+
+function Input({ className, type, onChange, forceLowercase, ...props }: InputProps) {
   // Fields that should NOT be uppercased
   const isExcluded =
+    forceLowercase || // Respect the prop explicitly
     type === "password" ||
     type === "email" ||
     type === "url" ||
@@ -20,7 +25,9 @@ function Input({ className, type, onChange, ...props }: React.ComponentProps<"in
     type === "hidden"
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isExcluded && e.target.value) {
+    if (forceLowercase && e.target.value) {
+      e.target.value = e.target.value.toLowerCase()
+    } else if (!isExcluded && e.target.value) {
       // Force uppercase for non-excluded fields
       e.target.value = e.target.value.toUpperCase()
     }
@@ -42,6 +49,8 @@ function Input({ className, type, onChange, ...props }: React.ComponentProps<"in
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         // Apply uppercase class visually if not excluded
         !isExcluded && "uppercase placeholder:normal-case",
+        // Apply lowercase class visually if forced
+        forceLowercase && "lowercase placeholder:normal-case",
         className
       )}
       {...props}
