@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/photo_service.dart';
 import '../services/attendance_service.dart';
 import '../models/attendance.dart';
+import 'qr_scanner_screen.dart';
 
 class PlayerDetailScreen extends StatefulWidget {
   final QRPlayerData qrData;
@@ -668,13 +669,18 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    player!.name,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Text(
+                                      player!.name,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
+                                  const SizedBox(width: 12),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -862,7 +868,16 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
                           ),
                           ElevatedButton.icon(
                             onPressed: () {
-                              Navigator.pop(context);
+                              // Importar QRScannerScreen y navegar de vuelta con pushReplacement
+                              // Esto reemplaza la pantalla actual con un nuevo escáner listo para usar
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => QRScannerScreen(
+                                    matchId: widget.matchId,
+                                  ),
+                                ),
+                              );
                             },
                             icon: const Icon(Icons.qr_code_scanner),
                             label: const Text('Escanear Otro'),

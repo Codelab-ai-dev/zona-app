@@ -24,6 +24,7 @@ import { SuspensionsManagement } from "@/components/league-admin/suspensions-man
 import { TopScorers } from "@/components/league-admin/top-scorers"
 import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-bracket-generator"
 import { GroupsManagement } from "@/components/league-admin/groups-management"
+import { QRBatchUpdate } from "@/components/league-admin/qr-batch-update"
 import { AppManagementSuperAdmin } from "@/components/super-admin/app-management-super-admin"
 import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
@@ -242,15 +243,16 @@ export default function DashboardPage() {
                   <SelectItem value="scorers">Goleadores</SelectItem>
                   <SelectItem value="discipline">Disciplina</SelectItem>
                   <SelectItem value="suspensions">Suspensiones</SelectItem>
+                  <SelectItem value="qr-management">Gestión QR</SelectItem>
                   <SelectItem value="settings">Configuración</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="hidden md:block overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-11' :
-                isKnockout ? 'md:grid-cols-5 lg:grid-cols-9' :
-                  'md:grid-cols-5 lg:grid-cols-10'
+              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-12' :
+                isKnockout ? 'md:grid-cols-5 lg:grid-cols-10' :
+                  'md:grid-cols-5 lg:grid-cols-11'
                 }`}>
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Torneos</TabsTrigger>
@@ -277,6 +279,7 @@ export default function DashboardPage() {
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Disciplina</TabsTrigger>
                 <TabsTrigger value="suspensions" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Suspensiones</TabsTrigger>
+                <TabsTrigger value="qr-management" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Gestión QR</TabsTrigger>
                 <TabsTrigger value="settings" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Configuración</TabsTrigger>
               </TabsList>
             </div>
@@ -311,6 +314,9 @@ export default function DashboardPage() {
             </TabsContent>
             <TabsContent value="suspensions">
               <SuspensionsManagement leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="qr-management">
+              <QRBatchUpdate />
             </TabsContent>
             <TabsContent value="settings">
               <ProfileSettings />

@@ -277,7 +277,10 @@ export default function TeamDetailPage() {
           team_id: player.team_id,
           jersey_number: player.jersey_number
         },
-        { format: 'legacy' }
+        {
+          format: 'legacy',
+          leagueId: team.league_id || undefined
+        }
       )
 
       if (qrResult && qrResult.success) {
@@ -365,7 +368,10 @@ export default function TeamDetailPage() {
               team_id: player.team_id,
               jersey_number: player.jersey_number
             },
-            { format: 'legacy' }
+            {
+              format: 'legacy',
+              leagueId: team.league_id || undefined
+            }
           )
 
           let qrImageBase64 = ''

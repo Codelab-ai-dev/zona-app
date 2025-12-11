@@ -3,6 +3,8 @@
  * Basado en el formato especificado por el usuario
  */
 
+import { normalizeForQR } from './qr-text-normalizer'
+
 export interface PlayerQRCredential {
   typ: 'player-cred'
   ver: 1
@@ -84,20 +86,44 @@ export function generatePlayerQRCredential({
 export function generateLegacyPlayerQR({
   playerId,
   playerName,
-  teamId
+  teamId,
+  jerseyNumber,
+  leagueId
 }: {
   playerId: string
   playerName: string
   teamId: string
+  jerseyNumber?: number
+  leagueId?: string
 }): LegacyPlayerQR {
-  return {
+  // Normalizar el nombre del jugador para evitar problemas con caracteres especiales
+  const normalizedPlayerName = normalizeForQR(playerName)
+
+  console.log('🔄 Normalizando nombre para QR:', {
+    original: playerName,
+    normalized: normalizedPlayerName,
+    changed: playerName !== normalizedPlayerName
+  })
+
+  const qr: any = {
     type: 'player_verification',
     player_id: playerId,
-    player_name: playerName,
+    player_name: normalizedPlayerName, // Usar nombre normalizado
     team_id: teamId,
     timestamp: new Date().toISOString(),
     version: '1.0'
   }
+
+  // Agregar campos adicionales para compatibilidad con app móvil
+  if (jerseyNumber !== undefined) {
+    qr.jersey_number = jerseyNumber
+  }
+
+  if (leagueId) {
+    qr.league_id = leagueId
+  }
+
+  return qr
 }
 
 /**

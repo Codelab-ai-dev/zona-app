@@ -15,6 +15,11 @@ type League = Database['public']['Tables']['leagues']['Row']
 type Team = Database['public']['Tables']['teams']['Row']
 type Tournament = Database['public']['Tables']['tournaments']['Row']
 
+type Match = Database['public']['Tables']['matches']['Row'] & {
+  home_team?: { name: string; logo: string | null }
+  away_team?: { name: string; logo: string | null }
+}
+
 interface PublicLeagueViewProps {
   league: League
   tournamentId?: string
@@ -23,7 +28,7 @@ interface PublicLeagueViewProps {
 interface LeagueData {
   tournaments: Tournament[]
   teams: Team[]
-  matches: any[]
+  matches: Match[]
   stats: any
 }
 
@@ -122,9 +127,9 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
     )
   }
 
-  const upcomingMatches = data.stats?.upcomingMatches || []
-  const recentMatches = data.stats?.recentMatches || []
-  const leagueMatches = data.stats?.allMatches || []
+  const upcomingMatches = (data.stats?.upcomingMatches || []) as Match[]
+  const recentMatches = (data.stats?.recentMatches || []) as Match[]
+  const leagueMatches = (data.stats?.allMatches || []) as Match[]
   const matchesByRound = data.stats?.matchesByRound || {}
   const roundNumbers = data.stats?.roundNumbers || []
 
@@ -139,7 +144,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
   // Filtrar partidos de playoffs por ronda
   const playoffMatches = leagueMatches.filter(m => m.phase === 'playoffs')
-  const playoffsByRound = playoffMatches.reduce((acc: any, match) => {
+  const playoffsByRound = playoffMatches.reduce((acc: Record<string, Match[]>, match) => {
     const round = match.playoff_round || 'other'
     if (!acc[round]) {
       acc[round] = []
@@ -166,8 +171,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
     matchesByRound: Object.keys(matchesByRound).map(round => ({
       round,
       matches: matchesByRound[round].length,
-      finished: matchesByRound[round].filter(m => m.status === 'finished').length,
-      scheduled: matchesByRound[round].filter(m => m.status !== 'finished').length
+      finished: matchesByRound[round].filter((m: Match) => m.status === 'finished').length,
+      scheduled: matchesByRound[round].filter((m: Match) => m.status !== 'finished').length
     }))
   })
 
@@ -180,7 +185,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
       .slice(0, 2)
   }
 
-  const getTeamName = (teamId: string, teamData?: any) => {
+  const getTeamName = (teamId: string, teamData?: { name: string }) => {
     // If team data is provided directly (from match data)
     if (teamData && teamData.name) {
       return teamData.name
@@ -364,7 +369,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                 const groupStandings: Record<string, any[]> = {}
                 Object.keys(teamsByGroup).forEach(groupName => {
                   groupStandings[groupName] = teamsByGroup[groupName].map(team => {
-                    const standing = teamStandings.find(s => s.team.id === team.id)
+                    const standing = teamStandings.find((s: any) => s.team.id === team.id)
                     return standing || {
                       team,
                       matches_played: 0,
@@ -503,7 +508,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                             Cuartos de Final
                           </h3>
                           <div className="space-y-3">
-                            {playoffsByRound['quarterfinals'].map((match: any) => {
+                            {playoffsByRound['quarterfinals'].map((match) => {
                               const isFinished = match.status === 'finished'
                               return (
                                 <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
@@ -551,7 +556,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                             Semifinales
                           </h3>
                           <div className="space-y-3">
-                            {playoffsByRound['semifinals'].map((match: any) => {
+                            {playoffsByRound['semifinals'].map((match) => {
                               const isFinished = match.status === 'finished'
                               return (
                                 <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
@@ -599,7 +604,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                             Tercer Lugar
                           </h3>
                           <div className="space-y-3">
-                            {playoffsByRound['third_place'].map((match: any) => {
+                            {playoffsByRound['third_place'].map((match) => {
                               const isFinished = match.status === 'finished'
                               return (
                                 <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-lg border ${isFinished ? 'backdrop-blur-md bg-green-500/20 border-green-400/30' : 'backdrop-blur-md bg-white/10 border-white/20'
@@ -642,7 +647,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                             FINAL
                           </h3>
                           <div className="space-y-3">
-                            {playoffsByRound['final'].map((match: any) => {
+                            {playoffsByRound['final'].map((match) => {
                               const isFinished = match.status === 'finished'
                               return (
                                 <div key={match.id} className={`flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-5 rounded-lg border-2 ${isFinished ? 'backdrop-blur-xl bg-yellow-500/30 border-yellow-400/50' : 'backdrop-blur-xl bg-yellow-500/20 border-yellow-400/40'
@@ -688,7 +693,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                   <CardTitle className="text-white drop-shadow-lg">Tabla de Posiciones</CardTitle>
                   <CardDescription className="flex items-center space-x-2">
                     <span className="text-white/80 drop-shadow">{activeTournament ? `${activeTournament.name}` : "Posiciones generales"}</span>
-                    {teamStandings.some(s => s.matches_played > 0) ? (
+                    {teamStandings.some((s: any) => s.matches_played > 0) ? (
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium backdrop-blur-md bg-green-500/80 text-white rounded-full border-0">
                         📊 Estadísticas en tiempo real
                       </span>
@@ -717,7 +722,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </tr>
                       </thead>
                       <tbody>
-                        {teamStandings.map((standing, index) => {
+                        {teamStandings.map((standing: any, index: number) => {
                           const hasPlayedMatches = standing.matches_played > 0
                           return (
                             <tr key={standing.team.id} className={`border-b border-white/20 hover:bg-white/5 ${hasPlayedMatches ? '' : 'opacity-75'}`}>
@@ -776,7 +781,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         <p className="text-sm text-muted-foreground">Los equipos aparecerán cuando se registren en la liga</p>
                       </div>
                     )}
-                    {teamStandings.length > 0 && teamStandings.every(s => s.matches_played === 0) && (
+                    {teamStandings.length > 0 && teamStandings.every((s: any) => s.matches_played === 0) && (
                       <div className="text-center py-4 mt-4">
                         <div className="inline-flex items-center px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-full border border-blue-200">
                           ⚽ Temporada preparándose - Los partidos comenzarán pronto
@@ -992,9 +997,9 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                           <SelectValue placeholder="Selecciona una jornada" />
                         </SelectTrigger>
                         <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                          {roundNumbers.map((roundNumber) => {
+                          {roundNumbers.map((roundNumber: number) => {
                             const roundMatches = matchesByRound[roundNumber] || []
-                            const finishedMatches = roundMatches.filter(m => m.status === 'finished')
+                            const finishedMatches = roundMatches.filter((m: any) => m.status === 'finished')
                             const isCompleted = roundMatches.length > 0 && finishedMatches.length === roundMatches.length
                             const isInProgress = finishedMatches.length > 0 && finishedMatches.length < roundMatches.length
 
@@ -1252,8 +1257,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
                     // Handle regular round selection
                     const roundMatches = matchesByRound[parseInt(selectedRound)] || []
-                    const finishedMatches = roundMatches.filter(m => m.status === 'finished')
-                    const scheduledMatches = roundMatches.filter(m => m.status === 'scheduled' || m.status === 'in_progress')
+                    const finishedMatches = roundMatches.filter((m: any) => m.status === 'finished')
+                    const scheduledMatches = roundMatches.filter((m: any) => m.status === 'scheduled' || m.status === 'in_progress')
                     const isCompleted = roundMatches.length > 0 && finishedMatches.length === roundMatches.length
                     const isInProgress = scheduledMatches.length > 0 && finishedMatches.length > 0
 
@@ -1288,7 +1293,7 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {roundMatches.map((match) => {
+                            {roundMatches.map((match: any) => {
                               const isFinished = match.status === 'finished'
 
                               return (
@@ -1325,8 +1330,8 @@ export function PublicLeagueView({ league, tournamentId }: PublicLeagueViewProps
 
                                       <Badge
                                         className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' :
-                                            match.status === 'in_progress' ? 'bg-yellow-500/80 text-white' :
-                                              'bg-blue-500/80 text-white'
+                                          match.status === 'in_progress' ? 'bg-yellow-500/80 text-white' :
+                                            'bg-blue-500/80 text-white'
                                           }`}
                                       >
                                         {isFinished ? "Finalizado" :

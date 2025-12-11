@@ -45,7 +45,9 @@ export function useQRGenerator() {
         credential = generateLegacyPlayerQR({
           playerId: player.id,
           playerName: player.name,
-          teamId: player.team_id
+          teamId: player.team_id,
+          jerseyNumber: player.jersey_number,
+          leagueId: options.leagueId
         })
       } else {
         // Generar QR con nuevo formato
