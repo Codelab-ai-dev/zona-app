@@ -90,7 +90,7 @@ export function PlayerCredential({
                 reject(new Error('No se pudo obtener contexto del canvas'))
                 return
               }
-              
+
               ctx.fillStyle = 'white'
               ctx.fillRect(0, 0, canvas.width, canvas.height)
               ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
@@ -249,10 +249,10 @@ export function PlayerCredential({
                 height: 100%;
               }
               .player-name {
-                font-size: 16px;
+                font-size: 13px;
                 font-weight: bold;
                 color: #1e293b;
-                margin: 0 0 4px 0;
+                margin: 0 0 2px 0;
                 line-height: 1.1;
                 white-space: nowrap;
                 overflow: hidden;
@@ -486,7 +486,7 @@ export function PlayerCredential({
 
                 {/* Información del jugador */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-800 m-0 mb-2 leading-tight truncate">
+                  <h4 className="text-sm sm:text-base font-bold text-slate-800 m-0 mb-1 leading-tight truncate">
                     {player.name}
                   </h4>
                   <p className="text-sm text-slate-600 m-0 mb-3 truncate font-medium">

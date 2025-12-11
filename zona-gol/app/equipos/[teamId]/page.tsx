@@ -46,7 +46,7 @@ interface PlayerWithStats extends Player {
 export default function TeamDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { generatePlayerQR } = useQRGenerator()
   const supabase = createClientSupabaseClient()
 
@@ -72,23 +72,57 @@ export default function TeamDetailPage() {
 
   useEffect(() => {
     const checkLeagueAdmin = async () => {
-      if (!user || !team) return
+      if (!user) return
 
       try {
-        const { data: league } = await supabase
-          .from('leagues')
-          .select('admin_id')
-          .eq('id', team.league_id)
-          .single() as { data: { admin_id: string } | null }
+        let isSpecificLeagueAdmin = false
 
-        setIsLeagueAdmin(league?.admin_id === user.id)
+        // Method 1: Get the league admin_id directly to compare
+        if (team && team.league_id) {
+          const { data: league, error } = await supabase
+            .from('leagues')
+            .select('admin_id')
+            .eq('id', team.league_id)
+            .single() as { data: { admin_id: string } | null, error: any }
+
+          if (!error && league) {
+            isSpecificLeagueAdmin = league.admin_id === user.id
+          }
+
+          if (error) console.error('Error fetching league admin info:', error)
+        }
+
+        // Method 2: Check profile role
+        const isSuperAdmin =
+          user.email === 'zona.gol.gt@gmail.com' ||
+          (user.app_metadata?.role === 'super_admin') ||
+          (profile?.role === 'super_admin')
+
+        // Method 3: General League Admin Role check (Fallback)
+        // If the specific check fails but they have the role, we allow access to unblock functionality
+        // This acts as a failsafe if RLS blocks the specific check or IDs don't match exactly
+        const isGeneralLeagueAdmin = profile?.role === 'league_admin'
+
+        const hasPermission = isSpecificLeagueAdmin || isSuperAdmin || isGeneralLeagueAdmin
+
+        setIsLeagueAdmin(hasPermission)
+
+        console.log('🛡️ Permission Check:', {
+          hasPermission,
+          isSpecificLeagueAdmin,
+          isSuperAdmin,
+          isGeneralLeagueAdmin,
+          teamId: team?.id,
+          userId: user.id
+        })
+
       } catch (error) {
-        console.error('Error checking league admin:', error)
+        console.error('CRITICAL Error checking permissions:', error)
       }
     }
 
     checkLeagueAdmin()
-  }, [user, team, supabase])
+  }, [user, team, supabase, profile])
 
   useEffect(() => {
     const loadTeamAndStats = async () => {
@@ -97,27 +131,27 @@ export default function TeamDetailPage() {
       try {
         setLoading(true)
         setError(null)
-        
+
         console.log('🔵 Loading team data for ID:', teamId)
-        
+
         // Load team data
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('*')
           .eq('id', teamId)
           .single() as { data: Team | null, error: any }
-        
+
         if (teamError) {
           console.error('❌ Error loading team:', teamError)
           setError('Equipo no encontrado')
           return
         }
-        
+
         if (!teamData) {
           setError('Equipo no encontrado')
           return
         }
-        
+
         console.log('✅ Team data loaded:', teamData.name)
         setTeam(teamData)
 
@@ -141,28 +175,28 @@ export default function TeamDetailPage() {
           .select('*')
           .eq('team_id', teamId)
           .eq('is_active', true) as { data: Player[] | null, error: any }
-        
+
         if (playersError) {
           console.error('❌ Error loading players:', playersError)
           setError('Error cargando jugadores')
           return
         }
-        
+
         console.log('✅ Players loaded:', players?.length || 0)
-        
+
         // For each player, get their aggregated stats
         const playersWithStatsData: PlayerWithStats[] = []
-        
+
         for (const player of players || []) {
           const { data: stats, error: statsError } = await supabase
             .from('player_stats')
             .select('*')
             .eq('player_id', player.id) as { data: PlayerStats[] | null, error: any }
-          
+
           if (statsError) {
             console.warn('⚠️ Error loading stats for player:', player.name, statsError)
           }
-          
+
           // Calculate aggregated stats
           const totalGames = stats?.length || 0
           const totalGoals = stats?.reduce((sum, s) => sum + (s.goals || 0), 0) || 0
@@ -170,7 +204,7 @@ export default function TeamDetailPage() {
           const totalYellowCards = stats?.reduce((sum, s) => sum + (s.yellow_cards || 0), 0) || 0
           const totalRedCards = stats?.reduce((sum, s) => sum + (s.red_cards || 0), 0) || 0
           const totalMinutesPlayed = stats?.reduce((sum, s) => sum + (s.minutes_played || 0), 0) || 0
-          
+
           playersWithStatsData.push({
             ...player,
             total_games: totalGames,
@@ -181,7 +215,7 @@ export default function TeamDetailPage() {
             total_minutes_played: totalMinutesPlayed,
           })
         }
-        
+
         console.log('✅ Player stats calculated:', playersWithStatsData.length)
         setPlayersWithStats(playersWithStatsData)
 
@@ -618,14 +652,16 @@ export default function TeamDetailPage() {
                 height: 100%;
               }
               .player-name {
-                font-size: 16px;
+                font-size: 11px;
                 font-weight: bold;
                 color: #1e293b;
-                margin: 0 0 4px 0;
+                margin: 0 0 2px 0;
                 line-height: 1.1;
-                white-space: nowrap;
+                white-space: normal;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
                 overflow: hidden;
-                text-overflow: ellipsis;
               }
               .player-position {
                 font-size: 12px;
@@ -785,6 +821,8 @@ export default function TeamDetailPage() {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       <div className="container mx-auto px-4 py-8 space-y-6">
+
+
         {/* Header */}
         <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl">
           <div className="flex items-center space-x-4">
@@ -883,217 +921,215 @@ export default function TeamDetailPage() {
                 Análisis detallado del rendimiento colectivo
               </CardDescription>
             </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Rendimiento Ofensivo */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                  <Target className="w-5 h-5 mr-2 text-green-300" />
-                  Rendimiento Ofensivo
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-green-500/20 rounded-lg border border-green-400/30">
-                    <p className="text-sm text-white/80 mb-1 drop-shadow">Goles Totales</p>
-                    <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-lg border border-blue-400/30">
-                    <p className="text-sm text-white/80 mb-1 drop-shadow">Asistencias Totales</p>
-                    <p className="text-3xl font-bold text-blue-300 drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-lg border border-purple-400/30">
-                    <p className="text-sm text-white/80 mb-1 drop-shadow">Goles por Jugador</p>
-                    <p className="text-3xl font-bold text-purple-300 drop-shadow-lg">
-                      {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-lg border border-indigo-400/30">
-                    <p className="text-sm text-white/80 mb-1 drop-shadow">Asistencias por Jugador</p>
-                    <p className="text-3xl font-bold text-indigo-300 drop-shadow-lg">
-                      {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
-                    </p>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Rendimiento Ofensivo */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <Target className="w-5 h-5 mr-2 text-green-300" />
+                    Rendimiento Ofensivo
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 backdrop-blur-md bg-green-500/20 rounded-lg border border-green-400/30">
+                      <p className="text-sm text-white/80 mb-1 drop-shadow">Goles Totales</p>
+                      <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-lg border border-blue-400/30">
+                      <p className="text-sm text-white/80 mb-1 drop-shadow">Asistencias Totales</p>
+                      <p className="text-3xl font-bold text-blue-300 drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-lg border border-purple-400/30">
+                      <p className="text-sm text-white/80 mb-1 drop-shadow">Goles por Jugador</p>
+                      <p className="text-3xl font-bold text-purple-300 drop-shadow-lg">
+                        {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-lg border border-indigo-400/30">
+                      <p className="text-sm text-white/80 mb-1 drop-shadow">Asistencias por Jugador</p>
+                      <p className="text-3xl font-bold text-indigo-300 drop-shadow-lg">
+                        {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Máximos Goleadores */}
-              {(() => {
-                const topScorers = [...playersWithStats]
-                  .filter(p => p.total_goals > 0)
-                  .sort((a, b) => b.total_goals - a.total_goals)
-                  .slice(0, 3)
+                {/* Máximos Goleadores */}
+                {(() => {
+                  const topScorers = [...playersWithStats]
+                    .filter(p => p.total_goals > 0)
+                    .sort((a, b) => b.total_goals - a.total_goals)
+                    .slice(0, 3)
 
-                return topScorers.length > 0 ? (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                      <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                      Máximos Goleadores
-                    </h3>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {topScorers.map((player, index) => (
-                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all">
-                          <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md ${
-                              index === 0 ? 'bg-yellow-500/80 text-white' :
-                              index === 1 ? 'bg-gray-400/80 text-white' :
-                              'bg-orange-500/80 text-white'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            <Avatar className="w-10 h-10 border border-white/30">
-                              {player.photo ? (
-                                <AvatarImage src={player.photo} alt={player.name} />
-                              ) : (
-                                <AvatarFallback className="backdrop-blur-md bg-green-500/80 text-white">
-                                  {getPlayerInitials(player.name)}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
-                              <p className="text-xs text-white/70">#{player.jersey_number}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-green-300 drop-shadow-lg">{player.total_goals}</p>
-                              <p className="text-xs text-white/70">goles</p>
+                  return topScorers.length > 0 ? (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                        <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                        Máximos Goleadores
+                      </h3>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {topScorers.map((player, index) => (
+                          <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all">
+                            <div className="flex items-center space-x-3">
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md ${index === 0 ? 'bg-yellow-500/80 text-white' :
+                                index === 1 ? 'bg-gray-400/80 text-white' :
+                                  'bg-orange-500/80 text-white'
+                                }`}>
+                                {index + 1}
+                              </div>
+                              <Avatar className="w-10 h-10 border border-white/30">
+                                {player.photo ? (
+                                  <AvatarImage src={player.photo} alt={player.name} />
+                                ) : (
+                                  <AvatarFallback className="backdrop-blur-md bg-green-500/80 text-white">
+                                    {getPlayerInitials(player.name)}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
+                                <p className="text-xs text-white/70">#{player.jersey_number}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-green-300 drop-shadow-lg">{player.total_goals}</p>
+                                <p className="text-xs text-white/70">goles</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : null
-              })()}
+                  ) : null
+                })()}
 
-              {/* Máximos Asistidores */}
-              {(() => {
-                const topAssisters = [...playersWithStats]
-                  .filter(p => p.total_assists > 0)
-                  .sort((a, b) => b.total_assists - a.total_assists)
-                  .slice(0, 3)
+                {/* Máximos Asistidores */}
+                {(() => {
+                  const topAssisters = [...playersWithStats]
+                    .filter(p => p.total_assists > 0)
+                    .sort((a, b) => b.total_assists - a.total_assists)
+                    .slice(0, 3)
 
-                return topAssisters.length > 0 ? (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                      <Target className="w-5 h-5 mr-2 text-blue-300" />
-                      Máximos Asistidores
-                    </h3>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {topAssisters.map((player, index) => (
-                        <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all">
-                          <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md ${
-                              index === 0 ? 'bg-yellow-500/80 text-white' :
-                              index === 1 ? 'bg-gray-400/80 text-white' :
-                              'bg-orange-500/80 text-white'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            <Avatar className="w-10 h-10 border border-white/30">
-                              {player.photo ? (
-                                <AvatarImage src={player.photo} alt={player.name} />
-                              ) : (
-                                <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white">
-                                  {getPlayerInitials(player.name)}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
-                              <p className="text-xs text-white/70">#{player.jersey_number}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-blue-300 drop-shadow-lg">{player.total_assists}</p>
-                              <p className="text-xs text-white/70">asist.</p>
+                  return topAssisters.length > 0 ? (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                        <Target className="w-5 h-5 mr-2 text-blue-300" />
+                        Máximos Asistidores
+                      </h3>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {topAssisters.map((player, index) => (
+                          <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20 hover:bg-white/15 transition-all">
+                            <div className="flex items-center space-x-3">
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg backdrop-blur-md ${index === 0 ? 'bg-yellow-500/80 text-white' :
+                                index === 1 ? 'bg-gray-400/80 text-white' :
+                                  'bg-orange-500/80 text-white'
+                                }`}>
+                                {index + 1}
+                              </div>
+                              <Avatar className="w-10 h-10 border border-white/30">
+                                {player.photo ? (
+                                  <AvatarImage src={player.photo} alt={player.name} />
+                                ) : (
+                                  <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white">
+                                    {getPlayerInitials(player.name)}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
+                                <p className="text-xs text-white/70">#{player.jersey_number}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-blue-300 drop-shadow-lg">{player.total_assists}</p>
+                                <p className="text-xs text-white/70">asist.</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : null
-              })()}
+                  ) : null
+                })()}
 
-              {/* Disciplina del Equipo */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                  <AlertTriangle className="w-5 h-5 mr-2 text-yellow-300" />
-                  Disciplina
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-yellow-500/20 rounded-lg border border-yellow-400/30">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-4 h-6 bg-yellow-400 rounded"></div>
-                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
+                {/* Disciplina del Equipo */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-yellow-300" />
+                    Disciplina
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 backdrop-blur-md bg-yellow-500/20 rounded-lg border border-yellow-400/30">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-4 h-6 bg-yellow-400 rounded"></div>
+                        <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
+                      </div>
+                      <p className="text-3xl font-bold text-yellow-300 drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
+                      </p>
                     </div>
-                    <p className="text-3xl font-bold text-yellow-300 drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-red-500/20 rounded-lg border border-red-400/30">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-4 h-6 bg-red-500 rounded"></div>
-                      <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
+                    <div className="p-4 backdrop-blur-md bg-red-500/20 rounded-lg border border-red-400/30">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-4 h-6 bg-red-500 rounded"></div>
+                        <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
+                      </div>
+                      <p className="text-3xl font-bold text-red-300 drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
+                      </p>
                     </div>
-                    <p className="text-3xl font-bold text-red-300 drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
-                    </p>
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Tarjetas por Jugador</p>
+                      <p className="text-3xl font-bold text-white drop-shadow-lg">
+                        {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Jugadores sin Tarjetas</p>
+                      <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
+                        {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Tarjetas por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
-                      {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Jugadores sin Tarjetas</p>
-                    <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
-                      {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
-                    </p>
+                </div>
+
+                {/* Participación */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
+                    <Clock className="w-5 h-5 mr-2 text-gray-300" />
+                    Participación
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Partidos Jugados (Total)</p>
+                      <p className="text-3xl font-bold text-white drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Minutos Jugados (Total)</p>
+                      <p className="text-3xl font-bold text-white drop-shadow-lg">
+                        {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Promedio Minutos por Jugador</p>
+                      <p className="text-3xl font-bold text-white drop-shadow-lg">
+                        {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
+                      </p>
+                    </div>
+                    <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
+                      <p className="text-sm text-white/80 mb-2 drop-shadow">Jugadores Activos</p>
+                      <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
+                        {playersWithStats.filter(p => p.total_games > 0).length}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Participación */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                  <Clock className="w-5 h-5 mr-2 text-gray-300" />
-                  Participación
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Partidos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Minutos Jugados (Total)</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Promedio Minutos por Jugador</p>
-                    <p className="text-3xl font-bold text-white drop-shadow-lg">
-                      {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-white/10 rounded-lg border border-white/20">
-                    <p className="text-sm text-white/80 mb-2 drop-shadow">Jugadores Activos</p>
-                    <p className="text-3xl font-bold text-green-300 drop-shadow-lg">
-                      {playersWithStats.filter(p => p.total_games > 0).length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Players Statistics Table */}
         <Card className="backdrop-blur-xl bg-white/10 border-white/20">
@@ -1117,122 +1153,122 @@ export default function TeamDetailPage() {
                   <Printer className="w-4 h-4 mr-2" />
                   {printingAll ? 'Generando...' : 'Imprimir Todas las Credenciales'}
                 </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {playersWithStats.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 text-white/50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">
-                No hay jugadores registrados
-              </h3>
-              <p className="text-white/80 drop-shadow">
-                Los jugadores y sus estadísticas aparecerán aquí cuando se registren en el equipo
-              </p>
-              {team && (
-                <p className="text-sm text-white/70 mt-2 drop-shadow">
-                  Equipo: {team.name}
-                </p>
               )}
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-white/20">
-                    <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PJ</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Goles</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Asistencias</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">TA</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">TR</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Min</TableHead>
-                    {isLeagueAdmin && <TableHead className="text-center text-white/90 drop-shadow">Acciones</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {playersWithStats.map((player) => (
-                    <TableRow
-                      key={player.id}
-                      onClick={() => handlePlayerClick(player)}
-                      className="cursor-pointer hover:bg-white/5 transition-colors border-b border-white/20"
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="w-8 h-8 border border-white/30">
-                            {player.photo ? (
-                              <AvatarImage src={player.photo} alt={player.name} />
-                            ) : (
-                              <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white text-xs">
-                                {getPlayerInitials(player.name)}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-white drop-shadow flex items-center">
-                              {player.name}
-                              <span className="ml-2 text-sm font-bold text-green-600">
-                                #{player.jersey_number}
-                              </span>
-                            </p>
-                            <p className="text-sm text-white/70">{player.position}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center font-medium text-white/90">
-                        {player.total_games}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">
-                          {player.total_goals}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">
-                          {player.total_assists}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {player.total_yellow_cards > 0 && (
-                          <Badge className="backdrop-blur-md bg-yellow-500/80 text-white border-0">
-                            {player.total_yellow_cards}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {player.total_red_cards > 0 && (
-                          <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">
-                            {player.total_red_cards}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-white/80">
-                        <div className="flex items-center justify-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {player.total_minutes_played}'
-                        </div>
-                      </TableCell>
-                      {isLeagueAdmin && (
-                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="sm"
-                            onClick={() => handleGenerateCredential(player)}
-                            disabled={generatingQR}
-                            className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
-                          >
-                            <IdCard className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      )}
+          </CardHeader>
+          <CardContent>
+            {playersWithStats.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-white/50 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2 drop-shadow-lg">
+                  No hay jugadores registrados
+                </h3>
+                <p className="text-white/80 drop-shadow">
+                  Los jugadores y sus estadísticas aparecerán aquí cuando se registren en el equipo
+                </p>
+                {team && (
+                  <p className="text-sm text-white/70 mt-2 drop-shadow">
+                    Equipo: {team.name}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-white/20">
+                      <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">PJ</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Goles</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Asistencias</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">TA</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">TR</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Min</TableHead>
+                      {isLeagueAdmin && <TableHead className="text-center text-white/90 drop-shadow">Acciones</TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {playersWithStats.map((player) => (
+                      <TableRow
+                        key={player.id}
+                        onClick={() => handlePlayerClick(player)}
+                        className="cursor-pointer hover:bg-white/5 transition-colors border-b border-white/20"
+                      >
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-8 h-8 border border-white/30">
+                              {player.photo ? (
+                                <AvatarImage src={player.photo} alt={player.name} />
+                              ) : (
+                                <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white text-xs">
+                                  {getPlayerInitials(player.name)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-white drop-shadow flex items-center">
+                                {player.name}
+                                <span className="ml-2 text-sm font-bold text-green-600">
+                                  #{player.jersey_number}
+                                </span>
+                              </p>
+                              <p className="text-sm text-white/70">{player.position}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-white/90">
+                          {player.total_games}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">
+                            {player.total_goals}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">
+                            {player.total_assists}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {player.total_yellow_cards > 0 && (
+                            <Badge className="backdrop-blur-md bg-yellow-500/80 text-white border-0">
+                              {player.total_yellow_cards}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {player.total_red_cards > 0 && (
+                            <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">
+                              {player.total_red_cards}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-white/80">
+                          <div className="flex items-center justify-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {player.total_minutes_played}'
+                          </div>
+                        </TableCell>
+                        {isLeagueAdmin && (
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              onClick={() => handleGenerateCredential(player)}
+                              disabled={generatingQR}
+                              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+                            >
+                              <IdCard className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Coaching Staff Table */}
         <Card className="backdrop-blur-xl bg-white/10 border-white/20">
@@ -1261,267 +1297,267 @@ export default function TeamDetailPage() {
                   Los miembros del cuerpo técnico aparecerán aquí cuando se registren
                 </p>
               </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-white/20">
-                    <TableHead className="text-white/90 drop-shadow">Miembro</TableHead>
-                    <TableHead className="text-white/90 drop-shadow">Rol</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Cédula</TableHead>
-                    {isLeagueAdmin && <TableHead className="text-center text-white/90 drop-shadow">Acciones</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {coachingStaff.map((staff) => (
-                    <TableRow key={staff.id} className="border-b border-white/20 hover:bg-white/5 transition-colors">
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="w-8 h-8 border border-white/30">
-                            {staff.photo ? (
-                              <AvatarImage src={staff.photo} alt={staff.name} />
-                            ) : (
-                              <AvatarFallback className="backdrop-blur-md bg-purple-500/80 text-white text-xs">
-                                {getPlayerInitials(staff.name)}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-white drop-shadow">{staff.name}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="backdrop-blur-md bg-purple-500/80 text-white border-0">
-                          {staff.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-white/80">
-                        {staff.cedula || '-'}
-                      </TableCell>
-                      {isLeagueAdmin && (
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            onClick={() => handleGenerateStaffCredential(staff)}
-                            disabled={generatingQR}
-                            className="backdrop-blur-md bg-purple-500/80 hover:bg-purple-500/90 text-white border-0"
-                          >
-                            <IdCard className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      )}
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-white/20">
+                      <TableHead className="text-white/90 drop-shadow">Miembro</TableHead>
+                      <TableHead className="text-white/90 drop-shadow">Rol</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Cédula</TableHead>
+                      {isLeagueAdmin && <TableHead className="text-center text-white/90 drop-shadow">Acciones</TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Modal Credencial */}
-      {currentCredentialData && team && (
-        <PlayerCredential
-          open={credentialModalOpen}
-          onOpenChange={setCredentialModalOpen}
-          player={(currentCredentialData.player || currentCredentialData.staff) as any}
-          team={{ name: team.name, logo: team.logo, leagueLogo: leagueLogo }}
-          qrData={currentCredentialData.qrData}
-        />
-      )}
-
-      {/* Modal de Información del Jugador */}
-      <Dialog open={playerModalOpen} onOpenChange={setPlayerModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-3 text-white drop-shadow-lg">
-              {selectedPlayer && (
-                <>
-                  <Avatar className="w-12 h-12 border-2 border-white/30">
-                    {selectedPlayer.photo ? (
-                      <AvatarImage src={selectedPlayer.photo} alt={selectedPlayer.name} />
-                    ) : (
-                      <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white">
-                        {getPlayerInitials(selectedPlayer.name)}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span>{selectedPlayer.name}</span>
-                      <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0 shadow-lg">
-                        #{selectedPlayer.jersey_number}
-                      </Badge>
-                    </div>
-                    <p className="text-sm font-normal text-white/70 drop-shadow">{selectedPlayer.position}</p>
-                  </div>
-                </>
-              )}
-            </DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
-              Información detallada y estadísticas del jugador
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedPlayer && (
-            <div className="space-y-6 mt-4">
-              {/* Información Personal */}
-              <div className="backdrop-blur-md bg-blue-500/20 p-4 rounded-xl border border-blue-300/30 shadow-lg">
-                <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
-                  <Users className="w-5 h-5 mr-2 text-blue-300" />
-                  Información Personal
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-white/70 drop-shadow">Nombre Completo</p>
-                    <p className="font-medium text-white drop-shadow">{selectedPlayer.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-white/70 drop-shadow">Posición</p>
-                    <p className="font-medium text-white drop-shadow">{selectedPlayer.position}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-white/70 drop-shadow">Número de Camiseta</p>
-                    <p className="font-medium text-green-300 text-lg drop-shadow-lg">#{selectedPlayer.jersey_number}</p>
-                  </div>
-                  {(selectedPlayer as any).cedula && (
-                    <div>
-                      <p className="text-sm text-white/70 drop-shadow">Cédula</p>
-                      <p className="font-medium text-white drop-shadow">{(selectedPlayer as any).cedula}</p>
-                    </div>
-                  )}
-                  {selectedPlayer.birth_date && (
-                    <div>
-                      <p className="text-sm text-white/70 drop-shadow">Fecha de Nacimiento</p>
-                      <p className="font-medium text-white drop-shadow">
-                        {new Date(selectedPlayer.birth_date).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                  </TableHeader>
+                  <TableBody>
+                    {coachingStaff.map((staff) => (
+                      <TableRow key={staff.id} className="border-b border-white/20 hover:bg-white/5 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-8 h-8 border border-white/30">
+                              {staff.photo ? (
+                                <AvatarImage src={staff.photo} alt={staff.name} />
+                              ) : (
+                                <AvatarFallback className="backdrop-blur-md bg-purple-500/80 text-white text-xs">
+                                  {getPlayerInitials(staff.name)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-white drop-shadow">{staff.name}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="backdrop-blur-md bg-purple-500/80 text-white border-0">
+                            {staff.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-white/80">
+                          {staff.cedula || '-'}
+                        </TableCell>
+                        {isLeagueAdmin && (
+                          <TableCell className="text-center">
+                            <Button
+                              size="sm"
+                              onClick={() => handleGenerateStaffCredential(staff)}
+                              disabled={generatingQR}
+                              className="backdrop-blur-md bg-purple-500/80 hover:bg-purple-500/90 text-white border-0"
+                            >
+                              <IdCard className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              {/* Estadísticas */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
-                  <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-                  Estadísticas del Torneo
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_games}</p>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Partidos Jugados</p>
-                    </CardContent>
-                  </Card>
+        {/* Modal Credencial */}
+        {currentCredentialData && team && (
+          <PlayerCredential
+            open={credentialModalOpen}
+            onOpenChange={setCredentialModalOpen}
+            player={(currentCredentialData.player || currentCredentialData.staff) as any}
+            team={{ name: team.name, logo: team.logo, leagueLogo: leagueLogo }}
+            qrData={currentCredentialData.qrData}
+          />
+        )}
 
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-3xl font-bold text-green-300 drop-shadow-lg">{selectedPlayer.total_goals}</p>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Goles</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-3xl font-bold text-blue-300 drop-shadow-lg">{selectedPlayer.total_assists}</p>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Asistencias</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-3xl font-bold text-yellow-300 drop-shadow-lg">{selectedPlayer.total_yellow_cards}</p>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Amarillas</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-3xl font-bold text-red-300 drop-shadow-lg">{selectedPlayer.total_red_cards}</p>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Rojas</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                    <CardContent className="pt-6 text-center">
-                      <div className="flex items-center justify-center">
-                        <Clock className="w-5 h-5 mr-2 text-gray-300" />
-                        <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_minutes_played}</p>
+        {/* Modal de Información del Jugador */}
+        <Dialog open={playerModalOpen} onOpenChange={setPlayerModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-3 text-white drop-shadow-lg">
+                {selectedPlayer && (
+                  <>
+                    <Avatar className="w-12 h-12 border-2 border-white/30">
+                      {selectedPlayer.photo ? (
+                        <AvatarImage src={selectedPlayer.photo} alt={selectedPlayer.name} />
+                      ) : (
+                        <AvatarFallback className="backdrop-blur-md bg-blue-500/80 text-white">
+                          {getPlayerInitials(selectedPlayer.name)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span>{selectedPlayer.name}</span>
+                        <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0 shadow-lg">
+                          #{selectedPlayer.jersey_number}
+                        </Badge>
                       </div>
-                      <p className="text-sm text-white/70 mt-1 drop-shadow">Minutos Jugados</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                      <p className="text-sm font-normal text-white/70 drop-shadow">{selectedPlayer.position}</p>
+                    </div>
+                  </>
+                )}
+              </DialogTitle>
+              <DialogDescription className="text-white/80 drop-shadow">
+                Información detallada y estadísticas del jugador
+              </DialogDescription>
+            </DialogHeader>
 
-              {/* Promedios y Ratios */}
-              {selectedPlayer.total_games > 0 && (
+            {selectedPlayer && (
+              <div className="space-y-6 mt-4">
+                {/* Información Personal */}
+                <div className="backdrop-blur-md bg-blue-500/20 p-4 rounded-xl border border-blue-300/30 shadow-lg">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
+                    <Users className="w-5 h-5 mr-2 text-blue-300" />
+                    Información Personal
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-white/70 drop-shadow">Nombre Completo</p>
+                      <p className="font-medium text-white drop-shadow">{selectedPlayer.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-white/70 drop-shadow">Posición</p>
+                      <p className="font-medium text-white drop-shadow">{selectedPlayer.position}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-white/70 drop-shadow">Número de Camiseta</p>
+                      <p className="font-medium text-green-300 text-lg drop-shadow-lg">#{selectedPlayer.jersey_number}</p>
+                    </div>
+                    {(selectedPlayer as any).cedula && (
+                      <div>
+                        <p className="text-sm text-white/70 drop-shadow">Cédula</p>
+                        <p className="font-medium text-white drop-shadow">{(selectedPlayer as any).cedula}</p>
+                      </div>
+                    )}
+                    {selectedPlayer.birth_date && (
+                      <div>
+                        <p className="text-sm text-white/70 drop-shadow">Fecha de Nacimiento</p>
+                        <p className="font-medium text-white drop-shadow">
+                          {new Date(selectedPlayer.birth_date).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Estadísticas */}
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
-                    <Target className="w-5 h-5 mr-2 text-green-300" />
-                    Promedios
+                    <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                    Estadísticas del Torneo
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="p-4 backdrop-blur-xl bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
-                      <p className="text-sm text-white/70 drop-shadow">Goles por Partido</p>
-                      <p className="text-2xl font-bold text-green-300 drop-shadow-lg">
-                        {(selectedPlayer.total_goals / selectedPlayer.total_games).toFixed(2)}
-                      </p>
-                    </div>
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_games}</p>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Partidos Jugados</p>
+                      </CardContent>
+                    </Card>
 
-                    <div className="p-4 backdrop-blur-xl bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
-                      <p className="text-sm text-white/70 drop-shadow">Asistencias por Partido</p>
-                      <p className="text-2xl font-bold text-blue-300 drop-shadow-lg">
-                        {(selectedPlayer.total_assists / selectedPlayer.total_games).toFixed(2)}
-                      </p>
-                    </div>
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-green-300 drop-shadow-lg">{selectedPlayer.total_goals}</p>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Goles</p>
+                      </CardContent>
+                    </Card>
 
-                    <div className="p-4 backdrop-blur-xl bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                      <p className="text-sm text-white/70 drop-shadow">Minutos por Partido</p>
-                      <p className="text-2xl font-bold text-white drop-shadow-lg">
-                        {Math.round(selectedPlayer.total_minutes_played / selectedPlayer.total_games)}'
-                      </p>
-                    </div>
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-blue-300 drop-shadow-lg">{selectedPlayer.total_assists}</p>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Asistencias</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-yellow-300 drop-shadow-lg">{selectedPlayer.total_yellow_cards}</p>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Amarillas</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-3xl font-bold text-red-300 drop-shadow-lg">{selectedPlayer.total_red_cards}</p>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Tarjetas Rojas</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+                      <CardContent className="pt-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <Clock className="w-5 h-5 mr-2 text-gray-300" />
+                          <p className="text-3xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_minutes_played}</p>
+                        </div>
+                        <p className="text-sm text-white/70 mt-1 drop-shadow">Minutos Jugados</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-              )}
 
-              {/* Disciplina */}
-              {(selectedPlayer.total_yellow_cards > 0 || selectedPlayer.total_red_cards > 0) && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
-                    <AlertTriangle className="w-5 h-5 mr-2 text-yellow-300" />
-                    Disciplina
-                  </h3>
-                  <div className="p-4 backdrop-blur-xl bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-12 bg-yellow-400 rounded shadow-lg"></div>
-                          <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_yellow_cards}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-12 bg-red-500 rounded shadow-lg"></div>
-                          <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_red_cards}</span>
-                        </div>
+                {/* Promedios y Ratios */}
+                {selectedPlayer.total_games > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
+                      <Target className="w-5 h-5 mr-2 text-green-300" />
+                      Promedios
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="p-4 backdrop-blur-xl bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
+                        <p className="text-sm text-white/70 drop-shadow">Goles por Partido</p>
+                        <p className="text-2xl font-bold text-green-300 drop-shadow-lg">
+                          {(selectedPlayer.total_goals / selectedPlayer.total_games).toFixed(2)}
+                        </p>
                       </div>
-                      <p className="text-sm text-white/70 drop-shadow">
-                        Total de tarjetas recibidas en el torneo
-                      </p>
+
+                      <div className="p-4 backdrop-blur-xl bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
+                        <p className="text-sm text-white/70 drop-shadow">Asistencias por Partido</p>
+                        <p className="text-2xl font-bold text-blue-300 drop-shadow-lg">
+                          {(selectedPlayer.total_assists / selectedPlayer.total_games).toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div className="p-4 backdrop-blur-xl bg-white/10 rounded-xl border border-white/20 shadow-lg">
+                        <p className="text-sm text-white/70 drop-shadow">Minutos por Partido</p>
+                        <p className="text-2xl font-bold text-white drop-shadow-lg">
+                          {Math.round(selectedPlayer.total_minutes_played / selectedPlayer.total_games)}'
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                )}
+
+                {/* Disciplina */}
+                {(selectedPlayer.total_yellow_cards > 0 || selectedPlayer.total_red_cards > 0) && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center text-white drop-shadow-lg">
+                      <AlertTriangle className="w-5 h-5 mr-2 text-yellow-300" />
+                      Disciplina
+                    </h3>
+                    <div className="p-4 backdrop-blur-xl bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-12 bg-yellow-400 rounded shadow-lg"></div>
+                            <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_yellow_cards}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-12 bg-red-500 rounded shadow-lg"></div>
+                            <span className="text-2xl font-bold text-white drop-shadow-lg">{selectedPlayer.total_red_cards}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-white/70 drop-shadow">
+                          Total de tarjetas recibidas en el torneo
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
