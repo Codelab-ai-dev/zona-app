@@ -59,7 +59,11 @@ dependencies:
   
   # Local storage
   shared_preferences: ^2.3.2
-  
+  flutter_secure_storage: ^9.2.2
+
+  # Network connectivity
+  connectivity_plus: ^6.1.0
+
   # Supabase client
   supabase_flutter: ^2.8.0
   

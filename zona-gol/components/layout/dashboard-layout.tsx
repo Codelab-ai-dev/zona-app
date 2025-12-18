@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { Menu, LogOut, User, Smartphone } from "lucide-react"
+import { Menu, LogOut, User, Smartphone, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useLeagueFeatures } from "@/lib/hooks/use-league-features"
+import { PRODUCT_MODE_CONFIG } from "@/lib/types/product-mode"
 import {
   Dialog,
   DialogContent,
@@ -30,6 +32,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile, signOut } = useAuth()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Get league features for league_admin users
+  const { productMode, loading: loadingFeatures } = useLeagueFeatures(
+    profile?.role === 'league_admin' ? profile?.league_id : undefined
+  )
 
   // Activar detector de inactividad (20 minutos por defecto)
   useIdleTimeout({
@@ -101,6 +108,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 )}
               </div>
             </div>
+
+            {/* Center - Product Mode Badge (Desktop Only) */}
+            {profile?.role === 'league_admin' && !loadingFeatures && productMode && (
+              <div className="hidden lg:flex items-center gap-2 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2">
+                <Sparkles className="w-4 h-4 text-white" />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white drop-shadow">
+                    {PRODUCT_MODE_CONFIG[productMode].icon} {PRODUCT_MODE_CONFIG[productMode].label}
+                  </span>
+                  <Badge className={productMode === 'full' ? 'bg-blue-500/80 text-white' : 'bg-amber-500/80 text-white'}>
+                    {PRODUCT_MODE_CONFIG[productMode].price}
+                  </Badge>
+                </div>
+              </div>
+            )}
 
             {/* Right side - Actions */}
             <div className="flex items-center space-x-3">
@@ -192,6 +214,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         )}
 
                         <Separator className="my-2" />
+
+                        {/* Product Mode Badge - Mobile */}
+                        {profile?.role === 'league_admin' && !loadingFeatures && productMode && (
+                          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-4 border">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-full bg-primary/10">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                  Plan Actual
+                                </p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-bold">
+                                    {PRODUCT_MODE_CONFIG[productMode].icon} {PRODUCT_MODE_CONFIG[productMode].label}
+                                  </span>
+                                  <Badge className={productMode === 'full' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white'}>
+                                    {PRODUCT_MODE_CONFIG[productMode].price}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Quick Stats or Info */}
                         <div className="bg-muted/50 rounded-lg p-4">

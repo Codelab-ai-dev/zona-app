@@ -26,6 +26,8 @@ import { fileUploadService } from "@/lib/utils/file-upload"
 import { FileUpload } from "@/components/ui/file-upload"
 import { Plus, Edit, Trash2, Users, Copy, Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { ProductModeSelector } from "@/components/super-admin/product-mode-selector"
+import type { ProductMode } from "@/lib/types/product-mode"
 
 // Definir tipos
 type League = Database['public']['Tables']['leagues']['Row']
@@ -49,6 +51,7 @@ export function LeagueManagement() {
     adminEmail: "",
     adminPhone: "",
     logo: "",
+    product_mode: "full" as ProductMode,
   })
   const [logoFile, setLogoFile] = useState<File | null>(null)
 
@@ -115,6 +118,7 @@ export function LeagueManagement() {
       const leagueName = formData.name
       const leagueSlug = formData.slug
       const leagueDescription = formData.description
+      const productMode = formData.product_mode
 
       // 3. Preparar datos para el modal ANTES de crear nada
       setGeneratedPassword(adminPassword)
@@ -137,7 +141,7 @@ export function LeagueManagement() {
       console.log('📋 Datos preparados para modal ANTES de operaciones async')
 
       // 4. Limpiar formulario y cerrar diálogo de creación INMEDIATAMENTE
-      setFormData({ name: "", slug: "", description: "", adminName: "", adminEmail: "", adminPhone: "", logo: "" })
+      setFormData({ name: "", slug: "", description: "", adminName: "", adminEmail: "", adminPhone: "", logo: "", product_mode: "full" as ProductMode })
       setLogoFile(null)
       setIsCreateDialogOpen(false)
 
@@ -257,7 +261,8 @@ export function LeagueManagement() {
             description: leagueDescription || `Liga ${leagueName}`,
             admin_id: adminProfile.id,
             logo: logoUrl || null,
-            is_active: true
+            is_active: true,
+            product_mode: productMode || 'full'
           })
 
           console.log('🏆 Liga creada en background:', league)
@@ -545,7 +550,7 @@ export function LeagueManagement() {
                 Nueva Liga
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="text-white drop-shadow-lg">Crear Nueva Liga</DialogTitle>
                 <DialogDescription className="text-white/80 drop-shadow">
@@ -597,6 +602,13 @@ export function LeagueManagement() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Descripción de la liga..."
                     className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  />
+                </div>
+
+                <div className="border-t border-white/20 pt-4">
+                  <ProductModeSelector
+                    value={formData.product_mode}
+                    onChange={(mode) => setFormData({ ...formData, product_mode: mode })}
                   />
                 </div>
 
@@ -733,13 +745,25 @@ export function LeagueManagement() {
           <Card key={league.id} className="relative backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
             <CardHeader>
               <div className="flex justify-between items-start">
-                <div>
+                <div className="flex-1">
                   <CardTitle className="text-base sm:text-lg text-white drop-shadow-lg">{league.name}</CardTitle>
                   <CardDescription className="text-sm text-white/70 drop-shadow">/{league.slug}</CardDescription>
+                  <div className="flex gap-2 mt-2">
+                    <Badge variant={league.is_active ? "default" : "secondary"} className={league.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0" : "backdrop-blur-md bg-gray-500/80 text-white border-0"}>
+                      {league.is_active ? "Activa" : "Inactiva"}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`backdrop-blur-md text-white border-0 ${
+                        (league as any).product_mode === 'full'
+                          ? 'bg-blue-500/80'
+                          : 'bg-amber-500/80'
+                      }`}
+                    >
+                      {(league as any).product_mode === 'full' ? '🏆 Completo' : '🌐 Web'}
+                    </Badge>
+                  </div>
                 </div>
-                <Badge variant={league.is_active ? "default" : "secondary"} className={league.is_active ? "backdrop-blur-md bg-green-500/80 text-white border-0" : "backdrop-blur-md bg-gray-500/80 text-white border-0"}>
-                  {league.is_active ? "Activa" : "Inactiva"}
-                </Badge>
               </div>
             </CardHeader>
             <CardContent>

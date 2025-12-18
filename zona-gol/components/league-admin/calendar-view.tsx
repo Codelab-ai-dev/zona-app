@@ -15,6 +15,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
 import { analyzeTeamActivity, generateRoundRobinSchedule, getNextMatchDate, CalendarAdjustmentResult } from "@/lib/utils/calendar-adjuster"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { generateMatchScheduleEmbedding } from "@/lib/utils/generate-embeddings"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -56,6 +57,8 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
   const [adjustmentAnalysis, setAdjustmentAnalysis] = useState<CalendarAdjustmentResult | null>(null)
   const [adjusting, setAdjusting] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (leagueId) {
@@ -269,6 +272,12 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
       // Recargar partidos para reflejar los cambios
       if (selectedTournamentId) {
         await loadMatches(selectedTournamentId)
+      }
+
+      // Generate embedding for updated match schedule (async, don't wait)
+      if (match.round && leagueId && selectedTournamentId) {
+        generateMatchScheduleEmbedding(leagueId, selectedTournamentId, match.round)
+          .catch(err => console.warn('Error generando embedding:', err))
       }
 
       // Mensaje de éxito
@@ -591,8 +600,6 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
       }
 
       let currentDate = new Date(startDate)
-      let timeIndex = 0
-      let fieldIndex = 1
 
       const newMatches: Database['public']['Tables']['matches']['Insert'][] = []
 
@@ -606,37 +613,62 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         // Obtener el equipo que descansa en esta jornada (si existe)
         const byeTeam = round.matches[0]?.byeTeam
 
-        round.matches.forEach(match => {
-          const assignedTime = matchTimes[timeIndex % matchTimes.length]
-          const field = fieldIndex
+        // NUEVA LÓGICA CORREGIDA: Programar todos los partidos de la jornada
+        const matchesInRound = round.matches.length
+        const slotsPerDay = matchTimes.length * config.fieldsAvailable
+
+        // Calcular cuántos días se necesitan para esta jornada
+        const daysNeeded = Math.ceil(matchesInRound / slotsPerDay)
+
+        console.log(`📅 Jornada ${adjustedRoundNumber}: ${matchesInRound} partidos, ${config.fieldsAvailable} canchas, ${matchTimes.length} horarios`)
+        console.log(`   → Slots por día: ${slotsPerDay}, Días necesarios: ${daysNeeded}`)
+
+        // Fecha inicial para esta jornada
+        let roundDate = new Date(currentDate)
+        let lastMatchDate = roundDate  // Rastrear la fecha del último partido
+
+        round.matches.forEach((match, matchIndex) => {
+          // Calcular en qué slot va este partido (0, 1, 2, 3, ...)
+          const slotNumber = matchIndex
+
+          // Calcular en qué día va este slot
+          const dayOffset = Math.floor(slotNumber / slotsPerDay)
+
+          // Calcular posición dentro del día
+          const slotInDay = slotNumber % slotsPerDay
+
+          // Calcular cancha y horario
+          const fieldNumber = (slotInDay % config.fieldsAvailable) + 1
+          const timeSlotIndex = Math.floor(slotInDay / config.fieldsAvailable)
+          const assignedTime = matchTimes[timeSlotIndex]
+
+          // Calcular la fecha correcta para este partido
+          let matchDate = new Date(roundDate)
+          for (let i = 0; i < dayOffset; i++) {
+            matchDate = getNextValidMatchDate(matchDate, config.matchDays)
+          }
+
+          // Actualizar la fecha del último partido procesado
+          lastMatchDate = matchDate
+
+          console.log(`   Partido ${matchIndex + 1}/${matchesInRound}: Slot ${slotNumber}, Día ${dayOffset}, Campo ${fieldNumber}, Hora ${assignedTime}, Fecha: ${matchDate.toISOString().split('T')[0]}`)
 
           newMatches.push({
             tournament_id: selectedTournamentId,
             home_team_id: match.home.id,
             away_team_id: match.away.id,
-            match_date: `${currentDate.toISOString().split('T')[0]}T${assignedTime}:00`,
+            match_date: `${matchDate.toISOString().split('T')[0]}T${assignedTime}:00`,
             match_time: assignedTime,
-            field_number: field,
+            field_number: fieldNumber,
             round: adjustedRoundNumber,
             status: 'scheduled',
             bye_team_id: byeTeam?.id || null
           })
-
-          timeIndex++
-          if (timeIndex >= matchTimes.length) {
-            timeIndex = 0
-            fieldIndex++
-            if (fieldIndex > config.fieldsAvailable) {
-              fieldIndex = 1
-              currentDate = getNextValidMatchDate(currentDate, config.matchDays)
-            }
-          }
         })
 
-        // Después de cada jornada, resetear y avanzar fecha
-        timeIndex = 0
-        fieldIndex = 1
-        currentDate = getNextValidMatchDate(currentDate, config.matchDays)
+        // Después de cada jornada, avanzar al siguiente día válido desde el ÚLTIMO día usado
+        currentDate = getNextValidMatchDate(lastMatchDate, config.matchDays)
+        console.log(`✅ Jornada ${adjustedRoundNumber} completa. Último partido: ${lastMatchDate.toISOString().split('T')[0]}, Próxima jornada: ${currentDate.toISOString().split('T')[0]}`)
       })
 
       // 5. Insertar nuevos partidos
@@ -663,6 +695,61 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
       setMessage({ type: 'error', text: `Error ajustando calendario: ${error.message || 'Error desconocido'}` })
     } finally {
       setAdjusting(false)
+    }
+  }
+
+  const deleteAllCalendar = async () => {
+    if (!selectedTournamentId) {
+      setMessage({ type: 'error', text: 'Selecciona un torneo primero' })
+      return
+    }
+
+    setDeleting(true)
+    setMessage(null)
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // Obtener información del torneo para el mensaje
+      const tournament = tournaments.find(t => t.id === selectedTournamentId)
+
+      // Contar partidos antes de eliminar
+      const { count: totalMatches } = await supabase
+        .from('matches')
+        .select('*', { count: 'exact', head: true })
+        .eq('tournament_id', selectedTournamentId)
+
+      if (!totalMatches || totalMatches === 0) {
+        setMessage({ type: 'error', text: 'No hay partidos para eliminar' })
+        setIsDeleteDialogOpen(false)
+        setDeleting(false)
+        return
+      }
+
+      // Eliminar TODOS los partidos del torneo (incluyendo finalizados)
+      const { error: deleteError } = await supabase
+        .from('matches')
+        .delete()
+        .eq('tournament_id', selectedTournamentId)
+
+      if (deleteError) throw new Error(deleteError.message)
+
+      setMessage({
+        type: 'success',
+        text: `Calendario eliminado exitosamente. Se eliminaron ${totalMatches} partidos del torneo "${tournament?.name || 'seleccionado'}".`
+      })
+
+      setIsDeleteDialogOpen(false)
+
+      // Recargar partidos para mostrar la lista vacía
+      setMatches([])
+      setEditingMatches([])
+
+    } catch (error: any) {
+      console.error('Error deleting calendar:', error)
+      setMessage({ type: 'error', text: `Error eliminando calendario: ${error.message || 'Error desconocido'}` })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -757,7 +844,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Calendario de Partidos</h2>
           <p className="text-white/80 drop-shadow">Visualiza y edita los partidos programados</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             onClick={analyzeCalendar}
             disabled={loading || !selectedTournamentId}
@@ -765,6 +852,14 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           >
             <Settings className="w-4 h-4 mr-2" />
             Ajustar Calendario
+          </Button>
+          <Button
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={loading || !selectedTournamentId || matches.length === 0}
+            className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+          >
+            <Trash className="w-4 h-4 mr-2" />
+            Eliminar Calendario
           </Button>
           <Button
             onClick={() => selectedTournamentId && loadMatches(selectedTournamentId)}
@@ -1737,6 +1832,127 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               </Alert>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de eliminación de calendario */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-lg backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-900/95 border-red-400/30 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-white drop-shadow-lg">
+              <AlertTriangle className="w-6 h-6 text-red-300" />
+              Eliminar Todo el Calendario
+            </DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
+              Esta acción eliminará TODOS los partidos del torneo seleccionado
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Advertencia principal */}
+            <Alert className="backdrop-blur-xl border-red-300/30 bg-red-500/20 shadow-xl">
+              <AlertTriangle className="w-4 h-4 text-red-300" />
+              <AlertDescription className="ml-2 text-white drop-shadow">
+                <strong>¡ADVERTENCIA!</strong> Esta acción es irreversible y eliminará:
+              </AlertDescription>
+            </Alert>
+
+            {/* Lista de lo que se eliminará */}
+            <Card className="backdrop-blur-xl bg-white/10 border-red-400/30">
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">✗</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white drop-shadow">Todos los partidos programados</p>
+                      <p className="text-xs text-white/70 drop-shadow">Incluyendo fechas, horarios y canchas asignadas</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">✗</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white drop-shadow">Todos los partidos finalizados</p>
+                      <p className="text-xs text-white/70 drop-shadow">Incluyendo resultados y estadísticas</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">✗</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white drop-shadow">Partidos de fase regular y liguilla</p>
+                      <p className="text-xs text-white/70 drop-shadow">Todo el calendario del torneo será borrado</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Información del torneo */}
+            {selectedTournamentId && (
+              <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+                <CardContent className="pt-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/90 drop-shadow">Torneo:</span>
+                      <Badge className="backdrop-blur-md bg-white/20 text-white border-white/30">
+                        {tournaments.find(t => t.id === selectedTournamentId)?.name || 'N/A'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/90 drop-shadow">Partidos a eliminar:</span>
+                      <Badge className="backdrop-blur-md bg-red-500/80 text-white border-0">
+                        {matches.length} partidos
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Nota adicional */}
+            <Alert className="backdrop-blur-xl border-yellow-300/30 bg-yellow-500/20 shadow-xl">
+              <AlertDescription className="text-white drop-shadow text-xs">
+                💡 <strong>Nota:</strong> Después de eliminar el calendario, podrás generar uno nuevo usando
+                la opción "Ajustar Calendario" o generando partidos desde la sección de Torneos.
+              </AlertDescription>
+            </Alert>
+
+            {/* Botones de acción */}
+            <div className="flex gap-4 pt-4 border-t border-white/20">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={deleteAllCalendar}
+                disabled={deleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0 shadow-lg"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash className="w-4 h-4 mr-2" />
+                    Sí, Eliminar Todo
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

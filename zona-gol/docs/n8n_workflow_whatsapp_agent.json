@@ -1,0 +1,344 @@
+{
+  "name": "WhatsApp AI Agent - Zona GOL",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook - WhatsApp Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "zona-gol-whatsapp"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parsear el mensaje de WhatsApp (Twilio format)\nconst body = $input.item.json.body;\n\n// Extraer información del mensaje\nconst from = body.From || body.from;\nconst message = body.Body || body.body || '';\nconst messageId = body.MessageSid || body.messageSid;\n\n// Limpiar número de teléfono (remover 'whatsapp:')\nconst cleanPhone = from.replace('whatsapp:', '');\n\nreturn [{\n  json: {\n    from: cleanPhone,\n    message: message.trim(),\n    messageId: messageId,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Parse WhatsApp Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Mapeo de números de teléfono a league_id\n// TODO: Reemplazar con tus IDs reales\nconst phoneToLeague = {\n  '+521234567890': '12345678-1234-1234-1234-123456789012',  // Liga Elite\n  '+529876543210': '87654321-4321-4321-4321-210987654321'   // Liga Amateur\n};\n\nconst phoneNumber = $json.from;\nconst message = $json.message.toLowerCase();\n\n// Detectar liga desde el mensaje si menciona el nombre\nlet leagueId = phoneToLeague[phoneNumber];\n\nif (message.includes('elite') || message.includes('liga 1')) {\n  leagueId = '12345678-1234-1234-1234-123456789012';\n} else if (message.includes('amateur') || message.includes('liga 2')) {\n  leagueId = '87654321-4321-4321-4321-210987654321';\n}\n\n// Si no se encontró liga, usar una por defecto\nif (!leagueId) {\n  leagueId = '12345678-1234-1234-1234-123456789012'; // Default\n}\n\nreturn [{\n  json: {\n    ...($json),\n    league_id: leagueId\n  }\n}];"
+      },
+      "name": "Detect League Context",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Detectar comandos rápidos (sin usar IA)\nconst message = $json.message.toLowerCase().trim();\n\n// Comandos de ayuda\nif (message === 'menu' || message === 'ayuda' || message === 'help') {\n  return [{\n    json: {\n      quick_reply: true,\n      response: `🤖 *COMANDOS DISPONIBLES*\\n\\n📅 \"partidos\" - Jornada de la semana\\n🏆 \"tabla\" - Tabla de posiciones\\n🚫 \"suspendidos\" - Jugadores suspendidos\\n⚽ \"resultados\" - Últimos resultados\\n📊 \"goleadores\" - Tabla de goleadores\\n\\n💬 O simplemente pregúntame lo que quieras saber sobre la liga!`\n    }\n  }];\n}\n\n// Si no es comando rápido, continuar con IA\nreturn [{\n  json: {\n    quick_reply: false,\n    ...$json\n  }\n}];"
+      },
+      "name": "Check Quick Replies",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.quick_reply }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "IF Quick Reply",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "create",
+        "modelId": "text-embedding-ada-002",
+        "text": "={{ $json.message }}"
+      },
+      "name": "OpenAI - Generate Query Embedding",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1250, 450],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Preparar embedding para Supabase\nconst embedding = $json.data[0].embedding;\nconst embeddingString = '[' + embedding.join(',') + ']';\n\nconst previousData = $('Detect League Context').item.json;\n\nreturn [{\n  json: {\n    query_embedding: embeddingString,\n    league_id: previousData.league_id,\n    user_message: previousData.message,\n    from: previousData.from\n  }\n}];"
+      },
+      "name": "Prepare Vector Search",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 450]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM search_league_knowledge(\\n  $1::vector(1536),\\n  $2::UUID,\\n  5,\\n  0.7\\n);",
+        "additionalFields": {
+          "queryParams": "={{ $json.query_embedding }},={{ $json.league_id }}"
+        }
+      },
+      "name": "Supabase - Search Vector DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1650, 450],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Obtener todos los resultados de búsqueda\nconst searchResults = $input.all();\nconst userData = $('Prepare Vector Search').item.json;\n\n// Si no hay resultados, usar mensaje por defecto\nif (!searchResults || searchResults.length === 0) {\n  return [{\n    json: {\n      system_prompt: 'Eres un asistente de WhatsApp para una liga de fútbol. No tienes información disponible en este momento. Discúlpate amablemente y sugiere que el usuario haga una pregunta diferente o contacte al administrador de la liga.',\n      user_message: userData.user_message,\n      from: userData.from,\n      has_context: false\n    }\n  }];\n}\n\n// Concatenar resultados de búsqueda como contexto\nconst context = searchResults\n  .filter(item => item.json.similarity > 0.7) // Solo resultados con alta similitud\n  .map(item => `${item.json.content_text}\\n(Relevancia: ${Math.round(item.json.similarity * 100)}%)`)\n  .join('\\n\\n---\\n\\n');\n\nconst systemPrompt = `Eres un asistente de WhatsApp para una liga de fútbol amateur/profesional.\n\nUSA LA SIGUIENTE INFORMACIÓN para responder la pregunta del usuario:\n\n${context}\n\nINSTRUCCIONES:\n- Responde SOLO basándote en la información proporcionada\n- Sé conciso (máximo 3 párrafos cortos)\n- Usa emojis cuando sea apropiado (⚽🏆📅🚫👏)\n- Si la información no está en el contexto, di que no la tienes disponible\n- Mantén un tono amigable y profesional\n- Responde en español\n- Si hay múltiples respuestas relevantes, prioriza la más reciente\n- Formatea la respuesta para WhatsApp (saltos de línea, negritas con *texto*)`;\n\nreturn [{\n  json: {\n    system_prompt: systemPrompt,\n    user_message: userData.user_message,\n    from: userData.from,\n    has_context: true,\n    num_results: searchResults.length\n  }\n}];"
+      },
+      "name": "Build GPT Context",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1850, 450]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {\n          "values": [\n            {\n              "role": "system",\n              "content": "={{ $json.system_prompt }}"\n            },\n            {\n              "role": "user",\n              "content": "={{ $json.user_message }}"\n            }\n          ]\n        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "name": "OpenAI - Generate Response",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [2050, 450],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Preparar mensaje para enviar\nconst gptResponse = $json.choices[0].message.content;\nconst previousData = $('Build GPT Context').item.json;\n\nreturn [{\n  json: {\n    to: `whatsapp:${previousData.from}`,\n    body: gptResponse\n  }\n}];"
+      },
+      "name": "Prepare WhatsApp Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2250, 450]
+    },
+    {
+      "parameters": {
+        "fromNumber": "={{ $env.TWILIO_WHATSAPP_NUMBER }}",
+        "toNumber": "={{ $json.to }}",
+        "message": "={{ $json.body }}"
+      },
+      "name": "Twilio - Send WhatsApp Message",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [2450, 300],
+      "credentials": {
+        "twilioApi": {
+          "id": "3",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Enviar respuesta rápida directamente\nconst quickReply = $json.response;\nconst previousData = $('Parse WhatsApp Message').item.json;\n\nreturn [{\n  json: {\n    to: `whatsapp:${previousData.from}`,\n    body: quickReply\n  }\n}];"
+      },
+      "name": "Send Quick Reply",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 150]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [2650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Parse WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Detect League Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect League Context": {
+      "main": [
+        [
+          {
+            "node": "Check Quick Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Quick Replies": {
+      "main": [
+        [
+          {
+            "node": "IF Quick Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Quick Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Quick Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI - Generate Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Generate Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Prepare Vector Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Vector Search": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Search Vector DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Search Vector DB": {
+      "main": [
+        [
+          {
+            "node": "Build GPT Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build GPT Context": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Generate Response": {
+      "main": [
+        [
+          {
+            "node": "Prepare WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WhatsApp Response": {
+      "main": [
+        [
+          {
+            "node": "Twilio - Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twilio - Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Quick Reply": {
+      "main": [
+        [
+          {
+            "node": "Twilio - Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "updatedAt": "2025-12-14T00:00:00.000Z"
+}

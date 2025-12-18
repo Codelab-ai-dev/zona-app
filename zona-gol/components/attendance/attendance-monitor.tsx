@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Users, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { RefreshCw, Users, Clock, CheckCircle, AlertCircle, Lock } from 'lucide-react'
 import { createClientSupabaseClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useLeagueFeatures } from '@/lib/hooks/use-league-features'
 
 interface AttendanceRecord {
   id: string
@@ -44,12 +46,46 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [leagueId, setLeagueId] = useState<string | undefined>(undefined)
   const supabase = createClientSupabaseClient()
+  const { hasFeature, loading: loadingFeatures, productMode } = useLeagueFeatures(leagueId)
+
+  // Fetch league ID from match
+  useEffect(() => {
+    const fetchLeagueId = async () => {
+      if (matchId) {
+        try {
+          const { data, error } = await supabase
+            .from('matches')
+            .select(`
+              tournaments!inner(
+                league_id
+              )
+            `)
+            .eq('id', matchId)
+            .single()
+
+          if (error) {
+            console.error('Error fetching league ID:', error)
+            return
+          }
+
+          if (data?.tournaments?.league_id) {
+            setLeagueId(data.tournaments.league_id)
+          }
+        } catch (error) {
+          console.error('Error:', error)
+        }
+      }
+    }
+
+    fetchLeagueId()
+  }, [matchId])
 
   const fetchAttendance = async () => {
     try {
       const today = new Date().toISOString().split('T')[0]
-      
+
       let query = supabase
         .from('facial_attendance')
         .select(`
@@ -63,7 +99,10 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
             away_team_id,
             match_date,
             home_teams:teams!matches_home_team_id_fkey(name),
-            away_teams:teams!matches_away_team_id_fkey(name)
+            away_teams:teams!matches_away_team_id_fkey(name),
+            tournaments!inner(
+              league_id
+            )
           )
         `)
         .gte('server_timestamp', `${today}T00:00:00`)
@@ -76,6 +115,14 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
       const { data, error } = await query
 
       if (error) throw error
+
+      // Extract league_id from first record if not already set
+      if (data && data.length > 0 && !leagueId) {
+        const firstRecord = data[0] as any
+        if (firstRecord?.matches?.tournaments?.league_id) {
+          setLeagueId(firstRecord.matches.tournaments.league_id)
+        }
+      }
 
       setAttendance(data || [])
       setLastUpdate(new Date())
@@ -135,6 +182,32 @@ export function AttendanceMonitor({ matchId, refreshInterval = 10000 }: Attendan
       minute: '2-digit',
       second: '2-digit'
     })
+  }
+
+  // Check if facial_recognition feature is available
+  if (leagueId && !loadingFeatures && !hasFeature('facial_recognition')) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Monitoreo de Asistencias
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="default" className="border-amber-200 bg-amber-50">
+            <Lock className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-900">Función no disponible</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              El reconocimiento facial y monitoreo de asistencias requiere el plan <strong>Zona-G Completo</strong>.
+              {productMode === 'web_only' && (
+                <> Actualmente estás usando el plan <strong>Zona-G Web</strong>.</>
+              )}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

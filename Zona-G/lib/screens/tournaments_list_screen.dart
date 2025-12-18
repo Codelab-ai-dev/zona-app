@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/tournament.dart';
 import '../services/auth_service.dart';
+import '../widgets/offline_banner.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -103,7 +104,8 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
-    
+    final isOffline = AuthService.isOffline;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -120,10 +122,11 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
+          const OfflineIndicator(),
           IconButton(
-            onPressed: _loadTournaments,
+            onPressed: isOffline ? null : _loadTournaments,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Actualizar',
+            tooltip: isOffline ? 'Requiere conexión' : 'Actualizar',
           ),
           IconButton(
             onPressed: _logout,
@@ -132,7 +135,11 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
           ),
         ],
       ),
-      body: isLoading
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: isLoading
           ? const Center(child: CircularProgressIndicator())
           : tournaments.isEmpty
               ? Center(
@@ -175,6 +182,9 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                     },
                   ),
                 ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -23,6 +23,7 @@ import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useLeagueFeatures } from "@/lib/hooks/use-league-features"
 import { PlayerQRModal } from "@/components/ui/player-qr-modal"
 import { Plus, Edit, Trash2, User, Loader2, QrCode, Ban, AlertCircle, Lock } from "lucide-react"
 import { toast } from "sonner"
@@ -63,7 +64,10 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
     deletePlayer
   } = useTeams()
   const { generatePlayerQR } = useQRGenerator()
-  
+
+  const [leagueId, setLeagueId] = useState<string | undefined>(undefined)
+  const { hasFeature } = useLeagueFeatures(leagueId)
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
   const [creating, setCreating] = useState(false)
@@ -145,6 +149,11 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
               logo: team.logo || null
             })
 
+            // Set league_id for feature checking
+            if (team.league_id) {
+              setLeagueId(team.league_id)
+            }
+
             // Load tournament max_players and registration_open if team has a tournament
             if (team.tournament_id) {
               try {
@@ -213,12 +222,12 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       const createdPlayer = await createPlayer(playerData)
       console.log('✅ Jugador creado exitosamente:', createdPlayer)
       
-      // Generar QR automáticamente después de crear el jugador
-      if (createdPlayer?.id && profile?.league_id) {
+      // Generar QR automáticamente después de crear el jugador (solo si la feature está habilitada)
+      if (createdPlayer?.id && profile?.league_id && hasFeature('qr_codes')) {
         setGeneratingQR(true)
         try {
           console.log('🔵 Generando QR automáticamente para nuevo jugador...')
-          
+
           // Usar formato legacy para compatibilidad
           const qrResult = await generatePlayerQR(
             {
@@ -442,6 +451,12 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
 
   // Función para generar QR manualmente para jugadores existentes
   const handleGenerateQR = async (player: Player) => {
+    // Verificar si la feature está disponible
+    if (!hasFeature('qr_codes')) {
+      toast.error('La generación de códigos QR no está disponible en tu plan actual')
+      return
+    }
+
     setGeneratingQR(true)
     try {
       console.log('🔵 Generando QR manualmente para jugador:', player.name)
@@ -708,15 +723,17 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   <Button variant="outline" size="sm" onClick={() => handleEditPlayer(player)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleGenerateQR(player)}
-                    disabled={generatingQR}
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                  >
-                    <QrCode className="w-4 h-4" />
-                  </Button>
+                  {hasFeature('qr_codes') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGenerateQR(player)}
+                      disabled={generatingQR}
+                      className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => togglePlayerStatus(player.id)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
                     {player.is_active ? "Desactivar" : "Activar"}
                   </Button>

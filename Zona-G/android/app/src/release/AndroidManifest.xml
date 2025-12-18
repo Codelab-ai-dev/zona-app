@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ✅ RELEASE BUILD: Cleartext traffic DISABLED (secure) -->
+    <!-- This manifest is only used for release builds -->
+    <application
+        android:usesCleartextTraffic="false">
+    </application>
+</manifest>

@@ -49,20 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
               builder: (context) => const TournamentsListScreen(),
             ),
           );
-        } else {
-          // Login failed
-          _showErrorDialog(
-            'Error de Acceso',
-            'Credenciales incorrectas o no tienes permisos de administrador de liga.',
-          );
         }
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog(
-          'Error de Conexión',
-          'No se pudo conectar al servidor. Verifica tu conexión a internet.',
-        );
+        // Show specific error message
+        final errorMessage = e.toString().replaceAll('Exception: ', '');
+        _showErrorDialog('Error de Acceso', errorMessage);
       }
     } finally {
       if (mounted) {
@@ -286,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
-                        'Solo administradores de liga',
+                        'Acceso usuarios autorizados',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14,

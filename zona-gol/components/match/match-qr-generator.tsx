@@ -22,6 +22,7 @@ interface Match {
   }
   tournaments: {
     name: string
+    league_id: string
     leagues: {
       slug: string
     }
@@ -57,7 +58,30 @@ export function MatchQRGenerator({ matchId, showAllMatches = false }: MatchQRGen
   const fetchMatches = async () => {
     try {
       const now = new Date().toISOString()
-      
+
+      // Primero obtener ligas con modo 'full' que soportan QR
+      const { data: fullModeLeagues, error: leaguesError } = await supabase
+        .from('leagues')
+        .select('id')
+        .eq('product_mode', 'full')
+        .eq('is_active', true)
+
+      if (leaguesError) {
+        console.error('Error fetching leagues:', leaguesError)
+        toast.error('Error al cargar ligas')
+        setLoading(false)
+        return
+      }
+
+      const fullModeLeagueIds = fullModeLeagues?.map(l => l.id) || []
+
+      if (fullModeLeagueIds.length === 0) {
+        toast.info('No hay ligas con modo Completo que soporten códigos QR')
+        setMatches([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('matches')
         .select(`
@@ -69,6 +93,7 @@ export function MatchQRGenerator({ matchId, showAllMatches = false }: MatchQRGen
           away_teams:teams!matches_away_team_id_fkey(name),
           tournaments!inner(
             name,
+            league_id,
             leagues!inner(slug)
           )
         `)
@@ -80,7 +105,16 @@ export function MatchQRGenerator({ matchId, showAllMatches = false }: MatchQRGen
 
       if (error) throw error
 
-      setMatches(data || [])
+      // Filtrar solo partidos de ligas con modo 'full'
+      const eligibleMatches = (data || []).filter((match: any) =>
+        match.tournaments && fullModeLeagueIds.includes(match.tournaments.league_id)
+      )
+
+      setMatches(eligibleMatches)
+
+      if (eligibleMatches.length === 0) {
+        toast.info('No hay partidos programados en ligas con modo Completo')
+      }
     } catch (error) {
       console.error('Error fetching matches:', error)
       toast.error('Error al cargar partidos')

@@ -25,6 +25,7 @@ import { TopScorers } from "@/components/league-admin/top-scorers"
 import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-bracket-generator"
 import { GroupsManagement } from "@/components/league-admin/groups-management"
 import { QRBatchUpdate } from "@/components/league-admin/qr-batch-update"
+import { MatchResultEntry } from "@/components/league-admin/match-result-entry"
 import { AppManagementSuperAdmin } from "@/components/super-admin/app-management-super-admin"
 import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
@@ -41,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useLeagueFeatures } from "@/lib/hooks/use-league-features"
 
 export default function DashboardPage() {
   const { user, profile } = useAuth()
@@ -49,6 +51,11 @@ export default function DashboardPage() {
   const [activeTournament, setActiveTournament] = useState<Tournament | null>(null)
   const [loadingTournament, setLoadingTournament] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
+
+  // Get league features for league_admin users
+  const { hasFeature } = useLeagueFeatures(
+    profile?.role === 'league_admin' ? (profile?.league_id ?? undefined) : undefined
+  )
 
   // Debug logging
   console.log('🔍 Dashboard Debug:', {
@@ -225,6 +232,14 @@ export default function DashboardPage() {
         const isKnockout = tournamentFormat === 'knockout'
         const isLeague = tournamentFormat === 'league'
 
+        // Calculate grid columns based on features
+        const hasQrFeature = hasFeature('qr_codes')
+        const gridCols = isGroupKnockout
+          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-12' : 'md:grid-cols-5 lg:grid-cols-11')
+          : isKnockout
+            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-11' : 'md:grid-cols-5 lg:grid-cols-10')
+            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-12' : 'md:grid-cols-5 lg:grid-cols-11')
+
         return (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="w-full md:hidden">
@@ -240,20 +255,18 @@ export default function DashboardPage() {
                   {(isLeague || isGroupKnockout) && <SelectItem value="fixtures">{isGroupKnockout ? 'Partidos Grupos' : 'Jornadas'}</SelectItem>}
                   {(isKnockout || isGroupKnockout) && <SelectItem value="playoffs">{isGroupKnockout ? 'Eliminación' : 'Liguilla'}</SelectItem>}
                   <SelectItem value="calendar">Calendario</SelectItem>
+                  <SelectItem value="results">Resultados</SelectItem>
                   <SelectItem value="scorers">Goleadores</SelectItem>
                   <SelectItem value="discipline">Disciplina</SelectItem>
                   <SelectItem value="suspensions">Suspensiones</SelectItem>
-                  <SelectItem value="qr-management">Gestión QR</SelectItem>
+                  {hasFeature('qr_codes') && <SelectItem value="qr-management">Gestión QR</SelectItem>}
                   <SelectItem value="settings">Configuración</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="hidden md:block overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${isGroupKnockout ? 'md:grid-cols-5 lg:grid-cols-12' :
-                isKnockout ? 'md:grid-cols-5 lg:grid-cols-10' :
-                  'md:grid-cols-5 lg:grid-cols-11'
-                }`}>
+              <TabsList className={`inline-flex w-auto md:grid md:w-full gap-1 min-w-max backdrop-blur-md bg-white/20 border border-white/30 ${gridCols}`}>
                 <TabsTrigger value="overview" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resumen</TabsTrigger>
                 <TabsTrigger value="tournaments" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Torneos</TabsTrigger>
                 <TabsTrigger value="teams" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Equipos</TabsTrigger>
@@ -276,10 +289,13 @@ export default function DashboardPage() {
                 )}
 
                 <TabsTrigger value="calendar" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Calendario</TabsTrigger>
+                <TabsTrigger value="results" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resultados</TabsTrigger>
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Disciplina</TabsTrigger>
                 <TabsTrigger value="suspensions" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Suspensiones</TabsTrigger>
-                <TabsTrigger value="qr-management" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Gestión QR</TabsTrigger>
+                {hasFeature('qr_codes') && (
+                  <TabsTrigger value="qr-management" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Gestión QR</TabsTrigger>
+                )}
                 <TabsTrigger value="settings" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Configuración</TabsTrigger>
               </TabsList>
             </div>
@@ -306,6 +322,9 @@ export default function DashboardPage() {
             <TabsContent value="calendar">
               <CalendarView leagueId={profile.league_id} />
             </TabsContent>
+            <TabsContent value="results">
+              <MatchResultEntry leagueId={profile.league_id} />
+            </TabsContent>
             <TabsContent value="scorers">
               <TopScorers leagueId={profile.league_id} />
             </TabsContent>
@@ -315,9 +334,11 @@ export default function DashboardPage() {
             <TabsContent value="suspensions">
               <SuspensionsManagement leagueId={profile.league_id} />
             </TabsContent>
-            <TabsContent value="qr-management">
-              <QRBatchUpdate />
-            </TabsContent>
+            {hasFeature('qr_codes') && (
+              <TabsContent value="qr-management">
+                <QRBatchUpdate />
+              </TabsContent>
+            )}
             <TabsContent value="settings">
               <ProfileSettings />
             </TabsContent>

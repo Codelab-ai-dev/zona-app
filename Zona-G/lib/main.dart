@@ -1,23 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'dart:io';
+import 'config/app_config.dart';
+import 'config/http_overrides.dart';
 import 'config/supabase_config.dart';
 import 'services/auth_service.dart';
+import 'services/offline_session_manager.dart';
+import 'services/connectivity_service.dart';
+import 'services/cache_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/tournaments_list_screen.dart';
-import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // 🔧 Print app configuration
+  AppConfig.printConfig();
+
   // Initialize date formatting for Spanish locale
   await initializeDateFormatting('es', null);
-  
+
+  // 🔒 SECURITY: Configure HTTP client based on environment
+  if (AppConfig.allowSSLBypass) {
+    // ⚠️ DEVELOPMENT ONLY: Allow self-signed certificates
+    HttpOverrides.global = DevHttpOverrides();
+  } else {
+    // ✅ PRODUCTION: Use secure defaults (strict SSL validation)
+    HttpOverrides.global = ProductionHttpOverrides();
+    print('✅ Production mode: SSL certificate validation ENABLED');
+  }
+
   try {
     await SupabaseConfig.initialize();
   } catch (e) {
+    print('❌ Error initializing Supabase: $e');
     // Error initializing Supabase - app will continue without it
   }
-  
+
+  // ✅ INITIALIZE OFFLINE-FIRST SERVICES
+  try {
+    if (AppConfig.enableDebugLogs) {
+      print('🔵 Inicializando servicios offline...');
+    }
+
+    final cacheService = CacheService();
+    await cacheService.init();
+
+    final connectivityService = ConnectivityService();
+    await connectivityService.init();
+
+    final sessionManager = OfflineSessionManager();
+    await sessionManager.init();
+
+    if (AppConfig.enableDebugLogs) {
+      print('✅ Servicios offline inicializados correctamente');
+    }
+  } catch (e) {
+    print('❌ Error inicializando servicios offline: $e');
+    // Continue anyway - app can still work in online-only mode
+  }
+
   runApp(const ZonaGolApp());
 }
 
@@ -37,9 +79,7 @@ class ZonaGolApp extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 2,
         ),
-        cardTheme: const CardThemeData(
-          elevation: 2,
-        ),
+        cardTheme: const CardThemeData(elevation: 2),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
@@ -95,9 +135,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: Colors.green,
-              ),
+              CircularProgressIndicator(color: Colors.green),
               SizedBox(height: 16),
               Text(
                 'Zona Gol',
@@ -108,19 +146,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 ),
               ),
               SizedBox(height: 8),
-              Text(
-                'Cargando...',
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
+              Text('Cargando...', style: TextStyle(color: Colors.grey)),
             ],
           ),
         ),
       );
     }
 
-    return _isAuthenticated 
+    return _isAuthenticated
         ? const TournamentsListScreen()
         : const LoginScreen();
   }

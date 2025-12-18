@@ -54,7 +54,26 @@ export function QRBatchUpdate() {
     try {
       console.log('🔵 Iniciando actualización masiva de QR codes...')
 
-      // Obtener todos los jugadores activos con sus equipos
+      // Primero, obtener ligas con modo 'full' (que soportan QR)
+      const { data: fullModeLeagues, error: leaguesError } = await supabase
+        .from('leagues')
+        .select('id')
+        .eq('product_mode', 'full')
+        .eq('is_active', true)
+
+      if (leaguesError) {
+        throw new Error(`Error obteniendo ligas: ${leaguesError.message}`)
+      }
+
+      const fullModeLeagueIds = fullModeLeagues?.map(l => l.id) || []
+
+      if (fullModeLeagueIds.length === 0) {
+        toast.info('No hay ligas con modo Completo que soporten códigos QR')
+        setIsUpdating(false)
+        return
+      }
+
+      // Obtener jugadores activos de equipos en ligas con modo 'full'
       const { data: players, error: playersError } = await supabase
         .from('players')
         .select(`
@@ -70,28 +89,33 @@ export function QRBatchUpdate() {
         `)
         .eq('is_active', true)
 
+      // Filtrar jugadores cuyas ligas tienen product_mode = 'full'
+      const eligiblePlayers = players?.filter(p =>
+        p.teams && fullModeLeagueIds.includes(p.teams.league_id)
+      ) || []
+
       if (playersError) {
         throw new Error(`Error obteniendo jugadores: ${playersError.message}`)
       }
 
-      if (!players || players.length === 0) {
-        toast.info('No hay jugadores activos para actualizar')
+      if (!eligiblePlayers || eligiblePlayers.length === 0) {
+        toast.info('No hay jugadores activos en ligas con modo Completo para actualizar')
         setIsUpdating(false)
         return
       }
 
-      console.log(`✅ Encontrados ${players.length} jugadores activos`)
-      setTotalPlayers(players.length)
+      console.log(`✅ Encontrados ${eligiblePlayers.length} jugadores activos en ligas con modo Completo`)
+      setTotalPlayers(eligiblePlayers.length)
 
       const updateResults: UpdateResult[] = []
 
       // Procesar cada jugador
-      for (let i = 0; i < players.length; i++) {
-        const player = players[i] as any
+      for (let i = 0; i < eligiblePlayers.length; i++) {
+        const player = eligiblePlayers[i] as any
         const team = player.teams
 
         try {
-          console.log(`🔄 Procesando ${i + 1}/${players.length}: ${player.name}`)
+          console.log(`🔄 Procesando ${i + 1}/${eligiblePlayers.length}: ${player.name}`)
 
           // Detectar si tiene caracteres especiales
           const hadSpecialChars = hasProblematicChars(player.name)
@@ -146,7 +170,7 @@ export function QRBatchUpdate() {
         }
 
         // Actualizar progreso
-        setProgress(((i + 1) / players.length) * 100)
+        setProgress(((i + 1) / eligiblePlayers.length) * 100)
         setResults([...updateResults])
       }
 

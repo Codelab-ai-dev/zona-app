@@ -110,7 +110,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
         <p className="text-white/80 drop-shadow">Resumen de actividad y participación</p>
       </div>

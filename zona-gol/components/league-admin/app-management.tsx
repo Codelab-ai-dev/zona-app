@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Download, Upload, Trash2, Smartphone, Calendar, FileArchive } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FeatureGate } from "@/components/shared/feature-gate"
 
 interface AppFile {
   name: string
@@ -214,8 +215,9 @@ export function AppManagement({ leagueId }: AppManagementProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+    <FeatureGate leagueId={leagueId} feature="mobile_app">
+      <div className="space-y-6">
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
           <div className="flex items-center space-x-2">
             <Smartphone className="h-6 w-6 text-green-400" />
@@ -373,5 +375,6 @@ export function AppManagement({ leagueId }: AppManagementProps) {
         </CardContent>
       </Card>
     </div>
+    </FeatureGate>
   )
 }

@@ -1,5 +1,7 @@
 enum MatchStatus { scheduled, in_progress, finished, cancelled }
+
 enum MatchPhase { regular, playoffs }
+
 enum PlayoffRound { quarterfinals, semifinals, final_match, third_place }
 
 class Match {
@@ -11,6 +13,9 @@ class Match {
   final String? homeTeamLogo;
   final String? awayTeamLogo;
   final DateTime matchDate;
+  final String? matchTime;
+  final int? fieldNumber;
+  final int? round;
   final String? venue;
   final MatchStatus status;
   final int? homeScore;
@@ -32,6 +37,9 @@ class Match {
     this.homeTeamLogo,
     this.awayTeamLogo,
     required this.matchDate,
+    this.matchTime,
+    this.fieldNumber,
+    this.round,
     this.venue,
     required this.status,
     this.homeScore,
@@ -55,14 +63,21 @@ class Match {
       homeTeamLogo: json['home_team']?['logo'],
       awayTeamLogo: json['away_team']?['logo'],
       matchDate: DateTime.parse(json['match_date']),
+      matchTime: json['match_time'],
+      fieldNumber: json['field_number'],
+      round: json['round'],
       venue: json['venue'],
       status: _parseMatchStatus(json['status']),
       homeScore: json['home_score'],
       awayScore: json['away_score'],
       tournamentId: json['tournament_id'],
       tournamentName: json['tournament']?['name'],
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
       phase: _parseMatchPhase(json['phase']),
       playoffRound: _parsePlayoffRound(json['playoff_round']),
       playoffPosition: json['playoff_position'],

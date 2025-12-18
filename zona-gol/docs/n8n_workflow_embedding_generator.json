@@ -1,0 +1,369 @@
+{
+  "name": "Generate Embeddings - Zona GOL (Cron)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// IDs de tus ligas activas\n// TODO: Reemplazar con tus IDs reales o hacer query a DB\nconst leagues = [\n  {\n    id: '12345678-1234-1234-1234-123456789012',\n    name: 'Liga Elite Soccer'\n  },\n  {\n    id: '87654321-4321-4321-4321-210987654321',\n    name: 'Liga Amateur'\n  }\n];\n\nreturn leagues.map(league => ({\n  json: {\n    league_id: league.id,\n    league_name: league.name\n  }\n}));"
+      },
+      "name": "List Active Leagues",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT refresh_league_knowledge($1::UUID, NULL) as items_created;",
+        "additionalFields": {
+          "queryParams": "={{ $json.league_id }}"
+        }
+      },
+      "name": "Supabase - Refresh Knowledge Content",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, content_text, league_id\\nFROM league_knowledge_base\\nWHERE embedding IS NULL\\nAND content_text IS NOT NULL\\nAND league_id = $1::UUID\\nLIMIT 50;",
+        "additionalFields": {
+          "queryParams": "={{ $('List Active Leagues').item.json.league_id }}"
+        }
+      },
+      "name": "Supabase - Get Content Without Embeddings",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Preparar texto para embedding\nconst contentText = $json.content_text;\nconst knowledgeId = $json.id;\n\n// Limpiar y truncar si es necesario (max ~8000 tokens para OpenAI)\nconst maxLength = 30000; // caracteres aproximados\nconst cleanedText = contentText.length > maxLength \n  ? contentText.substring(0, maxLength) + '...'\n  : contentText;\n\nreturn [{\n  json: {\n    knowledge_id: knowledgeId,\n    text_to_embed: cleanedText\n  }\n}];"
+      },
+      "name": "Prepare Text for Embedding",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "create",
+        "modelId": "text-embedding-ada-002",
+        "text": "={{ $json.text_to_embed }}"
+      },
+      "name": "OpenAI - Generate Embedding",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Preparar embedding para Supabase\nconst embedding = $json.data[0].embedding;\nconst knowledgeId = $('Prepare Text for Embedding').item.json.knowledge_id;\n\n// Convertir array a string con formato de vector de PostgreSQL\nconst embeddingString = '[' + embedding.join(',') + ']';\n\nreturn [{\n  json: {\n    knowledge_id: knowledgeId,\n    embedding_vector: embeddingString\n  }\n}];"
+      },
+      "name": "Format Embedding for Supabase",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE league_knowledge_base\\nSET embedding = $2::vector(1536),\\n    updated_at = NOW()\\nWHERE id = $1::UUID;",
+        "additionalFields": {
+          "queryParams": "={{ $json.knowledge_id }},={{ $json.embedding_vector }}"
+        }
+      },
+      "name": "Supabase - Update Embedding",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "name": "Wait - Rate Limit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {},
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Logging y estadísticas\nconst totalProcessed = $input.all().length;\nconst leagueName = $('List Active Leagues').item.json.league_name;\n\nconsole.log(`✅ Processed ${totalProcessed} embeddings for ${leagueName}`);\n\nreturn [{\n  json: {\n    league_name: leagueName,\n    embeddings_generated: totalProcessed,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Log Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT clean_expired_knowledge() as deleted_count;"
+      },
+      "name": "Supabase - Clean Expired Content",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [2650, 300],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \\n  content_type,\\n  COUNT(*) as total,\\n  COUNT(embedding) as with_embeddings,\\n  ROUND(100.0 * COUNT(embedding) / COUNT(*), 2) as percentage\\nFROM league_knowledge_base\\nGROUP BY content_type\\nORDER BY content_type;"
+      },
+      "name": "Supabase - Get Stats",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [2850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "Supabase Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Formatear estadísticas finales\nconst stats = $input.all();\n\nlet report = '📊 EMBEDDING GENERATION REPORT\\n\\n';\n\nstats.forEach(stat => {\n  report += `${stat.json.content_type}: ${stat.json.with_embeddings}/${stat.json.total} (${stat.json.percentage}%)\\n`;\n});\n\nconsole.log(report);\n\nreturn [{\n  json: {\n    report: report,\n    timestamp: new Date().toISOString(),\n    success: true\n  }\n}];"
+      },
+      "name": "Final Report",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [3050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "List Active Leagues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Active Leagues": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Refresh Knowledge Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Refresh Knowledge Content": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Get Content Without Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Get Content Without Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Prepare Text for Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Text for Embedding": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Generate Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Generate Embedding": {
+      "main": [
+        [
+          {
+            "node": "Format Embedding for Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Embedding for Supabase": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Update Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Update Embedding": {
+      "main": [
+        [
+          {
+            "node": "Wait - Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Back": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Results": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Clean Expired Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Clean Expired Content": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Get Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Get Stats": {
+      "main": [
+        [
+          {
+            "node": "Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "updatedAt": "2025-12-14T00:00:00.000Z"
+}
