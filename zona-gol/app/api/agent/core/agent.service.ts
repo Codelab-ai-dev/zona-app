@@ -221,17 +221,40 @@ export class AgentService {
     if (approach === 'rag' || approach === 'both') {
       if (identity.leagueId) {
         try {
-          const ragResult = await RAGService.searchKnowledge(message, identity.leagueId, {
-            topK: 5,
-            similarityThreshold: 0.7,
-            tournamentId: identity.tournamentId,
-          });
+          let ragResult;
 
-          ragChunks.push(...ragResult.chunks);
-          ragContext = RAGService.formatChunksForLLM(ragResult.chunks);
+          // Si hay una jornada específica, usar búsqueda por jornada
+          if (entities.jornada && (intent === 'calendario' || intent === 'resultados')) {
+            console.log(`🔍 RAG: Searching for jornada ${entities.jornada}`);
+            ragResult = await RAGService.searchJornadaInfo(
+              entities.jornada,
+              identity.leagueId,
+              identity.tournamentId
+            );
+          } else {
+            // Búsqueda general por similitud semántica
+            ragResult = await RAGService.searchKnowledge(message, identity.leagueId, {
+              topK: 8,
+              similarityThreshold: 0.5, // Más permisivo para capturar más contexto
+              tournamentId: identity.tournamentId,
+            });
+          }
+
+          if (ragResult.chunks.length > 0) {
+            ragChunks.push(...ragResult.chunks);
+            ragContext = RAGService.formatChunksForLLM(ragResult.chunks);
+            console.log(`✅ RAG: Found ${ragResult.chunks.length} chunks`);
+            console.log(`📝 RAG Context being sent to LLM (first 500 chars):`, ragContext?.substring(0, 500));
+          } else {
+            console.log(`⚠️ RAG: No chunks found for this query`);
+            ragContext = 'No se encontró información en la base de conocimiento para esta consulta.';
+          }
         } catch (error) {
           console.warn('⚠️ RAG search failed:', error);
+          ragContext = 'Error al buscar en la base de conocimiento.';
         }
+      } else {
+        ragContext = 'No hay liga configurada para buscar información.';
       }
     }
 
@@ -271,100 +294,153 @@ export class AgentService {
   ): Promise<string> {
     switch (intent) {
       case 'calendario': {
-        if (entities.jornada && identity.leagueId) {
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
+        }
+        if (!identity.tournamentId) {
+          return 'ERROR: No hay torneo activo configurado. El administrador debe configurar el torneo en la vinculación de WhatsApp.';
+        }
+
+        if (entities.jornada) {
           const result = await SQLService.getJornadaCalendar(
             entities.jornada,
             identity.leagueId,
             identity.tournamentId
           );
+          if (result.data.length === 0) {
+            return `No se encontraron partidos para la jornada ${entities.jornada}. Es posible que aún no se hayan programado.`;
+          }
           return SQLService.formatMatchesForLLM(result.data);
         }
 
         // Si no hay jornada específica, mostrar partidos de hoy
-        if (identity.leagueId) {
-          const result = await SQLService.getTodayMatches(
-            identity.leagueId,
-            identity.tournamentId
-          );
-          return SQLService.formatMatchesForLLM(result.data);
+        const result = await SQLService.getTodayMatches(
+          identity.leagueId,
+          identity.tournamentId
+        );
+        if (result.data.length === 0) {
+          return 'No hay partidos programados para hoy.';
         }
-        break;
+        return SQLService.formatMatchesForLLM(result.data);
       }
 
       case 'resultados': {
-        if (identity.leagueId) {
-          const result = await SQLService.getMatchResults(identity.leagueId, {
-            jornada: entities.jornada,
-            teamName: entities.team_name,
-            limit: 10,
-            tournamentId: identity.tournamentId,
-          });
-          return SQLService.formatMatchesForLLM(result.data);
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
         }
-        break;
+        if (!identity.tournamentId) {
+          return 'ERROR: No hay torneo activo configurado. El administrador debe configurar el torneo en la vinculación de WhatsApp.';
+        }
+
+        const result = await SQLService.getMatchResults(identity.leagueId, {
+          jornada: entities.jornada,
+          teamName: entities.team_name,
+          limit: 10,
+          tournamentId: identity.tournamentId,
+        });
+
+        if (result.data.length === 0) {
+          // No hay partidos finalizados - esto NO es un error
+          // El RAG puede tener info del calendario que el LLM puede usar
+          if (entities.jornada) {
+            return `NOTA: Los partidos de la jornada ${entities.jornada} aún no tienen marcadores registrados. Los resultados se actualizarán cuando finalicen los partidos.`;
+          }
+          return 'NOTA: Aún no hay partidos finalizados con resultados en este torneo. Los resultados se actualizarán conforme terminen los partidos.';
+        }
+        return SQLService.formatMatchesForLLM(result.data);
       }
 
       case 'tabla_posiciones': {
-        if (identity.leagueId && identity.tournamentId) {
-          const result = await SQLService.getStandings(
-            identity.leagueId,
-            identity.tournamentId
-          );
-          return SQLService.formatStandingsForLLM(result.data);
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
         }
-        break;
+        if (!identity.tournamentId) {
+          return 'ERROR: No hay torneo activo configurado. El administrador debe configurar el torneo en la vinculación de WhatsApp.';
+        }
+
+        const result = await SQLService.getStandings(
+          identity.leagueId,
+          identity.tournamentId
+        );
+
+        if (result.data.length === 0) {
+          return 'La tabla de posiciones aún no tiene datos. Es posible que no se hayan registrado resultados todavía.';
+        }
+        return SQLService.formatStandingsForLLM(result.data);
       }
 
       case 'suspensiones': {
-        if (identity.leagueId) {
-          const result = await SQLService.getSuspendedPlayers(
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
+        }
+
+        const result = await SQLService.getSuspendedPlayers(
+          identity.leagueId,
+          identity.tournamentId
+        );
+
+        if (result.data.length === 0) {
+          return 'No hay jugadores suspendidos actualmente. ¡Buenas noticias!';
+        }
+
+        let formatted = 'Jugadores suspendidos:\n';
+        result.data.forEach((suspension) => {
+          formatted += `- ${suspension.playerName} (${suspension.teamName})`;
+          if (suspension.suspendedUntil) {
+            formatted += ` hasta ${suspension.suspendedUntil}`;
+          }
+          formatted += '\n';
+        });
+        return formatted;
+      }
+
+      case 'estadisticas': {
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
+        }
+        if (!identity.tournamentId) {
+          return 'ERROR: No hay torneo activo configurado. El administrador debe configurar el torneo en la vinculación de WhatsApp.';
+        }
+
+        const result = await SQLService.getTopScorers(
+          identity.leagueId,
+          identity.tournamentId,
+          10
+        );
+
+        if (result.data.length === 0) {
+          return 'Aún no hay estadísticas de goleadores registradas en este torneo.';
+        }
+        return SQLService.formatScorersForLLM(result.data);
+      }
+
+      case 'proximos_partidos': {
+        if (!identity.leagueId) {
+          return 'ERROR: No hay liga configurada para este usuario.';
+        }
+        if (!identity.tournamentId) {
+          return 'ERROR: No hay torneo activo configurado.';
+        }
+
+        if (entities.team_name) {
+          const result = await SQLService.getTeamUpcomingMatches(
+            entities.team_name,
             identity.leagueId,
+            5,
             identity.tournamentId
           );
 
           if (result.data.length === 0) {
-            return 'No hay jugadores suspendidos actualmente.';
+            return `No encontré próximos partidos para "${entities.team_name}". Verifica que el nombre del equipo sea correcto.`;
           }
-
-          let formatted = 'Jugadores suspendidos:\n';
-          result.data.forEach((suspension) => {
-            formatted += `- ${suspension.playerName} (${suspension.teamName})`;
-            if (suspension.suspendedUntil) {
-              formatted += ` hasta ${suspension.suspendedUntil}`;
-            }
-            formatted += '\n';
-          });
-          return formatted;
-        }
-        break;
-      }
-
-      case 'estadisticas': {
-        if (identity.leagueId && identity.tournamentId) {
-          const result = await SQLService.getTopScorers(
-            identity.leagueId,
-            identity.tournamentId,
-            10
-          );
-          return SQLService.formatScorersForLLM(result.data);
-        }
-        break;
-      }
-
-      case 'proximos_partidos': {
-        if (entities.team_name && identity.leagueId) {
-          const result = await SQLService.getTeamUpcomingMatches(
-            entities.team_name,
-            identity.leagueId,
-            5
-          );
           return SQLService.formatMatchesForLLM(result.data);
         }
-        break;
+
+        return 'Para ver los próximos partidos, dime el nombre del equipo que te interesa.';
       }
     }
 
-    return '';
+    return 'No pude obtener la información solicitada. Por favor, intenta con otra consulta.';
   }
 
   /**

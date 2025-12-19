@@ -15,7 +15,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
 import { analyzeTeamActivity, generateRoundRobinSchedule, getNextMatchDate, CalendarAdjustmentResult } from "@/lib/utils/calendar-adjuster"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { generateMatchScheduleEmbedding } from "@/lib/utils/generate-embeddings"
+import { generateMatchScheduleEmbedding, sendJornadaNotification } from "@/lib/utils/generate-embeddings"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -268,16 +268,52 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
       // Luego actualizar en la base de datos
       await updateMatch(match.id, updateData)
-      
+
+      // Capture match data for notification BEFORE reloading
+      const matchForNotification = {
+        round: match.round,
+        home_team: match.homeTeam?.name || 'TBD',
+        away_team: match.awayTeam?.name || 'TBD',
+        date: match.date,
+        time: match.time,
+        field: match.field,
+      }
+      const tournamentName = tournaments.find(t => t.id === selectedTournamentId)?.name || 'Torneo'
+
       // Recargar partidos para reflejar los cambios
       if (selectedTournamentId) {
         await loadMatches(selectedTournamentId)
       }
 
-      // Generate embedding for updated match schedule (async, don't wait)
+      // Generate embedding and send notification for updated match schedule
       if (match.round && leagueId && selectedTournamentId) {
+        // Generate embedding (async, don't block)
         generateMatchScheduleEmbedding(leagueId, selectedTournamentId, match.round)
           .catch(err => console.warn('Error generando embedding:', err))
+
+        // Get league name and send notification
+        console.log('📢 [NOTIF] Iniciando envío de notificación...')
+        const supabase = createClientSupabaseClient()
+        supabase
+          .from('leagues')
+          .select('name')
+          .eq('id', leagueId)
+          .single()
+          .then(({ data: league, error }) => {
+            console.log('📢 [NOTIF] Liga obtenida:', league, 'Error:', error)
+            const leagueName = league?.name || 'Liga'
+            // Send notification - this will log to server when API is called
+            console.log('📢 [NOTIF] Llamando sendJornadaNotification...')
+            return sendJornadaNotification({
+              league_id: leagueId,
+              tournament_id: selectedTournamentId,
+              round: matchForNotification.round!,
+              league_name: leagueName,
+              tournament_name: tournamentName,
+              matches: [matchForNotification],
+            })
+          })
+          .catch(err => console.error('❌ [NOTIF] Error en notificación de edición:', err))
       }
 
       // Mensaje de éxito
@@ -684,6 +720,46 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
       })
 
       setIsAdjustDialogOpen(false)
+
+      // Send WhatsApp notifications for new jornadas (async, don't wait)
+      supabase.from('leagues').select('name').eq('id', leagueId).single()
+        .then(({ data: league }) => {
+          const leagueName = league?.name || 'Liga'
+
+          // Group new matches by round and send notification for each
+          const matchesByRound = newMatches.reduce((acc, match) => {
+            const round = match.round as number
+            if (!acc[round]) acc[round] = []
+            acc[round].push(match)
+            return acc
+          }, {} as Record<number, typeof newMatches>)
+
+          // Send notification for each new round
+          Object.entries(matchesByRound).forEach(([round, roundMatches]) => {
+            // Get team names for the matches
+            const matchesWithNames = roundMatches.map(m => {
+              const homeTeam = adjustmentAnalysis.activeTeams.find(t => t.id === m.home_team_id)
+              const awayTeam = adjustmentAnalysis.activeTeams.find(t => t.id === m.away_team_id)
+              return {
+                home_team: homeTeam?.name || 'TBD',
+                away_team: awayTeam?.name || 'TBD',
+                date: m.match_date?.split('T')[0] || '',
+                time: m.match_time || '',
+                field: m.field_number || undefined,
+              }
+            })
+
+            sendJornadaNotification({
+              league_id: leagueId,
+              tournament_id: selectedTournamentId,
+              round: parseInt(round),
+              league_name: leagueName,
+              tournament_name: tournament?.name || 'Torneo',
+              matches: matchesWithNames,
+            }).catch(err => console.warn(`Error enviando notificación jornada ${round}:`, err))
+          })
+        })
+        .catch(err => console.warn('Error obteniendo nombre de liga:', err))
 
       // Recargar partidos
       if (selectedTournamentId) {

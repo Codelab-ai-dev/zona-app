@@ -103,11 +103,15 @@ export class LLMService {
 
     // Agregar contexto si existe
     if (ragContext || sqlContext) {
-      const contextMessage = this.buildContextMessage(ragContext, sqlContext);
+      const contextMessage = this.buildContextMessage(ragContext, sqlContext, intent);
+      console.log(`📝 LLM: Context message length: ${contextMessage.length} chars`);
+      console.log(`📝 LLM: Context preview:`, contextMessage.substring(0, 500));
       messages.push({
         role: 'system',
         content: contextMessage,
       });
+    } else {
+      console.log(`⚠️ LLM: No context (ragContext or sqlContext) provided!`);
     }
 
     // Agregar mensaje del usuario
@@ -236,6 +240,15 @@ export class LLMService {
     identity: UserIdentity,
     intent: Intent
   ): string {
+    // Construir contexto de liga/torneo
+    let leagueContext = '';
+    if (identity.leagueName) {
+      leagueContext = `- Liga: ${identity.leagueName}`;
+      if (identity.tournamentName) {
+        leagueContext += `\n- Torneo activo: ${identity.tournamentName}`;
+      }
+    }
+
     const basePrompt = `Eres un asistente virtual para ligas de fútbol amateur en México.
 
 **Tu misión:**
@@ -248,6 +261,10 @@ export class LLMService {
 - Nombre: ${identity.displayName || 'Usuario'}
 - Rol: ${this.getRoleDescription(identity.role)}
 - Canal: ${identity.channel === 'whatsapp' ? 'WhatsApp' : identity.channel}
+${leagueContext}
+
+**IMPORTANTE SOBRE LA LIGA:**
+${identity.leagueName ? `El usuario está vinculado a la liga "${identity.leagueName}". TODA la información que proporciones debe ser sobre ESTA liga específica. NO preguntes qué liga es o de qué liga quiere información - ya lo sabemos.` : 'El usuario NO está vinculado a ninguna liga. Solicita que se vincule primero.'}
 
 **Intención detectada:** ${intent}
 
@@ -257,11 +274,17 @@ ${this.getIntentSpecificInstructions(intent)}
 **Tono:**
 ${this.getToneGuidelines(identity.role)}
 
-**IMPORTANTE:**
+**REGLAS CRÍTICAS:**
 - Mantén respuestas cortas (máximo 3-4 párrafos)
 - Usa emojis ocasionalmente para ser amigable (⚽ 🏆 📅 ⚠️)
-- No inventes información - usa solo lo que te proporciono
-- Si falta información, ofrece ayudar con otra consulta`;
+- NUNCA preguntes sobre qué liga es la consulta - el usuario ya está vinculado a una liga específica
+
+**SOBRE LOS DATOS:**
+- Si recibes información con partidos reales (equipos, fechas, horarios), DEBES mostrarla al usuario
+- Los datos que recibes son REALES de la base de datos - NO los ignores
+- Formatea la información de forma clara y legible para WhatsApp
+- Si hay partidos listados, presenta cada uno con su fecha, hora y equipos
+- Solo di "no hay información" si REALMENTE no recibes datos en el contexto`;
 
     return basePrompt;
   }
@@ -365,28 +388,63 @@ ${this.getToneGuidelines(identity.role)}
    *
    * @param ragContext - Contexto de RAG
    * @param sqlContext - Contexto de SQL
+   * @param intent - Intención detectada (opcional)
    * @returns Mensaje de contexto
    */
   private static buildContextMessage(
     ragContext?: string,
-    sqlContext?: string
+    sqlContext?: string,
+    intent?: Intent
   ): string {
-    let context = 'INFORMACIÓN DISPONIBLE:\n\n';
+    let context = '⚠️ DATOS OFICIALES DE LA LIGA - DEBES USAR ESTA INFORMACIÓN ⚠️\n\n';
 
-    if (sqlContext) {
-      context += '**Datos estructurados:**\n';
+    // Detect if SQL returned a "NOTA" (no finished matches)
+    const sqlHasNoResults = sqlContext?.startsWith('NOTA:');
+    const ragHasData = ragContext && !ragContext.includes('No se encontró información');
+
+    // Special case: User asked for results but matches aren't finished yet
+    // RAG has the scheduled matches - show those and explain results pending
+    if (intent === 'resultados' && sqlHasNoResults && ragHasData) {
+      context += '📋 PARTIDOS DE LA JORNADA:\n';
+      context += ragContext;
+      context += '\n\n';
+      context += '📊 ESTADO DE RESULTADOS:\n';
+      context += 'Los partidos de esta jornada aún NO han finalizado, por lo que no hay marcadores disponibles.\n\n';
+      context += `
+INSTRUCCIONES PARA TU RESPUESTA:
+1. Muestra la lista de partidos programados para esta jornada
+2. Indica amablemente que los partidos aún no se han jugado o no han finalizado
+3. Menciona que los resultados se actualizarán cuando terminen los partidos
+4. NO digas "no tengo información" - SÍ tienes los partidos programados
+5. Presenta los partidos de forma clara (fecha, hora, equipos)`;
+      return context;
+    }
+
+    // Normal flow: include both contexts
+    if (sqlContext && !sqlHasNoResults) {
+      context += '📊 DATOS DE BASE DE DATOS:\n';
       context += sqlContext;
       context += '\n\n';
     }
 
     if (ragContext) {
-      context += '**Contexto adicional:**\n';
+      context += '📋 INFORMACIÓN DE LA LIGA:\n';
       context += ragContext;
       context += '\n\n';
     }
 
-    context +=
-      'Usa esta información para responder la pregunta del usuario. Si la información es insuficiente, sé honesto.';
+    // If SQL had a NOTA but we have RAG data, add a note
+    if (sqlHasNoResults && ragHasData) {
+      context += '📝 NOTA: ' + sqlContext?.replace('NOTA: ', '') + '\n\n';
+    }
+
+    context += `
+INSTRUCCIONES CRÍTICAS:
+1. La información de arriba son DATOS REALES de la liga del usuario
+2. DEBES usar estos datos para responder - NO digas que no tienes información
+3. Presenta los partidos/resultados de forma clara y amigable
+4. Si los datos muestran partidos, MUÉSTRALOS al usuario
+5. NO inventes datos adicionales, pero SÍ usa los que te proporcioné`;
 
     return context;
   }

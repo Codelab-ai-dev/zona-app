@@ -100,6 +100,137 @@ interface MatchResultEmbeddingPayload {
   tournament_id: string
 }
 
+// ============================================================================
+// NOTIFICATION UTILITIES
+// ============================================================================
+
+const NOTIFICATION_API_URL = '/api/notifications/send-league-notification'
+
+interface JornadaNotificationPayload {
+  league_id: string
+  tournament_id: string
+  round: number
+  league_name: string
+  tournament_name: string
+  matches: Array<{
+    home_team: string
+    away_team: string
+    date: string
+    time: string
+    field?: number
+  }>
+}
+
+interface MatchResultNotificationPayload {
+  league_id: string
+  tournament_id: string
+  home_team: string
+  away_team: string
+  home_score: number
+  away_score: number
+  round?: number
+  league_name: string
+  tournament_name: string
+  scorers?: Array<{
+    player_name: string
+    goals: number
+  }>
+}
+
+/**
+ * Send notification to all users linked to a league when a new jornada is created
+ * Sends one notification per match in the jornada
+ */
+export async function sendJornadaNotification(params: JornadaNotificationPayload): Promise<void> {
+  try {
+    console.log('📢 ====== SENDING JORNADA NOTIFICATIONS ======')
+    console.log('📢 Round:', params.round)
+    console.log('📢 League ID:', params.league_id)
+    console.log('📢 Matches to notify:', params.matches.length)
+
+    // Send one notification per match
+    for (const match of params.matches) {
+      console.log(`📢 Sending notification for: ${match.home_team} vs ${match.away_team}`)
+
+      const response = await fetch(NOTIFICATION_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          league_id: params.league_id,
+          tournament_id: params.tournament_id,
+          notification_type: 'jornada_created',
+          content: {
+            round: params.round,
+            league_name: params.league_name,
+            tournament_name: params.tournament_name,
+            matches: [match], // Send only this match
+          },
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log(`✅ Notificación enviada: ${match.home_team} vs ${match.away_team}`, result)
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.warn(`⚠️ Error enviando notificación: ${match.home_team} vs ${match.away_team}`, response.status, errorData)
+      }
+
+      // Small delay between messages to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    console.log('✅ Todas las notificaciones de jornada enviadas')
+  } catch (error) {
+    console.error('❌ Error enviando notificaciones de jornada:', error)
+    // Don't throw - we don't want to fail the main operation
+  }
+}
+
+/**
+ * Send notification to all users linked to a league when a match result is registered
+ */
+export async function sendMatchResultNotification(params: MatchResultNotificationPayload): Promise<void> {
+  try {
+    console.log('📢 Enviando notificación de resultado:', params.home_team, 'vs', params.away_team)
+
+    const response = await fetch(NOTIFICATION_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        league_id: params.league_id,
+        tournament_id: params.tournament_id,
+        notification_type: 'match_result',
+        content: {
+          home_team: params.home_team,
+          away_team: params.away_team,
+          home_score: params.home_score,
+          away_score: params.away_score,
+          round: params.round,
+          league_name: params.league_name,
+          tournament_name: params.tournament_name,
+          scorers: params.scorers,
+        },
+      }),
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('✅ Notificación de resultado enviada:', result)
+    } else {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.warn('⚠️ Error enviando notificación de resultado:', response.status, errorData)
+    }
+  } catch (error) {
+    console.error('❌ Error enviando notificación de resultado:', error)
+    // Don't throw - we don't want to fail the main operation
+  }
+}
+
 /**
  * Generate embedding for a finished match result
  * This will trigger the database function to create content and generate embedding

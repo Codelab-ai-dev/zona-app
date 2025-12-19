@@ -11,6 +11,28 @@ import { AgentService } from '../core/agent.service';
  * Kapso → /api/agent/kapso → Agent Service → Response → Kapso
  */
 
+// Simple in-memory deduplication cache (messages processed in last 60 seconds)
+const processedMessages = new Map<string, number>();
+const DEDUP_WINDOW_MS = 60000; // 60 seconds
+
+function cleanOldMessages() {
+  const now = Date.now();
+  for (const [id, timestamp] of processedMessages.entries()) {
+    if (now - timestamp > DEDUP_WINDOW_MS) {
+      processedMessages.delete(id);
+    }
+  }
+}
+
+function isMessageAlreadyProcessed(messageId: string): boolean {
+  cleanOldMessages();
+  if (processedMessages.has(messageId)) {
+    return true;
+  }
+  processedMessages.set(messageId, Date.now());
+  return false;
+}
+
 // Kapso Webhook format
 interface KapsoWebhook {
   type: string;
@@ -182,6 +204,17 @@ export async function POST(request: NextRequest) {
     console.log('📱 From:', message.from);
     console.log('💬 Message Type:', message.type);
     console.log('👤 Contact:', conversation.contact_name);
+    console.log('🆔 Message ID:', message.id);
+
+    // Deduplication: check if we already processed this message
+    if (isMessageAlreadyProcessed(message.id)) {
+      console.log('⚠️ Duplicate message detected, skipping:', message.id);
+      return NextResponse.json({
+        success: true,
+        message: 'Duplicate message ignored',
+        message_id: message.id,
+      });
+    }
 
     // Transformar al formato del Agent Service
     const agentRequest = transformKapsoToAgent(webhook);

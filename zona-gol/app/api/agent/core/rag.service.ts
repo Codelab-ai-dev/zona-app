@@ -166,7 +166,7 @@ export class RAGService {
     // Mapear a RAGChunk
     const chunks: RAGChunk[] = filteredData.map((row: any) => ({
       id: row.id,
-      contentText: row.content,
+      contentText: row.content_text || row.content, // DB column is content_text
       metadata: row.metadata || {},
       contentType: row.content_type,
       similarity: 1 - row.distance, // pgvector retorna distance, convertir a similarity
@@ -283,7 +283,7 @@ export class RAGService {
 
     const chunks: RAGChunk[] = (data || []).map((row: any) => ({
       id: row.id,
-      contentText: row.content,
+      contentText: row.content_text || row.content, // DB column is content_text
       metadata: row.metadata || {},
       contentType: row.content_type,
       similarity: 1.0, // Match exacto, no hay distance
@@ -314,40 +314,111 @@ export class RAGService {
     tournamentId?: string
   ): Promise<RAGSearchResult> {
     const supabase = await createServerSupabaseClient();
+    const startTime = Date.now();
 
-    // Buscar chunks con jornada en metadata
-    let query = supabase
+    console.log(`🔍 RAG: Searching jornada ${jornada} in league ${leagueId}, tournament ${tournamentId || 'any'}`);
+
+    // Try multiple search strategies
+
+    // Strategy 1: Search by metadata.round (how embeddings are stored via generate-embedding API)
+    if (tournamentId) {
+      const { data: dataByRound, error: errorByRound } = await supabase
+        .from('league_knowledge_base')
+        .select('*')
+        .eq('league_id', leagueId)
+        .eq('tournament_id', tournamentId)
+        .contains('metadata', { round: jornada });
+
+      if (!errorByRound && dataByRound && dataByRound.length > 0) {
+        console.log(`✅ RAG: Found ${dataByRound.length} chunks by metadata.round with tournament`);
+        return this.mapToRAGResult(dataByRound, startTime);
+      }
+    }
+
+    // Strategy 2: Search by metadata.round without tournament filter
+    const { data: dataByRoundNoTournament } = await supabase
+      .from('league_knowledge_base')
+      .select('*')
+      .eq('league_id', leagueId)
+      .contains('metadata', { round: jornada });
+
+    if (dataByRoundNoTournament && dataByRoundNoTournament.length > 0) {
+      console.log(`✅ RAG: Found ${dataByRoundNoTournament.length} chunks by metadata.round`);
+      return this.mapToRAGResult(dataByRoundNoTournament, startTime);
+    }
+
+    // Strategy 3: Search by metadata.jornada (alternative format)
+    const { data: dataByJornada } = await supabase
       .from('league_knowledge_base')
       .select('*')
       .eq('league_id', leagueId)
       .contains('metadata', { jornada });
 
-    if (tournamentId) {
-      query = query.eq('tournament_id', tournamentId);
+    if (dataByJornada && dataByJornada.length > 0) {
+      console.log(`✅ RAG: Found ${dataByJornada.length} chunks by metadata.jornada`);
+      return this.mapToRAGResult(dataByJornada, startTime);
     }
 
-    const { data, error } = await query;
+    // Strategy 4: Text search in content_text
+    console.log(`⚠️ RAG: No metadata match, trying text search for jornada ${jornada}`);
+    const { data: textData, error: textError } = await supabase
+      .from('league_knowledge_base')
+      .select('*')
+      .eq('league_id', leagueId)
+      .or(`content_text.ilike.%jornada ${jornada}%,content_text.ilike.%jornada%${jornada}%`);
 
-    if (error) {
-      throw new Error(`Failed to search jornada info: ${error.message}`);
+    if (!textError && textData && textData.length > 0) {
+      console.log(`✅ RAG: Found ${textData.length} chunks via text search`);
+      return this.mapToRAGResult(textData, startTime);
     }
 
-    const chunks: RAGChunk[] = (data || []).map((row: any) => ({
-      id: row.id,
-      contentText: row.content,
-      metadata: row.metadata || {},
-      contentType: row.content_type,
-      similarity: 1.0,
-      leagueId: row.league_id,
-      tournamentId: row.tournament_id,
-      matchId: row.match_id,
-    }));
+    // Strategy 5: Get ALL content for this league (fallback)
+    console.log(`⚠️ RAG: No specific match, getting all knowledge for league`);
+    const { data: allData } = await supabase
+      .from('league_knowledge_base')
+      .select('*')
+      .eq('league_id', leagueId)
+      .limit(10);
+
+    if (allData && allData.length > 0) {
+      console.log(`✅ RAG: Found ${allData.length} general chunks for league`);
+      return this.mapToRAGResult(allData, startTime);
+    }
+
+    console.log(`❌ RAG: No knowledge found for league ${leagueId}`);
+    return this.mapToRAGResult([], startTime);
+  }
+
+  /**
+   * Mapea datos de Supabase a resultado RAG
+   */
+  private static mapToRAGResult(data: any[], startTime: number): RAGSearchResult {
+    const chunks: RAGChunk[] = (data || []).map((row: any) => {
+      const contentText = row.content_text || row.content;
+
+      // Debug: log what we're getting from the database
+      console.log(`📄 RAG Chunk: id=${row.id}, content_type=${row.content_type}`);
+      console.log(`📄 RAG Chunk columns:`, Object.keys(row));
+      console.log(`📄 RAG Chunk content_text length:`, contentText?.length || 0);
+      console.log(`📄 RAG Chunk content preview:`, contentText?.substring(0, 200) || 'EMPTY');
+
+      return {
+        id: row.id,
+        contentText: contentText,
+        metadata: row.metadata || {},
+        contentType: row.content_type,
+        similarity: 1.0,
+        leagueId: row.league_id,
+        tournamentId: row.tournament_id,
+        matchId: row.match_id,
+      };
+    });
 
     return {
       chunks,
       totalChunks: chunks.length,
       avgSimilarity: 1.0,
-      searchTime: 0,
+      searchTime: Date.now() - startTime,
     };
   }
 
@@ -468,11 +539,22 @@ export class RAGService {
 
     chunks.forEach((chunk, index) => {
       formatted += `--- Fuente ${index + 1} (similitud: ${chunk.similarity.toFixed(2)}) ---\n`;
-      formatted += `${chunk.contentText}\n`;
+
+      // Debug: check if contentText is actually set
+      if (!chunk.contentText) {
+        console.log(`⚠️ Chunk ${index + 1} has NO contentText!`);
+        formatted += '[CONTENIDO NO DISPONIBLE]\n';
+      } else {
+        console.log(`✅ Chunk ${index + 1} contentText length: ${chunk.contentText.length}`);
+        formatted += `${chunk.contentText}\n`;
+      }
 
       // Agregar metadata relevante
       if (chunk.metadata.jornada) {
         formatted += `Jornada: ${chunk.metadata.jornada}\n`;
+      }
+      if (chunk.metadata.round) {
+        formatted += `Jornada: ${chunk.metadata.round}\n`;
       }
       if (chunk.metadata.teams) {
         formatted += `Equipos: ${chunk.metadata.teams}\n`;

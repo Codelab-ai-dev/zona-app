@@ -57,7 +57,7 @@ export class IdentityService {
     // Normalizar número de teléfono (eliminar espacios, guiones, etc.)
     const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
 
-    // Buscar vinculación activa
+    // Buscar vinculación activa con información de liga y torneo
     const { data: link, error } = await supabase
       .from('whatsapp_user_links')
       .select(`
@@ -69,7 +69,9 @@ export class IdentityService {
         role,
         display_name,
         preferred_language,
-        is_active
+        is_active,
+        league:leagues(id, name),
+        tournament:tournaments(id, name)
       `)
       .eq('phone_number', normalizedPhone)
       .eq('is_active', true)
@@ -88,8 +90,12 @@ export class IdentityService {
     // Añadir type assertion para resolver tipo 'never'
     const linkData = link as any;
 
+    // Extraer nombres de liga y torneo
+    const leagueName = linkData.league?.name || undefined;
+    const tournamentName = linkData.tournament?.name || undefined;
+
     // Si está vinculado, retornar identidad completa
-    console.log(`✅ WhatsApp ${normalizedPhone} linked to user ${linkData.user_id}, league ${linkData.league_id}`);
+    console.log(`✅ WhatsApp ${normalizedPhone} linked to user ${linkData.user_id}, league ${linkData.league_id} (${leagueName}), tournament ${linkData.tournament_id} (${tournamentName})`);
 
     return {
       userIdentifier: normalizedPhone,
@@ -97,7 +103,9 @@ export class IdentityService {
       userId: linkData.user_id || undefined,
       role: linkData.role as UserRole,
       leagueId: linkData.league_id || undefined,
+      leagueName: leagueName,
       tournamentId: linkData.tournament_id || undefined,
+      tournamentName: tournamentName,
       displayName: linkData.display_name || undefined,
       preferredLanguage: linkData.preferred_language || 'es',
       isLinked: true,
@@ -112,10 +120,18 @@ export class IdentityService {
   ): Promise<UserIdentity> {
     const supabase = await createServerSupabaseClient();
 
-    // Buscar usuario en la tabla users
+    // Buscar usuario en la tabla users con información de liga
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, email, role, league_id, team_id')
+      .select(`
+        id,
+        name,
+        email,
+        role,
+        league_id,
+        team_id,
+        league:leagues(id, name)
+      `)
       .eq('id', userId)
       .eq('is_active', true)
       .single();
@@ -127,13 +143,18 @@ export class IdentityService {
     // Añadir type assertion para resolver tipo 'never'
     const userData = user as any;
 
-    // Si es league_admin, obtener tournament activo
+    // Si es league_admin, obtener tournament activo con nombre
     let tournamentId: string | undefined;
+    let tournamentName: string | undefined;
     if (userData.role === 'league_admin' && userData.league_id) {
-      tournamentId = await this.getActiveTournament(userData.league_id);
+      const tournament = await this.getActiveTournamentWithName(userData.league_id);
+      tournamentId = tournament?.id;
+      tournamentName = tournament?.name;
     }
 
-    console.log(`✅ User ${userId} authenticated, league ${userData.league_id}, tournament ${tournamentId}`);
+    const leagueName = userData.league?.name || undefined;
+
+    console.log(`✅ User ${userId} authenticated, league ${userData.league_id} (${leagueName}), tournament ${tournamentId} (${tournamentName})`);
 
     return {
       userIdentifier: userId,
@@ -141,7 +162,9 @@ export class IdentityService {
       userId: userData.id,
       role: userData.role as UserRole,
       leagueId: userData.league_id || undefined,
+      leagueName: leagueName,
       tournamentId: tournamentId,
+      tournamentName: tournamentName,
       displayName: userData.name,
       preferredLanguage: 'es',
       isLinked: true,
@@ -390,6 +413,35 @@ export class IdentityService {
 
     const tournamentData = tournament as any;
     return tournamentData?.id;
+  }
+
+  /**
+   * Obtiene el torneo activo de una liga con su nombre
+   *
+   * @param leagueId - ID de la liga
+   * @returns Objeto con id y name del torneo activo o undefined
+   */
+  private static async getActiveTournamentWithName(
+    leagueId: string
+  ): Promise<{ id: string; name: string } | undefined> {
+    const supabase = await createServerSupabaseClient();
+
+    const { data: tournament } = await supabase
+      .from('tournaments')
+      .select('id, name')
+      .eq('league_id', leagueId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const tournamentData = tournament as any;
+    if (!tournamentData) return undefined;
+
+    return {
+      id: tournamentData.id,
+      name: tournamentData.name,
+    };
   }
 
   /**

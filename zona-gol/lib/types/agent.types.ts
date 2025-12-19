@@ -127,7 +127,9 @@ export interface UserIdentity {
 
   // Contexto multi-tenant (OBLIGATORIO para consultas)
   leagueId?: string;
+  leagueName?: string;        // Nombre de la liga para contexto LLM
   tournamentId?: string;
+  tournamentName?: string;    // Nombre del torneo para contexto LLM
 
   // Metadata
   displayName?: string;

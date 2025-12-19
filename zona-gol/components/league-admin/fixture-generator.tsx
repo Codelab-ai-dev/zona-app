@@ -22,7 +22,7 @@ import { useTeams } from "@/lib/hooks/use-teams"
 import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
-import { generateMultipleJornadaEmbeddings } from "@/lib/utils/generate-embeddings"
+import { generateMultipleJornadaEmbeddings, sendJornadaNotification } from "@/lib/utils/generate-embeddings"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -556,6 +556,52 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
       if (tournament && leagueId) {
         generateMultipleJornadaEmbeddings(leagueId, tournamentId, uniqueRounds)
           .catch(err => console.warn('Error generando embeddings de jornadas:', err))
+
+        // Send WhatsApp notifications for each new jornada (async, don't wait)
+        // First, get the league name
+        console.log('📢 Iniciando envío de notificaciones WhatsApp...')
+        console.log('📢 League ID:', leagueId)
+        console.log('📢 Tournament ID:', tournamentId)
+        console.log('📢 Fixtures to notify:', generatedFixtures.length)
+
+        supabase.from('leagues').select('name').eq('id', leagueId).single()
+          .then(({ data: league, error }) => {
+            if (error) {
+              console.error('❌ Error obteniendo liga:', error)
+              return
+            }
+            console.log('✅ Liga encontrada:', league?.name)
+            const leagueName = league?.name || 'Liga'
+
+            // Group fixtures by round and send notification for each round
+            const fixturesByRound = generatedFixtures.reduce((acc, fixture) => {
+              if (!acc[fixture.round]) acc[fixture.round] = []
+              acc[fixture.round].push(fixture)
+              return acc
+            }, {} as Record<number, typeof generatedFixtures>)
+
+            console.log('📢 Rounds to notify:', Object.keys(fixturesByRound))
+
+            // Send notification for each round
+            Object.entries(fixturesByRound).forEach(([round, matches]) => {
+              console.log(`📢 Sending notification for round ${round} with ${matches.length} matches`)
+              sendJornadaNotification({
+                league_id: leagueId,
+                tournament_id: tournamentId,
+                round: parseInt(round),
+                league_name: leagueName,
+                tournament_name: tournament.name,
+                matches: matches.map(m => ({
+                  home_team: m.homeTeam.name,
+                  away_team: m.awayTeam.name,
+                  date: m.date,
+                  time: m.time,
+                  field: m.field,
+                })),
+              }).catch(err => console.warn('Error enviando notificación de jornada:', err))
+            })
+          })
+          .catch(err => console.warn('Error obteniendo nombre de liga:', err))
       }
 
       setMessage({ type: 'success', text: 'Calendario guardado exitosamente' })

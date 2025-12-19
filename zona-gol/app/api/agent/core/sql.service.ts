@@ -94,13 +94,28 @@ export class SQLService {
     const startTime = Date.now();
     const supabase = await createServerSupabaseClient();
 
-    console.log(`📅 SQL: Getting calendar for jornada ${jornada}, league ${leagueId}`);
+    console.log(`📅 SQL: Getting calendar for jornada ${jornada}, tournament ${tournamentId}`);
 
-    let query = supabase
+    // matches table uses 'round' column, not 'jornada'
+    // matches table doesn't have league_id - filter by tournament_id
+    if (!tournamentId) {
+      console.warn('⚠️ SQL: No tournament_id provided for jornada calendar');
+      return {
+        data: [],
+        query: {
+          query: 'No tournament_id provided',
+          resultCount: 0,
+          executionTimeMs: 0,
+        },
+        executionTime: 0,
+      };
+    }
+
+    const { data, error } = await supabase
       .from('matches')
       .select(`
         id,
-        jornada,
+        round,
         home_team_id,
         away_team_id,
         home_score,
@@ -108,20 +123,14 @@ export class SQLService {
         match_date,
         match_time,
         status,
-        venue,
+        field_number,
         home_team:teams!matches_home_team_id_fkey(name),
         away_team:teams!matches_away_team_id_fkey(name)
       `)
-      .eq('league_id', leagueId)
-      .eq('jornada', jornada)
+      .eq('tournament_id', tournamentId)
+      .eq('round', jornada)
       .order('match_date', { ascending: true })
       .order('match_time', { ascending: true });
-
-    if (tournamentId) {
-      query = query.eq('tournament_id', tournamentId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Failed to get jornada calendar: ${error.message}`);
@@ -129,7 +138,7 @@ export class SQLService {
 
     const matches: MatchData[] = (data || []).map((match: any) => ({
       id: match.id,
-      jornada: match.jornada,
+      jornada: match.round,
       homeTeam: match.home_team?.name || 'Unknown',
       awayTeam: match.away_team?.name || 'Unknown',
       homeScore: match.home_score,
@@ -137,7 +146,7 @@ export class SQLService {
       matchDate: match.match_date,
       matchTime: match.match_time,
       status: match.status,
-      venue: match.venue,
+      venue: match.field_number ? `Cancha ${match.field_number}` : undefined,
     }));
 
     const executionTime = Date.now() - startTime;
@@ -147,7 +156,7 @@ export class SQLService {
     return {
       data: matches,
       query: {
-        query: `SELECT matches WHERE league_id = '${leagueId}' AND jornada = ${jornada}`,
+        query: `SELECT matches WHERE tournament_id = '${tournamentId}' AND round = ${jornada}`,
         resultCount: matches.length,
         executionTimeMs: executionTime,
       },
@@ -171,13 +180,27 @@ export class SQLService {
 
     const today = new Date().toISOString().split('T')[0];
 
-    console.log(`📅 SQL: Getting today's matches (${today}), league ${leagueId}`);
+    console.log(`📅 SQL: Getting today's matches (${today}), tournament ${tournamentId}`);
 
-    let query = supabase
+    if (!tournamentId) {
+      console.warn('⚠️ SQL: No tournament_id provided for today matches');
+      return {
+        data: [],
+        query: {
+          query: 'No tournament_id provided',
+          resultCount: 0,
+          executionTimeMs: 0,
+        },
+        executionTime: 0,
+      };
+    }
+
+    // Filter by date - match_date is TIMESTAMP, so we need to filter by date part
+    const { data, error } = await supabase
       .from('matches')
       .select(`
         id,
-        jornada,
+        round,
         home_team_id,
         away_team_id,
         home_score,
@@ -185,19 +208,14 @@ export class SQLService {
         match_date,
         match_time,
         status,
-        venue,
+        field_number,
         home_team:teams!matches_home_team_id_fkey(name),
         away_team:teams!matches_away_team_id_fkey(name)
       `)
-      .eq('league_id', leagueId)
-      .eq('match_date', today)
+      .eq('tournament_id', tournamentId)
+      .gte('match_date', `${today}T00:00:00`)
+      .lt('match_date', `${today}T23:59:59`)
       .order('match_time', { ascending: true });
-
-    if (tournamentId) {
-      query = query.eq('tournament_id', tournamentId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Failed to get today's matches: ${error.message}`);
@@ -205,7 +223,7 @@ export class SQLService {
 
     const matches: MatchData[] = (data || []).map((match: any) => ({
       id: match.id,
-      jornada: match.jornada,
+      jornada: match.round,
       homeTeam: match.home_team?.name || 'Unknown',
       awayTeam: match.away_team?.name || 'Unknown',
       homeScore: match.home_score,
@@ -213,7 +231,7 @@ export class SQLService {
       matchDate: match.match_date,
       matchTime: match.match_time,
       status: match.status,
-      venue: match.venue,
+      venue: match.field_number ? `Cancha ${match.field_number}` : undefined,
     }));
 
     const executionTime = Date.now() - startTime;
@@ -221,7 +239,7 @@ export class SQLService {
     return {
       data: matches,
       query: {
-        query: `SELECT matches WHERE league_id = '${leagueId}' AND match_date = '${today}'`,
+        query: `SELECT matches WHERE tournament_id = '${tournamentId}' AND match_date = '${today}'`,
         resultCount: matches.length,
         executionTimeMs: executionTime,
       },
@@ -250,13 +268,26 @@ export class SQLService {
 
     const { jornada, teamName, limit = 10, tournamentId } = options;
 
-    console.log(`🏆 SQL: Getting match results, league ${leagueId}`);
+    console.log(`🏆 SQL: Getting match results, tournament ${tournamentId}`);
+
+    if (!tournamentId) {
+      console.warn('⚠️ SQL: No tournament_id provided for match results');
+      return {
+        data: [],
+        query: {
+          query: 'No tournament_id provided',
+          resultCount: 0,
+          executionTimeMs: 0,
+        },
+        executionTime: 0,
+      };
+    }
 
     let query = supabase
       .from('matches')
       .select(`
         id,
-        jornada,
+        round,
         home_team_id,
         away_team_id,
         home_score,
@@ -264,21 +295,17 @@ export class SQLService {
         match_date,
         match_time,
         status,
-        venue,
+        field_number,
         home_team:teams!matches_home_team_id_fkey(name),
         away_team:teams!matches_away_team_id_fkey(name)
       `)
-      .eq('league_id', leagueId)
+      .eq('tournament_id', tournamentId)
       .eq('status', 'finished')
       .order('match_date', { ascending: false })
       .limit(limit);
 
-    if (tournamentId) {
-      query = query.eq('tournament_id', tournamentId);
-    }
-
     if (jornada) {
-      query = query.eq('jornada', jornada);
+      query = query.eq('round', jornada);
     }
 
     const { data, error } = await query;
@@ -289,7 +316,7 @@ export class SQLService {
 
     let matches: MatchData[] = (data || []).map((match: any) => ({
       id: match.id,
-      jornada: match.jornada,
+      jornada: match.round,
       homeTeam: match.home_team?.name || 'Unknown',
       awayTeam: match.away_team?.name || 'Unknown',
       homeScore: match.home_score,
@@ -297,7 +324,7 @@ export class SQLService {
       matchDate: match.match_date,
       matchTime: match.match_time,
       status: match.status,
-      venue: match.venue,
+      venue: match.field_number ? `Cancha ${match.field_number}` : undefined,
     }));
 
     // Filtrar por equipo si se especificó
@@ -315,7 +342,7 @@ export class SQLService {
     return {
       data: matches,
       query: {
-        query: `SELECT matches WHERE league_id = '${leagueId}' AND status = 'finished'`,
+        query: `SELECT matches WHERE tournament_id = '${tournamentId}' AND status = 'finished'`,
         resultCount: matches.length,
         executionTimeMs: executionTime,
       },
@@ -393,6 +420,7 @@ export class SQLService {
     const supabase = await createServerSupabaseClient();
 
     // Obtener todos los partidos terminados
+    // Note: matches table doesn't have league_id, only tournament_id
     const { data: matches, error } = await supabase
       .from('matches')
       .select(`
@@ -404,7 +432,6 @@ export class SQLService {
         home_team:teams!matches_home_team_id_fkey(id, name),
         away_team:teams!matches_away_team_id_fkey(id, name)
       `)
-      .eq('league_id', leagueId)
       .eq('tournament_id', tournamentId)
       .eq('status', 'finished');
 
@@ -648,7 +675,8 @@ export class SQLService {
   static async getTeamUpcomingMatches(
     teamName: string,
     leagueId: string,
-    limit: number = 5
+    limit: number = 5,
+    tournamentId?: string
   ): Promise<SQLQueryResult<MatchData>> {
     const startTime = Date.now();
     const supabase = await createServerSupabaseClient();
@@ -678,12 +706,12 @@ export class SQLService {
     const teamsData = teams as any;
     const teamId = teamsData[0].id;
 
-    // Obtener próximos partidos
-    const { data, error } = await supabase
+    // Obtener próximos partidos - filter by tournament_id if provided
+    let query = supabase
       .from('matches')
       .select(`
         id,
-        jornada,
+        round,
         home_team_id,
         away_team_id,
         home_score,
@@ -691,16 +719,21 @@ export class SQLService {
         match_date,
         match_time,
         status,
-        venue,
+        field_number,
         home_team:teams!matches_home_team_id_fkey(name),
         away_team:teams!matches_away_team_id_fkey(name)
       `)
-      .eq('league_id', leagueId)
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
       .in('status', ['scheduled', 'in_progress'])
       .order('match_date', { ascending: true })
       .order('match_time', { ascending: true })
       .limit(limit);
+
+    if (tournamentId) {
+      query = query.eq('tournament_id', tournamentId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Failed to get team upcoming matches: ${error.message}`);
@@ -708,7 +741,7 @@ export class SQLService {
 
     const matches: MatchData[] = (data || []).map((match: any) => ({
       id: match.id,
-      jornada: match.jornada,
+      jornada: match.round,
       homeTeam: match.home_team?.name || 'Unknown',
       awayTeam: match.away_team?.name || 'Unknown',
       homeScore: match.home_score,
@@ -716,7 +749,7 @@ export class SQLService {
       matchDate: match.match_date,
       matchTime: match.match_time,
       status: match.status,
-      venue: match.venue,
+      venue: match.field_number ? `Cancha ${match.field_number}` : undefined,
     }));
 
     const executionTime = Date.now() - startTime;
@@ -771,12 +804,14 @@ export class SQLService {
       return 'No hay tabla de posiciones disponible.';
     }
 
-    let formatted = 'Tabla de Posiciones:\n\n';
-    formatted += 'Pos | Equipo | PJ | G | E | P | GF | GC | DG | Pts\n';
-    formatted += '--- | ------ | -- | - | - | - | -- | -- | -- | ---\n';
+    // Formato compacto para WhatsApp
+    // Ejemplo: 1. EQUIPO - 12pts (4-0-0) GD:+8
+    let formatted = 'TABLA DE POSICIONES:\n\n';
 
     standings.forEach((team) => {
-      formatted += `${team.position} | ${team.teamName} | ${team.played} | ${team.won} | ${team.drawn} | ${team.lost} | ${team.goalsFor} | ${team.goalsAgainst} | ${team.goalDifference > 0 ? '+' : ''}${team.goalDifference} | ${team.points}\n`;
+      const dg = team.goalDifference > 0 ? `+${team.goalDifference}` : team.goalDifference.toString();
+      formatted += `${team.position}. ${team.teamName}\n`;
+      formatted += `   ${team.points}pts | ${team.won}-${team.drawn}-${team.lost} | GD:${dg}\n`;
     });
 
     return formatted;

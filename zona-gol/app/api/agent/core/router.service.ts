@@ -35,11 +35,11 @@ export class RouterService {
     ],
 
     resultados: [
-      { keywords: ['resultado', 'resultados', 'marcador'], weight: 10 },
+      { keywords: ['resultado', 'resultados', 'marcador', 'marcadores'], weight: 15 },
       { keywords: ['ganó', 'ganaron', 'perdió', 'perdieron', 'empató', 'empataron'], weight: 9 },
       { keywords: ['goles', 'anotó', 'anotaron', 'metió'], weight: 8 },
-      { keywords: ['cómo quedó', 'como quedo', 'cuánto quedó'], weight: 10 },
-      { keywords: ['último partido', 'últimos partidos'], weight: 8 },
+      { keywords: ['cómo quedó', 'como quedo', 'cuánto quedó', 'como quedaron'], weight: 12 },
+      { keywords: ['último partido', 'últimos partidos', 'score', 'scores'], weight: 8 },
     ],
 
     proximos_partidos: [
@@ -103,14 +103,17 @@ export class RouterService {
 
   /**
    * Enfoque sugerido por intención
+   *
+   * RAG (embeddings) es más efectivo para datos de partidos/jornadas
+   * porque contiene información pre-procesada y contextualizada
    */
   private static readonly INTENT_APPROACH: Record<Intent, 'rag' | 'sql' | 'both'> = {
-    calendario: 'sql',              // Datos estructurados
-    resultados: 'both',             // SQL para recientes + RAG para contexto
-    proximos_partidos: 'sql',       // Query directo
-    tabla_posiciones: 'sql',        // Función generate_standings_content
+    calendario: 'rag',              // Embeddings tienen info de jornadas
+    resultados: 'both',             // SQL para scores + RAG para contexto
+    proximos_partidos: 'rag',       // Embeddings tienen calendario
+    tabla_posiciones: 'both',       // RAG + SQL para standings
     suspensiones: 'sql',            // Query a player_suspensions
-    estadisticas: 'sql',            // Tablas player_stats, team_stats
+    estadisticas: 'both',           // RAG + SQL
     reglamento: 'rag',              // Contenido textual
     pagos: 'rag',                   // Info general
     informacion_general: 'rag',     // Contenido general

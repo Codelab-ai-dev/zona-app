@@ -36,7 +36,7 @@ import {
   CheckCircle2,
   Clock
 } from "lucide-react"
-import { generateMatchResultEmbedding } from "@/lib/utils/generate-embeddings"
+import { generateMatchResultEmbedding, sendMatchResultNotification } from "@/lib/utils/generate-embeddings"
 
 interface Match {
   id: string
@@ -375,6 +375,40 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
           tournament_id: selectedMatch.tournament_id,
           league_id: selectedMatch.tournaments.league_id
         }).catch(err => console.warn('Error generando embedding de resultado:', err))
+
+        // 6. Send WhatsApp notification for match result (async, don't wait)
+        // Get league name first
+        supabase.from('leagues').select('name').eq('id', selectedMatch.tournaments.league_id).single()
+          .then(({ data: league }) => {
+            const leagueName = league?.name || 'Liga'
+
+            // Get scorers for notification
+            const scorers = homeGoals.concat(awayGoals)
+              .filter(g => g.player_name)
+              .reduce((acc, goal) => {
+                const existing = acc.find(s => s.player_name === goal.player_name.split(' (#')[0])
+                if (existing) {
+                  existing.goals++
+                } else {
+                  acc.push({ player_name: goal.player_name.split(' (#')[0], goals: 1 })
+                }
+                return acc
+              }, [] as Array<{ player_name: string; goals: number }>)
+
+            sendMatchResultNotification({
+              league_id: selectedMatch.tournaments.league_id!,
+              tournament_id: selectedMatch.tournament_id!,
+              home_team: selectedMatch.home_teams.name,
+              away_team: selectedMatch.away_teams.name,
+              home_score: homeScore,
+              away_score: awayScore,
+              round: selectedMatch.round || undefined,
+              league_name: leagueName,
+              tournament_name: selectedMatch.tournaments.name,
+              scorers: scorers.length > 0 ? scorers : undefined,
+            }).catch(err => console.warn('Error enviando notificación de resultado:', err))
+          })
+          .catch(err => console.warn('Error obteniendo nombre de liga:', err))
       }
 
       toast.success('Resultado guardado exitosamente')
