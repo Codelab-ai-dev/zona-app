@@ -93,3 +93,44 @@ export async function generateMatchScheduleEmbedding(
     content_type: 'proximos_partidos',
   })
 }
+
+interface MatchResultEmbeddingPayload {
+  match_id: string
+  league_id: string
+  tournament_id: string
+}
+
+/**
+ * Generate embedding for a finished match result
+ * This will trigger the database function to create content and generate embedding
+ */
+export async function generateMatchResultEmbedding(params: MatchResultEmbeddingPayload): Promise<void> {
+  try {
+    console.log('🔄 Generando embedding para resultado de partido:', params)
+
+    const response = await fetch(API_ROUTE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        trigger_type: 'match_result_update',
+        match_id: params.match_id,
+        league_id: params.league_id,
+        tournament_id: params.tournament_id,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('✅ Embedding de resultado generado:', result)
+    } else {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.warn('⚠️ Error generando embedding de resultado:', response.status, errorData)
+    }
+  } catch (error) {
+    console.error('❌ Error llamando API de embeddings para resultado:', error)
+    // Don't throw - we don't want to fail the main operation if embedding fails
+  }
+}

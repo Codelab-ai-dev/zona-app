@@ -1070,19 +1070,19 @@ export const serverLeagueActions = {
         .eq('tournament_id', tournamentId)
         .eq('is_active', true)
 
-      // Initialize standings
+      // Initialize standings (using same property names as team_stats table)
       const standings: any = {}
       const tournamentTeams: any[] = teams || []
       tournamentTeams.forEach(team => {
         standings[team.id] = {
           team,
-          played: 0,
-          won: 0,
-          drawn: 0,
-          lost: 0,
-          goalsFor: 0,
-          goalsAgainst: 0,
-          goalDifference: 0,
+          matches_played: 0,
+          matches_won: 0,
+          matches_drawn: 0,
+          matches_lost: 0,
+          goals_for: 0,
+          goals_against: 0,
+          goal_difference: 0,
           points: 0
         }
       })
@@ -1095,31 +1095,31 @@ export const serverLeagueActions = {
           const awayId = match.away_team_id
 
           if (standings[homeId] && standings[awayId]) {
-            standings[homeId].played++
-            standings[awayId].played++
+            standings[homeId].matches_played++
+            standings[awayId].matches_played++
 
-            standings[homeId].goalsFor += match.home_score
-            standings[homeId].goalsAgainst += match.away_score
-            standings[awayId].goalsFor += match.away_score
-            standings[awayId].goalsAgainst += match.home_score
+            standings[homeId].goals_for += match.home_score
+            standings[homeId].goals_against += match.away_score
+            standings[awayId].goals_for += match.away_score
+            standings[awayId].goals_against += match.home_score
 
             if (match.home_score > match.away_score) {
-              standings[homeId].won++
+              standings[homeId].matches_won++
               standings[homeId].points += 3
-              standings[awayId].lost++
+              standings[awayId].matches_lost++
             } else if (match.home_score < match.away_score) {
-              standings[awayId].won++
+              standings[awayId].matches_won++
               standings[awayId].points += 3
-              standings[homeId].lost++
+              standings[homeId].matches_lost++
             } else {
-              standings[homeId].drawn++
-              standings[awayId].drawn++
+              standings[homeId].matches_drawn++
+              standings[awayId].matches_drawn++
               standings[homeId].points++
               standings[awayId].points++
             }
 
-            standings[homeId].goalDifference = standings[homeId].goalsFor - standings[homeId].goalsAgainst
-            standings[awayId].goalDifference = standings[awayId].goalsFor - standings[awayId].goalsAgainst
+            standings[homeId].goal_difference = standings[homeId].goals_for - standings[homeId].goals_against
+            standings[awayId].goal_difference = standings[awayId].goals_for - standings[awayId].goals_against
           }
         }
       })
@@ -1127,8 +1127,8 @@ export const serverLeagueActions = {
       // Convert to array and sort
       return Object.values(standings).sort((a: any, b: any) => {
         if (b.points !== a.points) return b.points - a.points
-        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
-        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+        if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
+        if (b.goals_for !== a.goals_for) return b.goals_for - a.goals_for
         return a.team.name.localeCompare(b.team.name)
       })
     } catch (error) {

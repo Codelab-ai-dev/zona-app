@@ -67,6 +67,16 @@ export default function TeamDetailPage() {
   const [leagueLogo, setLeagueLogo] = useState<string>('')
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
   const [playerModalOpen, setPlayerModalOpen] = useState(false)
+  const [teamRecord, setTeamRecord] = useState<{
+    matchesCount: number
+    wins: number
+    draws: number
+    losses: number
+    goalsFor: number
+    goalsAgainst: number
+    goalDifference: number
+    points: number
+  } | null>(null)
 
   const teamId = params?.teamId as string
 
@@ -234,6 +244,45 @@ export default function TeamDetailPage() {
 
         console.log('✅ Coaching staff loaded:', coachingStaffData?.length || 0, coachingStaffData)
         setCoachingStaff(coachingStaffData || [])
+
+        // Load team record (matches stats)
+        console.log('🔵 Loading team record for team ID:', teamId)
+        const { data: matchesData } = await supabase
+          .from('matches')
+          .select('home_team_id, away_team_id, home_score, away_score, status')
+          .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+          .eq('status', 'finished')
+
+        let wins = 0, losses = 0, draws = 0, goalsFor = 0, goalsAgainst = 0
+        const teamMatches = matchesData || []
+
+        teamMatches.forEach(match => {
+          if (match.home_score === null || match.away_score === null) return
+
+          const isHome = match.home_team_id === teamId
+          const teamScore = isHome ? match.home_score : match.away_score
+          const opponentScore = isHome ? match.away_score : match.home_score
+
+          goalsFor += teamScore
+          goalsAgainst += opponentScore
+
+          if (teamScore > opponentScore) wins++
+          else if (teamScore < opponentScore) losses++
+          else draws++
+        })
+
+        const points = (wins * 3) + draws
+        setTeamRecord({
+          matchesCount: teamMatches.length,
+          wins,
+          draws,
+          losses,
+          goalsFor,
+          goalsAgainst,
+          goalDifference: goalsFor - goalsAgainst,
+          points
+        })
+        console.log('✅ Team record loaded:', { matchesCount: teamMatches.length, wins, draws, losses, goalsFor, goalsAgainst, points })
 
       } catch (err: any) {
         console.error('❌ Error in loadTeamAndStats:', err)
@@ -914,6 +963,102 @@ export default function TeamDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Team Record - Récord del Equipo */}
+        {teamRecord && teamRecord.matchesCount > 0 && (
+          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+            <CardHeader>
+              <CardTitle className="flex items-center text-white drop-shadow-lg">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
+                Récord del Equipo
+              </CardTitle>
+              <CardDescription className="text-white/80 drop-shadow">
+                Estadísticas de partidos en la temporada
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Points Display */}
+              <div className="p-4 sm:p-6 backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-blue-600/80 rounded-xl text-white border border-blue-300/30 shadow-lg mb-6">
+                <div className="text-center">
+                  <p className="text-sm font-medium opacity-90">Puntos Totales</p>
+                  <p className="text-5xl font-bold mt-2">{teamRecord.points}</p>
+                  <p className="text-xs opacity-75 mt-2">
+                    {teamRecord.wins} victorias × 3 pts + {teamRecord.draws} empates × 1 pt
+                  </p>
+                </div>
+              </div>
+
+              {/* Match Record */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 rounded-xl backdrop-blur-md bg-gray-500/20 border border-gray-300/30 shadow-lg">
+                  <p className="text-xs text-white/80 drop-shadow mb-1">Partidos Jugados</p>
+                  <p className="text-2xl font-bold text-white drop-shadow-lg">{teamRecord.matchesCount}</p>
+                </div>
+                <div className="p-4 rounded-xl backdrop-blur-md bg-green-500/20 border border-green-300/30 shadow-lg">
+                  <p className="text-xs text-white/80 drop-shadow mb-1">Victorias</p>
+                  <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{teamRecord.wins}</p>
+                </div>
+                <div className="p-4 rounded-xl backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 shadow-lg">
+                  <p className="text-xs text-white/80 drop-shadow mb-1">Empates</p>
+                  <p className="text-2xl font-bold text-yellow-400 drop-shadow-lg">{teamRecord.draws}</p>
+                </div>
+                <div className="p-4 rounded-xl backdrop-blur-md bg-red-500/20 border border-red-300/30 shadow-lg">
+                  <p className="text-xs text-white/80 drop-shadow mb-1">Derrotas</p>
+                  <p className="text-2xl font-bold text-red-400 drop-shadow-lg">{teamRecord.losses}</p>
+                </div>
+              </div>
+
+              {/* Goals Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl backdrop-blur-md bg-green-500/20 border border-green-300/30 shadow-lg flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/80 drop-shadow">Goles a Favor</p>
+                    <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{teamRecord.goalsFor}</p>
+                  </div>
+                  <Target className="w-8 h-8 text-green-300" />
+                </div>
+                <div className="p-4 rounded-xl backdrop-blur-md bg-red-500/20 border border-red-300/30 shadow-lg flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/80 drop-shadow">Goles en Contra</p>
+                    <p className="text-2xl font-bold text-red-400 drop-shadow-lg">{teamRecord.goalsAgainst}</p>
+                  </div>
+                  <Target className="w-8 h-8 text-red-300" />
+                </div>
+                <div className={`p-4 rounded-xl backdrop-blur-md shadow-lg flex items-center justify-between ${
+                  teamRecord.goalDifference >= 0
+                    ? 'bg-green-500/20 border border-green-300/30'
+                    : 'bg-red-500/20 border border-red-300/30'
+                }`}>
+                  <div>
+                    <p className="text-sm text-white/80 drop-shadow">Diferencia de Goles</p>
+                    <p className={`text-2xl font-bold drop-shadow-lg ${
+                      teamRecord.goalDifference >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {teamRecord.goalDifference >= 0 ? '+' : ''}{teamRecord.goalDifference}
+                    </p>
+                  </div>
+                  <Target className={`w-8 h-8 ${teamRecord.goalDifference >= 0 ? 'text-green-300' : 'text-red-300'}`} />
+                </div>
+              </div>
+
+              {/* Win Percentage */}
+              <div className="mt-6 pt-4 border-t border-white/20">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-white/80 drop-shadow">Porcentaje de Victorias</span>
+                  <span className="font-bold text-green-400 drop-shadow">
+                    {((teamRecord.wins / teamRecord.matchesCount) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-2 backdrop-blur-md bg-white/20 rounded-full overflow-hidden border border-white/30">
+                  <div
+                    className="h-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${(teamRecord.wins / teamRecord.matchesCount) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Team Statistics Section */}
         {playersWithStats.length > 0 && (

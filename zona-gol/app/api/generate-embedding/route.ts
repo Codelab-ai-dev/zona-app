@@ -31,8 +31,59 @@ export async function POST(request: NextRequest) {
 
     let webhookPayload = body
 
+    // If this is a match result update, generate content first
+    if (body.trigger_type === 'match_result_update') {
+      console.log('🔄 Generando contenido de resultado de partido...')
+
+      try {
+        // Call function to generate match result content
+        const { error: functionError } = await supabase.rpc('generate_match_result_content', {
+          p_match_id: body.match_id
+        })
+
+        if (functionError) {
+          console.error('Error calling function:', functionError)
+          throw functionError
+        }
+
+        // Get the generated content
+        const { data: contentData, error: selectError } = await supabase
+          .from('league_knowledge_base')
+          .select('id, content_text')
+          .eq('match_id', body.match_id)
+          .eq('content_type', 'resultado_partido')
+          .not('content_text', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (selectError || !contentData) {
+          console.error('Error getting content:', selectError)
+          throw new Error('No se encontró el contenido generado')
+        }
+
+        console.log('✅ Contenido de resultado generado:', contentData.content_text.length, 'chars')
+
+        // Transform to Flutter-like format for n8n
+        webhookPayload = {
+          knowledge_base_id: contentData.id,
+          content_text: contentData.content_text,
+          match_id: body.match_id
+        }
+
+      } catch (error) {
+        console.error('❌ Error generando contenido de resultado:', error)
+        return NextResponse.json(
+          {
+            error: 'Error generando contenido de resultado',
+            message: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
+      }
+    }
     // If this is a jornada update, generate content first
-    if (body.trigger_type === 'jornada_update') {
+    else if (body.trigger_type === 'jornada_update') {
       console.log('🔄 Generando contenido de jornada...')
 
       try {

@@ -613,11 +613,12 @@ export const teamActions = {
         .eq('team_id', teamId)
         .eq('is_active', true)
 
-      // Get matches count
+      // Get finished matches count (partidos jugados)
       const { count: matchesCount } = await supabase
         .from('matches')
         .select('*', { count: 'exact', head: true })
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+        .eq('status', 'finished')
 
       // Get wins, losses, draws, goals for, goals against, and points
       const { data: matches } = await supabase

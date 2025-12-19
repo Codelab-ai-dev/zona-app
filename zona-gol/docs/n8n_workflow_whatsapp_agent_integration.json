@@ -1,0 +1,247 @@
+{
+  "name": "WhatsApp Agent Service Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "whatsapp-agent-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.entry[0].changes[0].value.messages }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "filter-incoming-messages",
+      "name": "Filter Incoming Messages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract WhatsApp message data\nconst whatsappData = $input.first().json;\nconst message = whatsappData.entry[0].changes[0].value.messages[0];\nconst contact = whatsappData.entry[0].changes[0].value.contacts[0];\nconst metadata = whatsappData.entry[0].changes[0].value.metadata;\n\n// Extract message text (handle different message types)\nlet messageText = '';\nif (message.type === 'text') {\n  messageText = message.text.body;\n} else if (message.type === 'interactive') {\n  if (message.interactive.type === 'button_reply') {\n    messageText = message.interactive.button_reply.title;\n  } else if (message.interactive.type === 'list_reply') {\n    messageText = message.interactive.list_reply.title;\n  }\n} else {\n  messageText = 'Mensaje no soportado: ' + message.type;\n}\n\n// Format phone number with country code\nconst phoneNumber = '+' + message.from;\n\n// Prepare payload for Agent Service\nconst agentPayload = {\n  channel: 'whatsapp',\n  userIdentifier: phoneNumber,\n  message: messageText,\n  metadata: {\n    whatsapp_message_id: message.id,\n    whatsapp_timestamp: message.timestamp,\n    contact_name: contact.profile?.name || 'Unknown',\n    phone_number_id: metadata.phone_number_id\n  }\n};\n\nreturn {\n  json: {\n    agentPayload,\n    whatsappMessageId: message.id,\n    phoneNumber,\n    displayName: contact.profile?.name || 'Unknown'\n  }\n};"
+      },
+      "id": "process-whatsapp-message",
+      "name": "Process WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.AGENT_SERVICE_URL || 'http://localhost:3000/api/agent' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.agentPayload) }}",
+        "options": {}
+      },
+      "id": "call-agent-service",
+      "name": "Call Agent Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract Agent response\nconst agentResponse = $input.first().json;\nconst previousData = $input.first().json;\n\n// Get phone number from previous node\nconst phoneNumber = $('Process WhatsApp Message').first().json.phoneNumber;\nconst whatsappMessageId = $('Process WhatsApp Message').first().json.whatsappMessageId;\n\n// Prepare WhatsApp message\nconst whatsappPayload = {\n  messaging_product: 'whatsapp',\n  recipient_type: 'individual',\n  to: phoneNumber.replace('+', ''),\n  type: 'text',\n  text: {\n    preview_url: false,\n    body: agentResponse.text || agentResponse.response || 'Lo siento, no pude procesar tu mensaje.'\n  }\n};\n\n// Check if there are suggested actions (for interactive messages)\nif (agentResponse.actions && agentResponse.actions.length > 0) {\n  // Convert to WhatsApp interactive message if needed\n  // For now, just append actions to text\n  const actionsText = agentResponse.actions\n    .map((action, idx) => `${idx + 1}. ${action.description}`)\n    .join('\\n');\n  \n  whatsappPayload.text.body += '\\n\\nOpciones:\\n' + actionsText;\n}\n\nreturn {\n  json: {\n    whatsappPayload,\n    agentMetadata: agentResponse.metadata,\n    deliveryInfo: agentResponse.delivery\n  }\n};"
+      },
+      "id": "prepare-whatsapp-response",
+      "name": "Prepare WhatsApp Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v18.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.whatsappPayload) }}",
+        "options": {}
+      },
+      "id": "send-whatsapp-message",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message_id: $json.messages[0].id }) }}"
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"error\": \"No incoming messages\"}"
+      },
+      "id": "respond-no-messages",
+      "name": "Respond No Messages",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "table": "agent_conversations",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "channel": "whatsapp",
+            "user_identifier": "={{ $('Process WhatsApp Message').first().json.phoneNumber }}",
+            "user_message": "={{ $('Process WhatsApp Message').first().json.agentPayload.message }}",
+            "agent_response": "={{ $json.text.body }}",
+            "intent": "={{ $('Call Agent Service').first().json.metadata?.intent }}",
+            "confidence": "={{ $('Call Agent Service').first().json.metadata?.intentConfidence }}",
+            "metadata": "={{ JSON.stringify($('Call Agent Service').first().json.metadata) }}"
+          }
+        }
+      },
+      "id": "log-conversation",
+      "name": "Log Conversation",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1250, 350],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Filter Incoming Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Incoming Messages": {
+      "main": [
+        [
+          {
+            "node": "Process WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond No Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Call Agent Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Agent Service": {
+      "main": [
+        [
+          {
+            "node": "Prepare WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WhatsApp Response": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

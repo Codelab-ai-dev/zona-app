@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   Clock
 } from "lucide-react"
+import { generateMatchResultEmbedding } from "@/lib/utils/generate-embeddings"
 
 interface Match {
   id: string
@@ -45,6 +46,7 @@ interface Match {
   home_score: number | null
   away_score: number | null
   round: number | null
+  tournament_id?: string
   home_teams: {
     id: string
     name: string
@@ -55,6 +57,7 @@ interface Match {
   }
   tournaments: {
     name: string
+    league_id?: string
   }
 }
 
@@ -115,7 +118,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
       setLoading(true)
 
       // Cargar partidos programados o en progreso
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('matches')
         .select(`
           id,
@@ -125,6 +128,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
           home_score,
           away_score,
           round,
+          tournament_id,
           home_teams:teams!matches_home_team_id_fkey(id, name),
           away_teams:teams!matches_away_team_id_fkey(id, name),
           tournaments!inner(
@@ -295,20 +299,20 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
   const handleSaveResult = async () => {
     if (!selectedMatch) return
 
-    // Validación básica
-    if (homeScore !== homeGoals.length) {
-      toast.error(`El marcador local (${homeScore}) no coincide con los goles registrados (${homeGoals.length})`)
+    // Validación: los goles registrados no pueden exceder el marcador
+    if (homeGoals.length > homeScore) {
+      toast.error(`Los goles registrados del local (${homeGoals.length}) exceden el marcador (${homeScore})`)
       return
     }
-    if (awayScore !== awayGoals.length) {
-      toast.error(`El marcador visitante (${awayScore}) no coincide con los goles registrados (${awayGoals.length})`)
+    if (awayGoals.length > awayScore) {
+      toast.error(`Los goles registrados del visitante (${awayGoals.length}) exceden el marcador (${awayScore})`)
       return
     }
 
-    // Validar que todos los goles tengan jugador asignado
+    // Validar que los goles registrados tengan jugador asignado (solo si hay goles registrados)
     const allGoals = [...homeGoals, ...awayGoals]
-    if (allGoals.some(g => !g.player_id)) {
-      toast.error('Todos los goles deben tener un jugador asignado')
+    if (allGoals.length > 0 && allGoals.some(g => !g.player_id)) {
+      toast.error('Los goles registrados deben tener un jugador asignado')
       return
     }
 
@@ -363,6 +367,15 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
 
       // 4. Actualizar estadísticas de equipos (opcional, depende de tu lógica)
       // Esto se puede hacer con triggers en la BD o aquí manualmente
+
+      // 5. Generate embedding for match result (async, don't wait)
+      if (selectedMatch.tournament_id && selectedMatch.tournaments.league_id) {
+        generateMatchResultEmbedding({
+          match_id: selectedMatch.id,
+          tournament_id: selectedMatch.tournament_id,
+          league_id: selectedMatch.tournaments.league_id
+        }).catch(err => console.warn('Error generando embedding de resultado:', err))
+      }
 
       toast.success('Resultado guardado exitosamente')
       setShowSuccessDialog(true)
@@ -852,7 +865,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
                 <Alert className="flex-1 mr-4 backdrop-blur-xl bg-blue-500/20 border-blue-300/30">
                   <AlertCircle className="h-4 w-4 text-white" />
                   <AlertDescription className="text-white/90 drop-shadow text-sm">
-                    Verifica que el marcador coincida con los goles registrados antes de guardar.
+                    Puedes guardar el resultado sin asignar goleadores si no tienes el dato.
                   </AlertDescription>
                 </Alert>
                 <Button

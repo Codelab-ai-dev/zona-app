@@ -26,6 +26,8 @@ import { PlayoffBracketGenerator } from "@/components/league-admin/playoff-brack
 import { GroupsManagement } from "@/components/league-admin/groups-management"
 import { QRBatchUpdate } from "@/components/league-admin/qr-batch-update"
 import { MatchResultEntry } from "@/components/league-admin/match-result-entry"
+import { WhatsAppManagement } from "@/components/league-admin/whatsapp-management"
+import { StandingsManagement } from "@/components/league-admin/standings-management"
 import { AppManagementSuperAdmin } from "@/components/super-admin/app-management-super-admin"
 import { TeamStats } from "@/components/team-owner/team-stats"
 import { TeamRecord } from "@/components/team-owner/team-record"
@@ -232,13 +234,13 @@ export default function DashboardPage() {
         const isKnockout = tournamentFormat === 'knockout'
         const isLeague = tournamentFormat === 'league'
 
-        // Calculate grid columns based on features
+        // Calculate grid columns based on features (+ WhatsApp tab + Standings tab)
         const hasQrFeature = hasFeature('qr_codes')
         const gridCols = isGroupKnockout
-          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-12' : 'md:grid-cols-5 lg:grid-cols-11')
+          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
           : isKnockout
-            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-11' : 'md:grid-cols-5 lg:grid-cols-10')
-            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-12' : 'md:grid-cols-5 lg:grid-cols-11')
+            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-13' : 'md:grid-cols-5 lg:grid-cols-12')
+            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
 
         return (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -256,10 +258,12 @@ export default function DashboardPage() {
                   {(isKnockout || isGroupKnockout) && <SelectItem value="playoffs">{isGroupKnockout ? 'Eliminación' : 'Liguilla'}</SelectItem>}
                   <SelectItem value="calendar">Calendario</SelectItem>
                   <SelectItem value="results">Resultados</SelectItem>
+                  <SelectItem value="standings">Posiciones</SelectItem>
                   <SelectItem value="scorers">Goleadores</SelectItem>
                   <SelectItem value="discipline">Disciplina</SelectItem>
                   <SelectItem value="suspensions">Suspensiones</SelectItem>
                   {hasFeature('qr_codes') && <SelectItem value="qr-management">Gestión QR</SelectItem>}
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
                   <SelectItem value="settings">Configuración</SelectItem>
                 </SelectContent>
               </Select>
@@ -290,12 +294,14 @@ export default function DashboardPage() {
 
                 <TabsTrigger value="calendar" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Calendario</TabsTrigger>
                 <TabsTrigger value="results" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Resultados</TabsTrigger>
+                <TabsTrigger value="standings" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Posiciones</TabsTrigger>
                 <TabsTrigger value="scorers" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Disciplina</TabsTrigger>
                 <TabsTrigger value="suspensions" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Suspensiones</TabsTrigger>
                 {hasFeature('qr_codes') && (
                   <TabsTrigger value="qr-management" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Gestión QR</TabsTrigger>
                 )}
+                <TabsTrigger value="whatsapp" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">WhatsApp</TabsTrigger>
                 <TabsTrigger value="settings" className="text-sm whitespace-nowrap text-white data-[state=active]:bg-white/30 data-[state=active]:text-white">Configuración</TabsTrigger>
               </TabsList>
             </div>
@@ -325,6 +331,9 @@ export default function DashboardPage() {
             <TabsContent value="results">
               <MatchResultEntry leagueId={profile.league_id} />
             </TabsContent>
+            <TabsContent value="standings">
+              <StandingsManagement leagueId={profile.league_id} />
+            </TabsContent>
             <TabsContent value="scorers">
               <TopScorers leagueId={profile.league_id} />
             </TabsContent>
@@ -339,6 +348,9 @@ export default function DashboardPage() {
                 <QRBatchUpdate />
               </TabsContent>
             )}
+            <TabsContent value="whatsapp">
+              <WhatsAppManagement leagueId={profile.league_id} />
+            </TabsContent>
             <TabsContent value="settings">
               <ProfileSettings />
             </TabsContent>

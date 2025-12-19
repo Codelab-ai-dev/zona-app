@@ -59,6 +59,20 @@ interface GeneratedMatch {
   field: number
 }
 
+interface ManualMatch {
+  id: string
+  homeTeamId: string
+  awayTeamId: string
+  date: string
+  time: string
+  field: number
+}
+
+interface ManualRound {
+  round: number
+  matches: ManualMatch[]
+}
+
 export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const { teams, getTeamsByLeague } = useTeams()
   const { tournaments, getTournamentsByLeague } = useTournaments()
@@ -70,6 +84,11 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [selectedTournament, setSelectedTournament] = useState<Database['public']['Tables']['tournaments']['Row'] | null>(null)
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]) // For group_knockout tournaments
+
+  // Manual mode states
+  const [mode, setMode] = useState<'auto' | 'manual'>('auto')
+  const [manualRounds, setManualRounds] = useState<ManualRound[]>([])
+  const [manualTournamentId, setManualTournamentId] = useState<string>('')
   
   const [config, setConfig] = useState<FixtureConfig>({
     tournamentId: "",
@@ -506,10 +525,13 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
     try {
       const supabase = createClientSupabaseClient()
-      
+
+      // Use the correct tournament ID based on mode
+      const tournamentId = mode === 'manual' ? manualTournamentId : config.tournamentId
+
       // Prepare matches for database insertion
       const matchesToInsert: Database['public']['Tables']['matches']['Insert'][] = generatedFixtures.map(fixture => ({
-        tournament_id: config.tournamentId,
+        tournament_id: tournamentId,
         home_team_id: fixture.homeTeam.id,
         away_team_id: fixture.awayTeam.id,
         match_date: `${fixture.date}T${fixture.time}:00`,
@@ -530,9 +552,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
       // Generate embeddings for all rounds (async, don't wait)
       const uniqueRounds = Array.from(new Set(generatedFixtures.map(f => f.round)))
-      const tournament = tournaments.find(t => t.id === config.tournamentId)
+      const tournament = tournaments.find(t => t.id === tournamentId)
       if (tournament && leagueId) {
-        generateMultipleJornadaEmbeddings(leagueId, config.tournamentId, uniqueRounds)
+        generateMultipleJornadaEmbeddings(leagueId, tournamentId, uniqueRounds)
           .catch(err => console.warn('Error generando embeddings de jornadas:', err))
       }
 
@@ -540,6 +562,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
       setGeneratedFixtures([])
       setIsPreviewOpen(false)
       setIsGeneratorOpen(false)
+
+      // Reset manual mode state
+      if (mode === 'manual') {
+        setManualRounds([])
+        setManualTournamentId('')
+      }
       
     } catch (error: any) {
       console.error('Error saving fixtures:', error)
@@ -605,7 +633,44 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               Configura los parámetros para generar el calendario de partidos
             </DialogDescription>
           </DialogHeader>
-          
+
+          {/* Mode Toggle */}
+          <div className="px-8 pt-4 pb-2">
+            <div className="backdrop-blur-xl bg-white/10 p-4 rounded-xl shadow-xl border border-white/20">
+              <Label className="text-sm font-medium text-white/90 drop-shadow mb-3 block">Modo de Generación</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant={mode === 'auto' ? "default" : "outline"}
+                  onClick={() => setMode('auto')}
+                  className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                    mode === 'auto'
+                      ? 'bg-blue-500/80 hover:bg-blue-500/90 text-white border-0'
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                  }`}
+                >
+                  <Calendar className="w-5 h-5 mb-1" />
+                  <span className="text-sm font-bold">Automático</span>
+                  <span className="text-xs opacity-75">Algoritmo round-robin</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={mode === 'manual' ? "default" : "outline"}
+                  onClick={() => setMode('manual')}
+                  className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                    mode === 'manual'
+                      ? 'bg-green-500/80 hover:bg-green-500/90 text-white border-0'
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                  }`}
+                >
+                  <Plus className="w-5 h-5 mb-1" />
+                  <span className="text-sm font-bold">Manual</span>
+                  <span className="text-xs opacity-75">Crear partido por partido</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto px-8 py-2">
             {message && (
               <Alert className={`mb-8 backdrop-blur-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'} shadow-xl`}>
@@ -615,6 +680,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </Alert>
             )}
 
+            {/* Automatic Mode */}
+            {mode === 'auto' && (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
               {/* Left Column - Basic Configuration */}
               <div className="space-y-8">
@@ -1118,6 +1186,286 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 )}
               </Button>
             </div>
+            </>
+            )}
+
+            {/* Manual Mode */}
+            {mode === 'manual' && (
+              <div className="max-w-5xl mx-auto space-y-6">
+                {/* Tournament Selection */}
+                <div className="backdrop-blur-xl bg-white/10 p-6 rounded-xl shadow-xl border border-white/20">
+                  <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Seleccionar Torneo</Label>
+                  <Select value={manualTournamentId} onValueChange={setManualTournamentId}>
+                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                      <SelectValue placeholder="Selecciona un torneo" />
+                    </SelectTrigger>
+                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                      {activeTournaments.map(tournament => (
+                        <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
+                          {tournament.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Rounds List */}
+                {manualTournamentId && (
+                  <div className="space-y-4">
+                    {manualRounds.length === 0 && (
+                      <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20 text-center">
+                        <Calendar className="w-12 h-12 mx-auto mb-3 text-white/60" />
+                        <p className="text-white/80 drop-shadow mb-4">No hay jornadas creadas aún</p>
+                        <Button
+                          onClick={() => setManualRounds([{ round: 1, matches: [] }])}
+                          className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Crear Primera Jornada
+                        </Button>
+                      </div>
+                    )}
+
+                    {manualRounds.map((roundData, roundIndex) => (
+                      <div key={roundIndex} className="backdrop-blur-xl bg-white/10 p-6 rounded-xl shadow-xl border border-white/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-white drop-shadow-lg flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-soccer-gold" />
+                            Jornada {roundData.round}
+                          </h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newRounds = manualRounds.filter((_, idx) => idx !== roundIndex)
+                              setManualRounds(newRounds)
+                            }}
+                            className="backdrop-blur-md bg-red-500/20 border-red-400/30 text-white hover:bg-red-500/30"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* Matches in this round */}
+                        <div className="space-y-3 mb-4">
+                          {roundData.matches.length === 0 && (
+                            <p className="text-white/60 text-sm text-center py-4">No hay partidos en esta jornada</p>
+                          )}
+
+                          {roundData.matches.map((match, matchIndex) => (
+                            <div key={match.id} className="backdrop-blur-md bg-white/5 p-4 rounded-lg border border-white/10">
+                              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                {/* Home Team */}
+                                <div>
+                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Local</Label>
+                                  <Select
+                                    value={match.homeTeamId}
+                                    onValueChange={(value) => {
+                                      const newRounds = [...manualRounds]
+                                      newRounds[roundIndex].matches[matchIndex].homeTeamId = value
+                                      setManualRounds(newRounds)
+                                    }}
+                                  >
+                                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
+                                      <SelectValue placeholder="Equipo" />
+                                    </SelectTrigger>
+                                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                                      {activeTeams.map(team => (
+                                        <SelectItem key={team.id} value={team.id} className="text-white hover:bg-white/10 text-xs">
+                                          {team.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Away Team */}
+                                <div>
+                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Visitante</Label>
+                                  <Select
+                                    value={match.awayTeamId}
+                                    onValueChange={(value) => {
+                                      const newRounds = [...manualRounds]
+                                      newRounds[roundIndex].matches[matchIndex].awayTeamId = value
+                                      setManualRounds(newRounds)
+                                    }}
+                                  >
+                                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
+                                      <SelectValue placeholder="Equipo" />
+                                    </SelectTrigger>
+                                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                                      {activeTeams.map(team => (
+                                        <SelectItem key={team.id} value={team.id} className="text-white hover:bg-white/10 text-xs">
+                                          {team.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Date */}
+                                <div>
+                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Fecha</Label>
+                                  <Input
+                                    type="date"
+                                    value={match.date}
+                                    onChange={(e) => {
+                                      const newRounds = [...manualRounds]
+                                      newRounds[roundIndex].matches[matchIndex].date = e.target.value
+                                      setManualRounds(newRounds)
+                                    }}
+                                    className="backdrop-blur-md bg-white/10 border-white/20 text-white h-9 text-xs"
+                                  />
+                                </div>
+
+                                {/* Time */}
+                                <div>
+                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Hora</Label>
+                                  <Input
+                                    type="time"
+                                    value={match.time}
+                                    onChange={(e) => {
+                                      const newRounds = [...manualRounds]
+                                      newRounds[roundIndex].matches[matchIndex].time = e.target.value
+                                      setManualRounds(newRounds)
+                                    }}
+                                    className="backdrop-blur-md bg-white/10 border-white/20 text-white h-9 text-xs"
+                                  />
+                                </div>
+
+                                {/* Field & Delete */}
+                                <div className="flex gap-2">
+                                  <div className="flex-1">
+                                    <Label className="text-xs text-white/70 drop-shadow mb-1 block">Cancha</Label>
+                                    <Select
+                                      value={match.field.toString()}
+                                      onValueChange={(value) => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches[matchIndex].field = parseInt(value)
+                                        setManualRounds(newRounds)
+                                      }}
+                                    >
+                                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                                        {[1,2,3,4,5,6].map(num => (
+                                          <SelectItem key={num} value={num.toString()} className="text-white hover:bg-white/10 text-xs">
+                                            {num}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-white/70 drop-shadow mb-1 block opacity-0">-</Label>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches = newRounds[roundIndex].matches.filter((_, idx) => idx !== matchIndex)
+                                        setManualRounds(newRounds)
+                                      }}
+                                      className="backdrop-blur-md bg-red-500/20 border-red-400/30 text-white hover:bg-red-500/30 h-9 px-2"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Add Match Button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newRounds = [...manualRounds]
+                            newRounds[roundIndex].matches.push({
+                              id: `match-${Date.now()}-${Math.random()}`,
+                              homeTeamId: '',
+                              awayTeamId: '',
+                              date: '',
+                              time: '08:00',
+                              field: 1
+                            })
+                            setManualRounds(newRounds)
+                          }}
+                          className="w-full backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Agregar Partido
+                        </Button>
+                      </div>
+                    ))}
+
+                    {/* Add Round Button */}
+                    {manualRounds.length > 0 && (
+                      <Button
+                        onClick={() => {
+                          const nextRound = Math.max(...manualRounds.map(r => r.round)) + 1
+                          setManualRounds([...manualRounds, { round: nextRound, matches: [] }])
+                        }}
+                        className="w-full backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 h-12"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Agregar Nueva Jornada
+                      </Button>
+                    )}
+
+                    {/* Action Buttons */}
+                    {manualRounds.length > 0 && manualRounds.some(r => r.matches.length > 0) && (
+                      <div className="flex gap-4 pt-4 border-t border-white/20">
+                        <Button
+                          type="button"
+                          onClick={() => setIsGeneratorOpen(false)}
+                          className="flex-1 h-12 text-base backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            // Convert manual rounds to generated fixtures for preview
+                            const fixtures: GeneratedMatch[] = []
+                            manualRounds.forEach(round => {
+                              round.matches.forEach(match => {
+                                const homeTeam = activeTeams.find(t => t.id === match.homeTeamId)
+                                const awayTeam = activeTeams.find(t => t.id === match.awayTeamId)
+                                if (homeTeam && awayTeam && match.date && match.time) {
+                                  fixtures.push({
+                                    round: round.round,
+                                    homeTeam,
+                                    awayTeam,
+                                    date: match.date,
+                                    time: match.time,
+                                    field: match.field
+                                  })
+                                }
+                              })
+                            })
+
+                            if (fixtures.length === 0) {
+                              setMessage({ type: 'error', text: 'No hay partidos válidos para guardar' })
+                              return
+                            }
+
+                            setGeneratedFixtures(fixtures)
+                            setIsPreviewOpen(true)
+                          }}
+                          className="flex-1 h-12 text-base backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+                        >
+                          <Eye className="w-5 h-5 mr-2" />
+                          Vista Previa
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
