@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge"
 import { Trophy, Loader2, Edit, Save, X, AlertTriangle } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { generateStandingsEmbedding } from "@/lib/utils/generate-embeddings"
 
 interface StandingsManagementProps {
   leagueId: string
@@ -324,6 +325,13 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
       toast.success(`Estadísticas de ${editingTeam.team.name} actualizadas`)
       setEditModalOpen(false)
       setEditingTeam(null)
+
+      // Regenerate standings embedding for the agent
+      console.log('🔄 Regenerando embedding de tabla de posiciones...')
+      generateStandingsEmbedding({
+        league_id: leagueId,
+        tournament_id: selectedTournament,
+      }).catch(err => console.warn('Error generando embedding de standings:', err))
 
       // Reload standings
       const { data: updatedStats } = await supabase

@@ -15,7 +15,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
 import { analyzeTeamActivity, generateRoundRobinSchedule, getNextMatchDate, CalendarAdjustmentResult } from "@/lib/utils/calendar-adjuster"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { generateMatchScheduleEmbedding, sendJornadaNotification } from "@/lib/utils/generate-embeddings"
+import { generateMatchScheduleEmbedding, sendJornadaNotification, generateMatchResultEmbedding, generateStandingsEmbedding } from "@/lib/utils/generate-embeddings"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -59,6 +59,13 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
   const [adjusting, setAdjusting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Score editing state
+  const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false)
+  const [editingScoreMatch, setEditingScoreMatch] = useState<CalendarMatch | null>(null)
+  const [editHomeScore, setEditHomeScore] = useState<number>(0)
+  const [editAwayScore, setEditAwayScore] = useState<number>(0)
+  const [savingScore, setSavingScore] = useState(false)
 
   useEffect(() => {
     if (leagueId) {
@@ -337,6 +344,182 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         i === index ? { ...match, [field]: value } : match
       )
     )
+  }
+
+  // Score editing functions
+  const openScoreEditDialog = (match: CalendarMatch) => {
+    setEditingScoreMatch(match)
+    setEditHomeScore(match.homeScore ?? 0)
+    setEditAwayScore(match.awayScore ?? 0)
+    setIsScoreDialogOpen(true)
+  }
+
+  const closeScoreEditDialog = () => {
+    setIsScoreDialogOpen(false)
+    setEditingScoreMatch(null)
+    setEditHomeScore(0)
+    setEditAwayScore(0)
+  }
+
+  const saveScoreEdit = async () => {
+    if (!editingScoreMatch || !selectedTournamentId) return
+
+    setSavingScore(true)
+    setMessage({ type: 'success', text: 'Guardando marcador...' })
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // 1. Update match score
+      console.log('📝 Actualizando marcador:', {
+        matchId: editingScoreMatch.id,
+        homeScore: editHomeScore,
+        awayScore: editAwayScore
+      })
+
+      const { error: updateError } = await supabase
+        .from('matches')
+        .update({
+          home_score: editHomeScore,
+          away_score: editAwayScore,
+        })
+        .eq('id', editingScoreMatch.id)
+
+      if (updateError) throw new Error(updateError.message)
+
+      // 2. Recalculate standings
+      console.log('📊 Recalculando tabla de posiciones...')
+
+      // Get all finished matches for the tournament
+      const { data: allMatches, error: matchesError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('tournament_id', selectedTournamentId)
+        .eq('status', 'finished')
+
+      if (matchesError) throw new Error(matchesError.message)
+
+      // Calculate standings from scratch
+      const standingsMap = new Map<string, {
+        team_id: string
+        played: number
+        won: number
+        drawn: number
+        lost: number
+        goals_for: number
+        goals_against: number
+        goal_difference: number
+        points: number
+      }>()
+
+      // Initialize all teams
+      for (const match of allMatches || []) {
+        if (!standingsMap.has(match.home_team_id)) {
+          standingsMap.set(match.home_team_id, {
+            team_id: match.home_team_id,
+            played: 0, won: 0, drawn: 0, lost: 0,
+            goals_for: 0, goals_against: 0, goal_difference: 0, points: 0
+          })
+        }
+        if (!standingsMap.has(match.away_team_id)) {
+          standingsMap.set(match.away_team_id, {
+            team_id: match.away_team_id,
+            played: 0, won: 0, drawn: 0, lost: 0,
+            goals_for: 0, goals_against: 0, goal_difference: 0, points: 0
+          })
+        }
+      }
+
+      // Calculate stats from all finished matches
+      for (const match of allMatches || []) {
+        if (match.home_score === null || match.away_score === null) continue
+
+        const homeStats = standingsMap.get(match.home_team_id)!
+        const awayStats = standingsMap.get(match.away_team_id)!
+
+        // Played
+        homeStats.played++
+        awayStats.played++
+
+        // Goals
+        homeStats.goals_for += match.home_score
+        homeStats.goals_against += match.away_score
+        awayStats.goals_for += match.away_score
+        awayStats.goals_against += match.home_score
+
+        // Result
+        if (match.home_score > match.away_score) {
+          homeStats.won++
+          homeStats.points += 3
+          awayStats.lost++
+        } else if (match.home_score < match.away_score) {
+          awayStats.won++
+          awayStats.points += 3
+          homeStats.lost++
+        } else {
+          homeStats.drawn++
+          awayStats.drawn++
+          homeStats.points += 1
+          awayStats.points += 1
+        }
+
+        // Goal difference
+        homeStats.goal_difference = homeStats.goals_for - homeStats.goals_against
+        awayStats.goal_difference = awayStats.goals_for - awayStats.goals_against
+      }
+
+      // Update standings in database
+      for (const [teamId, stats] of standingsMap) {
+        const { error: standingsError } = await supabase
+          .from('standings')
+          .upsert({
+            tournament_id: selectedTournamentId,
+            team_id: teamId,
+            ...stats
+          }, {
+            onConflict: 'tournament_id,team_id'
+          })
+
+        if (standingsError) {
+          console.warn('Error updating standings for team', teamId, standingsError)
+        }
+      }
+
+      console.log('✅ Tabla de posiciones actualizada')
+
+      // 3. Regenerate embeddings
+      console.log('🔄 Regenerando embeddings...')
+
+      // Regenerate match result embedding
+      generateMatchResultEmbedding({
+        match_id: editingScoreMatch.id,
+        league_id: leagueId,
+        tournament_id: selectedTournamentId,
+      }).catch(err => console.warn('Error generando embedding de resultado:', err))
+
+      // Regenerate standings embedding
+      generateStandingsEmbedding({
+        league_id: leagueId,
+        tournament_id: selectedTournamentId,
+      }).catch(err => console.warn('Error generando embedding de standings:', err))
+
+      // Regenerate jornada embedding
+      if (editingScoreMatch.round) {
+        generateMatchScheduleEmbedding(leagueId, selectedTournamentId, editingScoreMatch.round)
+          .catch(err => console.warn('Error generando embedding de jornada:', err))
+      }
+
+      // 4. Reload matches and close dialog
+      await loadMatches(selectedTournamentId)
+      closeScoreEditDialog()
+      setMessage({ type: 'success', text: 'Marcador actualizado y tabla recalculada exitosamente' })
+
+    } catch (error) {
+      console.error('❌ Error guardando marcador:', error)
+      setMessage({ type: 'error', text: `Error guardando marcador: ${error instanceof Error ? error.message : 'Error desconocido'}` })
+    } finally {
+      setSavingScore(false)
+    }
   }
 
   const analyzeCalendar = async () => {
@@ -1308,6 +1491,23 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                               )}
                             </div>
                           )}
+
+                          {/* Edit Score Button for finished matches */}
+                          {match.status === 'finished' && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openScoreEditDialog(match);
+                              }}
+                              className="h-8 px-3 backdrop-blur-md bg-orange-500/80 hover:bg-orange-500/90 text-white border-0"
+                              title="Editar marcador"
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              <span className="text-xs">Marcador</span>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )
@@ -1576,6 +1776,23 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                                   </>
                                 )}
                               </div>
+                            )}
+
+                            {/* Edit Score Button for finished playoff matches */}
+                            {match.status === 'finished' && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openScoreEditDialog(match);
+                                }}
+                                className="h-8 px-3 backdrop-blur-md bg-orange-500/80 hover:bg-orange-500/90 text-white border-0"
+                                title="Editar marcador"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                <span className="text-xs">Marcador</span>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -2029,6 +2246,112 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Score Edit Dialog */}
+      <Dialog open={isScoreDialogOpen} onOpenChange={setIsScoreDialogOpen}>
+        <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              <Edit className="w-5 h-5 text-orange-400" />
+              Editar Marcador
+            </DialogTitle>
+            <DialogDescription className="text-white/80 drop-shadow">
+              Corrige el resultado del partido. La tabla de posiciones se recalculará automáticamente.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingScoreMatch && (
+            <div className="space-y-6">
+              {/* Match Info */}
+              <div className="text-center py-4 backdrop-blur-xl bg-white/5 rounded-lg border border-white/10">
+                <div className="flex items-center justify-center gap-4">
+                  <span className="font-bold text-white text-lg drop-shadow">
+                    {editingScoreMatch.homeTeam.name}
+                  </span>
+                  <span className="text-white/60">vs</span>
+                  <span className="font-bold text-white text-lg drop-shadow">
+                    {editingScoreMatch.awayTeam.name}
+                  </span>
+                </div>
+                <div className="text-sm text-white/60 mt-2">
+                  Jornada {editingScoreMatch.round} • {(() => {
+                    try {
+                      const [year, month, day] = editingScoreMatch.date.split('-').map(Number);
+                      const date = new Date(Date.UTC(year, month - 1, day));
+                      return date.toLocaleDateString('es-ES', { timeZone: 'UTC' });
+                    } catch (e) {
+                      return editingScoreMatch.date;
+                    }
+                  })()}
+                </div>
+              </div>
+
+              {/* Score Inputs */}
+              <div className="flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <Label className="text-white/80 text-sm mb-2 block">
+                    {editingScoreMatch.homeTeam.name}
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editHomeScore}
+                    onChange={(e) => setEditHomeScore(parseInt(e.target.value) || 0)}
+                    className="w-20 h-14 text-center text-2xl font-bold backdrop-blur-md bg-white/10 border-white/30 text-white"
+                  />
+                </div>
+                <span className="text-3xl text-white/60 font-bold mt-6">-</span>
+                <div className="text-center">
+                  <Label className="text-white/80 text-sm mb-2 block">
+                    {editingScoreMatch.awayTeam.name}
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editAwayScore}
+                    onChange={(e) => setEditAwayScore(parseInt(e.target.value) || 0)}
+                    className="w-20 h-14 text-center text-2xl font-bold backdrop-blur-md bg-white/10 border-white/30 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Original Score Reference */}
+              <div className="text-center text-sm text-white/50">
+                Marcador original: {editingScoreMatch.homeScore} - {editingScoreMatch.awayScore}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={closeScoreEditDialog}
+                  disabled={savingScore}
+                  className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={saveScoreEdit}
+                  disabled={savingScore}
+                  className="flex-1 backdrop-blur-md bg-orange-500/80 hover:bg-orange-500/90 text-white border-0"
+                >
+                  {savingScore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Guardar Cambios
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -61,6 +61,12 @@ interface LeagueUser {
   role: string
 }
 
+interface Tournament {
+  id: string
+  name: string
+  is_active: boolean
+}
+
 interface WhatsAppManagementProps {
   leagueId: string
 }
@@ -68,6 +74,7 @@ interface WhatsAppManagementProps {
 export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
   const [links, setLinks] = useState<WhatsAppLink[]>([])
   const [users, setUsers] = useState<LeagueUser[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -76,6 +83,7 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
   // Form state
   const [phoneNumber, setPhoneNumber] = useState("")
   const [selectedUserId, setSelectedUserId] = useState("")
+  const [selectedTournamentId, setSelectedTournamentId] = useState("")
   const [displayName, setDisplayName] = useState("")
   const [preferredLanguage, setPreferredLanguage] = useState("es")
 
@@ -113,6 +121,20 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
         setUsers([])
       } else {
         setUsers(usersData || [])
+      }
+
+      // Load tournaments for the league
+      const { data: tournamentsData, error: tournamentsError } = await supabase
+        .from('tournaments')
+        .select('id, name, is_active')
+        .eq('league_id', leagueId)
+        .order('created_at', { ascending: false })
+
+      if (tournamentsError) {
+        console.error('Error loading tournaments:', tournamentsError)
+        setTournaments([])
+      } else {
+        setTournaments(tournamentsData || [])
       }
 
       // Enrich links with user data
@@ -157,13 +179,16 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
       setEditingLink(link)
       setPhoneNumber(link.phone_number)
       setSelectedUserId(link.user_id)
+      setSelectedTournamentId(link.tournament_id || "")
       setDisplayName(link.display_name || "")
       setPreferredLanguage(link.preferred_language)
     } else {
-      // Create mode
+      // Create mode - default to active tournament if exists
       setEditingLink(null)
       setPhoneNumber("")
       setSelectedUserId("")
+      const activeTournament = tournaments.find(t => t.is_active)
+      setSelectedTournamentId(activeTournament?.id || "")
       setDisplayName("")
       setPreferredLanguage("es")
     }
@@ -175,6 +200,7 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
     setEditingLink(null)
     setPhoneNumber("")
     setSelectedUserId("")
+    setSelectedTournamentId("")
     setDisplayName("")
     setPreferredLanguage("es")
   }
@@ -217,6 +243,7 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
           phone_number: formattedPhone,
           user_id: selectedUserId,
           league_id: leagueId,
+          tournament_id: selectedTournamentId || null,
           role: selectedUser.role,
           display_name: displayName || selectedUser.name,
           preferred_language: preferredLanguage,
@@ -271,6 +298,7 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
         .from('whatsapp_user_links')
         .update({
           phone_number: formattedPhone,
+          tournament_id: selectedTournamentId || null,
           display_name: displayName,
           preferred_language: preferredLanguage
         })
@@ -505,6 +533,30 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                   </div>
 
                   <div>
+                    <Label htmlFor="tournament" className="text-white/90 drop-shadow">
+                      Torneo Activo
+                    </Label>
+                    <Select
+                      value={selectedTournamentId}
+                      onValueChange={setSelectedTournamentId}
+                    >
+                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
+                        <SelectValue placeholder="Selecciona un torneo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tournaments.map(tournament => (
+                          <SelectItem key={tournament.id} value={tournament.id}>
+                            {tournament.name} {tournament.is_active && '(Activo)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-white/60 mt-1">
+                      El torneo determina qué datos puede consultar el usuario en WhatsApp
+                    </p>
+                  </div>
+
+                  <div>
                     <Label htmlFor="display-name" className="text-white/90 drop-shadow">
                       Nombre para Mostrar (Opcional)
                     </Label>
@@ -557,6 +609,16 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
         </CardHeader>
 
         <CardContent>
+          {/* Warning for links without tournament */}
+          {!loading && links.some(l => !l.tournament_id && l.is_active) && (
+            <Alert className="mb-4 backdrop-blur-xl bg-orange-500/20 border-orange-300/30">
+              <AlertCircle className="h-4 w-4 text-orange-300" />
+              <AlertDescription className="text-white/90 drop-shadow text-sm">
+                <strong>Atención:</strong> Hay usuarios sin torneo asignado. El agente no podrá responder consultas de tabla, resultados o calendario sin un torneo configurado.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
@@ -577,10 +639,9 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                   <TableRow className="border-white/20 hover:bg-white/5">
                     <TableHead className="text-white/90 drop-shadow">Usuario</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Teléfono</TableHead>
-                    <TableHead className="text-white/90 drop-shadow">Rol</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Torneo</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Estado</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Última Interacción</TableHead>
-                    <TableHead className="text-white/90 drop-shadow">Vinculado</TableHead>
                     <TableHead className="text-white/90 drop-shadow text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -606,9 +667,16 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                         </code>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadge(link.role).variant}>
-                          {getRoleBadge(link.role).label}
-                        </Badge>
+                        {link.tournament_id ? (
+                          <Badge className="bg-blue-500/80 text-white">
+                            {tournaments.find(t => t.id === link.tournament_id)?.name || 'Torneo'}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-orange-500/80 text-white">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Sin torneo
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         {link.is_active ? (
@@ -632,12 +700,6 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                         ) : (
                           <span className="text-white/50">Sin interacciones</span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-white/80 drop-shadow text-sm">
-                        {formatDistanceToNow(new Date(link.linked_at), {
-                          addSuffix: true,
-                          locale: es
-                        })}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">

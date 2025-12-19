@@ -31,8 +31,155 @@ export async function POST(request: NextRequest) {
 
     let webhookPayload = body
 
+    // If this is a standings update, generate content first
+    if (body.trigger_type === 'standings_update') {
+      console.log('🔄 Generando contenido de tabla de posiciones...')
+
+      try {
+        // Get standings data from team_stats
+        const { data: standings, error: standingsError } = await supabase
+          .from('team_stats')
+          .select(`
+            team_id,
+            matches_played,
+            matches_won,
+            matches_drawn,
+            matches_lost,
+            goals_for,
+            goals_against,
+            goal_difference,
+            points,
+            points_adjustment,
+            adjustment_reason,
+            team:teams(name)
+          `)
+          .eq('tournament_id', body.tournament_id)
+          .order('points', { ascending: false })
+
+        if (standingsError) throw standingsError
+
+        if (!standings || standings.length === 0) {
+          console.log('⚠️ No hay standings para este torneo')
+          return NextResponse.json({
+            success: true,
+            message: 'No hay standings para generar embedding'
+          })
+        }
+
+        // Get tournament and league info
+        const { data: tournament } = await supabase
+          .from('tournaments')
+          .select('name, league:leagues(name)')
+          .eq('id', body.tournament_id)
+          .single()
+
+        // Sort by total points (points + adjustment)
+        const sortedStandings = standings.sort((a: any, b: any) => {
+          const totalA = a.points + (a.points_adjustment || 0)
+          const totalB = b.points + (b.points_adjustment || 0)
+          if (totalB !== totalA) return totalB - totalA
+          if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
+          return b.goals_for - a.goals_for
+        })
+
+        // Generate content text
+        const leagueName = (tournament?.league as any)?.name || 'Liga'
+        const tournamentName = tournament?.name || 'Torneo'
+
+        let contentText = `📊 TABLA DE POSICIONES - ${leagueName} - ${tournamentName}\n\n`
+        contentText += `Pos | Equipo | PJ | PG | PE | PP | GF | GC | DIF | PTS\n`
+        contentText += `---|--------|----|----|----|----|----|----|-----|----\n`
+
+        sortedStandings.forEach((team: any, index: number) => {
+          const totalPoints = team.points + (team.points_adjustment || 0)
+          const teamName = team.team?.name || 'Equipo'
+          const adjustment = team.points_adjustment ? ` (${team.points_adjustment > 0 ? '+' : ''}${team.points_adjustment})` : ''
+
+          contentText += `${index + 1} | ${teamName} | ${team.matches_played} | ${team.matches_won} | ${team.matches_drawn} | ${team.matches_lost} | ${team.goals_for} | ${team.goals_against} | ${team.goal_difference > 0 ? '+' : ''}${team.goal_difference} | ${totalPoints}${adjustment}\n`
+        })
+
+        // Add summary
+        const leader = sortedStandings[0]
+        if (leader) {
+          contentText += `\n🏆 Líder: ${leader.team?.name} con ${leader.points + (leader.points_adjustment || 0)} puntos`
+        }
+
+        // Check for teams with adjustments
+        const teamsWithAdjustments = sortedStandings.filter((t: any) => t.points_adjustment !== 0)
+        if (teamsWithAdjustments.length > 0) {
+          contentText += `\n\n⚠️ Equipos con ajustes de puntos:\n`
+          teamsWithAdjustments.forEach((t: any) => {
+            contentText += `- ${t.team?.name}: ${t.points_adjustment > 0 ? '+' : ''}${t.points_adjustment} pts${t.adjustment_reason ? ` (${t.adjustment_reason})` : ''}\n`
+          })
+        }
+
+        console.log('✅ Contenido de standings generado:', contentText.length, 'chars')
+
+        // Upsert to knowledge base
+        const { data: kbData, error: kbError } = await supabase
+          .from('league_knowledge_base')
+          .upsert({
+            league_id: body.league_id,
+            tournament_id: body.tournament_id,
+            content_type: 'tabla_posiciones',
+            content_text: contentText,
+            metadata: {
+              generated_at: new Date().toISOString(),
+              teams_count: sortedStandings.length
+            },
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'league_id,tournament_id,content_type'
+          })
+          .select('id')
+          .single()
+
+        if (kbError) {
+          console.error('Error saving to knowledge base:', kbError)
+          // Try insert if upsert fails
+          const { data: insertData, error: insertError } = await supabase
+            .from('league_knowledge_base')
+            .insert({
+              league_id: body.league_id,
+              tournament_id: body.tournament_id,
+              content_type: 'tabla_posiciones',
+              content_text: contentText,
+              metadata: {
+                generated_at: new Date().toISOString(),
+                teams_count: sortedStandings.length
+              }
+            })
+            .select('id')
+            .single()
+
+          if (insertError) throw insertError
+
+          webhookPayload = {
+            knowledge_base_id: insertData.id,
+            content_text: contentText,
+            match_id: null
+          }
+        } else {
+          webhookPayload = {
+            knowledge_base_id: kbData.id,
+            content_text: contentText,
+            match_id: null
+          }
+        }
+
+      } catch (error) {
+        console.error('❌ Error generando contenido de standings:', error)
+        return NextResponse.json(
+          {
+            error: 'Error generando contenido de standings',
+            message: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        )
+      }
+    }
     // If this is a match result update, generate content first
-    if (body.trigger_type === 'match_result_update') {
+    else if (body.trigger_type === 'match_result_update') {
       console.log('🔄 Generando contenido de resultado de partido...')
 
       try {
