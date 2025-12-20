@@ -15,7 +15,7 @@ import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Database } from "@/lib/supabase/database.types"
 import { analyzeTeamActivity, generateRoundRobinSchedule, getNextMatchDate, CalendarAdjustmentResult } from "@/lib/utils/calendar-adjuster"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { generateMatchScheduleEmbedding, sendJornadaNotification, generateMatchResultEmbedding, generateStandingsEmbedding } from "@/lib/utils/generate-embeddings"
+import { generateMatchScheduleEmbedding, sendJornadaNotification, generateMatchResultEmbedding, generateStandingsEmbedding, sendMatchResultNotification } from "@/lib/utils/generate-embeddings"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -541,7 +541,32 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           .catch(err => console.warn('Error generando embedding de jornada:', err))
       }
 
-      // 4. Reload matches and close dialog
+      // 4. Send WhatsApp notification for match result
+      const selectedTournament = tournaments.find(t => t.id === selectedTournamentId)
+      if (selectedTournament) {
+        // Get league name
+        const { data: leagueData } = await supabase
+          .from('leagues')
+          .select('name')
+          .eq('id', leagueId)
+          .single()
+
+        const leagueName = leagueData?.name || 'Liga'
+
+        sendMatchResultNotification({
+          league_id: leagueId,
+          tournament_id: selectedTournamentId,
+          home_team: editingScoreMatch.homeTeam.name,
+          away_team: editingScoreMatch.awayTeam.name,
+          home_score: editHomeScore,
+          away_score: editAwayScore,
+          round: editingScoreMatch.round || undefined,
+          league_name: leagueName,
+          tournament_name: selectedTournament.name,
+        }).catch(err => console.warn('Error enviando notificación de resultado:', err))
+      }
+
+      // 5. Reload matches and close dialog
       await loadMatches(selectedTournamentId)
       closeScoreEditDialog()
       setMessage({ type: 'success', text: 'Marcador actualizado y tabla recalculada exitosamente' })

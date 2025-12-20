@@ -43,6 +43,8 @@ interface MatchResultNotification {
   round?: number;
   league_name: string;
   tournament_name: string;
+  league_slug?: string;
+  tournament_id?: string;
   scorers?: Array<{
     player_name: string;
     goals: number;
@@ -55,7 +57,7 @@ const KAPSO_PHONE_NUMBER_ID = process.env.KAPSO_PHONE_NUMBER_ID || '860360857167
 
 // WhatsApp Template Names (must match exactly what's configured in Kapso/Meta)
 const TEMPLATE_JORNADA = process.env.WHATSAPP_TEMPLATE_JORNADA || 'jornadas';
-const TEMPLATE_RESULTADO = process.env.WHATSAPP_TEMPLATE_RESULTADO || 'resultado_partido';
+const TEMPLATE_RESULTADO_JORNADAS = process.env.WHATSAPP_TEMPLATE_RESULTADO_JORNADAS || 'resultado_jornadas';
 
 // Rate limiting configuration
 const RATE_LIMIT_MAX_MESSAGES = parseInt(process.env.WHATSAPP_RATE_LIMIT_MAX || '20'); // Max messages per user
@@ -164,23 +166,29 @@ export async function POST(request: NextRequest) {
 
     console.log(`📱 Found ${linkedUsers.length} users to notify:`, linkedUsers.map(u => u.phone_number));
 
-    // Get league slug for URL construction (for jornada notifications)
+    // Get league slug for URL construction (for notifications with buttons)
     let enrichedContent = content;
-    if (notification_type === 'jornada_created') {
-      const { data: leagueData } = await supabase
-        .from('leagues')
-        .select('slug')
-        .eq('id', league_id)
-        .single();
+    const { data: leagueData } = await supabase
+      .from('leagues')
+      .select('slug')
+      .eq('id', league_id)
+      .single();
 
-      if (leagueData?.slug) {
+    if (leagueData?.slug) {
+      if (notification_type === 'jornada_created') {
         enrichedContent = {
           ...content,
           league_slug: leagueData.slug,
           tournament_id: tournament_id,
         } as JornadaNotification;
-        console.log('🔗 League slug found:', leagueData.slug);
+      } else if (notification_type === 'match_result') {
+        enrichedContent = {
+          ...content,
+          league_slug: leagueData.slug,
+          tournament_id: tournament_id,
+        } as MatchResultNotification;
       }
+      console.log('🔗 League slug found:', leagueData.slug);
     }
 
     // Build template payload based on notification type
@@ -246,7 +254,9 @@ interface TemplatePayload {
   templateName: string;
   language: string;
   components: Array<{
-    type: 'body';
+    type: 'body' | 'header' | 'button';
+    sub_type?: 'url';
+    index?: number;
     parameters: Array<{
       type: 'text';
       text: string;
@@ -266,13 +276,13 @@ interface TemplatePayload {
  * {{6}} = Time (first match)
  * {{7}} = Tournament URL (e.g., https://admin.zona-gol.com/liga/elite-soccer/torneo/xxx)
  *
- * Template resultado_partido has 6 parameters:
- * {{1}} = Home team
- * {{2}} = Home score
- * {{3}} = Away score
- * {{4}} = Away team
- * {{5}} = Round number
- * {{6}} = League name
+ * Template resultado_jornadas has 6 parameters:
+ * {{1}} = Round number (Jornada)
+ * {{2}} = League name (Liga)
+ * {{3}} = Home team (Equipo local)
+ * {{4}} = Home score (Resultado local)
+ * {{5}} = Away team (Equipo visitante)
+ * {{6}} = Away score (Resultado visitante)
  */
 function buildTemplatePayload(
   type: 'jornada_created' | 'match_result',
@@ -312,18 +322,32 @@ function buildTemplatePayload(
     const data = content as MatchResultNotification;
 
     return {
-      templateName: TEMPLATE_RESULTADO,
-      language: 'es_MX',
+      templateName: TEMPLATE_RESULTADO_JORNADAS,
+      language: 'en',
       components: [
+        {
+          type: 'header',
+          parameters: [
+            { type: 'text', text: data.tournament_name }, // {{1}} Header: Nombre del torneo
+          ],
+        },
         {
           type: 'body',
           parameters: [
-            { type: 'text', text: data.home_team },                        // {{1}} Home team
-            { type: 'text', text: String(data.home_score) },               // {{2}} Home score
-            { type: 'text', text: String(data.away_score) },               // {{3}} Away score
-            { type: 'text', text: data.away_team },                        // {{4}} Away team
-            { type: 'text', text: data.round ? String(data.round) : 'N/A' }, // {{5}} Round
-            { type: 'text', text: data.league_name },                      // {{6}} League
+            { type: 'text', text: data.round ? String(data.round) : 'N/A' }, // {{1}} Jornada
+            { type: 'text', text: data.league_name },                        // {{2}} Liga
+            { type: 'text', text: data.home_team },                          // {{3}} Equipo local
+            { type: 'text', text: String(data.home_score) },                 // {{4}} Resultado local
+            { type: 'text', text: data.away_team },                          // {{5}} Equipo visitante
+            { type: 'text', text: String(data.away_score) },                 // {{6}} Resultado visitante
+          ],
+        },
+        {
+          type: 'button',
+          sub_type: 'url',
+          index: 0,
+          parameters: [
+            { type: 'text', text: 'https://admin.zona-gol.com' }, // URL fija
           ],
         },
       ],

@@ -4,10 +4,22 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 export async function GET() {
   const checks: Record<string, { ok: boolean; error?: string; details?: any }> = {};
 
-  // 1. Check OpenAI API Key
-  checks.openai = {
+  // 1. Check LLM API Key (Groq or OpenAI)
+  const llmApiKey = process.env.LLM_API_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+  const llmProvider = process.env.LLM_API_KEY ? 'custom' : process.env.GROQ_API_KEY ? 'groq' : 'openai';
+  checks.llm = {
+    ok: !!llmApiKey,
+    error: llmApiKey ? undefined : 'LLM API key not configured (set GROQ_API_KEY or OPENAI_API_KEY)',
+    details: {
+      provider: llmProvider,
+      model: process.env.LLM_MODEL || 'llama-3.3-70b-versatile',
+    },
+  };
+
+  // 1b. Check OpenAI API Key (for embeddings)
+  checks.embeddings = {
     ok: !!process.env.OPENAI_API_KEY,
-    error: process.env.OPENAI_API_KEY ? undefined : 'OPENAI_API_KEY not configured',
+    error: process.env.OPENAI_API_KEY ? undefined : 'OPENAI_API_KEY not configured (needed for embeddings)',
   };
 
   // 2. Check Kapso API Key

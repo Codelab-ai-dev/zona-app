@@ -1,7 +1,8 @@
 // =====================================================
 // LLM SERVICE
 // =====================================================
-// Genera respuestas naturales usando OpenAI Chat Completions API
+// Genera respuestas naturales usando APIs compatibles con OpenAI
+// Soporta: OpenAI, Groq (Llama, Mixtral), y otros providers
 // Combina contexto de RAG + SQL para respuestas informadas
 // =====================================================
 
@@ -44,7 +45,8 @@ interface LLMResult {
 /**
  * Precios por modelo (USD por 1K tokens)
  */
-const MODEL_PRICING = {
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  // OpenAI Models
   'gpt-4o-mini': {
     input: 0.00015, // $0.15 por 1M tokens
     output: 0.0006, // $0.60 por 1M tokens
@@ -57,11 +59,34 @@ const MODEL_PRICING = {
     input: 0.0005,
     output: 0.0015,
   },
+  // Groq Models (mucho más baratos)
+  'llama-3.3-70b-versatile': {
+    input: 0.00059, // $0.59 por 1M tokens
+    output: 0.00079, // $0.79 por 1M tokens
+  },
+  'llama-3.1-70b-versatile': {
+    input: 0.00059,
+    output: 0.00079,
+  },
+  'llama-3.1-8b-instant': {
+    input: 0.00005, // $0.05 por 1M tokens
+    output: 0.00008, // $0.08 por 1M tokens
+  },
+  'mixtral-8x7b-32768': {
+    input: 0.00024,
+    output: 0.00024,
+  },
+  'gemma2-9b-it': {
+    input: 0.00020,
+    output: 0.00020,
+  },
 };
 
 export class LLMService {
-  // Modelo por defecto (cost-effective para producción)
-  private static readonly DEFAULT_MODEL = 'gpt-4o-mini';
+  // Configuración por variables de entorno (soporta OpenAI y Groq)
+  private static readonly DEFAULT_MODEL = process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
+  private static readonly API_BASE_URL = process.env.LLM_API_BASE_URL || 'https://api.groq.com/openai/v1';
+  private static readonly API_KEY_ENV = process.env.LLM_API_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
   private static readonly DEFAULT_TEMPERATURE = 0.7;
   private static readonly DEFAULT_MAX_TOKENS = 500;
 
@@ -168,13 +193,16 @@ export class LLMService {
       maxTokens: number;
     }
   ): Promise<Omit<LLMResult, 'latencyMs'>> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = this.API_KEY_ENV;
 
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+      throw new Error('LLM API key not configured (set LLM_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY)');
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const apiUrl = `${this.API_BASE_URL}/chat/completions`;
+    console.log(`🔗 LLM: Using ${apiUrl} with model ${options.model}`);
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -213,8 +241,9 @@ export class LLMService {
     const completionTokens = result.usage?.completion_tokens || 0;
     const totalTokens = promptTokens + completionTokens;
 
-    const pricing = MODEL_PRICING[options.model as keyof typeof MODEL_PRICING] ||
-                    MODEL_PRICING['gpt-4o-mini'];
+    const pricing = MODEL_PRICING[options.model] ||
+                    MODEL_PRICING['llama-3.3-70b-versatile'] ||
+                    { input: 0.0001, output: 0.0001 }; // Fallback pricing
 
     const costUsd =
       (promptTokens / 1000) * pricing.input +
