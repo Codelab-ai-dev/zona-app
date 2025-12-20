@@ -3,11 +3,17 @@ import { createClient } from '@supabase/supabase-js'
 
 const N8N_EMBEDDINGS_WEBHOOK_URL = 'https://n8n.zona-gol.com/webhook/embeddings'
 
-// Supabase client (usando variables de entorno)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Create Supabase client lazily to avoid build-time errors
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
+  return createClient(url, key)
+}
 
 /**
  * API Route: Generate Embedding
@@ -20,6 +26,9 @@ const supabase = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
+    // Get Supabase client (created lazily to avoid build errors)
+    const supabase = getSupabaseClient()
+
     // Parse the request body
     const body = await request.json()
 
