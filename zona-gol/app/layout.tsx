@@ -52,6 +52,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        {/* iOS specific meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Zona Gol" />
+        <link rel="apple-touch-icon" href="/zona-gol-logo.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/zona-gol-logo.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/zona-gol-logo.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/zona-gol-logo.png" />
+        {/* iOS Splash Screens */}
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${orbitron.variable}`}>
         <SupabaseProvider>
           {children}
