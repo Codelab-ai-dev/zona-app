@@ -1,24 +1,50 @@
 {
-  "name": "Zona-Gol",
-  "short_name": "Zona-Gol",
-  "description": "Sistema de Gestión de Ligas de Fútbol",
+  "name": "Zona Gol - Gestión de Ligas",
+  "short_name": "Zona Gol",
+  "description": "Plataforma de gestión de ligas de fútbol amateur. Calendario, resultados, estadísticas y más.",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#27AE60",
+  "background_color": "#0a0a0a",
+  "theme_color": "#16a34a",
   "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es-MX",
+  "categories": ["sports", "productivity"],
   "icons": [
     {
       "src": "/zona-gol-logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/zona-gol-logo.webp",
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ir al dashboard principal",
+      "url": "/dashboard",
+      "icons": [{ "src": "/zona-gol-logo.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
 }
