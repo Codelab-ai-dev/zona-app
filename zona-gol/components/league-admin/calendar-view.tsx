@@ -382,6 +382,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         .update({
           home_score: editHomeScore,
           away_score: editAwayScore,
+          status: 'finished', // Mark as finished when score is set
         })
         .eq('id', editingScoreMatch.id)
 
@@ -402,10 +403,10 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
       // Calculate standings from scratch
       const standingsMap = new Map<string, {
         team_id: string
-        played: number
-        won: number
-        drawn: number
-        lost: number
+        matches_played: number
+        matches_won: number
+        matches_drawn: number
+        matches_lost: number
         goals_for: number
         goals_against: number
         goal_difference: number
@@ -417,14 +418,14 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         if (!standingsMap.has(match.home_team_id)) {
           standingsMap.set(match.home_team_id, {
             team_id: match.home_team_id,
-            played: 0, won: 0, drawn: 0, lost: 0,
+            matches_played: 0, matches_won: 0, matches_drawn: 0, matches_lost: 0,
             goals_for: 0, goals_against: 0, goal_difference: 0, points: 0
           })
         }
         if (!standingsMap.has(match.away_team_id)) {
           standingsMap.set(match.away_team_id, {
             team_id: match.away_team_id,
-            played: 0, won: 0, drawn: 0, lost: 0,
+            matches_played: 0, matches_won: 0, matches_drawn: 0, matches_lost: 0,
             goals_for: 0, goals_against: 0, goal_difference: 0, points: 0
           })
         }
@@ -438,8 +439,8 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         const awayStats = standingsMap.get(match.away_team_id)!
 
         // Played
-        homeStats.played++
-        awayStats.played++
+        homeStats.matches_played++
+        awayStats.matches_played++
 
         // Goals
         homeStats.goals_for += match.home_score
@@ -449,16 +450,16 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
         // Result
         if (match.home_score > match.away_score) {
-          homeStats.won++
+          homeStats.matches_won++
           homeStats.points += 3
-          awayStats.lost++
+          awayStats.matches_lost++
         } else if (match.home_score < match.away_score) {
-          awayStats.won++
+          awayStats.matches_won++
           awayStats.points += 3
-          homeStats.lost++
+          homeStats.matches_lost++
         } else {
-          homeStats.drawn++
-          awayStats.drawn++
+          homeStats.matches_drawn++
+          awayStats.matches_drawn++
           homeStats.points += 1
           awayStats.points += 1
         }
@@ -468,21 +469,52 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         awayStats.goal_difference = awayStats.goals_for - awayStats.goals_against
       }
 
-      // Update standings in database
+      // Update team_stats in database
+      // Note: goal_difference and points are GENERATED columns, so we don't include them
+      console.log('📊 Actualizando team_stats para', standingsMap.size, 'equipos')
+      let updateErrors = 0
+
       for (const [teamId, stats] of standingsMap) {
-        const { error: standingsError } = await supabase
-          .from('standings')
+        console.log('📝 Upsert team_stats:', {
+          teamId,
+          leagueId,
+          tournamentId: selectedTournamentId,
+          matches_played: stats.matches_played,
+          matches_won: stats.matches_won,
+          matches_drawn: stats.matches_drawn,
+          matches_lost: stats.matches_lost,
+          goals_for: stats.goals_for,
+          goals_against: stats.goals_against,
+        })
+
+        const { data, error: standingsError } = await supabase
+          .from('team_stats')
           .upsert({
+            league_id: leagueId,
             tournament_id: selectedTournamentId,
             team_id: teamId,
-            ...stats
+            matches_played: stats.matches_played,
+            matches_won: stats.matches_won,
+            matches_drawn: stats.matches_drawn,
+            matches_lost: stats.matches_lost,
+            goals_for: stats.goals_for,
+            goals_against: stats.goals_against,
+            // goal_difference and points are auto-calculated by the database
           }, {
-            onConflict: 'tournament_id,team_id'
+            onConflict: 'team_id,tournament_id'
           })
+          .select()
 
         if (standingsError) {
-          console.warn('Error updating standings for team', teamId, standingsError)
+          console.error('❌ Error updating team_stats for team', teamId, standingsError)
+          updateErrors++
+        } else {
+          console.log('✅ Updated team_stats:', data)
         }
+      }
+
+      if (updateErrors > 0) {
+        console.warn(`⚠️ ${updateErrors} errores actualizando team_stats`)
       }
 
       console.log('✅ Tabla de posiciones actualizada')

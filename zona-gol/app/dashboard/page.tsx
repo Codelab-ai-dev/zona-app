@@ -332,7 +332,7 @@ export default function DashboardPage() {
               <MatchResultEntry leagueId={profile.league_id} />
             </TabsContent>
             <TabsContent value="standings">
-              <StandingsManagement leagueId={profile.league_id} />
+              <StandingsManagement key={activeTab === 'standings' ? Date.now() : 'standings'} leagueId={profile.league_id} />
             </TabsContent>
             <TabsContent value="scorers">
               <TopScorers leagueId={profile.league_id} />
