@@ -2,8 +2,23 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Función helper para obtener el cliente de Supabase con service key
+// Se crea de forma lazy para evitar errores durante el build
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 /**
  * Solicita un restablecimiento de contraseña
@@ -11,12 +26,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  */
 export async function requestPasswordReset(email: string, redirectUrl: string) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    const supabase = getSupabaseAdmin()
 
     // Verificar si el usuario existe
     const { data: userData, error: userError } = await supabase
@@ -79,12 +89,7 @@ export async function requestPasswordReset(email: string, redirectUrl: string) {
  */
 export async function generateManualResetToken(email: string) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    const supabase = getSupabaseAdmin()
 
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
@@ -118,7 +123,7 @@ export async function generateManualResetToken(email: string) {
  */
 export async function updatePasswordWithToken(accessToken: string, newPassword: string) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = getSupabaseAdmin()
 
     const { error } = await supabase.auth.admin.updateUserById(
       accessToken,

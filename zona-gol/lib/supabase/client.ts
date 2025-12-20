@@ -28,22 +28,31 @@ export const createClientSupabaseClient = () => {
 }
 
 // Cliente directo para cuando necesitas más control (singleton)
-export const supabase = (() => {
+// IMPORTANTE: Esta es una función, no una constante ejecutada inmediatamente
+// para evitar errores de build cuando las env vars no están disponibles
+export const getDirectSupabaseClient = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY)')
+  }
+
   // En el servidor, siempre crear una nueva instancia
   if (typeof window === 'undefined') {
-    return createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    return createClient<Database>(url, key)
   }
-  
+
   // En el cliente, reutilizar la instancia existente
   if (!directClientSingleton) {
-    directClientSingleton = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    directClientSingleton = createClient<Database>(url, key)
   }
-  
+
   return directClientSingleton
-})()
+}
+
+// Alias para compatibilidad con código existente (legacy)
+// NOTA: Solo usar en contexto de cliente, no en el servidor durante build
+export const supabase = typeof window !== 'undefined'
+  ? getDirectSupabaseClient()
+  : (null as unknown as ReturnType<typeof createClient<Database>>)

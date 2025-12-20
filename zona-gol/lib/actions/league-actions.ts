@@ -1,7 +1,21 @@
 import { createClientSupabaseClient } from '../supabase/client'
+import { createClient } from '@supabase/supabase-js'
 import { useLeagueStore } from '../stores/league-store'
 import { useAuthStore } from '../stores/auth-store'
 import { Database } from '../supabase/database.types'
+
+// Helper para crear cliente de Supabase en el servidor de forma lazy
+// Evita errores durante el build cuando las env vars no están disponibles
+function getServerSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
+  return createClient<Database>(url, key)
+}
 
 type League = Database['public']['Tables']['leagues']['Row']
 type LeagueInsert = Database['public']['Tables']['leagues']['Insert']
@@ -593,9 +607,10 @@ export const leagueActions = {
 }
 
 // Server-side functions (no store dependencies)
+// Usa getServerSupabaseClient() para crear el cliente de forma lazy
 export const serverLeagueActions = {
   async getActiveLeagues() {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       const { data: leagues, error } = await supabase
@@ -616,7 +631,7 @@ export const serverLeagueActions = {
   },
 
   async getLeagueBySlug(slug: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       const { data: league, error } = await supabase
@@ -638,7 +653,7 @@ export const serverLeagueActions = {
   },
 
   async getTournamentsByLeague(leagueId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       const { data: tournaments, error } = await supabase
@@ -659,7 +674,7 @@ export const serverLeagueActions = {
   },
 
   async getTeamsByLeague(leagueId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       const { data: teams, error } = await supabase
@@ -681,7 +696,7 @@ export const serverLeagueActions = {
   },
 
   async getLeagueStats(leagueId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       // Get teams count
@@ -913,7 +928,7 @@ export const serverLeagueActions = {
   },
 
   async getTeamsByTournament(tournamentId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       const { data: teams, error } = await supabase
@@ -935,7 +950,7 @@ export const serverLeagueActions = {
   },
 
   async getTournamentStats(tournamentId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       // Get teams count
@@ -1044,7 +1059,7 @@ export const serverLeagueActions = {
   },
 
   async calculateTeamStandingsByTournament(tournamentId: string) {
-    const supabase = createClientSupabaseClient()
+    const supabase = getServerSupabaseClient()
 
     try {
       // Get all matches for this tournament
