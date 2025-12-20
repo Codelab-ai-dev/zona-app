@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ActionsService } from '../actions.service';
-import { AgentAction, UserIdentity } from '@/lib/types/agent.types';
+import { SystemAction, UserIdentity } from '@/lib/types/agent.types';
 
 // Mock de Supabase
 const mockSupabaseClient = {
@@ -67,7 +67,7 @@ describe('ActionsService', () => {
 
   describe('validateAction', () => {
     it('should validate send_whatsapp_template action', () => {
-      const validAction: AgentAction = {
+      const validAction: SystemAction = {
         type: 'send_whatsapp_template',
         payload: {
           phoneNumber: '+5215512345678',
@@ -82,7 +82,7 @@ describe('ActionsService', () => {
     });
 
     it('should reject action without phoneNumber', () => {
-      const invalidAction: AgentAction = {
+      const invalidAction: SystemAction = {
         type: 'send_whatsapp_template',
         payload: {
           templateName: 'welcome',
@@ -98,7 +98,7 @@ describe('ActionsService', () => {
     });
 
     it('should reject action without templateName', () => {
-      const invalidAction: AgentAction = {
+      const invalidAction: SystemAction = {
         type: 'send_whatsapp_template',
         payload: {
           phoneNumber: '+5215512345678',
@@ -114,7 +114,7 @@ describe('ActionsService', () => {
     });
 
     it('should validate open_24h_window action', () => {
-      const validAction: AgentAction = {
+      const validAction: SystemAction = {
         type: 'open_24h_window',
         payload: {
           phoneNumber: '+5215512345678',
@@ -128,7 +128,7 @@ describe('ActionsService', () => {
     });
 
     it('should validate create_notification action', () => {
-      const validAction: AgentAction = {
+      const validAction: SystemAction = {
         type: 'create_notification',
         payload: {
           userId: 'user-123',
@@ -383,7 +383,7 @@ describe('ActionsService', () => {
 
   describe('formatActionsForResponse', () => {
     it('should format actions for response', () => {
-      const actions: AgentAction[] = [
+      const actions: SystemAction[] = [
         {
           type: 'open_24h_window',
           payload: { phoneNumber: '+5215512345678', triggeredBy: 'agent' },
@@ -521,7 +521,7 @@ describe('ActionsService Real-World Scenarios', () => {
   });
 
   it('should handle multiple action types', () => {
-    const actions: AgentAction[] = [
+    const actions: SystemAction[] = [
       ActionsService.createWhatsAppTemplateAction(
         '+5215512345678',
         'match_reminder',

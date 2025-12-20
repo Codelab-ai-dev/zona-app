@@ -2,6 +2,9 @@ import { LeagueTournamentsView } from "@/components/public/league-tournaments-vi
 import { serverLeagueActions } from "@/lib/actions/league-actions"
 import { notFound } from "next/navigation"
 
+// Force dynamic rendering - no static generation during build
+export const dynamic = 'force-dynamic'
+
 interface PublicLeaguePageProps {
   params: Promise<{
     slug: string
@@ -16,17 +19,5 @@ export default async function PublicLeaguePage({ params }: PublicLeaguePageProps
   } catch (error) {
     console.error('Error loading league:', error)
     notFound()
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    const leagues = await serverLeagueActions.getActiveLeagues()
-    return leagues.map((league) => ({
-      slug: league.slug,
-    }))
-  } catch (error) {
-    console.error('Error generating static params:', error)
-    return []
   }
 }

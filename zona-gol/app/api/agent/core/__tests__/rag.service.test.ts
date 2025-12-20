@@ -2,7 +2,7 @@
 // RAG SERVICE TESTS
 // =====================================================
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RAGService } from '../rag.service';
 
 // Mock de Supabase

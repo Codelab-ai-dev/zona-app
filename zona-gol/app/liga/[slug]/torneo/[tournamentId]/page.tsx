@@ -3,6 +3,9 @@ import { serverLeagueActions } from "@/lib/actions/league-actions"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 
+// Force dynamic rendering - no static generation during build
+export const dynamic = 'force-dynamic'
+
 interface TournamentPageProps {
   params: Promise<{
     slug: string
