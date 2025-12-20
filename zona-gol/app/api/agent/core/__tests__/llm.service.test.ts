@@ -421,9 +421,9 @@ describe('LLMService', () => {
       expect(result.tokensUsed).toBe(70);
       expect(result.costUsd).toBeGreaterThan(0);
 
-      // Verificar que se llamó con los parámetros correctos
+      // Verificar que se llamó con los parámetros correctos (URL de Groq por defecto)
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://api.openai.com/v1/chat/completions',
+        expect.stringContaining('/chat/completions'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

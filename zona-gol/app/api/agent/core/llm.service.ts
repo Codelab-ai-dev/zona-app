@@ -83,12 +83,22 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
 };
 
 export class LLMService {
-  // Configuración por variables de entorno (soporta OpenAI y Groq)
-  private static readonly DEFAULT_MODEL = process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
-  private static readonly API_BASE_URL = process.env.LLM_API_BASE_URL || 'https://api.groq.com/openai/v1';
-  private static readonly API_KEY_ENV = process.env.LLM_API_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+  // Configuración por defecto
   private static readonly DEFAULT_TEMPERATURE = 0.7;
   private static readonly DEFAULT_MAX_TOKENS = 500;
+
+  // Getters para configuración dinámica (soporta OpenAI y Groq)
+  private static get DEFAULT_MODEL(): string {
+    return process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
+  }
+
+  private static get API_BASE_URL(): string {
+    return process.env.LLM_API_BASE_URL || 'https://api.groq.com/openai/v1';
+  }
+
+  private static get API_KEY(): string | undefined {
+    return process.env.LLM_API_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
+  }
 
   /**
    * Genera una respuesta usando OpenAI
@@ -193,7 +203,7 @@ export class LLMService {
       maxTokens: number;
     }
   ): Promise<Omit<LLMResult, 'latencyMs'>> {
-    const apiKey = this.API_KEY_ENV;
+    const apiKey = this.API_KEY;
 
     if (!apiKey) {
       throw new Error('LLM API key not configured (set LLM_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY)');
