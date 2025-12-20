@@ -5,6 +5,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SQLService } from '../sql.service';
 
+// Helper para crear un mock fluido que retorna el mismo objeto para encadenar
+const createFluentMock = (resolvedValue: { data: any; error: any }) => {
+  const mock: any = {
+    select: vi.fn(() => mock),
+    eq: vi.fn(() => mock),
+    or: vi.fn(() => mock),
+    in: vi.fn(() => mock),
+    gt: vi.fn(() => mock),
+    gte: vi.fn(() => mock),
+    lt: vi.fn(() => mock),
+    lte: vi.fn(() => mock),
+    ilike: vi.fn(() => mock),
+    contains: vi.fn(() => mock),
+    order: vi.fn(() => mock),
+    limit: vi.fn(() => mock),
+    single: vi.fn(() => mock),
+    then: vi.fn((resolve) => resolve(resolvedValue)),
+  };
+  // Make it thenable for await
+  Object.defineProperty(mock, 'then', {
+    value: (resolve: any) => Promise.resolve(resolvedValue).then(resolve),
+  });
+  return mock;
+};
+
 // Mock de Supabase
 const mockSupabaseClient = {
   from: vi.fn(),
@@ -12,7 +37,7 @@ const mockSupabaseClient = {
 };
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => mockSupabaseClient),
+  createServerSupabaseClient: vi.fn(() => Promise.resolve(mockSupabaseClient)),
 }));
 
 describe('SQLService', () => {
@@ -22,10 +47,11 @@ describe('SQLService', () => {
 
   describe('getJornadaCalendar', () => {
     it('should fetch matches for specific jornada', async () => {
+      // The service maps 'round' to 'jornada' in the result
       const mockMatches = [
         {
           id: '1',
-          jornada: 5,
+          round: 5, // DB column is 'round', not 'jornada'
           home_team_id: 'team1',
           away_team_id: 'team2',
           home_score: null,
@@ -33,53 +59,30 @@ describe('SQLService', () => {
           match_date: '2025-01-20',
           match_time: '19:00',
           status: 'scheduled',
-          venue: 'Estadio A',
+          field_number: 1,
           home_team: { name: 'Tigres' },
           away_team: { name: 'América' },
         },
       ];
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                order: vi.fn().mockResolvedValue({
-                  data: mockMatches,
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: mockMatches, error: null })
+      );
 
-      const result = await SQLService.getJornadaCalendar(5, 'league-123');
+      const result = await SQLService.getJornadaCalendar(5, 'league-123', 'tournament-456');
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].jornada).toBe(5);
       expect(result.data[0].homeTeam).toBe('Tigres');
       expect(result.data[0].awayTeam).toBe('América');
-      expect(result.executionTime).toBeGreaterThan(0);
+      // executionTime can be 0 in tests due to mock speed
+      expect(result.executionTime).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle tournament filtering', async () => {
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                order: vi.fn().mockReturnValue({
-                  order: vi.fn().mockResolvedValue({
-                    data: [],
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: [], error: null })
+      );
 
       const result = await SQLService.getJornadaCalendar(
         5,
@@ -91,23 +94,12 @@ describe('SQLService', () => {
     });
 
     it('should throw error on database failure', async () => {
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                order: vi.fn().mockResolvedValue({
-                  data: null,
-                  error: { message: 'Database error' },
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: null, error: { message: 'Database error' } })
+      );
 
       await expect(
-        SQLService.getJornadaCalendar(5, 'league-123')
+        SQLService.getJornadaCalendar(5, 'league-123', 'tournament-456')
       ).rejects.toThrow('Failed to get jornada calendar');
     });
   });
@@ -116,22 +108,14 @@ describe('SQLService', () => {
     it('should fetch today matches', async () => {
       const today = new Date().toISOString().split('T')[0];
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({
-                data: [],
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: [], error: null })
+      );
 
-      const result = await SQLService.getTodayMatches('league-123');
+      const result = await SQLService.getTodayMatches('league-123', 'tournament-456');
 
-      expect(result.query.params).toHaveProperty('date', today);
+      expect(result.query.query).toContain(today);
+      expect(result.data).toEqual([]);
     });
   });
 
@@ -154,22 +138,11 @@ describe('SQLService', () => {
         },
       ];
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: mockResults,
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: mockResults, error: null })
+      );
 
-      const result = await SQLService.getMatchResults('league-123');
+      const result = await SQLService.getMatchResults('league-123', { tournamentId: 'tournament-456' });
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].status).toBe('finished');
@@ -207,23 +180,13 @@ describe('SQLService', () => {
         },
       ];
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: mockResults,
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: mockResults, error: null })
+      );
 
       const result = await SQLService.getMatchResults('league-123', {
         teamName: 'tigres',
+        tournamentId: 'tournament-456',
       });
 
       expect(result.data).toHaveLength(1);
@@ -231,24 +194,11 @@ describe('SQLService', () => {
     });
 
     it('should apply jornada filter', async () => {
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                order: vi.fn().mockReturnValue({
-                  limit: vi.fn().mockResolvedValue({
-                    data: [],
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: [], error: null })
+      );
 
-      await SQLService.getMatchResults('league-123', { jornada: 5 });
+      await SQLService.getMatchResults('league-123', { jornada: 5, tournamentId: 'tournament-456' });
 
       // Verificar que se llamó con jornada = 5
       expect(mockSupabaseClient.from).toHaveBeenCalledWith('matches');
@@ -304,18 +254,9 @@ describe('SQLService', () => {
         },
       ];
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({
-                data: mockMatches,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: mockMatches, error: null })
+      );
 
       const result = await SQLService.getStandings('league-123', 'tournament-456');
 
@@ -351,18 +292,9 @@ describe('SQLService', () => {
         error: { message: 'Not found' },
       });
 
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({
-                data: mockMatches,
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: mockMatches, error: null })
+      );
 
       const result = await SQLService.getStandings('league-123', 'tournament-456');
 
@@ -410,20 +342,9 @@ describe('SQLService', () => {
     });
 
     it('should filter by tournament', async () => {
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                order: vi.fn().mockResolvedValue({
-                  data: [],
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: [], error: null })
+      );
 
       await SQLService.getSuspendedPlayers('league-123', 'tournament-456');
 
@@ -518,51 +439,33 @@ describe('SQLService', () => {
 
   describe('getTeamUpcomingMatches', () => {
     it('should find team and fetch upcoming matches', async () => {
-      // Mock team search
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            ilike: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue({
-                data: [{ id: 'team1', name: 'Tigres' }],
-                error: null,
-              }),
-            }),
-          }),
-        }),
+      // Mock team search (first call)
+      const teamSearchMock = createFluentMock({
+        data: [{ id: 'team1', name: 'Tigres' }],
+        error: null,
       });
 
-      // Mock upcoming matches
-      mockSupabaseClient.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            or: vi.fn().mockReturnValue({
-              in: vi.fn().mockReturnValue({
-                order: vi.fn().mockReturnValue({
-                  order: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockResolvedValue({
-                      data: [
-                        {
-                          id: '1',
-                          jornada: 5,
-                          home_team_id: 'team1',
-                          away_team_id: 'team2',
-                          match_date: '2025-01-25',
-                          match_time: '19:00',
-                          status: 'scheduled',
-                          home_team: { name: 'Tigres' },
-                          away_team: { name: 'América' },
-                        },
-                      ],
-                      error: null,
-                    }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
+      // Mock upcoming matches (second call)
+      const matchesMock = createFluentMock({
+        data: [
+          {
+            id: '1',
+            jornada: 5,
+            home_team_id: 'team1',
+            away_team_id: 'team2',
+            match_date: '2025-01-25',
+            match_time: '19:00',
+            status: 'scheduled',
+            home_team: { name: 'Tigres' },
+            away_team: { name: 'América' },
+          },
+        ],
+        error: null,
       });
+
+      mockSupabaseClient.from
+        .mockReturnValueOnce(teamSearchMock)
+        .mockReturnValueOnce(matchesMock);
 
       const result = await SQLService.getTeamUpcomingMatches(
         'tigres',
@@ -574,18 +477,9 @@ describe('SQLService', () => {
     });
 
     it('should handle team not found', async () => {
-      mockSupabaseClient.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            ilike: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue({
-                data: [],
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      });
+      mockSupabaseClient.from.mockReturnValue(
+        createFluentMock({ data: [], error: null })
+      );
 
       const result = await SQLService.getTeamUpcomingMatches(
         'nonexistent',
@@ -593,7 +487,7 @@ describe('SQLService', () => {
       );
 
       expect(result.data).toEqual([]);
-      expect(result.query.sql).toContain('No team found');
+      expect(result.query.query).toContain('No team found');
     });
   });
 
@@ -667,9 +561,9 @@ describe('SQLService', () => {
 
       const formatted = SQLService.formatStandingsForLLM(standings);
 
-      expect(formatted).toContain('Tabla de Posiciones');
+      expect(formatted).toContain('TABLA DE POSICIONES');
       expect(formatted).toContain('Tigres');
-      expect(formatted).toContain('23'); // Points
+      expect(formatted).toContain('23pts'); // Points
       expect(formatted).toContain('+12'); // Goal difference
     });
 

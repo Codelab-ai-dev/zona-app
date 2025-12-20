@@ -7,7 +7,7 @@ import { RAGService } from '../rag.service';
 
 // Mock de Supabase
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => ({
+  createServerSupabaseClient: vi.fn(() => Promise.resolve({
     from: vi.fn((table: string) => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
@@ -31,12 +31,28 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
-// Mock de fetch para OpenAI API
-global.fetch = vi.fn();
+// Mock de fetch para OpenAI API - needs to be properly mocked
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 describe('RAGService', () => {
+  const originalApiKey = process.env.OPENAI_API_KEY;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    // Re-assign mock after reset
+    global.fetch = mockFetch;
+    // Ensure API key is set for tests that need it
+    process.env.OPENAI_API_KEY = 'test-api-key';
+  });
+
+  afterEach(() => {
+    // Restore original API key
+    if (originalApiKey) {
+      process.env.OPENAI_API_KEY = originalApiKey;
+    } else {
+      delete process.env.OPENAI_API_KEY;
+    }
   });
 
   describe('generateEmbedding', () => {
@@ -44,7 +60,7 @@ describe('RAGService', () => {
       // Mock successful OpenAI response
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
 
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -55,7 +71,7 @@ describe('RAGService', () => {
       const embedding = await (RAGService as any).generateEmbedding('test query');
 
       expect(embedding).toHaveLength(1536);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         'https://api.openai.com/v1/embeddings',
         expect.objectContaining({
           method: 'POST',
@@ -79,7 +95,7 @@ describe('RAGService', () => {
 
     it('should throw error on invalid embedding dimensions', async () => {
       // Mock con dimensiones incorrectas
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: [1, 2, 3] }], // Solo 3 dimensiones
@@ -92,7 +108,7 @@ describe('RAGService', () => {
     });
 
     it('should handle OpenAI API errors', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: false,
         statusText: 'Unauthorized',
         json: async () => ({
@@ -116,7 +132,7 @@ describe('RAGService', () => {
     it('should use default options', async () => {
       // Mock embedding generation
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -136,7 +152,7 @@ describe('RAGService', () => {
 
     it('should apply topK limit', async () => {
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -154,7 +170,7 @@ describe('RAGService', () => {
     it('should calculate average similarity correctly', async () => {
       // Mock embedding y resultados
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -172,7 +188,7 @@ describe('RAGService', () => {
 
     it('should return empty result if no chunks found', async () => {
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -192,7 +208,7 @@ describe('RAGService', () => {
   describe('searchByContentType', () => {
     it('should filter by specific content type', async () => {
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -220,19 +236,19 @@ describe('RAGService', () => {
       const chunks = [
         {
           id: '1',
-          content: 'Partido: Tigres vs América, 3-2',
+          contentText: 'Partido: Tigres vs América, 3-2',
           metadata: { jornada: 5, teams: ['Tigres', 'América'] },
           contentType: 'resultado_partido',
-          similarityScore: 0.95,
-          source: 'database',
+          similarity: 0.95,
+          leagueId: 'league-123',
         },
         {
           id: '2',
-          content: 'Jornada 5 se juega el sábado 20 de enero',
+          contentText: 'Jornada 5 se juega el sábado 20 de enero',
           metadata: { jornada: 5, date: '2025-01-20' },
           contentType: 'jornada_calendario',
-          similarityScore: 0.87,
-          source: 'database',
+          similarity: 0.87,
+          leagueId: 'league-123',
         },
       ];
 
@@ -251,11 +267,11 @@ describe('RAGService', () => {
       const chunks = [
         {
           id: '1',
-          content: 'Información general de la liga',
+          contentText: 'Información general de la liga',
           metadata: {},
           contentType: 'informacion_general',
-          similarityScore: 0.75,
-          source: 'database',
+          similarity: 0.75,
+          leagueId: 'league-123',
         },
       ];
 
@@ -271,7 +287,7 @@ describe('RAGService', () => {
     it('should pass when all systems operational', async () => {
       // Mock successful embedding
       const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-      (global.fetch as any).mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           data: [{ embedding: mockEmbedding }],
@@ -286,7 +302,7 @@ describe('RAGService', () => {
     });
 
     it('should fail when OpenAI not available', async () => {
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       const health = await RAGService.healthCheck();
 
@@ -340,14 +356,28 @@ describe('RAGService Integration Tests', () => {
 });
 
 describe('RAGService Real-World Scenarios', () => {
+  const originalApiKey = process.env.OPENAI_API_KEY;
+
   beforeEach(() => {
+    vi.resetAllMocks();
+    global.fetch = mockFetch;
+    process.env.OPENAI_API_KEY = 'test-api-key';
+
     const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [{ embedding: mockEmbedding }],
       }),
     });
+  });
+
+  afterEach(() => {
+    if (originalApiKey) {
+      process.env.OPENAI_API_KEY = originalApiKey;
+    } else {
+      delete process.env.OPENAI_API_KEY;
+    }
   });
 
   it('should handle match result queries', async () => {

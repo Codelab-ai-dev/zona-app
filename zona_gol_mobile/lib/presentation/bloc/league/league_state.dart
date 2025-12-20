@@ -65,3 +65,36 @@ class LeagueError extends LeagueState {
   @override
   List<Object?> get props => [message];
 }
+
+/// League Updated State
+/// Successfully updated a league
+class LeagueUpdated extends LeagueState {
+  final LeagueEntity league;
+
+  const LeagueUpdated(this.league);
+
+  @override
+  List<Object?> get props => [league];
+}
+
+/// League Deleted State
+/// Successfully deleted a league
+class LeagueDeleted extends LeagueState {
+  final String leagueId;
+
+  const LeagueDeleted(this.leagueId);
+
+  @override
+  List<Object?> get props => [leagueId];
+}
+
+/// League Status Toggled State
+/// Successfully toggled the active status of a league
+class LeagueStatusToggled extends LeagueState {
+  final LeagueEntity league;
+
+  const LeagueStatusToggled(this.league);
+
+  @override
+  List<Object?> get props => [league];
+}

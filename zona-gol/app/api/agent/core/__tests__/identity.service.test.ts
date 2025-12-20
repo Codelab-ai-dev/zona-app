@@ -10,7 +10,7 @@ import { UserRole } from '@/lib/types/agent.types';
 
 // Mock de Supabase
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => ({
+  createServerSupabaseClient: vi.fn(() => Promise.resolve({
     from: vi.fn((table: string) => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({

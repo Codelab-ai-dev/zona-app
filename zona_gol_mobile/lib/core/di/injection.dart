@@ -12,11 +12,13 @@ import '../../domain/repositories/team_repository.dart';
 import '../../domain/repositories/tournament_repository.dart';
 import '../../domain/usecases/create_league_usecase.dart';
 import '../../domain/usecases/create_tournament_usecase.dart';
+import '../../domain/usecases/delete_league_usecase.dart';
 import '../../domain/usecases/get_all_leagues_usecase.dart';
 import '../../domain/usecases/get_all_tournaments_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/get_league_by_id_usecase.dart';
 import '../../domain/usecases/get_leagues_by_admin_usecase.dart';
+import '../../domain/usecases/update_league_usecase.dart';
 import '../../domain/usecases/get_team_by_id_usecase.dart';
 import '../../domain/usecases/get_teams_by_league_usecase.dart';
 import '../../domain/usecases/get_teams_by_tournament_usecase.dart';
@@ -105,6 +107,8 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetLeagueByIdUseCase(sl()));
   sl.registerLazySingleton(() => GetLeaguesByAdminUseCase(sl()));
   sl.registerLazySingleton(() => CreateLeagueUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateLeagueUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteLeagueUseCase(sl()));
 
   // Tournament Use Cases
   sl.registerLazySingleton(() => GetAllTournamentsUseCase(sl()));
@@ -135,6 +139,8 @@ Future<void> initializeDependencies() async {
       getLeagueByIdUseCase: sl(),
       getLeaguesByAdminUseCase: sl(),
       createLeagueUseCase: sl(),
+      updateLeagueUseCase: sl(),
+      deleteLeagueUseCase: sl(),
     ),
   );
 

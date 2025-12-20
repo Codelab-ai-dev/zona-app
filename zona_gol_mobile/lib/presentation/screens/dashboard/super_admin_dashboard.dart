@@ -6,6 +6,7 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../widgets/dashboard/dashboard_action_card.dart';
 import '../../widgets/dashboard/dashboard_header.dart';
+import '../league/create_league_screen.dart';
 import '../league/leagues_list_screen.dart';
 
 /// Super Admin Dashboard
@@ -70,8 +71,10 @@ class SuperAdminDashboard extends StatelessWidget {
                   icon: Icons.add_circle,
                   color: AppTheme.success,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Próximamente: Crear Liga')),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CreateLeagueScreen(),
+                      ),
                     );
                   },
                 ),

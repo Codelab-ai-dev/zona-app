@@ -87,3 +87,52 @@ class SearchLeaguesEvent extends LeagueEvent {
 class ResetLeagueStateEvent extends LeagueEvent {
   const ResetLeagueStateEvent();
 }
+
+/// Update League Event
+/// Updates an existing league
+class UpdateLeagueEvent extends LeagueEvent {
+  final String leagueId;
+  final String? name;
+  final String? slug;
+  final String? description;
+  final String? logo;
+  final bool? isActive;
+
+  const UpdateLeagueEvent({
+    required this.leagueId,
+    this.name,
+    this.slug,
+    this.description,
+    this.logo,
+    this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [leagueId, name, slug, description, logo, isActive];
+}
+
+/// Delete League Event
+/// Soft deletes a league (sets isActive to false)
+class DeleteLeagueEvent extends LeagueEvent {
+  final String leagueId;
+
+  const DeleteLeagueEvent(this.leagueId);
+
+  @override
+  List<Object?> get props => [leagueId];
+}
+
+/// Toggle League Status Event
+/// Toggles the active status of a league
+class ToggleLeagueStatusEvent extends LeagueEvent {
+  final String leagueId;
+  final bool currentStatus;
+
+  const ToggleLeagueStatusEvent({
+    required this.leagueId,
+    required this.currentStatus,
+  });
+
+  @override
+  List<Object?> get props => [leagueId, currentStatus];
+}

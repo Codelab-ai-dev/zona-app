@@ -12,7 +12,7 @@ const mockSupabaseClient = {
 };
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => mockSupabaseClient),
+  createServerSupabaseClient: vi.fn(() => Promise.resolve(mockSupabaseClient)),
 }));
 
 describe('ActionsService', () => {

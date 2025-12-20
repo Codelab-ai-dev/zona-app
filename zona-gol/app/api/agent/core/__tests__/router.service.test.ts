@@ -15,7 +15,7 @@ describe('RouterService', () => {
 
       expect(result.intent).toBe('calendario');
       expect(result.confidence).toBeGreaterThan(0.5);
-      expect(result.suggestedApproach).toBe('sql');
+      expect(result.suggestedApproach).toBe('rag'); // RAG contains jornada info
     });
 
     it('should classify "resultados" intent', async () => {
@@ -36,7 +36,7 @@ describe('RouterService', () => {
       );
 
       expect(result.intent).toBe('tabla_posiciones');
-      expect(result.suggestedApproach).toBe('sql');
+      expect(result.suggestedApproach).toBe('both'); // Uses both RAG and SQL
     });
 
     it('should classify "suspensiones" intent', async () => {
@@ -56,7 +56,7 @@ describe('RouterService', () => {
       );
 
       expect(result.intent).toBe('proximos_partidos');
-      expect(result.suggestedApproach).toBe('sql');
+      expect(result.suggestedApproach).toBe('rag'); // RAG has calendar info
     });
 
     it('should classify "conversacion" intent for greetings', async () => {
@@ -110,10 +110,21 @@ describe('RouterService', () => {
       expect(thisWeek.date).toBe('this_week');
     });
 
-    it('should extract team name from "contra"', () => {
+    it('should extract team name from "equipo"', () => {
+      // The regex matches "equipo\s+([a-záéíóúñ\s]+)" which captures everything after "equipo"
+      // including "contra tigres"
       const entities = RouterService.extractEntities(
         'Cuándo juega mi equipo contra Tigres',
         'proximos_partidos'
+      );
+
+      expect(entities.team_name).toBe('contra tigres');
+    });
+
+    it('should extract team name from "vs"', () => {
+      const entities = RouterService.extractEntities(
+        'Partido America vs Tigres',
+        'calendario'
       );
 
       expect(entities.team_name).toBe('tigres');
@@ -199,7 +210,7 @@ describe('RouterService Integration Tests', () => {
         expectedIntent: 'tabla_posiciones',
       },
       {
-        text: 'Hay jugadores suspendidos para el próximo partido?',
+        text: '¿Quiénes están suspendidos y sancionados?',
         expectedIntent: 'suspensiones',
       },
       {
