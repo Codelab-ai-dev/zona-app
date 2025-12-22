@@ -627,11 +627,11 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-base sm:text-lg flex items-center">
+                  <h3 className="text-base sm:text-lg font-semibold flex items-center text-white drop-shadow">
                     {player.name}
-                    <span className="ml-2 text-sm font-bold text-green-600">#{player.jersey_number}</span>
-                  </CardTitle>
-                  <CardDescription className="text-white/70 drop-shadow">{player.position}</CardDescription>
+                    <span className="ml-2 text-sm font-bold text-green-400">#{player.jersey_number}</span>
+                  </h3>
+                  <p className="text-sm text-white/70 drop-shadow">{player.position}</p>
                 </div>
               </div>
               <div className="flex gap-2">
