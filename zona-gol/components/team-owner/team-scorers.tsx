@@ -1,10 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Loader2, Trophy, Target } from "lucide-react"
+import { Loader2, Trophy, Target, AlertCircle } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -13,140 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useTeamScorers } from "@/lib/queries"
 
 interface TeamScorersProps {
   teamId: string
 }
 
-interface ScorerData {
-  player_id: string
-  player_name: string
-  jersey_number: number
-  total_goals: number
-  total_assists: number
-  matches_played: number
-  goals_per_match: number
-}
-
 export function TeamScorers({ teamId }: TeamScorersProps) {
-  const [scorers, setScorers] = useState<ScorerData[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClientSupabaseClient()
-
-  useEffect(() => {
-    loadTeamScorers()
-  }, [teamId])
-
-  const loadTeamScorers = async () => {
-    setLoading(true)
-    try {
-      console.log('🔍 Loading scorers for team:', teamId)
-
-      // Query to get all player stats for this team's players
-      const { data: statsData, error } = await supabase
-        .from('player_stats')
-        .select(`
-          player_id,
-          goals,
-          assists,
-          match_id,
-          player:players!inner(
-            name,
-            jersey_number,
-            team_id
-          )
-        `)
-        .eq('player.team_id', teamId)
-        .gt('goals', 0)
-        .order('goals', { ascending: false })
-
-      console.log('📊 Player stats query result:', {
-        count: statsData?.length,
-        error,
-        sample: statsData?.[0]
-      })
-
-      if (error) {
-        console.error('❌ Error loading team scorers:', error)
-        return
-      }
-
-      // Aggregate stats by player
-      const playerStatsMap = new Map<string, {
-        player_id: string
-        player_name: string
-        jersey_number: number
-        total_goals: number
-        total_assists: number
-        matches_played: number
-      }>()
-
-      statsData?.forEach((stat: any) => {
-        const player = stat.player
-
-        if (!player) {
-          console.warn('⚠️ Stat without player:', stat)
-          return
-        }
-
-        const playerId = stat.player_id
-        const existing = playerStatsMap.get(playerId)
-
-        if (existing) {
-          existing.total_goals += stat.goals || 0
-          existing.total_assists += stat.assists || 0
-          existing.matches_played += 1
-        } else {
-          playerStatsMap.set(playerId, {
-            player_id: playerId,
-            player_name: player.name,
-            jersey_number: player.jersey_number || 0,
-            total_goals: stat.goals || 0,
-            total_assists: stat.assists || 0,
-            matches_played: 1,
-          })
-        }
-      })
-
-      console.log('📈 Stats processing:', {
-        totalStats: statsData?.length,
-        uniquePlayers: playerStatsMap.size,
-        playersList: Array.from(playerStatsMap.values()).map(p => ({
-          name: p.player_name,
-          goals: p.total_goals
-        }))
-      })
-
-      // Convert map to array and calculate goals per match
-      const scorersArray = Array.from(playerStatsMap.values())
-        .map(scorer => ({
-          ...scorer,
-          goals_per_match: scorer.matches_played > 0
-            ? Number((scorer.total_goals / scorer.matches_played).toFixed(2))
-            : 0,
-        }))
-        .sort((a, b) => {
-          // Sort by total goals (descending), then by assists
-          if (b.total_goals !== a.total_goals) {
-            return b.total_goals - a.total_goals
-          }
-          return b.total_assists - a.total_assists
-        })
-
-      console.log('⚽ Final team scorers array:', {
-        totalScorers: scorersArray.length,
-        topScorer: scorersArray[0]?.player_name,
-        topGoals: scorersArray[0]?.total_goals,
-        allScorers: scorersArray.map(s => `${s.player_name}: ${s.total_goals} goals`)
-      })
-
-      setScorers(scorersArray)
-    } catch (error) {
-      console.error('Error loading team scorers:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // React Query hook
+  const { data: scorers = [], isLoading, error } = useTeamScorers(teamId)
 
   const getPositionBadge = (position: number) => {
     if (position === 1) {
@@ -194,10 +67,16 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" />
               <span className="text-base sm:text-lg text-white drop-shadow">Cargando goleadores...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-400 mb-4" />
+              <p className="text-white/80 drop-shadow">Error al cargar los goleadores</p>
+              <p className="text-sm text-white/70 drop-shadow mt-2">Por favor intenta de nuevo más tarde</p>
             </div>
           ) : scorers.length === 0 ? (
             <div className="text-center py-12">
@@ -207,16 +86,14 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="border-collapse">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20 text-white/90 drop-shadow">Posición</TableHead>
-                    <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Dorsal</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Partidos</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Goles</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Asistencias</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Promedio</TableHead>
+                  <TableRow className="border-white/20 hover:bg-transparent">
+                    <TableHead className="w-20 text-white/90 drop-shadow bg-transparent">Posición</TableHead>
+                    <TableHead className="text-white/90 drop-shadow bg-transparent">Jugador</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Dorsal</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Goles</TableHead>
+                    <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Asistencias</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -225,33 +102,27 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
                     const isTopThree = position <= 3
                     return (
                       <TableRow
-                        key={scorer.player_id}
-                        className={isTopThree ? 'bg-yellow-500/10' : ''}
+                        key={scorer.id}
+                        className={`border-white/10 hover:bg-white/5 ${isTopThree ? 'bg-yellow-500/10' : 'bg-transparent'}`}
                       >
-                        <TableCell>{getPositionBadge(position)}</TableCell>
-                        <TableCell className="font-semibold text-white drop-shadow">
-                          {scorer.player_name}
+                        <TableCell className="bg-transparent">{getPositionBadge(position)}</TableCell>
+                        <TableCell className="font-semibold text-white drop-shadow bg-transparent">
+                          {scorer.name}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center bg-transparent">
                           <Badge variant="outline" className="font-bold backdrop-blur-md bg-white/20 border-white/30 text-white">
                             #{scorer.jersey_number}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center text-white/80 drop-shadow">
-                          {scorer.matches_played}
-                        </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center bg-transparent">
                           <Badge variant="default" className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border-0">
-                            ⚽ {scorer.total_goals}
+                            ⚽ {scorer.goals}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center bg-transparent">
                           <Badge variant="secondary" className="backdrop-blur-md bg-blue-500/30 text-blue-300 border-blue-300/50">
-                            {scorer.total_assists}
+                            {scorer.assists}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center text-sm text-white/80 drop-shadow">
-                          {scorer.goals_per_match.toFixed(2)}
                         </TableCell>
                       </TableRow>
                     )
@@ -265,7 +136,7 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
 
       {/* Top 3 Podium */}
       {scorers.length >= 3 && (
-        <Card className="backdrop-blur-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-300/30 shadow-xl">
+        <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
               <Trophy className="w-5 h-5 text-yellow-400" />
@@ -273,45 +144,45 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {/* 2nd Place */}
               <div className="text-center order-1">
-                <div className="h-32 backdrop-blur-md bg-gray-400/30 border border-gray-300/50 rounded-t-xl flex items-end justify-center pb-4">
-                  <span className="text-4xl">🥈</span>
+                <div className="h-28 sm:h-32 backdrop-blur-md bg-slate-500/30 border border-slate-400/30 rounded-t-xl flex items-end justify-center pb-4">
+                  <span className="text-3xl sm:text-4xl">🥈</span>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-gray-400/50 border border-white/20">
-                  <p className="font-bold text-base sm:text-lg truncate text-white drop-shadow">{scorers[1].player_name}</p>
-                  <p className="text-sm text-white/70 drop-shadow">#{scorers[1].jersey_number}</p>
-                  <p className="text-2xl font-bold text-gray-300 drop-shadow-lg mt-2">
-                    {scorers[1].total_goals} ⚽
+                <div className="backdrop-blur-md bg-slate-800/50 p-3 sm:p-4 rounded-b-xl border-t-4 border-slate-400/50 border border-slate-600/30">
+                  <p className="font-bold text-sm sm:text-lg truncate text-white drop-shadow">{scorers[1].name}</p>
+                  <p className="text-xs sm:text-sm text-white/70 drop-shadow">#{scorers[1].jersey_number}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-slate-300 drop-shadow-lg mt-2">
+                    {scorers[1].goals} ⚽
                   </p>
                 </div>
               </div>
 
               {/* 1st Place */}
               <div className="text-center order-2">
-                <div className="h-40 backdrop-blur-md bg-yellow-500/40 border border-yellow-300/50 rounded-t-xl flex items-end justify-center pb-4">
-                  <span className="text-5xl">🥇</span>
+                <div className="h-36 sm:h-40 backdrop-blur-md bg-yellow-600/30 border border-yellow-500/30 rounded-t-xl flex items-end justify-center pb-4">
+                  <span className="text-4xl sm:text-5xl">🥇</span>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-yellow-400/50 border border-white/20">
-                  <p className="font-bold text-xl truncate text-white drop-shadow-lg">{scorers[0].player_name}</p>
-                  <p className="text-sm text-white/70 drop-shadow">#{scorers[0].jersey_number}</p>
+                <div className="backdrop-blur-md bg-slate-800/50 p-3 sm:p-4 rounded-b-xl border-t-4 border-yellow-500/50 border border-slate-600/30">
+                  <p className="font-bold text-base sm:text-xl truncate text-white drop-shadow-lg">{scorers[0].name}</p>
+                  <p className="text-xs sm:text-sm text-white/70 drop-shadow">#{scorers[0].jersey_number}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg mt-2">
-                    {scorers[0].total_goals} ⚽
+                    {scorers[0].goals} ⚽
                   </p>
                 </div>
               </div>
 
               {/* 3rd Place */}
               <div className="text-center order-3">
-                <div className="h-24 backdrop-blur-md bg-orange-600/40 border border-orange-400/50 rounded-t-xl flex items-end justify-center pb-4">
+                <div className="h-20 sm:h-24 backdrop-blur-md bg-orange-700/30 border border-orange-500/30 rounded-t-xl flex items-end justify-center pb-4">
                   <span className="text-2xl sm:text-3xl">🥉</span>
                 </div>
-                <div className="backdrop-blur-md bg-white/10 p-4 rounded-b-xl border-t-4 border-orange-500/50 border border-white/20">
-                  <p className="font-bold text-base sm:text-lg truncate text-white drop-shadow">{scorers[2].player_name}</p>
-                  <p className="text-sm text-white/70 drop-shadow">#{scorers[2].jersey_number}</p>
-                  <p className="text-2xl font-bold text-orange-400 drop-shadow-lg mt-2">
-                    {scorers[2].total_goals} ⚽
+                <div className="backdrop-blur-md bg-slate-800/50 p-3 sm:p-4 rounded-b-xl border-t-4 border-orange-500/50 border border-slate-600/30">
+                  <p className="font-bold text-sm sm:text-lg truncate text-white drop-shadow">{scorers[2].name}</p>
+                  <p className="text-xs sm:text-sm text-white/70 drop-shadow">#{scorers[2].jersey_number}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-orange-400 drop-shadow-lg mt-2">
+                    {scorers[2].goals} ⚽
                   </p>
                 </div>
               </div>

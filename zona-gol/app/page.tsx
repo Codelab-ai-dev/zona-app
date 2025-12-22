@@ -1,31 +1,49 @@
-"use client"
-
-import { useAuth } from "@/lib/hooks/use-auth"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { redirect } from "next/navigation"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { serverLeagueActions } from "@/lib/actions/league-actions"
 import { LeagueDirectory } from "@/components/public/league-directory"
 
-export default function HomePage() {
-  const { isAuthenticated, loading } = useAuth()
-  const router = useRouter()
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      router.push("/dashboard")
+export default async function HomePage() {
+  // Check auth on server
+  const supabase = await createServerSupabaseClient()
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // Redirect authenticated users to dashboard
+  if (session) {
+    redirect("/dashboard")
+  }
+
+  // Fetch leagues on server
+  const leagues = await serverLeagueActions.getActiveLeagues()
+
+  // Fetch stats for all leagues in parallel
+  const statsPromises = leagues.map(async (league) => {
+    const stats = await serverLeagueActions.getLeagueStats(league.id)
+    return {
+      leagueId: league.id,
+      stats: {
+        teamsCount: stats.teamsCount || 0,
+        tournamentsCount: stats.tournamentsCount || 0,
+        activeTournament: stats.activeTournament || null,
+      }
     }
-  }, [isAuthenticated, loading, router])
+  })
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-soccer-green"></div>
-      </div>
-    )
-  }
+  const statsResults = await Promise.all(statsPromises)
+  const leagueStats: Record<string, any> = {}
+  statsResults.forEach(({ leagueId, stats }) => {
+    leagueStats[leagueId] = stats
+  })
 
-  if (isAuthenticated) {
-    return null // Will redirect to dashboard
-  }
-
-  return <LeagueDirectory />
+  return (
+    <LeagueDirectory
+      initialData={{
+        leagues,
+        leagueStats,
+      }}
+    />
+  )
 }

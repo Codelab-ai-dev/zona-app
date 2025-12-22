@@ -1,12 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Select,
   SelectContent,
@@ -28,15 +25,14 @@ import {
   Plus,
   Trash2,
   Save,
-  Search,
   CalendarDays,
-  Users,
-  Target,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Shield
 } from "lucide-react"
+import Image from "next/image"
 import { generateMatchResultEmbedding, sendMatchResultNotification } from "@/lib/utils/generate-embeddings"
+import { usePendingMatchesByLeague, useInvalidateMatches } from "@/lib/queries"
 
 interface Match {
   id: string
@@ -50,10 +46,12 @@ interface Match {
   home_teams: {
     id: string
     name: string
+    logo?: string | null
   }
   away_teams: {
     id: string
     name: string
+    logo?: string | null
   }
   tournaments: {
     name: string
@@ -90,9 +88,22 @@ interface MatchResultEntryProps {
 export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
   const supabase = createClientSupabaseClient()
 
-  const [matches, setMatches] = useState<Match[]>([])
+  // React Query para partidos pendientes
+  const {
+    data: matchesData = [],
+    isLoading: loading,
+    refetch: refetchMatches
+  } = usePendingMatchesByLeague(leagueId)
+
+  // Hook para invalidar cache
+  const { invalidateByTournament } = useInvalidateMatches()
+
+  // Transform to Match type
+  const matches: Match[] = useMemo(() => {
+    return matchesData as Match[]
+  }, [matchesData])
+
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   const [homeScore, setHomeScore] = useState<number>(0)
@@ -108,50 +119,6 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
   const [awayCards, setAwayCards] = useState<Card[]>([])
 
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
-
-  useEffect(() => {
-    loadMatches()
-  }, [leagueId])
-
-  const loadMatches = async () => {
-    try {
-      setLoading(true)
-
-      // Cargar partidos programados o en progreso
-      const { data, error} = await supabase
-        .from('matches')
-        .select(`
-          id,
-          match_date,
-          match_time,
-          status,
-          home_score,
-          away_score,
-          round,
-          tournament_id,
-          home_teams:teams!matches_home_team_id_fkey(id, name),
-          away_teams:teams!matches_away_team_id_fkey(id, name),
-          tournaments!inner(
-            name,
-            league_id
-          )
-        `)
-        .eq('tournaments.league_id', leagueId)
-        .in('status', ['scheduled', 'in_progress'])
-        .order('match_date')
-        .order('match_time')
-        .limit(50)
-
-      if (error) throw error
-
-      setMatches((data as any) || [])
-    } catch (error) {
-      console.error('Error loading matches:', error)
-      toast.error('Error al cargar partidos')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const loadMatchPlayers = async (match: Match) => {
     try {
@@ -421,8 +388,11 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
       setHomeCards([])
       setAwayCards([])
 
-      // Recargar partidos
-      loadMatches()
+      // Recargar partidos e invalidar cache
+      refetchMatches()
+      if (selectedMatch?.tournament_id) {
+        invalidateByTournament(selectedMatch.tournament_id)
+      }
     } catch (error: any) {
       console.error('Error saving result:', error)
       toast.error(`Error al guardar: ${error.message || 'Error desconocido'}`)
@@ -444,14 +414,14 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
+      <div className="rounded-xl bg-slate-800/50 border border-white/10 p-6">
+        <div className="flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-muted-foreground">Cargando partidos...</p>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-400">Cargando partidos...</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
@@ -460,469 +430,344 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
       <div className="space-y-6">
         {/* Selección de partido */}
         {!selectedMatch && (
-          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
-                <CalendarDays className="w-5 h-5" />
-                Captura Manual de Resultados
-              </CardTitle>
-              <CardDescription className="text-white/80 drop-shadow">
-                Selecciona un partido para registrar su resultado
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {matches.length === 0 ? (
-                <Alert className="backdrop-blur-xl bg-white/10 border-white/20">
-                  <AlertCircle className="h-4 w-4 text-white" />
-                  <AlertTitle className="text-white drop-shadow">No hay partidos disponibles</AlertTitle>
-                  <AlertDescription className="text-white/80 drop-shadow">
-                    No hay partidos programados o en progreso para registrar resultados.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-3">
-                  {matches.map((match) => (
-                    <div
-                      key={match.id}
-                      className="p-4 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg hover:bg-white/15 transition-all cursor-pointer"
-                      onClick={() => handleSelectMatch(match)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="backdrop-blur-md bg-white/20 border-white/30 text-white">
-                              {match.tournaments.name}
-                            </Badge>
-                            {match.round && (
-                              <Badge variant="outline" className="backdrop-blur-md bg-white/20 border-white/30 text-white">
-                                Jornada {match.round}
-                              </Badge>
-                            )}
-                            <Badge
-                              variant="outline"
-                              className={`backdrop-blur-md border-white/30 text-white ${
-                                match.status === 'in_progress'
-                                  ? 'bg-green-500/30'
-                                  : 'bg-blue-500/30'
-                              }`}
-                            >
-                              {match.status === 'in_progress' ? 'En Progreso' : 'Programado'}
-                            </Badge>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/20">
+                <CalendarDays className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-base md:text-lg font-bold text-white">Captura de Resultados</h2>
+                <p className="text-xs text-gray-500">Selecciona un partido para registrar su resultado</p>
+              </div>
+            </div>
+
+            {matches.length === 0 ? (
+              <div className="rounded-xl bg-slate-800/50 border border-white/10 p-6 text-center">
+                <AlertCircle className="w-10 h-10 mx-auto mb-3 text-gray-500" />
+                <h3 className="text-sm font-medium text-white mb-1">No hay partidos disponibles</h3>
+                <p className="text-xs text-gray-500">No hay partidos programados o en progreso</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {matches.map((match) => (
+                  <div
+                    key={match.id}
+                    className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4 hover:bg-slate-700/50 transition-all cursor-pointer"
+                    onClick={() => handleSelectMatch(match)}
+                  >
+                    {/* Badges Row */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/50 text-gray-400">
+                        {match.tournaments.name}
+                      </span>
+                      {match.round && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/50 text-gray-400">
+                          J{match.round}
+                        </span>
+                      )}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        match.status === 'in_progress'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        {match.status === 'in_progress' ? 'En Juego' : 'Programado'}
+                      </span>
+                    </div>
+
+                    {/* Teams */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {match.home_teams.logo ? (
+                          <Image
+                            src={match.home_teams.logo}
+                            alt={match.home_teams.name}
+                            width={24}
+                            height={24}
+                            className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-3 h-3 text-gray-500" />
                           </div>
-                          <div className="text-white drop-shadow font-semibold">
-                            {match.home_teams.name} vs {match.away_teams.name}
+                        )}
+                        <span className="text-xs md:text-sm font-medium text-white truncate">{match.home_teams.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-500 flex-shrink-0">vs</span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                        <span className="text-xs md:text-sm font-medium text-white truncate">{match.away_teams.name}</span>
+                        {match.away_teams.logo ? (
+                          <Image
+                            src={match.away_teams.logo}
+                            alt={match.away_teams.name}
+                            width={24}
+                            height={24}
+                            className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                            <Shield className="w-3 h-3 text-gray-500" />
                           </div>
-                          <div className="text-sm text-white/70 drop-shadow mt-1">
-                            {formatDate(match.match_date, match.match_time)}
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                        >
-                          <Target className="w-4 h-4 mr-2" />
-                          Registrar Resultado
-                        </Button>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
+                    {/* Date and Action */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] md:text-xs text-gray-500">
+                        {formatDate(match.match_date, match.match_time)}
+                      </span>
+                      <span className="text-[10px] px-2 py-1 rounded bg-green-500/20 text-green-400 font-medium">
+                        Registrar
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Formulario de captura */}
         {selectedMatch && (
-          <Card className="backdrop-blur-xl bg-white/10 border-white/20">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
-                    <Trophy className="w-5 h-5" />
-                    {selectedMatch.home_teams.name} vs {selectedMatch.away_teams.name}
-                  </CardTitle>
-                  <CardDescription className="text-white/80 drop-shadow">
-                    {formatDate(selectedMatch.match_date, selectedMatch.match_time)}
-                  </CardDescription>
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-yellow-500/20">
+                    <Trophy className="w-5 h-5 text-yellow-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        {selectedMatch.home_teams.logo ? (
+                          <Image
+                            src={selectedMatch.home_teams.logo}
+                            alt={selectedMatch.home_teams.name}
+                            width={20}
+                            height={20}
+                            className="w-5 h-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center">
+                            <Shield className="w-2.5 h-2.5 text-gray-500" />
+                          </div>
+                        )}
+                        <span className="text-sm md:text-base font-bold text-white">{selectedMatch.home_teams.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">vs</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm md:text-base font-bold text-white">{selectedMatch.away_teams.name}</span>
+                        {selectedMatch.away_teams.logo ? (
+                          <Image
+                            src={selectedMatch.away_teams.logo}
+                            alt={selectedMatch.away_teams.name}
+                            width={20}
+                            height={20}
+                            className="w-5 h-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center">
+                            <Shield className="w-2.5 h-2.5 text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] md:text-xs text-gray-500">
+                      {formatDate(selectedMatch.match_date, selectedMatch.match_time)}
+                    </p>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={() => setSelectedMatch(null)}
-                  className="text-white hover:bg-white/10"
+                  className="text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs"
                 >
                   Cancelar
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Marcador */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-white drop-shadow">{selectedMatch.home_teams.name}</Label>
+            </div>
+
+            {/* Marcador */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <label className="text-[10px] text-gray-500 uppercase tracking-wide mb-3 block">Marcador Final</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 truncate block">{selectedMatch.home_teams.name}</label>
                   <Input
                     type="number"
                     min="0"
                     value={homeScore}
                     onChange={(e) => setHomeScore(parseInt(e.target.value) || 0)}
-                    className="text-3xl text-center backdrop-blur-md bg-white/10 border-white/30 text-white"
+                    className="text-2xl md:text-3xl text-center h-14 bg-slate-700/50 border-white/10 text-white font-bold"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-white drop-shadow">{selectedMatch.away_teams.name}</Label>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 truncate block">{selectedMatch.away_teams.name}</label>
                   <Input
                     type="number"
                     min="0"
                     value={awayScore}
                     onChange={(e) => setAwayScore(parseInt(e.target.value) || 0)}
-                    className="text-3xl text-center backdrop-blur-md bg-white/10 border-white/30 text-white"
+                    className="text-2xl md:text-3xl text-center h-14 bg-slate-700/50 border-white/10 text-white font-bold"
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Goles Local */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-white drop-shadow text-lg">
-                    Goles {selectedMatch.home_teams.name} ({homeGoals.length})
-                  </Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addGoal(true)}
-                    disabled={homePlayers.length === 0}
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Gol
-                  </Button>
+            {/* Goles Local */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wide">Goles</label>
+                  <p className="text-xs md:text-sm font-medium text-white truncate">{selectedMatch.home_teams.name} ({homeGoals.length})</p>
                 </div>
-                {homePlayers.length === 0 && (
-                  <Alert className="backdrop-blur-xl bg-amber-500/10 border-amber-500/20">
-                    <AlertCircle className="h-4 w-4 text-amber-400" />
-                    <AlertDescription className="text-amber-200">
-                      No hay jugadores activos registrados para {selectedMatch.home_teams.name}
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <Button size="sm" onClick={() => addGoal(true)} disabled={homePlayers.length === 0} className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border-0 text-xs h-7">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Gol
+                </Button>
+              </div>
+              {homePlayers.length === 0 && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-400 mb-2">No hay jugadores registrados</div>
+              )}
+              <div className="space-y-2">
                 {homeGoals.map((goal, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 p-3 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                    <div className="col-span-5">
-                      <Select
-                        value={goal.player_id}
-                        onValueChange={(value) => updateGoal(true, index, 'player_id', value)}
-                      >
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
-                          <SelectValue placeholder="Goleador" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {homePlayers.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              #{player.jersey_number} {player.name}
-                            </SelectItem>
-                          ))}
+                  <div key={index} className="rounded-lg bg-slate-700/30 border border-white/5 p-2">
+                    <div className="flex gap-2 mb-2">
+                      <Select value={goal.player_id} onValueChange={(value) => updateGoal(true, index, 'player_id', value)}>
+                        <SelectTrigger className="flex-1 h-8 bg-slate-800/50 border-white/10 text-white text-xs"><SelectValue placeholder="Goleador" /></SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10">
+                          {homePlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
                         </SelectContent>
                       </Select>
+                      <Input type="number" min="1" max="120" placeholder="Min" value={goal.minute || ''} onChange={(e) => updateGoal(true, index, 'minute', parseInt(e.target.value) || null)} className="w-14 h-8 bg-slate-800/50 border-white/10 text-white text-xs text-center" />
+                      <Button variant="ghost" size="sm" onClick={() => removeGoal(true, index)} className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/20"><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
-                    <div className="col-span-3">
-                      <Select
-                        value={goal.assist_player_id || 'none'}
-                        onValueChange={(value) => updateGoal(true, index, 'assist_player_id', value)}
-                      >
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
-                          <SelectValue placeholder="Asistencia" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin asistencia</SelectItem>
-                          {homePlayers.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              #{player.jersey_number} {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-3">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="120"
-                        placeholder="Min"
-                        value={goal.minute || ''}
-                        onChange={(e) => updateGoal(true, index, 'minute', parseInt(e.target.value) || null)}
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeGoal(true, index)}
-                        className="text-red-300 hover:bg-red-500/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Select value={goal.assist_player_id || 'none'} onValueChange={(value) => updateGoal(true, index, 'assist_player_id', value)}>
+                      <SelectTrigger className="h-7 bg-slate-800/50 border-white/10 text-gray-400 text-[10px]"><SelectValue placeholder="Asistencia (opcional)" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10">
+                        <SelectItem value="none" className="text-gray-400 text-xs">Sin asistencia</SelectItem>
+                        {homePlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Goles Visitante */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-white drop-shadow text-lg">
-                    Goles {selectedMatch.away_teams.name} ({awayGoals.length})
-                  </Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addGoal(false)}
-                    disabled={awayPlayers.length === 0}
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Gol
-                  </Button>
+            {/* Goles Visitante */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wide">Goles</label>
+                  <p className="text-xs md:text-sm font-medium text-white truncate">{selectedMatch.away_teams.name} ({awayGoals.length})</p>
                 </div>
-                {awayPlayers.length === 0 && (
-                  <Alert className="backdrop-blur-xl bg-amber-500/10 border-amber-500/20">
-                    <AlertCircle className="h-4 w-4 text-amber-400" />
-                    <AlertDescription className="text-amber-200">
-                      No hay jugadores activos registrados para {selectedMatch.away_teams.name}
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <Button size="sm" onClick={() => addGoal(false)} disabled={awayPlayers.length === 0} className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border-0 text-xs h-7">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Gol
+                </Button>
+              </div>
+              {awayPlayers.length === 0 && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 text-xs text-amber-400 mb-2">No hay jugadores registrados</div>
+              )}
+              <div className="space-y-2">
                 {awayGoals.map((goal, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 p-3 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                    <div className="col-span-5">
-                      <Select
-                        value={goal.player_id}
-                        onValueChange={(value) => updateGoal(false, index, 'player_id', value)}
-                      >
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
-                          <SelectValue placeholder="Goleador" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {awayPlayers.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              #{player.jersey_number} {player.name}
-                            </SelectItem>
-                          ))}
+                  <div key={index} className="rounded-lg bg-slate-700/30 border border-white/5 p-2">
+                    <div className="flex gap-2 mb-2">
+                      <Select value={goal.player_id} onValueChange={(value) => updateGoal(false, index, 'player_id', value)}>
+                        <SelectTrigger className="flex-1 h-8 bg-slate-800/50 border-white/10 text-white text-xs"><SelectValue placeholder="Goleador" /></SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10">
+                          {awayPlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
                         </SelectContent>
                       </Select>
+                      <Input type="number" min="1" max="120" placeholder="Min" value={goal.minute || ''} onChange={(e) => updateGoal(false, index, 'minute', parseInt(e.target.value) || null)} className="w-14 h-8 bg-slate-800/50 border-white/10 text-white text-xs text-center" />
+                      <Button variant="ghost" size="sm" onClick={() => removeGoal(false, index)} className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/20"><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
-                    <div className="col-span-3">
-                      <Select
-                        value={goal.assist_player_id || 'none'}
-                        onValueChange={(value) => updateGoal(false, index, 'assist_player_id', value)}
-                      >
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
-                          <SelectValue placeholder="Asistencia" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin asistencia</SelectItem>
-                          {awayPlayers.map((player) => (
-                            <SelectItem key={player.id} value={player.id}>
-                              #{player.jersey_number} {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-3">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="120"
-                        placeholder="Min"
-                        value={goal.minute || ''}
-                        onChange={(e) => updateGoal(false, index, 'minute', parseInt(e.target.value) || null)}
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeGoal(false, index)}
-                        className="text-red-300 hover:bg-red-500/20"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Select value={goal.assist_player_id || 'none'} onValueChange={(value) => updateGoal(false, index, 'assist_player_id', value)}>
+                      <SelectTrigger className="h-7 bg-slate-800/50 border-white/10 text-gray-400 text-[10px]"><SelectValue placeholder="Asistencia (opcional)" /></SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10">
+                        <SelectItem value="none" className="text-gray-400 text-xs">Sin asistencia</SelectItem>
+                        {awayPlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Tarjetas */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Tarjetas Local */}
-                <div className="space-y-3">
-                  <Label className="text-white drop-shadow">Tarjetas {selectedMatch.home_teams.name}</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addCard(true, 'yellow')}
-                      className="backdrop-blur-md bg-yellow-500/30 border-yellow-300/30 text-white hover:bg-yellow-500/40"
-                    >
-                      Amarilla
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addCard(true, 'red')}
-                      className="backdrop-blur-md bg-red-500/30 border-red-300/30 text-white hover:bg-red-500/40"
-                    >
-                      Roja
-                    </Button>
+            {/* Tarjetas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Tarjetas Local */}
+              <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-white truncate">Tarjetas {selectedMatch.home_teams.name}</p>
+                  <div className="flex gap-1">
+                    <Button size="sm" onClick={() => addCard(true, 'yellow')} className="h-6 px-2 bg-yellow-500/30 hover:bg-yellow-500/40 text-yellow-300 border-0 text-[10px]">Amarilla</Button>
+                    <Button size="sm" onClick={() => addCard(true, 'red')} className="h-6 px-2 bg-red-500/30 hover:bg-red-500/40 text-red-300 border-0 text-[10px]">Roja</Button>
                   </div>
-                  {homeCards.map((card, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 p-2 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                      <div className="col-span-7">
-                        <Select
-                          value={card.player_id}
-                          onValueChange={(value) => updateCard(true, index, 'player_id', value)}
-                        >
-                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white h-8 text-sm">
-                            <SelectValue placeholder="Jugador" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {homePlayers.map((player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                #{player.jersey_number} {player.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-3">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="120"
-                          placeholder="Min"
-                          value={card.minute || ''}
-                          onChange={(e) => updateCard(true, index, 'minute', parseInt(e.target.value) || null)}
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white h-8 text-sm"
-                        />
-                      </div>
-                      <div className="col-span-2 flex items-center justify-between">
-                        <Badge className={card.type === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}>
-                          {card.type === 'yellow' ? 'A' : 'R'}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeCard(true, index)}
-                          className="text-red-300 hover:bg-red-500/20 h-6 w-6 p-0"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
-
-                {/* Tarjetas Visitante */}
-                <div className="space-y-3">
-                  <Label className="text-white drop-shadow">Tarjetas {selectedMatch.away_teams.name}</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addCard(false, 'yellow')}
-                      className="backdrop-blur-md bg-yellow-500/30 border-yellow-300/30 text-white hover:bg-yellow-500/40"
-                    >
-                      Amarilla
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addCard(false, 'red')}
-                      className="backdrop-blur-md bg-red-500/30 border-red-300/30 text-white hover:bg-red-500/40"
-                    >
-                      Roja
-                    </Button>
-                  </div>
-                  {awayCards.map((card, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 p-2 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
-                      <div className="col-span-7">
-                        <Select
-                          value={card.player_id}
-                          onValueChange={(value) => updateCard(false, index, 'player_id', value)}
-                        >
-                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white h-8 text-sm">
-                            <SelectValue placeholder="Jugador" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {awayPlayers.map((player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                #{player.jersey_number} {player.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-3">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="120"
-                          placeholder="Min"
-                          value={card.minute || ''}
-                          onChange={(e) => updateCard(false, index, 'minute', parseInt(e.target.value) || null)}
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white h-8 text-sm"
-                        />
-                      </div>
-                      <div className="col-span-2 flex items-center justify-between">
-                        <Badge className={card.type === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}>
-                          {card.type === 'yellow' ? 'A' : 'R'}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeCard(false, index)}
-                          className="text-red-300 hover:bg-red-500/20 h-6 w-6 p-0"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
+                <div className="space-y-1.5">
+                  {homeCards.map((card, index) => (
+                    <div key={index} className="flex items-center gap-2 p-1.5 rounded bg-slate-700/30">
+                      <span className={`w-4 h-5 rounded-sm flex-shrink-0 ${card.type === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></span>
+                      <Select value={card.player_id} onValueChange={(value) => updateCard(true, index, 'player_id', value)}>
+                        <SelectTrigger className="flex-1 h-7 bg-slate-800/50 border-white/10 text-white text-[10px]"><SelectValue placeholder="Jugador" /></SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10">
+                          {homePlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" min="1" max="120" placeholder="'" value={card.minute || ''} onChange={(e) => updateCard(true, index, 'minute', parseInt(e.target.value) || null)} className="w-10 h-7 bg-slate-800/50 border-white/10 text-white text-[10px] text-center p-1" />
+                      <Button variant="ghost" size="sm" onClick={() => removeCard(true, index)} className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"><Trash2 className="w-3 h-3" /></Button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Botón Guardar */}
-              <div className="flex items-center justify-between pt-4 border-t border-white/20">
-                <Alert className="flex-1 mr-4 backdrop-blur-xl bg-blue-500/20 border-blue-300/30">
-                  <AlertCircle className="h-4 w-4 text-white" />
-                  <AlertDescription className="text-white/90 drop-shadow text-sm">
-                    Puedes guardar el resultado sin asignar goleadores si no tienes el dato.
-                  </AlertDescription>
-                </Alert>
-                <Button
-                  onClick={handleSaveResult}
-                  disabled={saving}
-                  size="lg"
-                  className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
-                >
+              {/* Tarjetas Visitante */}
+              <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-white truncate">Tarjetas {selectedMatch.away_teams.name}</p>
+                  <div className="flex gap-1">
+                    <Button size="sm" onClick={() => addCard(false, 'yellow')} className="h-6 px-2 bg-yellow-500/30 hover:bg-yellow-500/40 text-yellow-300 border-0 text-[10px]">Amarilla</Button>
+                    <Button size="sm" onClick={() => addCard(false, 'red')} className="h-6 px-2 bg-red-500/30 hover:bg-red-500/40 text-red-300 border-0 text-[10px]">Roja</Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  {awayCards.map((card, index) => (
+                    <div key={index} className="flex items-center gap-2 p-1.5 rounded bg-slate-700/30">
+                      <span className={`w-4 h-5 rounded-sm flex-shrink-0 ${card.type === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`}></span>
+                      <Select value={card.player_id} onValueChange={(value) => updateCard(false, index, 'player_id', value)}>
+                        <SelectTrigger className="flex-1 h-7 bg-slate-800/50 border-white/10 text-white text-[10px]"><SelectValue placeholder="Jugador" /></SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10">
+                          {awayPlayers.map((p) => (<SelectItem key={p.id} value={p.id} className="text-white text-xs">#{p.jersey_number} {p.name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" min="1" max="120" placeholder="'" value={card.minute || ''} onChange={(e) => updateCard(false, index, 'minute', parseInt(e.target.value) || null)} className="w-10 h-7 bg-slate-800/50 border-white/10 text-white text-[10px] text-center p-1" />
+                      <Button variant="ghost" size="sm" onClick={() => removeCard(false, index)} className="h-6 w-6 p-0 text-red-400 hover:bg-red-500/20"><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Info + Guardar */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex-1 rounded-lg bg-blue-500/10 border border-blue-500/20 p-2">
+                  <p className="text-[10px] md:text-xs text-blue-400">
+                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                    Puedes guardar el resultado sin asignar goleadores.
+                  </p>
+                </div>
+                <Button onClick={handleSaveResult} disabled={saving} className="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white border-0 h-10">
                   {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Guardando...
-                    </>
+                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Guardando...</>
                   ) : (
-                    <>
-                      <Save className="w-5 h-5 mr-2" />
-                      Finalizar Partido
-                    </>
+                    <><Save className="w-4 h-4 mr-2" />Finalizar Partido</>
                   )}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 

@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Trophy, Calendar, Users, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
+import { Trophy, Calendar, Users, ArrowRight, ArrowLeft, Loader2, Home } from "lucide-react"
 import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 
@@ -36,7 +35,7 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
         setLoading(true)
         setError(null)
 
-        // Cargar torneos de la liga
+        // Cargar torneos
         const { data: tournamentsData, error: tournamentsError } = await supabase
           .from('tournaments')
           .select('*')
@@ -47,30 +46,46 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
           throw tournamentsError
         }
 
-        // Cargar estadísticas para cada torneo
-        const tournamentsWithStats = await Promise.all(
-          (tournamentsData || []).map(async (tournament) => {
-            // Contar equipos
-            const { count: teamsCount } = await supabase
-              .from('teams')
-              .select('*', { count: 'exact', head: true })
-              .eq('tournament_id', tournament.id)
+        if (!tournamentsData || tournamentsData.length === 0) {
+          setTournaments([])
+          return
+        }
 
-            // Contar partidos
-            const { count: matchesCount } = await supabase
-              .from('matches')
-              .select('*', { count: 'exact', head: true })
-              .eq('tournament_id', tournament.id)
+        const tournamentIds = tournamentsData.map(t => t.id)
 
-            return {
-              ...tournament,
-              teamsCount: teamsCount || 0,
-              matchesCount: matchesCount || 0
-            }
-          })
-        )
+        // OPTIMIZACIÓN: Cargar todos los counts en paralelo con una sola query por tabla
+        const [teamsResult, matchesResult] = await Promise.all([
+          supabase
+            .from('teams')
+            .select('id', { count: 'exact', head: true })
+            .eq('league_id', league.id)
+            .eq('is_active', true),
 
-        setTournaments(tournamentsWithStats)
+          supabase
+            .from('matches')
+            .select('tournament_id')
+            .in('tournament_id', tournamentIds)
+        ])
+
+        const totalTeamsCount = teamsResult.count || 0
+
+        // Agrupar partidos por torneo
+        const matchesByTournament: Record<string, number> = {}
+        tournamentIds.forEach(id => { matchesByTournament[id] = 0 })
+
+        matchesResult.data?.forEach((match: any) => {
+          if (match.tournament_id) {
+            matchesByTournament[match.tournament_id] = (matchesByTournament[match.tournament_id] || 0) + 1
+          }
+        })
+
+        const tournamentsWithStats = tournamentsData.map((tournament) => ({
+          ...tournament,
+          teamsCount: totalTeamsCount,
+          matchesCount: matchesByTournament[tournament.id] || 0
+        }))
+
+        setTournaments(tournamentsWithStats as TournamentWithStats[])
       } catch (err: any) {
         console.error('Error loading tournaments:', err)
         setError(err.message || 'Error cargando torneos')
@@ -88,22 +103,39 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
     const endDate = tournament.end_date ? new Date(tournament.end_date) : null
 
     if (endDate && now > endDate) {
-      return <Badge className="backdrop-blur-md bg-gray-500/80 text-white border-0">Finalizado</Badge>
+      return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs">Finalizado</Badge>
     } else if (now >= startDate && (!endDate || now <= endDate)) {
-      return <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">En Curso</Badge>
+      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">En Curso</Badge>
     } else {
-      return <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">Próximamente</Badge>
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Próximamente</Badge>
     }
+  }
+
+  const getLeagueInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
 
   if (loading) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center py-12 backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
-            <Loader2 className="w-8 h-8 animate-spin mr-2 text-white" />
-            <span className="text-white drop-shadow">Cargando torneos...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+        {/* Fondo decorativo */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-bl from-green-500/10 via-transparent to-transparent transform skew-x-12" />
+          <div className="absolute bottom-0 left-0 w-1/4 h-screen bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent transform -skew-x-12" />
+          <div className="absolute top-10 right-10 w-48 h-48 bg-green-500/5 rounded-full blur-2xl" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">
+          <div className="relative">
+            <div className="absolute inset-0 bg-green-500/20 rounded-full blur-xl animate-pulse" />
+            <Loader2 className="relative w-10 h-10 animate-spin text-green-500" />
           </div>
+          <p className="mt-4 text-gray-400">Cargando torneos...</p>
         </div>
       </div>
     )
@@ -111,12 +143,20 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
 
   if (error) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-        <div className="relative z-10 container mx-auto px-4 py-8">
-          <div className="text-center py-12 backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 drop-shadow-lg">Error</h2>
-            <p className="text-red-300 drop-shadow">{error}</p>
-            <Button onClick={() => router.back()} className="mt-4 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-bl from-red-500/10 via-transparent to-transparent transform skew-x-12" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center max-w-md">
+            <h2 className="text-xl font-bold text-white mb-3">Error</h2>
+            <p className="text-red-400 mb-6">{error}</p>
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
@@ -127,115 +167,190 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      <div className="relative z-10 container mx-auto px-4 py-8 space-y-6">
-        {/* Header with League Info */}
-        <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <Button onClick={() => router.back()} size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
-              <ArrowLeft className="w-4 h-4" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+      {/* Fondo con elementos deportivos */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-bl from-green-500/10 via-transparent to-transparent transform skew-x-12" />
+          <div className="absolute bottom-0 left-0 w-1/4 h-screen bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent transform -skew-x-12" />
+        </div>
+        <div className="absolute top-10 right-10 w-48 h-48 bg-green-500/5 rounded-full blur-2xl" />
+        <div className="absolute bottom-10 left-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
+      </div>
+
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header */}
+        <header className="pt-4 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <Button
+              onClick={() => router.push('/')}
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white hover:bg-white/10"
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Inicio
             </Button>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Avatar className="w-12 h-12 sm:w-16 sm:h-16 border-2 border-white/30 shadow-lg">
-                {league.logo ? (
-                  <AvatarImage src={league.logo} alt={`${league.name} logo`} />
-                ) : (
-                  <AvatarFallback className="backdrop-blur-md bg-white/20 text-white font-bold text-base sm:text-lg">
-                    {league.name
-                      .split(" ")
-                      .map((word) => word[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">{league.name}</h1>
-                <p className="text-white/70 drop-shadow">/{league.slug}</p>
+          </div>
+        </header>
+
+        {/* Hero Section - Liga Info */}
+        <section className="pt-6 pb-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl">
+              {/* Decoración angular */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent transform rotate-12 translate-x-8 -translate-y-8" />
+
+              <div className="relative p-6 md:p-8">
+                <div className="flex flex-col md:flex-row items-center gap-5">
+                  {/* Logo de la liga */}
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-green-500/20 rounded-full blur-lg" />
+                    <Avatar className="relative w-20 h-20 md:w-24 md:h-24 border-2 border-green-500/30 shadow-lg shadow-green-500/20">
+                      {league.logo && (
+                        <AvatarImage src={league.logo} alt={league.name} className="object-cover" />
+                      )}
+                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white text-xl md:text-2xl font-bold">
+                        {getLeagueInitials(league.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+
+                  {/* Info de la liga */}
+                  <div className="flex-1 text-center md:text-left">
+                    <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+                      {league.name}
+                    </h1>
+                    {league.description && (
+                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                        {league.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-center md:justify-start gap-2">
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs px-2 py-0.5">
+                        Liga Activa
+                      </Badge>
+                      <span className="text-gray-500 text-xs">/{league.slug}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Decoración angular inferior */}
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-500/10 to-transparent transform -rotate-12 -translate-x-6 translate-y-6" />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* League Description */}
-        {league.description && (
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
-            <p className="text-white/90 drop-shadow">{league.description}</p>
-          </div>
-        )}
+        {/* Sección de Torneos */}
+        <section className="flex-1 pb-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Título de sección */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center justify-center gap-2">
+                <Trophy className="w-5 h-5 text-green-500" />
+                <h2 className="text-xl md:text-2xl font-bold text-white">
+                  Torneos
+                </h2>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-green-500/50 to-transparent" />
+            </div>
 
-        {/* Tournaments List */}
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 drop-shadow-lg">Torneos</h2>
-
-          {tournaments.length === 0 ? (
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 shadow-xl">
-              <div className="py-12 text-center">
-                <Trophy className="w-12 h-12 text-white/70 mx-auto mb-4 drop-shadow-lg" />
-                <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow">
+            {tournaments.length === 0 ? (
+              <div className="text-center py-12 rounded-2xl bg-slate-800/50 border border-white/10">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4">
+                  <Trophy className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">
                   No hay torneos disponibles
                 </h3>
-                <p className="text-white/80 drop-shadow">
+                <p className="text-gray-400 text-sm max-w-md mx-auto">
                   Los torneos aparecerán aquí cuando se creen
                 </p>
               </div>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {tournaments.map((tournament) => (
-                <div key={tournament.id} className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform">
-                  <div className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-base sm:text-lg font-semibold text-white drop-shadow-lg">{tournament.name}</h3>
-                        <p className="text-white/70 text-sm drop-shadow">
-                          {new Date(tournament.start_date).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {tournaments.map((tournament) => (
+                  <div
+                    key={tournament.id}
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-white/10 hover:border-green-500/30 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-green-500/10"
+                  >
+                    {/* Decoración */}
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="relative p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-white group-hover:text-green-400 transition-colors">
+                            {tournament.name}
+                          </h3>
+                          <p className="text-gray-500 text-xs mt-0.5">
+                            {new Date(tournament.start_date).toLocaleDateString('es-ES', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                        {getStatusBadge(tournament)}
                       </div>
-                      {getStatusBadge(tournament)}
-                    </div>
-                    <div className="space-y-4">
+
                       {tournament.description && (
-                        <p className="text-sm text-white/80 line-clamp-2 drop-shadow">
+                        <p className="text-gray-400 text-sm mb-4 line-clamp-2">
                           {tournament.description}
                         </p>
                       )}
 
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center text-white/80 drop-shadow">
-                          <Users className="w-4 h-4 mr-2" />
-                          {tournament.teamsCount} equipos
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="p-1 rounded bg-blue-500/20">
+                            <Users className="w-3 h-3 text-blue-400" />
+                          </div>
+                          <span className="text-sm text-gray-400">{tournament.teamsCount}</span>
                         </div>
-                        <div className="flex items-center text-white/80 drop-shadow">
-                          <Trophy className="w-4 h-4 mr-2" />
-                          {tournament.matchesCount} partidos
+                        <div className="flex items-center gap-1.5">
+                          <div className="p-1 rounded bg-purple-500/20">
+                            <Trophy className="w-3 h-3 text-purple-400" />
+                          </div>
+                          <span className="text-sm text-gray-400">{tournament.matchesCount}</span>
                         </div>
                         {tournament.format && (
-                          <div className="flex items-center text-white/80 drop-shadow">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Formato: {tournament.format}
+                          <div className="flex items-center gap-1.5">
+                            <div className="p-1 rounded bg-orange-500/20">
+                              <Calendar className="w-3 h-3 text-orange-400" />
+                            </div>
+                            <span className="text-sm text-gray-400 capitalize">{tournament.format}</span>
                           </div>
                         )}
                       </div>
 
+                      {/* Botón */}
                       <Link href={`/liga/${league.slug}/torneo/${tournament.id}`}>
-                        <Button className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
+                        <Button
+                          className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md shadow-green-500/25 transition-all duration-300"
+                          size="sm"
+                        >
                           Ver Torneo
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
                       </Link>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-auto py-3">
+          <div className="text-center">
+            <p className="text-gray-700 text-[10px]">
+              © {new Date().getFullYear()} Zona Gol
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   )

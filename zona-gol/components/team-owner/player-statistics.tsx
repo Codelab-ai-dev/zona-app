@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -13,110 +13,38 @@ import {
   TableRow
 } from "@/components/ui/table"
 import { Trophy, Target, AlertTriangle, Clock, Users, Loader2 } from "lucide-react"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Database } from "@/lib/supabase/database.types"
-
-type Player = Database['public']['Tables']['players']['Row']
-type PlayerStats = Database['public']['Tables']['player_stats']['Row']
-
-interface PlayerWithStats extends Player {
-  total_games: number
-  total_goals: number
-  total_assists: number
-  total_yellow_cards: number
-  total_red_cards: number
-  total_minutes_played: number
-}
+import { usePlayerStatsByTeam } from "@/lib/queries"
 
 interface PlayerStatisticsProps {
   teamId: string
 }
 
 export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
-  const [playersWithStats, setPlayersWithStats] = useState<PlayerWithStats[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Usar TanStack Query - resuelve N+1 y cachea automáticamente
+  const { data: playersWithStats = [], isLoading, error } = usePlayerStatsByTeam(teamId)
 
-  const supabase = createClientSupabaseClient()
-
-  useEffect(() => {
-    const loadPlayerStats = async () => {
-      if (!teamId) return
-
-      try {
-        setLoading(true)
-        setError(null)
-
-        console.log('🔵 Loading player stats for team:', teamId)
-
-        // Load players for this team
-        const { data: players, error: playersError } = await supabase
-          .from('players')
-          .select('*')
-          .eq('team_id', teamId)
-          .eq('is_active', true)
-
-        if (playersError) {
-          console.error('❌ Error loading players:', playersError)
-          setError('Error cargando jugadores')
-          return
-        }
-
-        console.log('✅ Players loaded:', players?.length || 0)
-
-        // For each player, get their aggregated stats
-        const playersWithStatsData: PlayerWithStats[] = []
-
-        for (const player of players || []) {
-          const { data: stats, error: statsError } = await supabase
-            .from('player_stats')
-            .select('*')
-            .eq('player_id', player.id)
-
-          if (statsError) {
-            console.warn('⚠️ Error loading stats for player:', player.name, statsError)
-          }
-
-          // Calculate aggregated stats
-          const totalGames = stats?.length || 0
-          const totalGoals = stats?.reduce((sum, s) => sum + (s.goals || 0), 0) || 0
-          const totalAssists = stats?.reduce((sum, s) => sum + (s.assists || 0), 0) || 0
-          const totalYellowCards = stats?.reduce((sum, s) => sum + (s.yellow_cards || 0), 0) || 0
-          const totalRedCards = stats?.reduce((sum, s) => sum + (s.red_cards || 0), 0) || 0
-          const totalMinutesPlayed = stats?.reduce((sum, s) => sum + (s.minutes_played || 0), 0) || 0
-
-          playersWithStatsData.push({
-            ...player,
-            total_games: totalGames,
-            total_goals: totalGoals,
-            total_assists: totalAssists,
-            total_yellow_cards: totalYellowCards,
-            total_red_cards: totalRedCards,
-            total_minutes_played: totalMinutesPlayed,
-          })
-        }
-
-        // Sort by total goals descending, then by total assists
-        playersWithStatsData.sort((a, b) => {
-          if (b.total_goals !== a.total_goals) {
-            return b.total_goals - a.total_goals
-          }
-          return b.total_assists - a.total_assists
-        })
-
-        console.log('✅ Player stats calculated:', playersWithStatsData.length)
-        setPlayersWithStats(playersWithStatsData)
-
-      } catch (err: any) {
-        console.error('❌ Error in loadPlayerStats:', err)
-        setError(err.message || 'Error cargando estadísticas')
-      } finally {
-        setLoading(false)
+  // Ordenar por goles (memoizado para evitar recalcular en cada render)
+  const sortedPlayers = useMemo(() => {
+    return [...playersWithStats].sort((a, b) => {
+      if (b.total_goals !== a.total_goals) {
+        return b.total_goals - a.total_goals
       }
-    }
+      return b.total_assists - a.total_assists
+    })
+  }, [playersWithStats])
 
-    loadPlayerStats()
-  }, [teamId, supabase])
+  // Calcular totales del equipo (memoizado)
+  const teamTotals = useMemo(() => {
+    if (!playersWithStats.length) {
+      return { goals: 0, yellowCards: 0, redCards: 0, minutes: 0 }
+    }
+    return {
+      goals: playersWithStats.reduce((sum, p) => sum + p.total_goals, 0),
+      yellowCards: playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0),
+      redCards: playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0),
+      minutes: playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0),
+    }
+  }, [playersWithStats])
 
   const getPlayerInitials = (name: string) => {
     return name
@@ -127,12 +55,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
       .slice(0, 2)
   }
 
-  const totalTeamGoals = playersWithStats.reduce((sum, player) => sum + player.total_goals, 0)
-  const totalTeamYellowCards = playersWithStats.reduce((sum, player) => sum + player.total_yellow_cards, 0)
-  const totalTeamRedCards = playersWithStats.reduce((sum, player) => sum + player.total_red_cards, 0)
-  const totalTeamMinutes = playersWithStats.reduce((sum, player) => sum + player.total_minutes_played, 0)
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-8">
@@ -150,7 +73,9 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
           <CardContent className="text-center py-8">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">Error</h3>
-            <p className="text-red-400 drop-shadow">{error}</p>
+            <p className="text-red-400 drop-shadow">
+              {error instanceof Error ? error.message : "Error cargando estadísticas"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -164,28 +89,28 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{playersWithStats.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{sortedPlayers.length}</p>
             <p className="text-sm text-white/80 drop-shadow">Jugadores</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamGoals}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.goals}</p>
             <p className="text-sm text-white/80 drop-shadow">Goles Totales</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamYellowCards}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.yellowCards}</p>
             <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
           </CardContent>
         </Card>
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{totalTeamRedCards}</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.redCards}</p>
             <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
           </CardContent>
         </Card>
@@ -203,7 +128,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {playersWithStats.length === 0 ? (
+          {sortedPlayers.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-white/60 mx-auto mb-4" />
               <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">
@@ -228,7 +153,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {playersWithStats.map((player) => (
+                  {sortedPlayers.map((player) => (
                     <TableRow key={player.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
@@ -253,7 +178,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-medium text-white drop-shadow">
-                        {player.total_games}
+                        {player.matches_played}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className="backdrop-blur-md bg-green-500/20 text-green-300 border-green-300/50">

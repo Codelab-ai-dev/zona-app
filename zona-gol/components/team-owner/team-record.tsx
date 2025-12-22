@@ -1,45 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useTeams } from "@/lib/hooks/use-teams"
-import { Trophy, Target, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
+import { Trophy, Target, TrendingUp, TrendingDown, Loader2, AlertCircle } from "lucide-react"
+import { useTeamStats } from "@/lib/queries"
 
 interface TeamRecordProps {
   teamId: string
 }
 
 export function TeamRecord({ teamId }: TeamRecordProps) {
-  const { getTeamStats } = useTeams()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<{
-    matchesCount: number
-    wins: number
-    draws: number
-    losses: number
-    goalsFor: number
-    goalsAgainst: number
-    goalDifference: number
-    points: number
-  } | null>(null)
+  // React Query hook
+  const { data: stats, isLoading, error } = useTeamStats(teamId)
 
-  useEffect(() => {
-    loadStats()
-  }, [teamId])
-
-  const loadStats = async () => {
-    setLoading(true)
-    try {
-      const data = await getTeamStats(teamId)
-      setStats(data)
-    } catch (error) {
-      console.error('Error loading team record:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
@@ -53,6 +26,26 @@ export function TeamRecord({ teamId }: TeamRecordProps) {
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin mr-2 text-white" />
             <span className="text-white drop-shadow">Cargando estadísticas...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <Trophy className="w-5 h-5" />
+            Récord del Equipo
+          </CardTitle>
+          <CardDescription className="text-white/70 drop-shadow">Estadísticas generales</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-red-400">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <span>Error al cargar estadísticas</span>
           </div>
         </CardContent>
       </Card>

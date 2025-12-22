@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useTeamsByLeague, useTournamentsByLeague, useUpdateTeam, useDeleteTeam, queryKeys } from "@/lib/queries"
 import { useTeams } from "@/lib/hooks/use-teams"
-import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Database } from "@/lib/supabase/database.types"
 import { Users, Shield, CheckCircle, XCircle, Plus, Loader2, Edit, Trash2 } from "lucide-react"
@@ -43,21 +44,21 @@ interface TeamManagementProps {
 export function TeamManagement({ leagueId }: TeamManagementProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const {
-    teams,
-    loading,
-    error,
-    getTeamsByLeague,
-    createTeamWithOwner,
-    createTeamWithNewOwner,
-    updateTeam,
-    deleteTeam
-  } = useTeams()
+  const queryClient = useQueryClient()
 
-  const {
-    tournaments,
-    getTournamentsByLeague
-  } = useTournaments()
+  // TanStack Query para cargar datos (con caché)
+  const { data: teams = [], isLoading: loading, error: teamsError } = useTeamsByLeague(leagueId)
+  const { data: tournaments = [] } = useTournamentsByLeague(leagueId)
+
+  // Mutations de TanStack Query
+  const updateTeamMutation = useUpdateTeam()
+  const deleteTeamMutation = useDeleteTeam()
+
+  // Hook original para crear equipos (mantiene lógica compleja)
+  const { createTeamWithNewOwner } = useTeams()
+
+  // Convertir error a string
+  const error = teamsError ? (teamsError instanceof Error ? teamsError.message : 'Error desconocido') : null
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -84,16 +85,10 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   const [showCredentials, setShowCredentials] = useState(false)
   const [ownerCredentials, setOwnerCredentials] = useState<{email: string, password: string, name: string} | null>(null)
 
-  // Load teams and tournaments when component mounts or leagueId changes
-  useEffect(() => {
-    if (leagueId) {
-      console.log('🔵 Loading teams for leagueId:', leagueId)
-      getTeamsByLeague(leagueId).catch(console.error)
-      getTournamentsByLeague(leagueId).catch(console.error)
-    } else {
-      console.warn('⚠️ No leagueId provided to TeamManagement')
-    }
-  }, [leagueId, getTeamsByLeague, getTournamentsByLeague])
+  // Helper para invalidar caché después de operaciones
+  const invalidateTeamsCache = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.teams.byLeague(leagueId) })
+  }
 
   // Don't render if no leagueId
   if (!leagueId) {
@@ -109,7 +104,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const approveTeam = async (teamId: string) => {
     try {
-      await updateTeam(teamId, { is_active: true })
+      await updateTeamMutation.mutateAsync({ teamId, updates: { is_active: true } })
       toast.success('Equipo aprobado exitosamente')
       console.log('✅ Equipo aprobado')
     } catch (error: any) {
@@ -120,7 +115,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const rejectTeam = async (teamId: string) => {
     try {
-      await updateTeam(teamId, { is_active: false })
+      await updateTeamMutation.mutateAsync({ teamId, updates: { is_active: false } })
       toast.success('Equipo rechazado exitosamente')
       console.log('✅ Equipo rechazado')
     } catch (error: any) {
@@ -218,14 +213,9 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
           
           console.log('🏆 Equipo y propietario creados exitosamente en background')
           
-          // Esperar un poco más antes de recargar para asegurar que no interfiera con el modal
-          setTimeout(async () => {
-            try {
-              // Recargar equipos para mostrar el nuevo equipo
-              await getTeamsByLeague(leagueId)
-            } catch (reloadError) {
-              console.warn('⚠️ Error recargando equipos:', reloadError)
-            }
+          // Invalidar caché para recargar equipos
+          setTimeout(() => {
+            invalidateTeamsCache()
           }, 1000)
           
         } catch (backgroundError) {
@@ -283,14 +273,17 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     }
 
     setUpdating(true)
-    
+
     try {
-      await updateTeam(editingTeam.id, {
-        name: formData.name,
-        slug: formData.slug || generateSlug(formData.name),
-        description: formData.description || null,
-        tournament_id: formData.tournamentId === "none" ? null : formData.tournamentId,
-        logo: formData.logo || null,
+      await updateTeamMutation.mutateAsync({
+        teamId: editingTeam.id,
+        updates: {
+          name: formData.name,
+          slug: formData.slug || generateSlug(formData.name),
+          description: formData.description || null,
+          tournament_id: formData.tournamentId === "none" ? null : formData.tournamentId,
+          logo: formData.logo || null,
+        }
       })
 
       setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
@@ -298,9 +291,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       setEditingTeam(null)
       toast.success('Equipo actualizado exitosamente')
       console.log('✅ Equipo actualizado exitosamente')
-
-      // Reload teams to show the updated team
-      await getTeamsByLeague(leagueId)
+      // TanStack Query invalida el caché automáticamente
     } catch (error: any) {
       console.error('❌ Error actualizando equipo:', error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
@@ -321,8 +312,9 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     setToggling(true)
 
     try {
-      await updateTeam(activatingTeam.id, {
-        is_active: !activatingTeam.is_active
+      await updateTeamMutation.mutateAsync({
+        teamId: activatingTeam.id,
+        updates: { is_active: !activatingTeam.is_active }
       })
       toast.success(`Equipo ${action}do exitosamente`)
       console.log(`✅ Equipo ${action}do exitosamente`)
@@ -330,9 +322,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       // Close dialog and reset state
       setIsActivateDialogOpen(false)
       setActivatingTeam(null)
-
-      // Reload teams to show the updated status
-      await getTeamsByLeague(leagueId)
+      // TanStack Query invalida el caché automáticamente
     } catch (error: any) {
       console.error(`❌ Error al ${action} equipo:`, error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
@@ -357,16 +347,14 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     setDeleting(true)
 
     try {
-      await deleteTeam(deletingTeam.id)
+      await deleteTeamMutation.mutateAsync(deletingTeam.id)
       toast.success('Equipo eliminado exitosamente')
       console.log('✅ Equipo eliminado exitosamente')
 
       // Close dialog and reset state
       setIsDeleteDialogOpen(false)
       setDeletingTeam(null)
-
-      // Reload teams to show the updated list
-      await getTeamsByLeague(leagueId)
+      // TanStack Query invalida el caché automáticamente
     } catch (error: any) {
       console.error('❌ Error al eliminar equipo:', error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
@@ -384,159 +372,165 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Equipos</h2>
-          <p className="text-white/80 drop-shadow">Administra los equipos registrados en tu liga</p>
+          <h2 className="text-lg sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Equipos</h2>
+          <p className="text-white/80 drop-shadow text-xs sm:text-base">Administra los equipos de tu liga</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+          if (open) {
+            // Limpiar formulario al abrir
+            setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
+          }
+          setIsCreateDialogOpen(open)
+        }}>
           <DialogTrigger asChild>
-            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm">
+              <Plus className="w-4 h-4 mr-1.5" />
               Agregar Equipo
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+          <DialogContent className="max-w-[95vw] md:max-w-[800px] bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-white drop-shadow-lg">Crear Nuevo Equipo</DialogTitle>
-              <DialogDescription className="text-white/80 drop-shadow">
+              <DialogTitle className="flex items-center text-white text-sm md:text-base">
+                <Shield className="w-4 h-4 mr-2 text-green-400" />
+                Crear Nuevo Equipo
+              </DialogTitle>
+              <DialogDescription className="text-gray-400 text-xs md:text-sm">
                 Agrega un nuevo equipo a tu liga. El equipo será aprobado automáticamente.
               </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[70vh] overflow-y-auto px-2">
-              <div className="grid gap-4 sm:p-6 py-4 px-4 lg:grid-cols-2">
-                {/* Columna izquierda - Información del Equipo */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-white drop-shadow-lg border-b border-white/20 pb-2">Información del Equipo</h4>
-                  
-                  <div className="flex justify-center">
-                    <FileUpload
-                      variant="avatar"
-                      accept="image/*"
-                      maxSize={2}
-                      value={formData.logo}
-                      onChange={handleLogoChange}
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="team-name" className="text-white/90 drop-shadow mb-2 block">Nombre del Equipo *</Label>
-                    <Input
-                      id="team-name"
-                      value={formData.name}
-                      onChange={(e) => handleNameChange(e.target.value)}
-                      placeholder="Ej: Real Madrid CF"
-                      required
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="team-slug" className="text-white/90 drop-shadow mb-2 block">URL Personalizada</Label>
-                    <Input
-                      id="team-slug"
-                      value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                      placeholder="real-madrid-cf"
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                    <p className="text-xs text-white/60 drop-shadow mt-1">Se generará automáticamente si se deja vacío</p>
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="team-description" className="text-white/90 drop-shadow mb-2 block">Descripción</Label>
-                    <Textarea
-                      id="team-description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Descripción del equipo..."
-                      rows={3}
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="team-tournament" className="text-white/90 drop-shadow mb-2 block">Torneo (Opcional)</Label>
-                    <Select value={formData.tournamentId} onValueChange={(value) => setFormData({ ...formData, tournamentId: value })}>
-                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
-                        <SelectValue placeholder="Seleccionar torneo" />
-                      </SelectTrigger>
-                      <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
-                        <SelectItem value="none" className="text-white hover:bg-white/10">Sin torneo asignado</SelectItem>
-                        {tournaments?.map((tournament) => (
-                          <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
-                            {tournament.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-white/60 drop-shadow mt-1">El equipo puede asignarse a un torneo más tarde</p>
-                  </div>
+            <div className="grid gap-4 py-3 md:grid-cols-2">
+              {/* Columna izquierda - Información del Equipo */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-white text-xs md:text-sm border-b border-white/10 pb-2">Información del Equipo</h4>
+
+                <div className="flex justify-center">
+                  <FileUpload
+                    variant="avatar"
+                    accept="image/*"
+                    maxSize={2}
+                    value={formData.logo}
+                    onChange={handleLogoChange}
+                  />
                 </div>
 
-                {/* Columna derecha - Información del Propietario */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-white drop-shadow-lg border-b border-white/20 pb-2">Información del Propietario</h4>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="owner-name" className="text-white/90 drop-shadow mb-2 block">Nombre Completo *</Label>
-                    <Input
-                      id="owner-name"
-                      value={formData.ownerName}
-                      onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                      placeholder="Ej: Juan Pérez"
-                      required
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="owner-email" className="text-white/90 drop-shadow mb-2 block">Email *</Label>
-                    <Input
-                      id="owner-email"
-                      type="email"
-                      value={formData.ownerEmail}
-                      onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                      placeholder="propietario@ejemplo.com"
-                      required
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="grid gap-2">
-                    <Label htmlFor="owner-phone" className="text-white/90 drop-shadow mb-2 block">Teléfono</Label>
-                    <Input
-                      id="owner-phone"
-                      value={formData.ownerPhone}
-                      onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                      placeholder="+502 1234-5678"
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                    />
-                  </div>
-                  
-                  <div className="backdrop-blur-md bg-blue-500/20 border border-blue-300/30 rounded-lg p-3 space-y-2">
-                    <h5 className="text-sm font-medium text-white drop-shadow">ℹ️ Información importante</h5>
-                    <ul className="text-xs text-white/80 drop-shadow space-y-1">
-                      <li>• Se creará automáticamente una cuenta para el propietario</li>
-                      <li>• Recibirá una contraseña temporal que podrá cambiar</li>
-                      <li>• Podrá gestionar los jugadores de su equipo</li>
-                    </ul>
-                  </div>
+                <div>
+                  <Label htmlFor="team-name" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Nombre del Equipo *</Label>
+                  <Input
+                    id="team-name"
+                    value={formData.name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="Ej: Real Madrid CF"
+                    required
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="team-slug" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">URL Personalizada</Label>
+                  <Input
+                    id="team-slug"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="real-madrid-cf"
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">Se generará automáticamente si se deja vacío</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="team-description" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Descripción</Label>
+                  <Textarea
+                    id="team-description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descripción del equipo..."
+                    rows={2}
+                    className="bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm min-h-[60px]"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="team-tournament" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Torneo (Opcional)</Label>
+                  <Select value={formData.tournamentId} onValueChange={(value) => setFormData({ ...formData, tournamentId: value })}>
+                    <SelectTrigger className="h-9 bg-slate-800/50 border-white/10 text-white text-sm">
+                      <SelectValue placeholder="Seleccionar torneo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin torneo asignado</SelectItem>
+                      {tournaments?.map((tournament) => (
+                        <SelectItem key={tournament.id} value={tournament.id}>
+                          {tournament.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Columna derecha - Información del Propietario */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-white text-xs md:text-sm border-b border-white/10 pb-2">Información del Propietario</h4>
+
+                <div>
+                  <Label htmlFor="owner-name" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Nombre Completo *</Label>
+                  <Input
+                    id="owner-name"
+                    value={formData.ownerName}
+                    onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                    placeholder="Ej: Juan Pérez"
+                    required
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="owner-email" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Email *</Label>
+                  <Input
+                    id="owner-email"
+                    type="email"
+                    value={formData.ownerEmail}
+                    onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
+                    placeholder="propietario@ejemplo.com"
+                    required
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="owner-phone" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Teléfono</Label>
+                  <Input
+                    id="owner-phone"
+                    value={formData.ownerPhone}
+                    onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
+                    placeholder="+502 1234-5678"
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                  />
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 space-y-1.5">
+                  <h5 className="text-xs font-medium text-blue-400">Información importante</h5>
+                  <ul className="text-[10px] md:text-xs text-gray-400 space-y-0.5">
+                    <li>• Se creará una cuenta para el propietario</li>
+                    <li>• Recibirá una contraseña temporal</li>
+                    <li>• Podrá gestionar los jugadores</li>
+                  </ul>
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button onClick={() => setIsCreateDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+            <DialogFooter className="flex-row gap-2">
+              <Button onClick={() => setIsCreateDialogOpen(false)} className="flex-1 h-9 bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs md:text-sm">
                 Cancelar
               </Button>
               <Button
                 onClick={handleCreateTeam}
                 disabled={!formData.name.trim() || !formData.ownerName.trim() || !formData.ownerEmail.trim() || creating}
-                className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-lg"
+                className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
               >
                 {creating ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                     Creando...
                   </>
                 ) : (
@@ -703,14 +697,17 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Edit Team Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] md:max-w-[600px] bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg">Editar Equipo</DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogTitle className="flex items-center text-white text-sm md:text-base">
+              <Edit className="w-4 h-4 mr-2 text-blue-400" />
+              Editar Equipo
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               Modifica la información del equipo.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="space-y-3 py-3">
             <div className="flex justify-center">
               <FileUpload
                 variant="avatar"
@@ -720,111 +717,112 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                 onChange={handleLogoChange}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-team-name" className="text-white/90 drop-shadow mb-2 block">Nombre del Equipo</Label>
+            <div>
+              <Label htmlFor="edit-team-name" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Nombre del Equipo</Label>
               <Input
                 id="edit-team-name"
                 value={formData.name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Ej: Real Madrid CF"
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
+                className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-team-slug" className="text-white/90 drop-shadow mb-2 block">URL Personalizada</Label>
+            <div>
+              <Label htmlFor="edit-team-slug" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">URL Personalizada</Label>
               <Input
                 id="edit-team-slug"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="real-madrid-cf"
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
+                className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               />
-              <p className="text-xs text-white/60 drop-shadow mt-1">Se generará automáticamente si se deja vacío</p>
+              <p className="text-[10px] text-gray-500 mt-1">Se generará automáticamente si se deja vacío</p>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-team-description" className="text-white/90 drop-shadow mb-2 block">Descripción</Label>
+            <div>
+              <Label htmlFor="edit-team-description" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Descripción</Label>
               <Textarea
                 id="edit-team-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Descripción del equipo..."
-                rows={3}
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
+                rows={2}
+                className="bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm min-h-[60px]"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-team-tournament" className="text-white/90 drop-shadow mb-2 block">Torneo</Label>
+            <div>
+              <Label htmlFor="edit-team-tournament" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Torneo</Label>
               <Select value={formData.tournamentId} onValueChange={(value) => setFormData({ ...formData, tournamentId: value })}>
-                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                <SelectTrigger className="h-9 bg-slate-800/50 border-white/10 text-white text-sm">
                   <SelectValue placeholder="Seleccionar torneo" />
                 </SelectTrigger>
-                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                  <SelectItem value="none" className="text-white hover:bg-white/10">Sin torneo asignado</SelectItem>
+                <SelectContent>
+                  <SelectItem value="none">Sin torneo asignado</SelectItem>
                   {tournaments?.map((tournament) => (
-                    <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
+                    <SelectItem key={tournament.id} value={tournament.id}>
                       {tournament.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-white/60 drop-shadow mt-1">El equipo puede cambiarse de torneo</p>
             </div>
-            <div className="border-t border-white/20 pt-4">
-              <h4 className="font-medium text-white drop-shadow-lg mb-3">Información del Propietario</h4>
+            <div className="border-t border-white/10 pt-3">
+              <h4 className="font-medium text-white text-xs md:text-sm mb-3">Información del Propietario</h4>
               <div className="space-y-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-name" className="text-white/90 drop-shadow mb-2 block">Nombre Completo</Label>
-                  <Input
-                    id="edit-owner-name"
-                    value={formData.ownerName}
-                    onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                    placeholder="Ej: Juan Pérez"
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="edit-owner-name" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Nombre</Label>
+                    <Input
+                      id="edit-owner-name"
+                      value={formData.ownerName}
+                      onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                      placeholder="Juan Pérez"
+                      className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-owner-phone" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Teléfono</Label>
+                    <Input
+                      id="edit-owner-phone"
+                      value={formData.ownerPhone}
+                      onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
+                      placeholder="+502 1234-5678"
+                      className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                    />
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-email" className="text-white/90 drop-shadow mb-2 block">Email</Label>
+                <div>
+                  <Label htmlFor="edit-owner-email" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Email</Label>
                   <Input
                     id="edit-owner-email"
                     type="email"
                     value={formData.ownerEmail}
                     onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
                     placeholder="propietario@ejemplo.com"
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
+                    className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-owner-phone" className="text-white/90 drop-shadow mb-2 block">Teléfono</Label>
-                  <Input
-                    id="edit-owner-phone"
-                    value={formData.ownerPhone}
-                    onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                    placeholder="+502 1234-5678"
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
-                  />
-                </div>
-                <p className="text-xs text-white/60 drop-shadow backdrop-blur-md bg-white/10 p-2 rounded">
-                  Los cambios en la información del propietario solo actualizarán el nombre y teléfono.
+                <p className="text-[10px] text-gray-500 bg-slate-800/30 p-2 rounded">
+                  Los cambios solo actualizarán el nombre y teléfono.
                 </p>
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-row gap-2">
             <Button onClick={() => {
               setIsEditDialogOpen(false)
               setEditingTeam(null)
               setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
-            }} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+            }} className="flex-1 h-9 bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs md:text-sm">
               Cancelar
             </Button>
             <Button
               onClick={handleUpdateTeam}
               disabled={!formData.name.trim() || updating}
-              className="backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 shadow-lg rounded-lg"
+              className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
             >
               {updating ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                   Actualizando...
                 </>
               ) : (
@@ -837,40 +835,42 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Owner Credentials Dialog */}
       <Dialog open={showCredentials} onOpenChange={setShowCredentials}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-green-500/30">
           <DialogHeader>
-            <DialogTitle className="text-green-700">¡Equipo Creado Exitosamente!</DialogTitle>
-            <DialogDescription>
-              El equipo y la cuenta del propietario han sido creados. Guarda estas credenciales.
+            <DialogTitle className="flex items-center text-green-400 text-sm md:text-base">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Equipo Creado Exitosamente
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
+              Guarda estas credenciales de acceso.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-              <h4 className="font-semibold text-green-800 mb-2">Credenciales del Propietario</h4>
+          <div className="py-3">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 space-y-3">
+              <h4 className="font-medium text-green-400 text-xs md:text-sm">Credenciales del Propietario</h4>
               {ownerCredentials && (
                 <>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Nombre:</span>
-                      <span className="ml-2 text-gray-900">{ownerCredentials.name}</span>
+                  <div className="space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Nombre:</span>
+                      <span className="text-white font-medium">{ownerCredentials.name}</span>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Email:</span>
-                      <span className="ml-2 text-gray-900 font-mono bg-white px-2 py-1 rounded border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Email:</span>
+                      <span className="text-white font-mono bg-slate-800/50 px-2 py-1 rounded text-xs">
                         {ownerCredentials.email}
                       </span>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Contraseña temporal:</span>
-                      <span className="ml-2 text-gray-900 font-mono bg-white px-2 py-1 rounded border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Contraseña:</span>
+                      <span className="text-white font-mono bg-slate-800/50 px-2 py-1 rounded text-xs">
                         {ownerCredentials.password}
                       </span>
                     </div>
                   </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
-                    <p className="text-xs text-blue-800">
-                      <strong>Importante:</strong> Comparte estas credenciales con el propietario del equipo de forma segura.
-                      Se recomienda que cambie la contraseña en su primer inicio de sesión.
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded p-2 mt-2">
+                    <p className="text-[10px] md:text-xs text-blue-400">
+                      <strong>Importante:</strong> Comparte estas credenciales de forma segura.
                     </p>
                   </div>
                 </>
@@ -883,7 +883,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                 setShowCredentials(false)
                 setOwnerCredentials(null)
               }}
-              className="bg-green-600 hover:bg-green-700 w-full"
+              className="w-full h-9 bg-green-500 hover:bg-green-600 text-white text-sm"
             >
               Entendido
             </Button>
@@ -893,100 +893,75 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Activate/Deactivate Team Confirmation Dialog */}
       <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
-        <DialogContent className={`sm:max-w-[500px] backdrop-blur-xl ${activatingTeam?.is_active ? 'bg-gradient-to-br from-slate-900/95 via-yellow-900/95 to-yellow-900/95 border-yellow-300/30' : 'bg-gradient-to-br from-slate-900/95 via-green-900/95 to-green-900/95 border-green-300/30'} shadow-2xl`}>
+        <DialogContent className={`max-w-[95vw] md:max-w-md bg-slate-900 ${activatingTeam?.is_active ? 'border-yellow-500/30' : 'border-green-500/30'}`}>
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+            <DialogTitle className="text-white text-sm md:text-base flex items-center gap-2">
               {activatingTeam?.is_active ? (
                 <>
-                  <XCircle className="w-5 h-5 text-yellow-400" />
+                  <XCircle className="w-4 h-4 text-yellow-400" />
                   Desactivar Equipo
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <CheckCircle className="w-4 h-4 text-green-400" />
                   Activar Equipo
                 </>
               )}
             </DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               {activatingTeam?.is_active
                 ? 'El equipo será ocultado temporalmente'
                 : 'El equipo será visible nuevamente'}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-yellow-500/20 border-yellow-300/30' : 'bg-green-500/20 border-green-300/30'} border rounded-lg p-4 space-y-3`}>
-              <p className="text-white drop-shadow">
-                ¿Estás seguro de que quieres {activatingTeam?.is_active ? 'desactivar' : 'activar'} el equipo{' '}
-                <span className={`font-bold ${activatingTeam?.is_active ? 'text-yellow-300' : 'text-green-300'}`}>
+          <div className="py-3">
+            <div className={`${activatingTeam?.is_active ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-green-500/10 border-green-500/20'} border rounded-lg p-3 space-y-2`}>
+              <p className="text-white text-sm">
+                ¿{activatingTeam?.is_active ? 'Desactivar' : 'Activar'}{' '}
+                <span className={`font-bold ${activatingTeam?.is_active ? 'text-yellow-400' : 'text-green-400'}`}>
                   "{activatingTeam?.name}"
                 </span>?
               </p>
-              {activatingTeam?.is_active ? (
-                <div className="space-y-2 text-sm text-white/90 drop-shadow">
-                  <p className="font-medium">Al desactivar el equipo:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>No será visible en la lista de equipos activos</li>
-                    <li>No podrá participar en nuevos partidos</li>
-                    <li>Los datos del equipo se conservarán</li>
-                    <li>Podrás reactivarlo en cualquier momento</li>
-                  </ul>
-                </div>
-              ) : (
-                <div className="space-y-2 text-sm text-white/90 drop-shadow">
-                  <p className="font-medium">Al activar el equipo:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Será visible en la lista de equipos activos</li>
-                    <li>Podrá participar en partidos</li>
-                    <li>Todos sus datos estarán disponibles</li>
-                    <li>El propietario podrá gestionar el equipo</li>
-                  </ul>
-                </div>
-              )}
-              <div className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-blue-500/20 border-blue-300/30' : 'bg-blue-500/20 border-blue-300/30'} border rounded p-3 mt-3`}>
-                <p className="text-xs text-blue-200 drop-shadow">
-                  <strong>Nota:</strong> {activatingTeam?.is_active
-                    ? 'Esta es una acción reversible. Puedes activar el equipo nuevamente cuando lo necesites.'
-                    : 'Esta es una acción reversible. Puedes desactivar el equipo nuevamente si es necesario.'}
-                </p>
-              </div>
+              <ul className="text-[10px] md:text-xs text-gray-400 space-y-0.5">
+                {activatingTeam?.is_active ? (
+                  <>
+                    <li>• No será visible en equipos activos</li>
+                    <li>• No participará en partidos</li>
+                    <li>• Datos conservados</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Visible en equipos activos</li>
+                    <li>• Podrá participar en partidos</li>
+                    <li>• Propietario podrá gestionar</li>
+                  </>
+                )}
+              </ul>
             </div>
           </div>
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex-row gap-2">
             <Button
               onClick={() => {
                 setIsActivateDialogOpen(false)
                 setActivatingTeam(null)
               }}
               disabled={toggling}
-              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="flex-1 h-9 bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs md:text-sm"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleConfirmToggleActivate}
               disabled={toggling}
-              className={`backdrop-blur-md ${activatingTeam?.is_active ? 'bg-yellow-500/80 hover:bg-yellow-500/90' : 'bg-green-500/80 hover:bg-green-500/90'} text-white border-0 shadow-lg`}
+              className={`flex-1 h-9 ${activatingTeam?.is_active ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'} text-white text-xs md:text-sm`}
             >
               {toggling ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1.5 animate-spin" />
                   {activatingTeam?.is_active ? 'Desactivando...' : 'Activando...'}
                 </>
               ) : (
-                <>
-                  {activatingTeam?.is_active ? (
-                    <>
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Desactivar Equipo
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Activar Equipo
-                    </>
-                  )}
-                </>
+                activatingTeam?.is_active ? 'Desactivar' : 'Activar'
               )}
             </Button>
           </DialogFooter>
@@ -995,64 +970,58 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
       {/* Delete Team Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-900/95 border-red-300/30 shadow-2xl">
+        <DialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-red-500/30">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-red-400" />
+            <DialogTitle className="text-white text-sm md:text-base flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-red-400" />
               Confirmar Eliminación
             </DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="backdrop-blur-md bg-red-500/20 border border-red-300/30 rounded-lg p-4 space-y-3">
-              <p className="text-white drop-shadow">
-                ¿Estás seguro de que quieres eliminar permanentemente el equipo{' '}
-                <span className="font-bold text-red-300">"{deletingTeam?.name}"</span>?
+          <div className="py-3">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 space-y-2">
+              <p className="text-white text-sm">
+                ¿Eliminar{' '}
+                <span className="font-bold text-red-400">"{deletingTeam?.name}"</span>?
               </p>
-              <div className="space-y-2 text-sm text-white/90 drop-shadow">
-                <p className="font-medium">Esta acción eliminará:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Todos los jugadores del equipo</li>
-                  <li>Todas las estadísticas asociadas</li>
-                  <li>El historial de partidos</li>
-                  <li>Toda la información del equipo</li>
-                </ul>
-              </div>
-              <div className="backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded p-3 mt-3">
-                <p className="text-xs text-yellow-200 drop-shadow">
-                  <strong>Advertencia:</strong> Esta acción es permanente y no se puede deshacer.
-                  Considera desactivar el equipo en lugar de eliminarlo si solo deseas ocultarlo temporalmente.
-                </p>
-              </div>
+              <p className="text-red-400 font-medium text-xs">Esta acción eliminará:</p>
+              <ul className="text-[10px] md:text-xs text-gray-400 space-y-0.5">
+                <li>• Todos los jugadores del equipo</li>
+                <li>• Todas las estadísticas</li>
+                <li>• El historial de partidos</li>
+              </ul>
+              <p className="text-[10px] text-gray-500 mt-2">
+                Considera desactivar el equipo si solo quieres ocultarlo.
+              </p>
             </div>
           </div>
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex-row gap-2">
             <Button
               onClick={() => {
                 setIsDeleteDialogOpen(false)
                 setDeletingTeam(null)
               }}
               disabled={deleting}
-              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="flex-1 h-9 bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs md:text-sm"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleConfirmDelete}
               disabled={deleting}
-              className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+              className="flex-1 h-9 bg-red-500 hover:bg-red-600 text-white text-xs md:text-sm"
             >
               {deleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1.5 animate-spin" />
                   Eliminando...
                 </>
               ) : (
                 <>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar Permanentemente
+                  <Trash2 className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
+                  Eliminar
                 </>
               )}
             </Button>

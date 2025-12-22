@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Table,
   TableBody,
@@ -453,7 +452,7 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
       {/* Main Content */}
       <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div>
               <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
                 <MessageSquare className="w-5 h-5 text-green-400" />
@@ -467,18 +466,19 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
               <DialogTrigger asChild>
                 <Button
                   onClick={() => handleOpenDialog()}
-                  className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+                  className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Nuevo Vínculo
                 </Button>
               </DialogTrigger>
-              <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+              <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-white drop-shadow-lg">
+                  <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-green-400" />
                     {editingLink ? 'Editar' : 'Crear'} Vínculo de WhatsApp
                   </DialogTitle>
-                  <DialogDescription className="text-white/80 drop-shadow">
+                  <DialogDescription className="text-gray-400 text-xs md:text-sm">
                     {editingLink
                       ? 'Actualiza la información del vínculo de WhatsApp'
                       : 'Vincula un número de WhatsApp con un usuario de tu liga'
@@ -487,77 +487,79 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                 </DialogHeader>
 
                 <div className="space-y-4">
-                  <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30">
-                    <AlertCircle className="h-4 w-4 text-blue-300" />
-                    <AlertDescription className="text-white/90 drop-shadow text-sm">
-                      El formato del número debe incluir el código de país (ejemplo: +5215512345678)
-                    </AlertDescription>
-                  </Alert>
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="flex gap-2">
+                      <AlertCircle className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-blue-300/90">
+                        El formato del número debe incluir el código de país (ejemplo: +5215512345678)
+                      </p>
+                    </div>
+                  </div>
 
-                  <div>
-                    <Label htmlFor="user" className="text-white/90 drop-shadow">Usuario</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="user" className="text-[10px] text-gray-500 uppercase tracking-wide">Usuario *</Label>
                     <Select
                       value={selectedUserId}
                       onValueChange={setSelectedUserId}
                       disabled={!!editingLink}
                     >
-                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white disabled:opacity-50">
+                      <SelectTrigger className="h-10 bg-slate-800/50 border-white/10 text-white text-sm disabled:opacity-50">
                         <SelectValue placeholder="Selecciona un usuario" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                         {users.map(user => (
-                          <SelectItem key={user.id} value={user.id}>
+                          <SelectItem key={user.id} value={user.id} className="text-white text-sm">
                             {user.name} - {user.email}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {editingLink && (
-                      <p className="text-xs text-white/60 mt-1">El usuario no puede ser cambiado en un vínculo existente</p>
+                      <p className="text-xs text-gray-500">El usuario no puede ser cambiado en un vínculo existente</p>
                     )}
                   </div>
 
-                  <div>
-                    <Label htmlFor="phone" className="text-white/90 drop-shadow">Número de WhatsApp</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-[10px] text-gray-500 uppercase tracking-wide">Número de WhatsApp *</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                       <Input
                         id="phone"
                         type="tel"
                         placeholder="+5215512345678"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="pl-10 backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                        className="pl-10 h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="tournament" className="text-white/90 drop-shadow">
+                  <div className="space-y-2">
+                    <Label htmlFor="tournament" className="text-[10px] text-gray-500 uppercase tracking-wide">
                       Torneo Activo
                     </Label>
                     <Select
                       value={selectedTournamentId}
                       onValueChange={setSelectedTournamentId}
                     >
-                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
+                      <SelectTrigger className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                         <SelectValue placeholder="Selecciona un torneo" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-900 border-white/10">
                         {tournaments.map(tournament => (
-                          <SelectItem key={tournament.id} value={tournament.id}>
+                          <SelectItem key={tournament.id} value={tournament.id} className="text-white text-sm">
                             {tournament.name} {tournament.is_active && '(Activo)'}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-white/60 mt-1">
+                    <p className="text-xs text-gray-500">
                       El torneo determina qué datos puede consultar el usuario en WhatsApp
                     </p>
                   </div>
 
-                  <div>
-                    <Label htmlFor="display-name" className="text-white/90 drop-shadow">
+                  <div className="space-y-2">
+                    <Label htmlFor="display-name" className="text-[10px] text-gray-500 uppercase tracking-wide">
                       Nombre para Mostrar (Opcional)
                     </Label>
                     <Input
@@ -566,42 +568,42 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
                       placeholder="Nombre del contacto"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                      className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="language" className="text-white/90 drop-shadow">Idioma Preferido</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="language" className="text-[10px] text-gray-500 uppercase tracking-wide">Idioma Preferido</Label>
                     <Select value={preferredLanguage} onValueChange={setPreferredLanguage}>
-                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
+                      <SelectTrigger className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
+                      <SelectContent className="bg-slate-900 border-white/10">
+                        <SelectItem value="es" className="text-white text-sm">Español</SelectItem>
+                        <SelectItem value="en" className="text-white text-sm">English</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={handleCloseDialog}
-                      className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={submitting || !phoneNumber || (!editingLink && !selectedUserId)}
-                      className="flex-1 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
-                    >
-                      {submitting
-                        ? (editingLink ? 'Actualizando...' : 'Creando...')
-                        : (editingLink ? 'Actualizar Vínculo' : 'Crear Vínculo')
-                      }
-                    </Button>
-                  </div>
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-white/10">
+                  <Button
+                    variant="ghost"
+                    onClick={handleCloseDialog}
+                    className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitting || !phoneNumber || (!editingLink && !selectedUserId)}
+                    className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm flex-1"
+                  >
+                    {submitting
+                      ? (editingLink ? 'Actualizando...' : 'Creando...')
+                      : (editingLink ? 'Actualizar Vínculo' : 'Crear Vínculo')
+                    }
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -611,12 +613,14 @@ export function WhatsAppManagement({ leagueId }: WhatsAppManagementProps) {
         <CardContent>
           {/* Warning for links without tournament */}
           {!loading && links.some(l => !l.tournament_id && l.is_active) && (
-            <Alert className="mb-4 backdrop-blur-xl bg-orange-500/20 border-orange-300/30">
-              <AlertCircle className="h-4 w-4 text-orange-300" />
-              <AlertDescription className="text-white/90 drop-shadow text-sm">
-                <strong>Atención:</strong> Hay usuarios sin torneo asignado. El agente no podrá responder consultas de tabla, resultados o calendario sin un torneo configurado.
-              </AlertDescription>
-            </Alert>
+            <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-orange-300/90">
+                  <strong className="text-orange-300">Atención:</strong> Hay usuarios sin torneo asignado. El agente no podrá responder consultas de tabla, resultados o calendario sin un torneo configurado.
+                </p>
+              </div>
+            </div>
           )}
 
           {loading ? (

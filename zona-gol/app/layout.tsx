@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Orbitron } from 'next/font/google'
 import { SupabaseProvider } from '@/lib/providers/supabase-provider'
+import { QueryProvider } from '@/lib/providers/query-provider'
 import { Toaster } from 'sonner'
 import { InstallPrompt } from '@/components/pwa/install-prompt'
 import './globals.css'
@@ -65,11 +66,13 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${orbitron.variable}`}>
-        <SupabaseProvider>
-          {children}
-          <Toaster richColors position="top-right" />
-          <InstallPrompt />
-        </SupabaseProvider>
+        <QueryProvider>
+          <SupabaseProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+            <InstallPrompt />
+          </SupabaseProvider>
+        </QueryProvider>
       </body>
     </html>
   )

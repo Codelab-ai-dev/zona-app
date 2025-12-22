@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { ArrowLeft, Mail, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Mail, Eye, EyeOff, Home } from "lucide-react"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -43,13 +43,13 @@ export function LoginForm() {
         const { data, error } = await supabase.from('users').select('count').limit(1)
 
         if (error) {
-          console.error('Error de conexión a Supabase:', error)
+          // console.error('Error de conexión a Supabase:', error)
           setLocalError('Error de conexión a la base de datos. Por favor, contacta al administrador.')
         } else {
           setSupabaseReady(true)
         }
       } catch (err) {
-        console.error('Error al inicializar Supabase:', err)
+        // console.error('Error al inicializar Supabase:', err)
         setLocalError('Error al inicializar la autenticación. Por favor, contacta al administrador.')
       }
     }
@@ -60,7 +60,7 @@ export function LoginForm() {
   // Redireccionar si ya está autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Usuario autenticado, redirigiendo a dashboard...')
+      // console.log('Usuario autenticado, redirigiendo a dashboard...')
       router.push('/dashboard')
     }
   }, [isAuthenticated, router])
@@ -80,20 +80,20 @@ export function LoginForm() {
     }
 
     try {
-      console.log('Intentando login con:', { email, password: '***' })
+      // console.log('Intentando login con:', { email, password: '***' })
       const result = await signIn(email, password)
-      console.log('Login exitoso:', result)
+      // console.log('Login exitoso:', result)
 
       // Verificar si el usuario fue autenticado correctamente
       if (result?.user) {
-        console.log('Usuario autenticado, esperando redirección...')
+        // console.log('Usuario autenticado, esperando redirección...')
         // La redirección se manejará en el useEffect cuando isAuthenticated cambie
       } else {
-        console.warn('Login completado pero no se recibió usuario')
+        // console.warn('Login completado pero no se recibió usuario')
         setLocalError("Autenticación incompleta. Por favor, intenta de nuevo.")
       }
     } catch (err: any) {
-      console.error('Login error:', err)
+      // console.error('Login error:', err)
 
       // Mejorar los mensajes de error para el usuario
       if (err.message?.includes('Invalid login credentials')) {
@@ -156,7 +156,7 @@ export function LoginForm() {
         }, 3000)
       }
     } catch (err: any) {
-      console.error('Password reset error:', err)
+      // console.error('Password reset error:', err)
 
       // Mensajes de error más descriptivos
       if (err.message?.includes('SMTP') || err.message?.includes('mail')) {
@@ -187,27 +187,45 @@ export function LoginForm() {
   const configError = !supabaseReady && !loading
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[url('/zona-fondo.png')] bg-cover bg-center p-4 overflow-hidden">
-      {/* Overlay oscuro */}
-      <div className="absolute inset-0 bg-black/70 dark:bg-black/80"></div>
+    <div className="min-h-screen bg-slate-950 flex flex-col">
+      {/* Background gradient accents */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-bl from-green-500/10 via-transparent to-transparent transform skew-x-12" />
+        <div className="absolute bottom-0 left-0 w-1/4 h-screen bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent transform -skew-x-12" />
+      </div>
 
-      {/* Card con efecto glass */}
-      <div className="w-full max-w-md relative z-10">
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
-          {/* Header con logo */}
-          <div className="p-8 flex flex-col items-center justify-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <img src="/zona-gol.png" alt="Logo" className="w-32 h-32 drop-shadow-2xl" />
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg mb-1">Panel de Administración</h2>
-            <p className="text-white/70 text-sm drop-shadow">Zona-Gol</p>
+      {/* Content */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
+        <div className="w-full max-w-sm">
+          {/* Home button */}
+          <div className="mb-4">
+            <Link href="/">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 h-9 px-3"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Inicio
+              </Button>
+            </Link>
           </div>
 
-          {/* Formulario */}
-          <div className="px-8 pb-6">
+          {/* Login card */}
+          <div className="rounded-2xl bg-slate-800/50 border border-white/10 p-6 md:p-8">
+            {/* Logo and title */}
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <img src="/zona-gol.png" alt="Logo" className="w-20 h-20 md:w-24 md:h-24" />
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold text-white mb-1">Panel de Administración</h1>
+              <p className="text-gray-500 text-sm">Zona Gol</p>
+            </div>
+
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white drop-shadow font-medium">Correo electrónico</Label>
+                <Label htmlFor="email" className="text-gray-400 text-sm">Correo electrónico</Label>
                 <Input
                   id="email"
                   type="email"
@@ -216,11 +234,11 @@ export function LoginForm() {
                   placeholder="tu@email.com"
                   required
                   disabled={loading}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 focus:ring-green-400/50 transition-all"
+                  className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500 focus:border-green-500 focus:ring-green-500/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white drop-shadow font-medium">Contraseña</Label>
+                <Label htmlFor="password" className="text-gray-400 text-sm">Contraseña</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -230,66 +248,68 @@ export function LoginForm() {
                     placeholder="••••••••"
                     required
                     disabled={loading}
-                    className="backdrop-blur-md bg-white/20 border-white/30 text-white placeholder:text-white/50 focus:border-green-400 focus:ring-green-400/50 transition-all pr-10"
+                    className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500 focus:border-green-500 focus:ring-green-500/20 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
+                      <EyeOff className="w-4 h-4" />
                     ) : (
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4" />
                     )}
                   </button>
                 </div>
               </div>
+
               {displayError && (
-                <Alert className="backdrop-blur-md bg-red-500/20 border-red-300/30 shadow-lg">
-                  <AlertDescription className="text-white drop-shadow">{displayError}</AlertDescription>
-                </Alert>
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+                  <p className="text-red-400 text-sm">{displayError}</p>
+                </div>
               )}
 
               {configError && (
-                <Alert className="backdrop-blur-md bg-yellow-500/20 border-yellow-300/30 shadow-lg">
-                  <AlertDescription className="text-white drop-shadow">
-                    Hay un problema con la configuración del sistema de autenticación.
-                    Por favor, contacta al administrador o visita la página de <a href="/debug-login" className="underline font-semibold">depuración</a>.
-                  </AlertDescription>
-                </Alert>
+                <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
+                  <p className="text-yellow-400 text-sm">
+                    Problema con la configuración. Contacta al administrador o visita{' '}
+                    <a href="/debug-login" className="underline font-medium">depuración</a>.
+                  </p>
+                </div>
               )}
+
               <Button
                 type="submit"
-                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 text-base sm:text-lg py-6 shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 py-5 font-medium transition-all"
                 disabled={loading || configError}
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
 
-            {/* Recuperar contraseña */}
-            <div className="flex justify-center mt-4">
+            {/* Forgot password */}
+            <div className="mt-4 text-center">
               <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" className="text-sm text-white/80 hover:text-white hover:bg-white/10 transition-all">
+                  <button className="text-sm text-gray-500 hover:text-green-400 transition-colors">
                     ¿Olvidaste tu contraseña?
-                  </Button>
+                  </button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md backdrop-blur-xl bg-white/95 border-white/20">
+                <DialogContent className="sm:max-w-md bg-slate-900 border-white/10">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Mail className="w-5 h-5" />
+                    <DialogTitle className="flex items-center gap-2 text-white">
+                      <Mail className="w-5 h-5 text-green-400" />
                       Recuperar Contraseña
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-gray-400">
                       Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handlePasswordReset} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="reset-email">Correo electrónico</Label>
+                      <Label htmlFor="reset-email" className="text-gray-400 text-sm">Correo electrónico</Label>
                       <Input
                         id="reset-email"
                         type="email"
@@ -298,15 +318,19 @@ export function LoginForm() {
                         placeholder="tu@email.com"
                         required
                         disabled={resetLoading}
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                        className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500 focus:border-green-500 focus:ring-green-500/20"
                       />
                     </div>
                     {resetMessage && (
-                      <Alert className={resetMessage.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                        <AlertDescription className={resetMessage.type === 'success' ? 'text-green-700' : 'text-red-700'}>
+                      <div className={`rounded-lg p-3 ${
+                        resetMessage.type === 'success'
+                          ? 'bg-green-500/10 border border-green-500/20'
+                          : 'bg-red-500/10 border border-red-500/20'
+                      }`}>
+                        <p className={`text-sm ${resetMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                           {resetMessage.text}
-                        </AlertDescription>
-                      </Alert>
+                        </p>
+                      </div>
                     )}
                     <div className="flex gap-3">
                       <Button
@@ -317,17 +341,17 @@ export function LoginForm() {
                           setResetEmail("")
                           setResetMessage(null)
                         }}
-                        className="flex-1"
+                        className="flex-1 bg-slate-700/50 border-white/10 text-white hover:bg-slate-700"
                         disabled={resetLoading}
                       >
                         Cancelar
                       </Button>
                       <Button
                         type="submit"
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                         disabled={resetLoading || !resetEmail}
                       >
-                        {resetLoading ? "Enviando..." : "Enviar Enlace"}
+                        {resetLoading ? "Enviando..." : "Enviar"}
                       </Button>
                     </div>
                   </form>
@@ -335,18 +359,13 @@ export function LoginForm() {
               </Dialog>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="flex justify-center border-t border-white/10 backdrop-blur-md bg-white/5 py-4">
-            <Button asChild variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10 transition-all">
-              <Link href="/" className="flex items-center gap-2">
-                <ArrowLeft size={16} />
-                <span>Regresar al Inicio</span>
-              </Link>
-            </Button>
-          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="py-4 text-center relative z-10">
+        <p className="text-gray-600 text-xs">© 2025 Zona Gol</p>
+      </footer>
     </div>
   )
 }

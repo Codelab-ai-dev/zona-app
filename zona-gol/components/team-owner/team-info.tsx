@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Dialog,
   DialogContent,
@@ -15,28 +15,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { useTeams } from "@/lib/hooks/use-teams"
-import { Database } from "@/lib/supabase/database.types"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { PlayerStatistics } from "./player-statistics"
-
-type Team = Database['public']['Tables']['teams']['Row']
-type PlayerStats = Database['public']['Tables']['player_stats']['Row']
-type Player = Database['public']['Tables']['players']['Row']
-
-interface PlayerWithStats extends Player {
-  total_games: number
-  total_goals: number
-  total_assists: number
-  total_yellow_cards: number
-  total_red_cards: number
-  total_minutes_played: number
-}
-
-import { Edit, Shield, Calendar, Globe, Loader2, Trophy, Target, AlertTriangle, Clock, Users } from "lucide-react"
+import { Edit, Shield, Calendar, Globe, Loader2, Trophy, Target, AlertTriangle, Clock } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { Badge } from "@/components/ui/badge"
-import { AvatarImage } from "@/components/ui/avatar"
+import { useTeamInfo, useUpdateTeam } from "@/lib/queries"
 
 interface TeamInfoProps {
   teamId: string
@@ -44,103 +26,15 @@ interface TeamInfoProps {
 
 export function TeamInfo({ teamId }: TeamInfoProps) {
   const { user } = useAuth()
-  const { updateTeam } = useTeams()
-  const [team, setTeam] = useState<Team | null>(null)
+
+  // React Query hooks
+  const { data, isLoading, error } = useTeamInfo(teamId)
+  const updateMutation = useUpdateTeam()
+
+  const team = data?.team
+  const playersWithStats = data?.playersWithStats || []
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [playersWithStats, setPlayersWithStats] = useState<PlayerWithStats[]>([])
-  
-  // Load team data directly from database
-  useEffect(() => {
-    async function loadTeamData() {
-      if (!teamId) {
-        setError('No team ID provided')
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const supabase = createClientSupabaseClient()
-        const { data: teamData, error: teamError } = await supabase
-          .from('teams')
-          .select(`
-            *,
-            owner:users!teams_owner_id_fkey(id, name, email),
-            league:leagues(id, name, slug)
-          `)
-          .eq('id', teamId)
-          .single()
-
-        if (teamError) {
-          console.error('Error loading team:', teamError)
-          setError('No se pudo cargar la información del equipo')
-          return
-        }
-
-        if (teamData) {
-          setTeam(teamData)
-          console.log('✅ Team data loaded:', teamData.name)
-
-          // Load player statistics
-          const { data: playersFromDb, error: playersError } = await supabase
-            .from('players')
-            .select('*')
-            .eq('team_id', teamId)
-            .eq('is_active', true)
-
-          if (!playersError && playersFromDb) {
-            // For each player, get their aggregated stats
-            const playersWithStatsData: PlayerWithStats[] = []
-
-            for (const player of playersFromDb) {
-              const { data: stats, error: statsError } = await supabase
-                .from('player_stats')
-                .select('*')
-                .eq('player_id', player.id)
-
-              if (statsError) {
-                console.warn('⚠️ Error loading stats for player:', player.name, statsError)
-              }
-
-              // Calculate aggregated stats
-              const totalGames = stats?.length || 0
-              const totalGoals = stats?.reduce((sum, s) => sum + (s.goals || 0), 0) || 0
-              const totalAssists = stats?.reduce((sum, s) => sum + (s.assists || 0), 0) || 0
-              const totalYellowCards = stats?.reduce((sum, s) => sum + (s.yellow_cards || 0), 0) || 0
-              const totalRedCards = stats?.reduce((sum, s) => sum + (s.red_cards || 0), 0) || 0
-              const totalMinutesPlayed = stats?.reduce((sum, s) => sum + (s.minutes_played || 0), 0) || 0
-
-              playersWithStatsData.push({
-                ...player,
-                total_games: totalGames,
-                total_goals: totalGoals,
-                total_assists: totalAssists,
-                total_yellow_cards: totalYellowCards,
-                total_red_cards: totalRedCards,
-                total_minutes_played: totalMinutesPlayed,
-              })
-            }
-
-            setPlayersWithStats(playersWithStatsData)
-            console.log('✅ Player stats loaded:', playersWithStatsData.length)
-          }
-        } else {
-          setError('Equipo no encontrado')
-        }
-      } catch (err) {
-        console.error('Error loading team data:', err)
-        setError('Error al cargar los datos del equipo')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadTeamData()
-  }, [teamId])
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -164,24 +58,17 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
     if (!team) return
 
     try {
-      const updatedTeam: Team = {
-        ...team,
-        name: formData.name,
-        description: formData.description,
-        slug: formData.slug,
-      }
-
-      await updateTeam(team.id, {
-        name: formData.name,
-        description: formData.description,
-        slug: formData.slug,
+      await updateMutation.mutateAsync({
+        teamId: team.id,
+        updates: {
+          name: formData.name,
+          description: formData.description,
+          slug: formData.slug,
+        }
       })
-
-      setTeam(updatedTeam)
       setIsEditDialogOpen(false)
     } catch (error) {
       console.error('Error updating team:', error)
-      setError('Error al actualizar el equipo')
     }
   }
 
@@ -203,7 +90,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
       .slice(0, 2)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center py-12">
         <Loader2 className="w-12 h-12 text-white/60 mx-auto mb-4 animate-spin" />
@@ -218,10 +105,10 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
       <div className="text-center py-12">
         <Shield className="w-12 h-12 text-white/60 mx-auto mb-4" />
         <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">
-          {error || 'Equipo no encontrado'}
+          {error?.message || 'Equipo no encontrado'}
         </h3>
         <p className="text-white/80 drop-shadow mb-4">
-          {error || 'No se pudo cargar la información del equipo'}
+          No se pudo cargar la información del equipo
         </p>
         <Button
           onClick={() => window.location.reload()}
@@ -246,9 +133,12 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
       <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardHeader>
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
-                <AvatarFallback className="bg-green-500/30 text-green-300 font-bold text-base sm:text-base sm:text-lg border border-green-300/50">
+                {team.logo && (
+                  <AvatarImage src={team.logo} alt={team.name} className="object-cover" />
+                )}
+                <AvatarFallback className="bg-green-500/30 text-green-300 font-bold text-base sm:text-lg border border-green-300/50">
                   {getTeamInitials(team.name)}
                 </AvatarFallback>
               </Avatar>
@@ -276,45 +166,56 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                     Editar
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+                <DialogContent className="bg-slate-900 border-slate-700">
                   <DialogHeader>
-                    <DialogTitle className="text-white drop-shadow-lg">Editar Información del Equipo</DialogTitle>
-                    <DialogDescription className="text-white/70 drop-shadow">Actualiza los detalles del equipo</DialogDescription>
+                    <DialogTitle className="text-white">Editar Información del Equipo</DialogTitle>
+                    <DialogDescription className="text-slate-400">Actualiza los detalles del equipo</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="team-name" className="text-white drop-shadow">Nombre del Equipo</Label>
+                      <Label htmlFor="team-name" className="text-white">Nombre del Equipo</Label>
                       <Input
                         id="team-name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Águilas FC"
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                        className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="team-slug" className="text-white drop-shadow">URL Personalizada</Label>
+                      <Label htmlFor="team-slug" className="text-white">URL Personalizada</Label>
                       <Input
                         id="team-slug"
                         value={formData.slug}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                         placeholder="aguilas-fc"
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                        className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="team-description" className="text-white drop-shadow">Descripción</Label>
+                      <Label htmlFor="team-description" className="text-white">Descripción</Label>
                       <Textarea
                         id="team-description"
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         placeholder="Descripción del equipo..."
                         rows={3}
-                        className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                        className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                       />
                     </div>
-                    <Button onClick={handleUpdateTeam} className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl">
-                      Actualizar Equipo
+                    <Button
+                      onClick={handleUpdateTeam}
+                      disabled={updateMutation.isPending}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {updateMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Actualizando...
+                        </>
+                      ) : (
+                        'Actualizar Equipo'
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
@@ -379,25 +280,25 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Goles Totales</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-blue-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-purple-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-indigo-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-indigo-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
@@ -417,11 +318,11 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                       <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
                       Máximos Goleadores
                     </h3>
-                    <div className="grid gap-3 sm:gap-3 grid-cols-1 md:grid-cols-3">
+                    <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                       {topScorers.map((player, index) => (
                         <div key={player.id} className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
                           <div className="flex items-center space-x-2 sm:space-x-3">
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-base sm:text-lg ${
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${
                               index === 0 ? 'bg-yellow-400/80 text-yellow-900' :
                               index === 1 ? 'bg-gray-400/80 text-gray-900' :
                               'bg-orange-400/80 text-orange-900'
@@ -466,11 +367,11 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                       <Target className="w-5 h-5 mr-2 text-blue-400" />
                       Máximos Asistidores
                     </h3>
-                    <div className="grid gap-3 sm:gap-3 grid-cols-1 md:grid-cols-3">
+                    <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                       {topAssisters.map((player, index) => (
                         <div key={player.id} className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 transition-all shadow-lg">
                           <div className="flex items-center space-x-2 sm:space-x-3">
-                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-base sm:text-lg ${
+                            <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg ${
                               index === 0 ? 'bg-yellow-400/80 text-yellow-900' :
                               index === 1 ? 'bg-gray-400/80 text-gray-900' :
                               'bg-orange-400/80 text-orange-900'
@@ -514,7 +415,7 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                       <div className="w-3 h-5 sm:w-4 sm:h-6 bg-yellow-400 rounded"></div>
                       <p className="text-xs sm:text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
                     </div>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-yellow-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}
                     </p>
                   </div>
@@ -523,19 +424,19 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                       <div className="w-3 h-5 sm:w-4 sm:h-6 bg-red-600 rounded"></div>
                       <p className="text-xs sm:text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
                     </div>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Tarjetas por Jugador</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {((playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards + p.total_red_cards, 0)) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Jugadores sin Tarjetas</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_yellow_cards === 0 && p.total_red_cards === 0).length}
                     </p>
                   </div>
@@ -551,25 +452,25 @@ export function TeamInfo({ teamId }: TeamInfoProps) {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Partidos Jugados (Total)</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_games, 0)}
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Minutos Jugados (Total)</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0).toLocaleString()}'
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Promedio Minutos por Jugador</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
                       {Math.round(playersWithStats.reduce((sum, p) => sum + p.total_minutes_played, 0) / playersWithStats.length)}'
                     </p>
                   </div>
                   <div className="p-3 sm:p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
                     <p className="text-xs sm:text-sm text-white/80 drop-shadow mb-2">Jugadores Activos</p>
-                    <p className="text-2xl sm:text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
+                    <p className="text-2xl sm:text-3xl font-bold text-green-400 drop-shadow-lg">
                       {playersWithStats.filter(p => p.total_games > 0).length}
                     </p>
                   </div>

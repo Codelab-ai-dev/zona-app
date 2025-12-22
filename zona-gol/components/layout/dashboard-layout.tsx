@@ -62,88 +62,89 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case "super_admin":
-        return "destructive"
+        return "bg-red-500/20 text-red-400 border-red-500/30"
       case "league_admin":
-        return "default"
+        return "bg-green-500/20 text-green-400 border-green-500/30"
       case "team_owner":
-        return "secondary"
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30"
       default:
-        return "outline"
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
     }
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      {/* Contenido */}
-      <div className="relative z-10">
-        <header className="backdrop-blur-xl bg-white/10 border-b border-white/20 sticky top-0 z-50 shadow-xl">
+    <div className="min-h-screen bg-slate-950 relative">
+      {/* Background gradient accents */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-bl from-green-500/10 via-transparent to-transparent transform skew-x-12" />
+        <div className="absolute bottom-0 left-0 w-1/4 h-screen bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent transform -skew-x-12" />
+      </div>
+
+      {/* Header */}
+      <header className="bg-slate-900/80 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16 md:h-20">
             {/* Left side - Logo + User Info */}
-            <div className="flex px-2 items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <img
                 src="/zona-gol.png"
                 alt="Zona-Gol Logo"
-                width={100}
-                height={100}
-                className="rounded drop-shadow-xl"
+                className="w-14 h-14 md:w-20 md:h-20 rounded-lg object-contain"
               />
 
               {/* User info - Desktop */}
               <div className="hidden md:flex items-center gap-3">
                 {profile && (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-white drop-shadow-lg">
-                        Hola, {profile.name}
-                      </span>
-                      <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs w-fit backdrop-blur-md bg-green-500/80 text-white border-0">
-                        {getRoleLabel(profile.role)}
-                      </Badge>
-                    </div>
-                  </>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-white">
+                      Hola, {profile.name}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded border w-fit ${getRoleBadgeClass(profile.role)}`}>
+                      {getRoleLabel(profile.role)}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Center - Product Mode Badge (Desktop Only) */}
             {profile?.role === 'league_admin' && !loadingFeatures && productMode && (
-              <div className="hidden lg:flex items-center gap-2 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2">
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className="hidden lg:flex items-center gap-2 bg-slate-800/50 border border-white/10 rounded-lg px-3 py-2">
+                <Sparkles className="w-4 h-4 text-green-400" />
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white drop-shadow">
+                  <span className="text-sm font-semibold text-white">
                     {PRODUCT_MODE_CONFIG[productMode].icon} {PRODUCT_MODE_CONFIG[productMode].label}
                   </span>
-                  <Badge className={productMode === 'full' ? 'bg-blue-500/80 text-white' : 'bg-amber-500/80 text-white'}>
+                  <span className={`text-xs px-2 py-0.5 rounded ${productMode === 'full' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>
                     {PRODUCT_MODE_CONFIG[productMode].price}
-                  </Badge>
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Right side - Actions */}
-            <div className="flex items-center space-x-3">
-              {/* Desktop - App Mobile + Logout Button together */}
+            <div className="flex items-center gap-2">
+              {/* Desktop - App Mobile + Logout Button */}
               <div className="hidden md:flex items-center gap-2">
                 {/* App Mobile - Only for League Admins */}
                 {profile?.role === 'league_admin' && (
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex items-center gap-2 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
-                        <Smartphone className="h-4 w-4" />
+                      <Button variant="outline" size="sm" className="bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700">
+                        <Smartphone className="h-4 w-4 mr-2" />
                         App Móvil
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10">
                       <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                        <DialogTitle className="flex items-center gap-2 text-white">
                           <Smartphone className="h-5 w-5 text-green-400" />
                           Descargar App Móvil
                         </DialogTitle>
-                        <DialogDescription className="text-white/80 drop-shadow">
+                        <DialogDescription className="text-gray-500">
                           Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
                         </DialogDescription>
                       </DialogHeader>
@@ -152,103 +153,93 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </Dialog>
                 )}
 
-                <Button variant="outline" onClick={handleSignOut} size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+                <Button
+                  variant="outline"
+                  onClick={handleSignOut}
+                  size="sm"
+                  className="bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Cerrar Sesión
                 </Button>
               </div>
 
-              {/* Mobile Menu - Only for logout and badge */}
+              {/* Mobile Menu */}
               <div className="md:hidden">
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="backdrop-blur-md bg-white/10 hover:bg-white/20 text-white border border-white/20">
-                      <Menu className="h-6 w-6" />
+                    <Button variant="ghost" size="icon" className="bg-slate-800/50 hover:bg-slate-700 text-white border border-white/10">
+                      <Menu className="h-5 w-5" />
                       <span className="sr-only">Abrir menú</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-[320px] p-0">
-                    {/* Header with gradient */}
-                    <SheetHeader className="p-4 sm:p-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <img
-                            src="/zona-gol-final.webp"
-                            alt="Zona-Gol"
-                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shadow-sm"
-                          />
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
-                        </div>
+                  <SheetContent side="right" className="w-[300px] p-0 bg-slate-900 border-white/10">
+                    {/* Header */}
+                    <SheetHeader className="p-4 border-b border-white/10">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src="/zona-gol-final.webp"
+                          alt="Zona-Gol"
+                          className="w-10 h-10 rounded-lg"
+                        />
                         <div>
-                          <SheetTitle className="text-base sm:text-lg font-bold">Zona Gol</SheetTitle>
-                          <p className="text-xs text-muted-foreground mt-0.5">Panel de control</p>
+                          <SheetTitle className="text-white text-base">Zona Gol</SheetTitle>
+                          <p className="text-xs text-gray-500">Panel de control</p>
                         </div>
                       </div>
                     </SheetHeader>
 
-                    <div className="flex flex-col h-[calc(100%-100px)] justify-between p-4 sm:p-6">
-                      <div className="flex flex-col space-y-6">
+                    <div className="flex flex-col h-[calc(100%-80px)] justify-between p-4">
+                      <div className="space-y-4">
                         {/* User Info Card */}
                         {profile && (
-                          <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-start space-x-3">
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-md flex-shrink-0">
-                                <User className="w-7 h-7 text-primary-foreground" />
+                          <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                <User className="w-5 h-5 text-green-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-foreground text-base truncate">{profile.name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {profile.role === 'league_admin' && 'Administrador'}
-                                  {profile.role === 'team_owner' && 'Propietario'}
-                                  {profile.role === 'super_admin' && 'Super Admin'}
-                                </p>
-                                <Badge
-                                  variant={getRoleBadgeVariant(profile.role)}
-                                  className="text-xs mt-2 font-medium"
-                                >
+                                <p className="font-medium text-white text-sm truncate">{profile.name}</p>
+                                <span className={`inline-block text-xs px-2 py-0.5 rounded border mt-1 ${getRoleBadgeClass(profile.role)}`}>
                                   {getRoleLabel(profile.role)}
-                                </Badge>
+                                </span>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        <Separator className="my-2" />
-
                         {/* Product Mode Badge - Mobile */}
                         {profile?.role === 'league_admin' && !loadingFeatures && productMode && (
-                          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-4 border">
+                          <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-primary/10">
-                                <Sparkles className="w-5 h-5 text-primary" />
+                              <div className="p-2 rounded-lg bg-green-500/20">
+                                <Sparkles className="w-4 h-4 text-green-400" />
                               </div>
                               <div className="flex-1">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
                                   Plan Actual
                                 </p>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-bold">
+                                  <span className="text-sm font-semibold text-white">
                                     {PRODUCT_MODE_CONFIG[productMode].icon} {PRODUCT_MODE_CONFIG[productMode].label}
                                   </span>
-                                  <Badge className={productMode === 'full' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white'}>
+                                  <span className={`text-xs px-2 py-0.5 rounded ${productMode === 'full' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>
                                     {PRODUCT_MODE_CONFIG[productMode].price}
-                                  </Badge>
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        {/* Quick Stats or Info */}
-                        <div className="bg-muted/50 rounded-lg p-4">
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                            Acceso Rápido
+                        {/* System Status */}
+                        <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4">
+                          <h4 className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+                            Estado
                           </h4>
-                          <div className="space-y-2">
-                            <div className="flex items-center text-sm">
-                              <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                              <span className="text-muted-foreground">Sistema activo</span>
-                            </div>
+                          <div className="flex items-center text-sm">
+                            <div className="w-2 h-2 rounded-full bg-green-400 mr-2"></div>
+                            <span className="text-gray-400">Sistema activo</span>
                           </div>
                         </div>
 
@@ -256,18 +247,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         {profile?.role === 'league_admin' && (
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button variant="outline" className="w-full">
+                              <Button variant="outline" className="w-full bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700">
                                 <Smartphone className="h-4 w-4 mr-2" />
                                 Descargar App Móvil
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10">
                               <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                                <DialogTitle className="flex items-center gap-2 text-white">
                                   <Smartphone className="h-5 w-5 text-green-400" />
                                   Descargar App Móvil
                                 </DialogTitle>
-                                <DialogDescription className="text-white/80 drop-shadow">
+                                <DialogDescription className="text-gray-500">
                                   Descarga la aplicación móvil de Zona-Gol para tu dispositivo Android
                                 </DialogDescription>
                               </DialogHeader>
@@ -277,21 +268,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         )}
                       </div>
 
-                      {/* Sign Out Button - Fixed at bottom */}
-                      <div className="space-y-3 pt-4">
-                        <Separator />
+                      {/* Sign Out Button */}
+                      <div className="space-y-3 pt-4 border-t border-white/10">
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           onClick={() => {
                             handleSignOut()
                             setMobileMenuOpen(false)
                           }}
-                          className="w-full h-12 font-semibold shadow-md hover:shadow-lg transition-all"
+                          className="w-full bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
                         >
                           <LogOut className="w-4 h-4 mr-2" />
                           Cerrar Sesión
                         </Button>
-                        <p className="text-xs text-center text-muted-foreground">
+                        <p className="text-xs text-center text-gray-600">
                           Zona Gol © 2024
                         </p>
                       </div>
@@ -302,13 +292,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-4 sm:p-6">
-            {children}
-          </div>
-        </main>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+        {children}
+      </main>
     </div>
   )
 }

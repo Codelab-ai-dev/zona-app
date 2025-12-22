@@ -1,56 +1,31 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, Users, Shield, Calendar } from "lucide-react"
-import { leagueActions } from "@/lib/actions/league-actions"
-import { teamActions } from "@/lib/actions/team-actions"
+import { useLeagueStats, useTeamsByLeague, useActiveTournament, useUpcomingMatches } from "@/lib/queries"
 
 interface LeagueStatsProps {
   leagueId: string
 }
 
-interface LeagueStatsData {
-  teamsCount: number
-  tournamentsCount: number
-  playersCount: number
-  matchesCount: number
-  activeTournament: any
-  recentTeams: any[]
-  upcomingMatches: any[]
-}
-
 export function LeagueStats({ leagueId }: LeagueStatsProps) {
-  const [stats, setStats] = useState<LeagueStatsData>({
-    teamsCount: 0,
-    tournamentsCount: 0,
-    playersCount: 0,
-    matchesCount: 0,
-    activeTournament: null,
-    recentTeams: [],
-    upcomingMatches: [],
-  })
-  const [loading, setLoading] = useState(true)
+  // Usar TanStack Query para todas las queries
+  const { data: stats, isLoading: loadingStats } = useLeagueStats(leagueId)
+  const { data: teams = [], isLoading: loadingTeams } = useTeamsByLeague(leagueId)
+  const { data: activeTournament, isLoading: loadingTournament } = useActiveTournament(leagueId)
+  const { data: upcomingMatches = [] } = useUpcomingMatches(activeTournament?.id, 5)
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        setLoading(true)
-        const leagueStats = await leagueActions.getLeagueStats(leagueId)
-        setStats(leagueStats)
-      } catch (error) {
-        console.error('Error loading league stats:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const isLoading = loadingStats || loadingTeams || loadingTournament
 
-    if (leagueId) {
-      loadStats()
-    }
-  }, [leagueId])
+  // Obtener equipos recientes (últimos 5)
+  const recentTeams = useMemo(() => {
+    return [...teams]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+  }, [teams])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div>
@@ -76,32 +51,32 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
   const statsData = [
     {
       title: "Torneos",
-      value: stats.activeTournament ? 1 : 0,
-      total: stats.tournamentsCount,
+      value: activeTournament ? 1 : 0,
+      total: stats?.tournamentsCount || 0,
       icon: Trophy,
       color: "text-soccer-gold dark:text-soccer-gold-light",
       bgColor: "bg-soccer-gold/10 dark:bg-soccer-gold/20",
     },
     {
       title: "Equipos",
-      value: stats.teamsCount,
-      total: stats.teamsCount,
+      value: stats?.teamsCount || 0,
+      total: stats?.teamsCount || 0,
       icon: Shield,
       color: "text-soccer-blue dark:text-soccer-blue-light",
       bgColor: "bg-soccer-blue/10 dark:bg-soccer-blue/20",
     },
     {
       title: "Jugadores",
-      value: stats.playersCount,
-      total: stats.playersCount,
+      value: stats?.playersCount || 0,
+      total: stats?.playersCount || 0,
       icon: Users,
       color: "text-soccer-green dark:text-soccer-green-light",
       bgColor: "bg-soccer-green/10 dark:bg-soccer-green/20",
     },
     {
       title: "Partidos",
-      value: stats.matchesCount,
-      total: stats.matchesCount,
+      value: stats?.matchesCount || 0,
+      total: stats?.matchesCount || 0,
       icon: Calendar,
       color: "text-soccer-red dark:text-soccer-red-light",
       bgColor: "bg-soccer-red/10 dark:bg-soccer-red/20",
@@ -132,7 +107,7 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
                   {stat.total > stat.value && <span className="text-sm font-normal text-white/70">/{stat.total}</span>}
                 </div>
                 <CardDescription className="text-xs text-white/70 drop-shadow">
-                  {stat.title === "Torneos" && stats.activeTournament ? "Torneo activo" : 
+                  {stat.title === "Torneos" && activeTournament ? "Torneo activo" :
                    stat.value > 0 ? "Registrados" : "Sin datos"}
                 </CardDescription>
               </CardContent>
@@ -149,8 +124,8 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats.recentTeams.length > 0 ? (
-                stats.recentTeams.map((team) => (
+              {recentTeams.length > 0 ? (
+                recentTeams.map((team) => (
                   <div key={team.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
                       <p className="font-medium text-white drop-shadow">{team.name}</p>
@@ -181,14 +156,16 @@ export function LeagueStats({ leagueId }: LeagueStatsProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats.upcomingMatches.length > 0 ? (
-                stats.upcomingMatches.map((match) => (
+              {upcomingMatches.length > 0 ? (
+                upcomingMatches.map((match) => (
                   <div key={match.id} className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10">
                     <div>
                       <p className="font-medium text-white drop-shadow">
                         {match.home_team?.name} vs {match.away_team?.name}
                       </p>
-                      <p className="text-sm text-white/70 drop-shadow">{new Date(match.match_date).toLocaleDateString("es-ES")}</p>
+                      <p className="text-sm text-white/70 drop-shadow">
+                        {match.match_date ? new Date(match.match_date).toLocaleDateString("es-ES") : 'Fecha por definir'}
+                      </p>
                     </div>
                     <div className="px-2 py-1 text-xs backdrop-blur-md bg-blue-500/80 text-white border border-white/20 font-medium rounded-full">
                       {match.status === 'scheduled' ? 'Programado' : match.status}

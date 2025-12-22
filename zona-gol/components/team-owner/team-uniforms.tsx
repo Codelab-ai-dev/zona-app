@@ -1,53 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useTeams } from "@/lib/hooks/use-teams"
-import { useAuth } from "@/lib/hooks/use-auth"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Database } from "@/lib/supabase/database.types"
 import { Shirt, Save, RotateCcw, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { GiUnderwearShorts } from "react-icons/gi";
-
-type Team = Database['public']['Tables']['teams']['Row']
-
-// Custom Shorts SVG Icon Component
-const ShortsIcon = ({
-  color,
-  className,
-  width = 60,
-  height = 60
-}: {
-  color: string;
-  className?: string;
-  width?: number;
-  height?: number;
-}) => (
-  <svg
-    width={width}
-    height={height}
-    viewBox="0 0 24 24"
-    fill={color}
-    stroke="#000000"
-    strokeWidth="1"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    {/* Left leg */}
-    <path d="M6 8 L6 20 L10 20 L10 8 Z" />
-    {/* Right leg */}
-    <path d="M14 8 L14 20 L18 20 L18 8 Z" />
-    {/* Waistband */}
-    <path d="M6 8 L18 8 L18 6 L6 6 Z" />
-    {/* Center seam */}
-    <path d="M10 8 L14 8" />
-  </svg>
-)
+import { GiUnderwearShorts } from "react-icons/gi"
+import { useTeamById, useUpdateTeam } from "@/lib/queries"
 
 interface TeamUniformsProps {
   teamId: string
@@ -75,117 +36,30 @@ const defaultColors: UniformColors = {
   alt2_shorts_color: "#1F2937", // Dark shorts
 }
 
-
-const predefinedColorSets = [
-  {
-    name: "Clásico Azul",
-    home: { shirt: "#3B82F6", shorts: "#FFFFFF" },
-    away: { shirt: "#FFFFFF", shorts: "#3B82F6" }
-  },
-  {
-    name: "Real Madrid",
-    home: { shirt: "#FFFFFF", shorts: "#FFFFFF" },
-    away: { shirt: "#1A202C", shorts: "#1A202C" }
-  },
-  {
-    name: "FC Barcelona",
-    home: { shirt: "#A91B3D", shorts: "#004B87" },
-    away: { shirt: "#FFFF00", shorts: "#FFFF00" }
-  },
-  {
-    name: "Arsenal",
-    home: { shirt: "#EF4444", shorts: "#FFFFFF" },
-    away: { shirt: "#FFD700", shorts: "#1A202C" }
-  },
-  {
-    name: "Chelsea",
-    home: { shirt: "#003366", shorts: "#003366" },
-    away: { shirt: "#FFFFFF", shorts: "#FFFFFF" }
-  },
-  {
-    name: "Liverpool",
-    home: { shirt: "#C8102E", shorts: "#C8102E" },
-    away: { shirt: "#FFFFFF", shorts: "#FFFFFF" }
-  },
-  {
-    name: "Brasil",
-    home: { shirt: "#FFFF00", shorts: "#0066CC" },
-    away: { shirt: "#0066CC", shorts: "#FFFF00" }
-  },
-  {
-    name: "Argentina",
-    home: { shirt: "#87CEEB", shorts: "#1A1A1A" },
-    away: { shirt: "#1A1A1A", shorts: "#87CEEB" }
-  }
-]
-
 export function TeamUniforms({ teamId }: TeamUniformsProps) {
-  const { user } = useAuth()
-  const { updateTeam } = useTeams()
-  const [team, setTeam] = useState<Team | null>(null)
+  // React Query hooks
+  const { data: team, isLoading, error: teamError } = useTeamById(teamId)
+  const updateMutation = useUpdateTeam()
+
   const [colors, setColors] = useState<UniformColors>(defaultColors)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
 
-  const supabase = createClientSupabaseClient()
-
-  // Load team data
+  // Initialize colors from team data
   useEffect(() => {
-    async function loadTeamData() {
-      if (!teamId) {
-        setError('No team ID provided')
-        setLoading(false)
-        return
+    if (team) {
+      const uniformColors: UniformColors = {
+        home_shirt_color: team.home_primary_color || defaultColors.home_shirt_color,
+        home_shorts_color: team.home_secondary_color || defaultColors.home_shorts_color,
+        away_shirt_color: team.away_primary_color || defaultColors.away_shirt_color,
+        away_shorts_color: team.away_secondary_color || defaultColors.away_shorts_color,
+        alt1_shirt_color: team.home_accent_color || defaultColors.alt1_shirt_color,
+        alt1_shorts_color: defaultColors.alt1_shorts_color,
+        alt2_shirt_color: team.away_accent_color || defaultColors.alt2_shirt_color,
+        alt2_shorts_color: defaultColors.alt2_shorts_color,
       }
-
-      try {
-        setLoading(true)
-        setError(null)
-
-        const { data: teamData, error: teamError } = await supabase
-          .from('teams')
-          .select('*')
-          .eq('id', teamId)
-          .single<Team>()
-
-        if (teamError) {
-          console.error('Error loading team:', teamError)
-          setError('No se pudo cargar la información del equipo')
-          return
-        }
-
-        if (teamData) {
-          setTeam(teamData)
-
-          // Load existing uniform colors or use defaults
-          const uniformColors: UniformColors = {
-            home_shirt_color: teamData.home_primary_color || defaultColors.home_shirt_color,
-            home_shorts_color: teamData.home_secondary_color || defaultColors.home_shorts_color,
-            away_shirt_color: teamData.away_primary_color || defaultColors.away_shirt_color,
-            away_shorts_color: teamData.away_secondary_color || defaultColors.away_shorts_color,
-            alt1_shirt_color: teamData.home_accent_color || defaultColors.alt1_shirt_color,
-            alt1_shorts_color: defaultColors.alt1_shorts_color,
-            alt2_shirt_color: teamData.away_accent_color || defaultColors.alt2_shirt_color,
-            alt2_shorts_color: defaultColors.alt2_shorts_color,
-          }
-
-          setColors(uniformColors)
-          console.log('✅ Team uniform colors loaded')
-        } else {
-          setError('Equipo no encontrado')
-        }
-      } catch (err) {
-        console.error('Error loading team data:', err)
-        setError('Error al cargar los datos del equipo')
-      } finally {
-        setLoading(false)
-      }
+      setColors(uniformColors)
     }
-
-    loadTeamData()
-  }, [teamId, supabase])
+  }, [team])
 
   const handleColorChange = (field: keyof UniformColors, value: string) => {
     setColors(prev => ({
@@ -199,8 +73,6 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
     if (!team) return
 
     try {
-      setSaving(true)
-
       // Log colors before update for debugging
       console.log('🎨 Saving uniform colors:', {
         home_shirt: colors.home_shirt_color,
@@ -225,7 +97,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
 
       console.log('📤 Update data to send:', updateData)
 
-      await updateTeam(team.id, updateData)
+      await updateMutation.mutateAsync({ teamId: team.id, updates: updateData })
 
       setHasChanges(false)
       toast.success("Colores de uniformes guardados exitosamente", {
@@ -238,8 +110,6 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
       toast.error("Error al guardar los colores de uniformes", {
         icon: <AlertCircle className="w-4 h-4" />
       })
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -248,18 +118,9 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
     setHasChanges(true)
   }
 
-  const applyPredefinedColors = (colorSet: typeof predefinedColorSets[0]) => {
-    setColors(prev => ({
-      ...prev,
-      home_shirt_color: colorSet.home.shirt,
-      home_shorts_color: colorSet.home.shorts,
-      away_shirt_color: colorSet.away.shirt,
-      away_shorts_color: colorSet.away.shorts,
-    }))
-    setHasChanges(true)
-  }
+  const saving = updateMutation.isPending
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
@@ -270,14 +131,14 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
     )
   }
 
-  if (error || !team) {
+  if (teamError || !team) {
     return (
       <div className="space-y-6">
         <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
           <CardContent className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">Error</h3>
-            <p className="text-red-400 drop-shadow">{error || 'Equipo no encontrado'}</p>
+            <p className="text-red-400 drop-shadow">{teamError?.message || 'Equipo no encontrado'}</p>
           </CardContent>
         </Card>
       </div>
@@ -674,7 +535,7 @@ export function TeamUniforms({ teamId }: TeamUniformsProps) {
       <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
         <CardContent className="pt-6">
           <div className="backdrop-blur-md bg-blue-500/20 border border-blue-300/30 rounded-xl p-4 shadow-lg">
-            <h4 className="font-medium text-white mb-2 drop-shadow-lg">💡 Consejos para elegir colores</h4>
+            <h4 className="font-medium text-white mb-2 drop-shadow-lg">Consejos para elegir colores</h4>
             <ul className="text-sm text-white/80 drop-shadow space-y-1">
               <li>• <strong>Color de Camiseta:</strong> Color principal del uniforme</li>
               <li>• <strong>Color de Short:</strong> Color de los pantalones cortos</li>

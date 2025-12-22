@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,8 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Download, Upload, Trash2, Smartphone, Calendar, FileArchive } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Download, Upload, Trash2, Smartphone, Calendar, FileArchive, RefreshCw } from "lucide-react"
 
 interface AppFile {
   name: string
@@ -256,170 +254,174 @@ export function AppManagementSuperAdmin() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Smartphone className="h-6 w-6 text-green-400" />
-            <div>
-              <CardTitle className="text-white drop-shadow-lg">Gestión Global de Aplicación Móvil</CardTitle>
-              <CardDescription className="text-white/80 drop-shadow">
-                Administra las versiones del APK de Zona-Gol para todas las ligas
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* League Selector */}
-          <div className="space-y-2">
-            <Label htmlFor="league-select" className="text-white/90 drop-shadow">Seleccionar Liga</Label>
-            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-              <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-xl">
-                <SelectValue placeholder="Selecciona una liga" />
-              </SelectTrigger>
-              <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
-                {leagues.map((league) => (
-                  <SelectItem key={league.id} value={league.id} className="text-white hover:bg-white/10">
-                    {league.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="p-2 md:p-2.5 rounded-lg bg-green-500/20">
+          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-green-400" />
+        </div>
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-white">Gestión de Aplicación Móvil</h2>
+          <p className="text-gray-500 text-sm">Administra las versiones del APK de Zona-Gol</p>
+        </div>
+      </div>
 
-          {/* Upload Section */}
-          {selectedLeague && (
-            <>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-sm text-white/80 drop-shadow">
-                  <FileArchive className="h-4 w-4" />
-                  <span>Formatos permitidos: APK (máx. 150MB)</span>
-                </div>
+      {/* Main Card */}
+      <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4 md:p-6 space-y-5">
+        {/* League Selector */}
+        <div className="space-y-2">
+          <Label htmlFor="league-select" className="text-gray-400 text-sm">Seleccionar Liga</Label>
+          <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+            <SelectTrigger className="bg-slate-700/50 border-white/10 text-white">
+              <SelectValue placeholder="Selecciona una liga" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-white/10">
+              {leagues.map((league) => (
+                <SelectItem key={league.id} value={league.id} className="text-white hover:bg-slate-800">
+                  {league.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="apk-upload" className="text-white drop-shadow">Seleccionar APK</Label>
-                  <Input
-                    id="apk-upload"
-                    type="file"
-                    accept=".apk"
-                    onChange={handleFileSelect}
-                    disabled={uploading}
-                    className="backdrop-blur-md bg-white/10 border-white/30 text-white file:text-white rounded-xl"
-                  />
-                </div>
-
-                {selectedFile && (
-                  <Alert className="backdrop-blur-xl bg-blue-500/20 border-blue-300/30 shadow-xl">
-                    <AlertDescription>
-                      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                        <div>
-                          <p className="font-medium text-white drop-shadow">{selectedFile.name}</p>
-                          <p className="text-sm text-white/70 drop-shadow">
-                            {formatFileSize(selectedFile.size)}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleUpload}
-                          disabled={uploading}
-                          size="sm"
-                          className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
-                        >
-                          {uploading ? (
-                            <>Subiendo...</>
-                          ) : (
-                            <>
-                              <Upload className="mr-2 h-4 w-4" />
-                              Subir APK
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
+        {selectedLeague && (
+          <>
+            {/* Upload Section */}
+            <div className="space-y-4 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <FileArchive className="w-3.5 h-3.5" />
+                <span>Formatos permitidos: APK (máx. 150MB)</span>
               </div>
 
-              {/* Files List */}
-              <div className="space-y-4">
-                <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                  <h3 className="text-base sm:text-lg font-semibold text-white drop-shadow-lg">APKs Disponibles</h3>
-                  <Button variant="ghost" size="sm" onClick={() => loadFiles(selectedLeague)} className="text-white hover:bg-white/10">
-                    Actualizar
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="apk-upload" className="text-gray-400 text-sm">Seleccionar APK</Label>
+                <Input
+                  id="apk-upload"
+                  type="file"
+                  accept=".apk"
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                  className="bg-slate-700/50 border-white/10 text-white file:text-gray-400 file:bg-slate-600/50 file:border-0 file:rounded file:px-2 file:py-1 file:mr-3"
+                />
+              </div>
 
-                {loading ? (
-                  <div className="text-center py-8 text-white/80 drop-shadow">
-                    Cargando archivos...
+              {selectedFile && (
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-white text-sm">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                    <Button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      size="sm"
+                      className="bg-green-500 hover:bg-green-600 text-white border-0"
+                    >
+                      {uploading ? (
+                        <>Subiendo...</>
+                      ) : (
+                        <>
+                          <Upload className="mr-1.5 w-3.5 h-3.5" />
+                          Subir APK
+                        </>
+                      )}
+                    </Button>
                   </div>
-                ) : files.length === 0 ? (
-                  <div className="text-center py-8 text-white/80 drop-shadow">
-                    <Smartphone className="h-12 w-12 mx-auto mb-4 opacity-50 text-white" />
-                    <p>No hay APKs disponibles para esta liga</p>
-                    <p className="text-sm mt-2">Sube el primer APK para comenzar</p>
+                </div>
+              )}
+            </div>
+
+            {/* Files List */}
+            <div className="space-y-4 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm md:text-base font-semibold text-white">APKs Disponibles</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => loadFiles(selectedLeague)}
+                  className="text-gray-400 hover:text-white hover:bg-slate-700/50 h-7 px-2"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                  Actualizar
+                </Button>
+              </div>
+
+              {loading ? (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  Cargando archivos...
+                </div>
+              ) : files.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center mx-auto mb-3">
+                    <Smartphone className="w-6 h-6 text-gray-500" />
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {files.map((file) => (
-                      <Card key={file.id} className="backdrop-blur-xl bg-white/10 border-white/20 shadow-xl">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                            <div className="flex items-start space-x-2 sm:space-x-4 flex-1">
-                              <div className="backdrop-blur-md bg-green-500/20 p-2 rounded-xl border border-green-300/30">
-                                <Smartphone className="h-6 w-6 text-green-300" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-medium text-white drop-shadow">{file.name}</h4>
-                                <div className="flex items-center space-x-2 sm:space-x-4 text-sm text-white/70 drop-shadow mt-1">
-                                  <span className="flex items-center">
-                                    <FileArchive className="h-3 w-3 mr-1" />
-                                    {formatFileSize(file.metadata.size)}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <Calendar className="h-3 w-3 mr-1" />
-                                    {formatDate(file.created_at)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDownload(file)}
-                                className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Descargar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleGetPublicLink(file)}
-                                className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                              >
-                                Copiar Link
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(file)}
-                                className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                  <p className="text-gray-500 text-sm">No hay APKs disponibles para esta liga</p>
+                  <p className="text-gray-600 text-xs mt-1">Sube el primer APK para comenzar</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="rounded-lg bg-slate-700/30 border border-white/5 p-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="p-2 rounded-lg bg-green-500/20 flex-shrink-0">
+                            <Smartphone className="w-4 h-4 text-green-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-white text-sm truncate">{file.name}</h4>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
+                              <span className="flex items-center">
+                                <FileArchive className="w-3 h-3 mr-1" />
+                                {formatFileSize(file.metadata.size)}
+                              </span>
+                              <span className="flex items-center">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                {formatDate(file.created_at)}
+                              </span>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(file)}
+                            className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700 h-7 px-2 text-xs"
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Descargar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleGetPublicLink(file)}
+                            className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700 h-7 px-2 text-xs"
+                          >
+                            Copiar Link
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(file)}
+                            className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 h-7 px-2"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }

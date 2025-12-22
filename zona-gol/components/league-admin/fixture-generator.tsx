@@ -89,6 +89,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const [mode, setMode] = useState<'auto' | 'manual'>('auto')
   const [manualRounds, setManualRounds] = useState<ManualRound[]>([])
   const [manualTournamentId, setManualTournamentId] = useState<string>('')
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
+  const [loadingExistingRounds, setLoadingExistingRounds] = useState(false)
+  const [existingRoundsCount, setExistingRoundsCount] = useState<number>(0)
   
   const [config, setConfig] = useState<FixtureConfig>({
     tournamentId: "",
@@ -134,6 +137,64 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
       setSelectedGroups([])
     }
   }, [config.tournamentId, tournaments])
+
+  // Load existing rounds when manual tournament is selected
+  const loadExistingRounds = async (tournamentId: string) => {
+    if (!tournamentId) {
+      setNextRoundNumber(1)
+      setExistingRoundsCount(0)
+      setManualRounds([])
+      return
+    }
+
+    setLoadingExistingRounds(true)
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // Get existing matches for this tournament
+      const { data: existingMatches, error } = await supabase
+        .from('matches')
+        .select('round')
+        .eq('tournament_id', tournamentId)
+        .not('round', 'is', null)
+        .order('round', { ascending: false })
+        .limit(1)
+
+      if (error) throw error
+
+      // Find the highest round number
+      const maxRound = existingMatches && existingMatches.length > 0
+        ? (existingMatches[0].round || 0)
+        : 0
+
+      // Count total existing rounds
+      const { data: roundsData, error: roundsError } = await supabase
+        .from('matches')
+        .select('round')
+        .eq('tournament_id', tournamentId)
+        .not('round', 'is', null)
+
+      if (roundsError) throw roundsError
+
+      const uniqueRounds = new Set(roundsData?.map(m => m.round) || [])
+      setExistingRoundsCount(uniqueRounds.size)
+      setNextRoundNumber(maxRound + 1)
+      setManualRounds([])
+    } catch (error) {
+      console.error('Error loading existing rounds:', error)
+      setNextRoundNumber(1)
+      setExistingRoundsCount(0)
+    } finally {
+      setLoadingExistingRounds(false)
+    }
+  }
+
+  // Effect to load existing rounds when manual tournament changes
+  useEffect(() => {
+    if (mode === 'manual' && manualTournamentId) {
+      loadExistingRounds(manualTournamentId)
+    }
+  }, [manualTournamentId, mode])
 
   const activeTournaments = tournaments.filter(t => t.is_active)
   const activeTeams = teams.filter(t => t.is_active)
@@ -635,23 +696,23 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
+      <Card className="bg-slate-800/50 border-white/10">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+          <CardTitle className="flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5" />
             Generador de Jornadas
           </CardTitle>
-          <CardDescription className="text-white/80 drop-shadow">
+          <CardDescription className="text-gray-400">
             Genera automáticamente el calendario completo de partidos para el torneo
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <p className="text-sm text-white/80 drop-shadow">
+              <p className="text-sm text-gray-400">
                 <strong>Equipos activos:</strong> {activeTeams.length}
               </p>
-              <p className="text-sm text-white/80 drop-shadow">
+              <p className="text-sm text-gray-400">
                 <strong>Torneos activos:</strong> {activeTournaments.length}
               </p>
             </div>
@@ -672,84 +733,85 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
       {/* Generator Dialog */}
       <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
-        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-          <DialogHeader className="pb-4 border-b border-white/20 px-8 pt-2">
-            <DialogTitle className="text-xl text-white drop-shadow-lg">Configurar Generación de Jornadas</DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
-              Configura los parámetros para generar el calendario de partidos
+        <DialogContent className="!top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-[100vw] !max-h-[100vh] !m-0 !p-0 !overflow-hidden !border-0 !rounded-none !shadow-none bg-slate-950">
+          <DialogHeader className="pb-3 md:pb-4 border-b border-white/10 px-4 md:px-8 pt-2">
+            <DialogTitle className="text-sm md:text-lg text-white flex items-center gap-2">
+              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+              Generar Jornadas
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
+              Configura los parámetros para generar el calendario
             </DialogDescription>
           </DialogHeader>
 
           {/* Mode Toggle */}
-          <div className="px-8 pt-4 pb-2">
-            <div className="backdrop-blur-xl bg-white/10 p-4 rounded-xl shadow-xl border border-white/20">
-              <Label className="text-sm font-medium text-white/90 drop-shadow mb-3 block">Modo de Generación</Label>
-              <div className="grid grid-cols-2 gap-3">
+          <div className="px-4 md:px-8 pt-3 pb-2">
+            <div className="bg-slate-800/50 p-3 md:p-4 rounded-xl border border-white/10">
+              <Label className="text-xs md:text-sm font-medium text-gray-400 mb-2 block">Modo de Generación</Label>
+              <div className="grid grid-cols-2 gap-2 md:gap-3">
                 <Button
                   type="button"
                   variant={mode === 'auto' ? "default" : "outline"}
                   onClick={() => setMode('auto')}
-                  className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                  className={`h-12 md:h-14 flex flex-col items-center justify-center ${
                     mode === 'auto'
-                      ? 'bg-blue-500/80 hover:bg-blue-500/90 text-white border-0'
-                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                      ? 'bg-blue-500 hover:bg-blue-600 text-white border-0'
+                      : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
-                  <Calendar className="w-5 h-5 mb-1" />
-                  <span className="text-sm font-bold">Automático</span>
-                  <span className="text-xs opacity-75">Algoritmo round-robin</span>
+                  <Calendar className="w-4 h-4 mb-0.5" />
+                  <span className="text-xs md:text-sm font-medium">Automático</span>
                 </Button>
                 <Button
                   type="button"
                   variant={mode === 'manual' ? "default" : "outline"}
                   onClick={() => setMode('manual')}
-                  className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                  className={`h-12 md:h-14 flex flex-col items-center justify-center ${
                     mode === 'manual'
-                      ? 'bg-green-500/80 hover:bg-green-500/90 text-white border-0'
-                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                      ? 'bg-green-500 hover:bg-green-600 text-white border-0'
+                      : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
-                  <Plus className="w-5 h-5 mb-1" />
-                  <span className="text-sm font-bold">Manual</span>
-                  <span className="text-xs opacity-75">Crear partido por partido</span>
+                  <Plus className="w-4 h-4 mb-0.5" />
+                  <span className="text-xs md:text-sm font-medium">Manual</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 py-2">
+          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-2">
             {message && (
-              <Alert className={`mb-8 backdrop-blur-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'} shadow-xl`}>
-                <AlertDescription className="text-white drop-shadow">
+              <div className={`mb-4 p-3 rounded-lg border ${message.type === 'success' ? 'border-green-500/20 bg-green-500/10' : 'border-red-500/20 bg-red-500/10'}`}>
+                <p className={`text-xs md:text-sm ${message.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
                   {message.text}
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
             )}
 
             {/* Automatic Mode */}
             {mode === 'auto' && (
             <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-7xl mx-auto">
               {/* Left Column - Basic Configuration */}
-              <div className="space-y-8">
-                <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20">
-                  <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-8 flex items-center gap-3">
-                    <Calendar className="w-6 h-6" />
+              <div className="space-y-4">
+                <div className="bg-slate-800/50 p-4 md:p-6 rounded-xl border border-white/10">
+                  <h3 className="text-sm md:text-base font-semibold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-400" />
                     Configuración Básica
                   </h3>
-                  <div className="space-y-6">
+                  <div className="space-y-4">
 
                     <div>
-                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Torneo</Label>
+                      <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Torneo</Label>
                       <Select value={config.tournamentId} onValueChange={(value) => setConfig({...config, tournamentId: value})}>
-                        <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                        <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm">
                           <SelectValue placeholder="Selecciona un torneo" />
                         </SelectTrigger>
-                        <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                        <SelectContent>
                           {activeTournaments.map(tournament => (
-                            <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
+                            <SelectItem key={tournament.id} value={tournament.id}>
                               {tournament.name}
-                              {tournament.tournament_format === 'group_knockout' && ' (Grupos + Eliminación)'}
+                              {tournament.tournament_format === 'group_knockout' && ' (Grupos)'}
                               {tournament.tournament_format === 'knockout' && ' (Eliminación)'}
                               {tournament.tournament_format === 'league' && ' (Liga)'}
                             </SelectItem>
@@ -760,14 +822,11 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
                     {/* Group Selection for group_knockout tournaments */}
                     {selectedTournament?.tournament_format === 'group_knockout' && selectedTournament.number_of_groups && (
-                      <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-4">
-                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-3 block">
-                          Seleccionar Grupos para Generar Partidos
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                        <Label className="text-[10px] md:text-xs font-medium text-blue-400 mb-2 block">
+                          Seleccionar Grupos
                         </Label>
-                        <p className="text-xs text-white/70 drop-shadow mb-3">
-                          Los partidos se generarán solo para equipos dentro de los mismos grupos (todos contra todos por grupo)
-                        </p>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-4 gap-1.5">
                           {Array.from({ length: selectedTournament.number_of_groups }, (_, i) => {
                             const groupLetter = String.fromCharCode(65 + i)
                             const isSelected = selectedGroups.includes(groupLetter)
@@ -786,19 +845,19 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                     setSelectedGroups([...selectedGroups, groupLetter])
                                   }
                                 }}
-                                className={`h-16 flex flex-col items-center justify-center backdrop-blur-md ${
+                                className={`h-10 md:h-12 flex flex-col items-center justify-center ${
                                   isSelected
-                                    ? 'bg-blue-500/80 hover:bg-blue-500/90 text-white border-0'
-                                    : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                                    ? 'bg-blue-500 hover:bg-blue-600 text-white border-0'
+                                    : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700'
                                 }`}
                               >
-                                <span className="text-lg font-bold">Grupo {groupLetter}</span>
-                                <span className="text-xs opacity-75">{groupTeams.length} equipos</span>
+                                <span className="text-xs md:text-sm font-medium">{groupLetter}</span>
+                                <span className="text-[8px] md:text-[10px] opacity-75">{groupTeams.length} eq.</span>
                               </Button>
                             )
                           })}
                         </div>
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -809,16 +868,16 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               )
                               setSelectedGroups(allGroups)
                             }}
-                            className="text-xs backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                            className="text-[10px] h-7 bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700"
                           >
-                            Todos los grupos
+                            Todos
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedGroups([])}
-                            className="text-xs backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                            className="text-[10px] h-7 bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700"
                           >
                             Ninguno
                           </Button>
@@ -826,32 +885,32 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label htmlFor="startDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Inicio</Label>
+                        <Label htmlFor="startDate" className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Fecha Inicio</Label>
                         <Input
                           id="startDate"
                           type="date"
                           value={config.startDate}
                           onChange={(e) => setConfig({...config, startDate: e.target.value})}
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                          className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="endDate" className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Fecha de Fin</Label>
+                        <Label htmlFor="endDate" className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Fecha Fin</Label>
                         <Input
                           id="endDate"
                           type="date"
                           value={config.endDate}
                           onChange={(e) => setConfig({...config, endDate: e.target.value})}
                           min={config.startDate || undefined}
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                          className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm"
                         />
                       </div>
                     </div>
                     {config.startDate && config.endDate && (
-                      <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-3">
-                        <p className="text-xs text-white/80 drop-shadow">
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
+                        <p className="text-[10px] md:text-xs text-blue-300">
                           <strong>Duración del torneo:</strong> {
                             (() => {
                               const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
@@ -867,10 +926,10 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     )}
 
                     <div>
-                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Duración de Partidos</Label>
-                      <div className="grid grid-cols-3 gap-4">
+                      <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Duración de Partidos</Label>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Tiempo por tiempo</Label>
+                          <Label className="text-[8px] md:text-[10px] text-gray-500 mb-1 block">Por tiempo</Label>
                           <Select
                             value={config.matchDuration.halfTime.toString()}
                             onValueChange={(value) => setConfig({
@@ -882,22 +941,22 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               }
                             })}
                           >
-                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                            <SelectTrigger className="h-8 bg-slate-700/50 border-white/10 text-white text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
-                              <SelectItem value="20" className="text-white hover:bg-white/10">20 min</SelectItem>
-                              <SelectItem value="25" className="text-white hover:bg-white/10">25 min</SelectItem>
-                              <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
-                              <SelectItem value="35" className="text-white hover:bg-white/10">35 min</SelectItem>
-                              <SelectItem value="40" className="text-white hover:bg-white/10">40 min</SelectItem>
-                              <SelectItem value="45" className="text-white hover:bg-white/10">45 min</SelectItem>
+                            <SelectContent>
+                              <SelectItem value="15">15 min</SelectItem>
+                              <SelectItem value="20">20 min</SelectItem>
+                              <SelectItem value="25">25 min</SelectItem>
+                              <SelectItem value="30">30 min</SelectItem>
+                              <SelectItem value="35">35 min</SelectItem>
+                              <SelectItem value="40">40 min</SelectItem>
+                              <SelectItem value="45">45 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Descanso</Label>
+                          <Label className="text-[8px] md:text-[10px] text-gray-500 mb-1 block">Descanso</Label>
                           <Select
                             value={config.matchDuration.breakTime.toString()}
                             onValueChange={(value) => setConfig({
@@ -905,99 +964,94 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               matchDuration: {...config.matchDuration, breakTime: parseInt(value)}
                             })}
                           >
-                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                            <SelectTrigger className="h-8 bg-slate-700/50 border-white/10 text-white text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                              <SelectItem value="5" className="text-white hover:bg-white/10">5 min</SelectItem>
-                              <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
-                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
+                            <SelectContent>
+                              <SelectItem value="5">5 min</SelectItem>
+                              <SelectItem value="10">10 min</SelectItem>
+                              <SelectItem value="15">15 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-white/70 drop-shadow mb-2 block">Entre partidos</Label>
+                          <Label className="text-[8px] md:text-[10px] text-gray-500 mb-1 block">Entre partidos</Label>
                           <Select
                             value={config.breakBetweenMatches.toString()}
                             onValueChange={(value) => setConfig({...config, breakBetweenMatches: parseInt(value)})}
                           >
-                            <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                            <SelectTrigger className="h-8 bg-slate-700/50 border-white/10 text-white text-xs">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                              <SelectItem value="0" className="text-white hover:bg-white/10">0 min</SelectItem>
-                              <SelectItem value="5" className="text-white hover:bg-white/10">5 min</SelectItem>
-                              <SelectItem value="10" className="text-white hover:bg-white/10">10 min</SelectItem>
-                              <SelectItem value="15" className="text-white hover:bg-white/10">15 min</SelectItem>
-                              <SelectItem value="20" className="text-white hover:bg-white/10">20 min</SelectItem>
-                              <SelectItem value="30" className="text-white hover:bg-white/10">30 min</SelectItem>
+                            <SelectContent>
+                              <SelectItem value="0">0 min</SelectItem>
+                              <SelectItem value="5">5 min</SelectItem>
+                              <SelectItem value="10">10 min</SelectItem>
+                              <SelectItem value="15">15 min</SelectItem>
+                              <SelectItem value="20">20 min</SelectItem>
+                              <SelectItem value="30">30 min</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
-                      <p className="text-xs text-white/60 drop-shadow mt-2">
-                        Duración total por partido: {(config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches} minutos
+                      <p className="text-[10px] text-gray-500 mt-1.5">
+                        Total: {(config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches} min/partido
                       </p>
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Horarios</Label>
-                      <div>
-                        <Label className="text-xs text-white/70 drop-shadow mb-2 block">Horario Inicio</Label>
-                        <Input
-                          type="time"
-                          value={config.startTime}
-                          onChange={(e) => setConfig({...config, startTime: e.target.value})}
-                          className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
-                        />
-                      </div>
+                      <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Hora Inicio</Label>
+                      <Input
+                        type="time"
+                        value={config.startTime}
+                        onChange={(e) => setConfig({...config, startTime: e.target.value})}
+                        className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm"
+                      />
                       {config.startTime && (
-                        <div className="backdrop-blur-md bg-blue-500/20 border border-blue-400/30 rounded-lg p-3 mt-3">
-                          <p className="text-xs text-white/80 drop-shadow">
-                            <strong>Horarios generados:</strong> {generateAvailableTimeSlots().length} espacios disponibles
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 mt-2">
+                          <p className="text-[10px] text-blue-300">
+                            {generateAvailableTimeSlots().length} horarios disponibles
                           </p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {generateAvailableTimeSlots().slice(0, 10).map((time, idx) => (
-                              <span key={idx} className="text-xs backdrop-blur-md bg-white/10 px-2 py-1 rounded text-white">
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {generateAvailableTimeSlots().slice(0, 6).map((time, idx) => (
+                              <span key={idx} className="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded text-gray-300">
                                 {time}
                               </span>
                             ))}
-                            {generateAvailableTimeSlots().length > 10 && (
-                              <span className="text-xs text-white/60">
-                                +{generateAvailableTimeSlots().length - 10} más
-                              </span>
+                            {generateAvailableTimeSlots().length > 6 && (
+                              <span className="text-[10px] text-gray-500">+{generateAvailableTimeSlots().length - 6}</span>
                             )}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Canchas</Label>
+                        <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Canchas</Label>
                         <Select value={config.fieldsAvailable.toString()} onValueChange={(value) => setConfig({...config, fieldsAvailable: parseInt(value)})}>
-                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                          <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                          <SelectContent>
                             {[1,2,3,4,5,6].map(num => (
-                              <SelectItem key={num} value={num.toString()} className="text-white hover:bg-white/10">
+                              <SelectItem key={num} value={num.toString()}>
                                 {num} cancha{num > 1 ? 's' : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div>
-                        <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Formato</Label>
+                        <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-1.5 block">Formato</Label>
                         <Select value={config.doubleRound ? "double" : "single"} onValueChange={(value) => setConfig({...config, doubleRound: value === "double"})}>
-                          <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                          <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-xs md:text-sm">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                            <SelectItem value="single" className="text-white hover:bg-white/10">Una vuelta</SelectItem>
-                            <SelectItem value="double" className="text-white hover:bg-white/10">Ida y vuelta</SelectItem>
+                          <SelectContent>
+                            <SelectItem value="single">Una vuelta</SelectItem>
+                            <SelectItem value="double">Ida y vuelta</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1007,17 +1061,17 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
 
               {/* Right Column - Days Configuration */}
-              <div className="space-y-8">
-                <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20">
-                  <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-8 flex items-center gap-3">
-                    <Calendar className="w-6 h-6" />
+              <div className="space-y-4">
+                <div className="bg-slate-800/50 p-4 md:p-6 rounded-xl border border-white/10">
+                  <h3 className="text-sm md:text-base font-semibold text-white mb-4 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-purple-400" />
                     Días de Partidos
                   </h3>
-                  <div className="space-y-6">
+                  <div className="space-y-4">
 
                     <div>
-                      <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Días de Partidos</Label>
-                      <div className="grid grid-cols-7 gap-3 mt-3">
+                      <Label className="text-[10px] md:text-xs font-medium text-gray-400 mb-2 block">Selecciona los días</Label>
+                      <div className="grid grid-cols-7 gap-1.5">
                         {[
                           { value: 'monday', label: 'L' },
                           { value: 'tuesday', label: 'M' },
@@ -1038,13 +1092,17 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                 : [...config.matchDays, day.value]
                               setConfig({...config, matchDays: days})
                             }}
-                            className="h-12 text-base font-medium"
+                            className={`h-9 md:h-10 text-xs md:text-sm font-medium ${
+                              config.matchDays.includes(day.value)
+                                ? 'bg-purple-500 hover:bg-purple-600 text-white border-0'
+                                : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700'
+                            }`}
                           >
                             {day.label}
                           </Button>
                         ))}
                       </div>
-                      <div className="flex gap-3 mt-4">
+                      <div className="flex gap-2 mt-3">
                         <Button
                           type="button"
                           variant="outline"
@@ -1073,13 +1131,13 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20 mt-8 max-w-7xl mx-auto">
-              <h3 className="text-xl font-semibold text-white drop-shadow-lg mb-6 flex items-center gap-3">
+            <div className="bg-slate-800/50 p-8 rounded-xl shadow-xl border border-white/10 mt-8 max-w-7xl mx-auto">
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
                 <Users className="w-6 h-6" />
                 Resumen de Configuración
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6">
-                <ul className="text-sm text-white/90 drop-shadow space-y-3">
+                <ul className="text-sm text-gray-300 space-y-3">
                   {selectedTournament?.tournament_format === 'group_knockout' ? (
                     <>
                       <li className="flex items-center gap-2">
@@ -1170,7 +1228,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </>
                   )}
                 </ul>
-                <ul className="text-sm text-white/90 drop-shadow space-y-3">
+                <ul className="text-sm text-gray-300 space-y-3">
                   <li className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-300" />
                     <span>
@@ -1206,11 +1264,11 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="flex gap-4 sm:p-6 pt-6 border-t border-white/20 mt-8">
+            <div className="flex gap-4 sm:p-6 pt-6 border-t border-white/10 mt-8">
               <Button
                 type="button"
                 onClick={() => setIsGeneratorOpen(false)}
-                className="flex-1 h-12 text-base backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                className="flex-1 h-12 text-base bg-slate-700/50 border-white/10 text-white hover:bg-white/20"
               >
                 Cancelar
               </Button>
@@ -1237,17 +1295,17 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
             {/* Manual Mode */}
             {mode === 'manual' && (
-              <div className="max-w-5xl mx-auto space-y-6">
+              <div className="max-w-3xl mx-auto space-y-4">
                 {/* Tournament Selection */}
-                <div className="backdrop-blur-xl bg-white/10 p-6 rounded-xl shadow-xl border border-white/20">
-                  <Label className="text-sm font-medium text-white/90 drop-shadow mb-2 block">Seleccionar Torneo</Label>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-white/10">
+                  <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-2 block">Seleccionar Torneo</Label>
                   <Select value={manualTournamentId} onValueChange={setManualTournamentId}>
-                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                    <SelectTrigger className="h-10 bg-slate-700/50 border-white/10 text-white">
                       <SelectValue placeholder="Selecciona un torneo" />
                     </SelectTrigger>
-                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                    <SelectContent className="bg-slate-900 border-white/10">
                       {activeTournaments.map(tournament => (
-                        <SelectItem key={tournament.id} value={tournament.id} className="text-white hover:bg-white/10">
+                        <SelectItem key={tournament.id} value={tournament.id} className="text-white">
                           {tournament.name}
                         </SelectItem>
                       ))}
@@ -1258,131 +1316,164 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 {/* Rounds List */}
                 {manualTournamentId && (
                   <div className="space-y-4">
-                    {manualRounds.length === 0 && (
-                      <div className="backdrop-blur-xl bg-white/10 p-8 rounded-xl shadow-xl border border-white/20 text-center">
-                        <Calendar className="w-12 h-12 mx-auto mb-3 text-white/60" />
-                        <p className="text-white/80 drop-shadow mb-4">No hay jornadas creadas aún</p>
+                    {/* Existing Rounds Info */}
+                    {existingRoundsCount > 0 && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-blue-500/20">
+                            <Trophy className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-blue-300">
+                              {existingRoundsCount} jornada{existingRoundsCount !== 1 ? 's' : ''} existente{existingRoundsCount !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-xs text-blue-400/70">
+                              Las nuevas jornadas comenzarán desde la Jornada {nextRoundNumber}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {loadingExistingRounds && (
+                      <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
+                        <Loader2 className="w-8 h-8 mx-auto mb-2 text-green-400 animate-spin" />
+                        <p className="text-gray-400 text-sm">Cargando jornadas existentes...</p>
+                      </div>
+                    )}
+
+                    {!loadingExistingRounds && manualRounds.length === 0 && (
+                      <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
+                        <Calendar className="w-10 h-10 mx-auto mb-3 text-white/60" />
+                        <p className="text-gray-400 text-sm mb-4">
+                          {existingRoundsCount > 0
+                            ? 'Agrega una nueva jornada para continuar el torneo'
+                            : 'No hay jornadas creadas aún'}
+                        </p>
                         <Button
-                          onClick={() => setManualRounds([{ round: 1, matches: [] }])}
-                          className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+                          onClick={() => setManualRounds([{ round: nextRoundNumber, matches: [] }])}
+                          className="bg-green-500 hover:bg-green-600 text-white border-0"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Crear Primera Jornada
+                          {existingRoundsCount > 0
+                            ? `Crear Jornada ${nextRoundNumber}`
+                            : 'Crear Primera Jornada'}
                         </Button>
                       </div>
                     )}
 
                     {manualRounds.map((roundData, roundIndex) => (
-                      <div key={roundIndex} className="backdrop-blur-xl bg-white/10 p-6 rounded-xl shadow-xl border border-white/20">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-white drop-shadow-lg flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-soccer-gold" />
-                            Jornada {roundData.round}
-                          </h3>
+                      <div key={roundIndex} className="bg-slate-800/50 rounded-xl border border-white/10 overflow-hidden">
+                        {/* Round Header */}
+                        <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10 bg-slate-700/30">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
+                            <span className="text-sm md:text-base font-semibold text-white">Jornada {roundData.round}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-600/50 text-gray-400">
+                              {roundData.matches.length} partido{roundData.matches.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               const newRounds = manualRounds.filter((_, idx) => idx !== roundIndex)
                               setManualRounds(newRounds)
                             }}
-                            className="backdrop-blur-md bg-red-500/20 border-red-400/30 text-white hover:bg-red-500/30"
+                            className="h-8 w-8 p-0 bg-red-500/20 hover:bg-red-500/30 text-red-400 border-0"
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
 
                         {/* Matches in this round */}
-                        <div className="space-y-3 mb-4">
+                        <div className="p-3 md:p-4 space-y-3">
                           {roundData.matches.length === 0 && (
-                            <p className="text-white/60 text-sm text-center py-4">No hay partidos en esta jornada</p>
+                            <p className="text-gray-500 text-xs text-center py-3">No hay partidos en esta jornada</p>
                           )}
 
                           {roundData.matches.map((match, matchIndex) => (
-                            <div key={match.id} className="backdrop-blur-md bg-white/5 p-4 rounded-lg border border-white/10">
-                              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                {/* Home Team */}
-                                <div>
-                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Local</Label>
-                                  <Select
-                                    value={match.homeTeamId}
-                                    onValueChange={(value) => {
-                                      const newRounds = [...manualRounds]
-                                      newRounds[roundIndex].matches[matchIndex].homeTeamId = value
-                                      setManualRounds(newRounds)
-                                    }}
-                                  >
-                                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
-                                      <SelectValue placeholder="Equipo" />
-                                    </SelectTrigger>
-                                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                                      {activeTeams.map(team => (
-                                        <SelectItem key={team.id} value={team.id} className="text-white hover:bg-white/10 text-xs">
-                                          {team.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                            <div key={match.id} className="bg-slate-700/30 p-3 rounded-lg border border-white/5">
+                              {/* Mobile: Stacked layout */}
+                              <div className="space-y-3">
+                                {/* Teams Row */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Local</Label>
+                                    <Select
+                                      value={match.homeTeamId}
+                                      onValueChange={(value) => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches[matchIndex].homeTeamId = value
+                                        setManualRounds(newRounds)
+                                      }}
+                                    >
+                                      <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
+                                        <SelectValue placeholder="Seleccionar" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-slate-900 border-white/10">
+                                        {activeTeams.map(team => (
+                                          <SelectItem key={team.id} value={team.id} className="text-white text-xs">
+                                            {team.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Visitante</Label>
+                                    <Select
+                                      value={match.awayTeamId}
+                                      onValueChange={(value) => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches[matchIndex].awayTeamId = value
+                                        setManualRounds(newRounds)
+                                      }}
+                                    >
+                                      <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
+                                        <SelectValue placeholder="Seleccionar" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-slate-900 border-white/10">
+                                        {activeTeams.map(team => (
+                                          <SelectItem key={team.id} value={team.id} className="text-white text-xs">
+                                            {team.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                 </div>
 
-                                {/* Away Team */}
-                                <div>
-                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Visitante</Label>
-                                  <Select
-                                    value={match.awayTeamId}
-                                    onValueChange={(value) => {
-                                      const newRounds = [...manualRounds]
-                                      newRounds[roundIndex].matches[matchIndex].awayTeamId = value
-                                      setManualRounds(newRounds)
-                                    }}
-                                  >
-                                    <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
-                                      <SelectValue placeholder="Equipo" />
-                                    </SelectTrigger>
-                                    <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                                      {activeTeams.map(team => (
-                                        <SelectItem key={team.id} value={team.id} className="text-white hover:bg-white/10 text-xs">
-                                          {team.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                {/* Date */}
-                                <div>
-                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Fecha</Label>
-                                  <Input
-                                    type="date"
-                                    value={match.date}
-                                    onChange={(e) => {
-                                      const newRounds = [...manualRounds]
-                                      newRounds[roundIndex].matches[matchIndex].date = e.target.value
-                                      setManualRounds(newRounds)
-                                    }}
-                                    className="backdrop-blur-md bg-white/10 border-white/20 text-white h-9 text-xs"
-                                  />
-                                </div>
-
-                                {/* Time */}
-                                <div>
-                                  <Label className="text-xs text-white/70 drop-shadow mb-1 block">Hora</Label>
-                                  <Input
-                                    type="time"
-                                    value={match.time}
-                                    onChange={(e) => {
-                                      const newRounds = [...manualRounds]
-                                      newRounds[roundIndex].matches[matchIndex].time = e.target.value
-                                      setManualRounds(newRounds)
-                                    }}
-                                    className="backdrop-blur-md bg-white/10 border-white/20 text-white h-9 text-xs"
-                                  />
-                                </div>
-
-                                {/* Field & Delete */}
-                                <div className="flex gap-2">
-                                  <div className="flex-1">
-                                    <Label className="text-xs text-white/70 drop-shadow mb-1 block">Cancha</Label>
+                                {/* Date, Time, Field Row */}
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-2 sm:col-span-1">
+                                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Fecha</Label>
+                                    <Input
+                                      type="date"
+                                      value={match.date}
+                                      onChange={(e) => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches[matchIndex].date = e.target.value
+                                        setManualRounds(newRounds)
+                                      }}
+                                      className="bg-slate-800/50 border-white/10 text-white h-9 text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Hora</Label>
+                                    <Input
+                                      type="time"
+                                      value={match.time}
+                                      onChange={(e) => {
+                                        const newRounds = [...manualRounds]
+                                        newRounds[roundIndex].matches[matchIndex].time = e.target.value
+                                        setManualRounds(newRounds)
+                                      }}
+                                      className="bg-slate-800/50 border-white/10 text-white h-9 text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Cancha</Label>
                                     <Select
                                       value={match.field.toString()}
                                       onValueChange={(value) => {
@@ -1391,29 +1482,28 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                         setManualRounds(newRounds)
                                       }}
                                     >
-                                      <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/20 text-white text-xs h-9">
+                                      <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
                                         <SelectValue />
                                       </SelectTrigger>
-                                      <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                                      <SelectContent className="bg-slate-900 border-white/10">
                                         {[1,2,3,4,5,6].map(num => (
-                                          <SelectItem key={num} value={num.toString()} className="text-white hover:bg-white/10 text-xs">
+                                          <SelectItem key={num} value={num.toString()} className="text-white text-xs">
                                             {num}
                                           </SelectItem>
                                         ))}
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  <div>
-                                    <Label className="text-xs text-white/70 drop-shadow mb-1 block opacity-0">-</Label>
+                                  <div className="flex items-end">
                                     <Button
-                                      variant="outline"
+                                      variant="ghost"
                                       size="sm"
                                       onClick={() => {
                                         const newRounds = [...manualRounds]
                                         newRounds[roundIndex].matches = newRounds[roundIndex].matches.filter((_, idx) => idx !== matchIndex)
                                         setManualRounds(newRounds)
                                       }}
-                                      className="backdrop-blur-md bg-red-500/20 border-red-400/30 text-white hover:bg-red-500/30 h-9 px-2"
+                                      className="h-9 w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border-0"
                                     >
                                       <X className="w-4 h-4" />
                                     </Button>
@@ -1422,29 +1512,29 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                               </div>
                             </div>
                           ))}
-                        </div>
 
-                        {/* Add Match Button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const newRounds = [...manualRounds]
-                            newRounds[roundIndex].matches.push({
-                              id: `match-${Date.now()}-${Math.random()}`,
-                              homeTeamId: '',
-                              awayTeamId: '',
-                              date: '',
-                              time: '08:00',
-                              field: 1
-                            })
-                            setManualRounds(newRounds)
-                          }}
-                          className="w-full backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Agregar Partido
-                        </Button>
+                          {/* Add Match Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newRounds = [...manualRounds]
+                              newRounds[roundIndex].matches.push({
+                                id: `match-${Date.now()}-${Math.random()}`,
+                                homeTeamId: '',
+                                awayTeamId: '',
+                                date: '',
+                                time: '08:00',
+                                field: 1
+                              })
+                              setManualRounds(newRounds)
+                            }}
+                            className="w-full h-9 bg-slate-600/50 border-white/10 text-gray-300 hover:bg-slate-600/70 hover:text-white text-xs"
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1.5" />
+                            Agregar Partido
+                          </Button>
+                        </div>
                       </div>
                     ))}
 
@@ -1452,23 +1542,24 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     {manualRounds.length > 0 && (
                       <Button
                         onClick={() => {
-                          const nextRound = Math.max(...manualRounds.map(r => r.round)) + 1
-                          setManualRounds([...manualRounds, { round: nextRound, matches: [] }])
+                          const currentMaxRound = Math.max(...manualRounds.map(r => r.round))
+                          const newRound = Math.max(currentMaxRound + 1, nextRoundNumber + manualRounds.length)
+                          setManualRounds([...manualRounds, { round: newRound, matches: [] }])
                         }}
-                        className="w-full backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 h-12"
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0 h-11"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Agregar Nueva Jornada
+                        Agregar Jornada {Math.max(...manualRounds.map(r => r.round)) + 1}
                       </Button>
                     )}
 
                     {/* Action Buttons */}
                     {manualRounds.length > 0 && manualRounds.some(r => r.matches.length > 0) && (
-                      <div className="flex gap-4 pt-4 border-t border-white/20">
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/10">
                         <Button
                           type="button"
                           onClick={() => setIsGeneratorOpen(false)}
-                          className="flex-1 h-12 text-base backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+                          className="sm:flex-1 h-10 text-sm bg-slate-700/50 border-white/10 text-gray-300 hover:bg-slate-700 hover:text-white"
                         >
                           Cancelar
                         </Button>
@@ -1501,9 +1592,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                             setGeneratedFixtures(fixtures)
                             setIsPreviewOpen(true)
                           }}
-                          className="flex-1 h-12 text-base backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+                          className="sm:flex-1 h-10 text-sm bg-green-500 hover:bg-green-600 text-white border-0"
                         >
-                          <Eye className="w-5 h-5 mr-2" />
+                          <Eye className="w-4 h-4 mr-2" />
                           Vista Previa
                         </Button>
                       </div>

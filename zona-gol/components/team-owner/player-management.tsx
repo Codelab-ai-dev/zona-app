@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,7 +18,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { FileUpload } from "@/components/ui/file-upload"
-import { useTeams } from "@/lib/hooks/use-teams"
 import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
@@ -27,6 +26,14 @@ import { useLeagueFeatures } from "@/lib/hooks/use-league-features"
 import { PlayerQRModal } from "@/components/ui/player-qr-modal"
 import { Plus, Edit, Trash2, User, Loader2, QrCode, Ban, AlertCircle, Lock } from "lucide-react"
 import { toast } from "sonner"
+import {
+  usePlayers,
+  useTeamById,
+  useTeamSuspensions,
+  useCreatePlayer,
+  useUpdatePlayer,
+  useDeletePlayer,
+} from "@/lib/queries"
 
 type Player = Database['public']['Tables']['players']['Row']
 type PlayerInsert = Database['public']['Tables']['players']['Insert']
@@ -52,26 +59,42 @@ const positions = [
 
 export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManagementProps) {
   const { profile } = useAuth()
-  const {
-    players,
-    currentTeam,
-    loading,
-    error,
-    getPlayersByTeam,
-    getTeamById,
-    createPlayer,
-    updatePlayer,
-    deletePlayer
-  } = useTeams()
   const { generatePlayerQR } = useQRGenerator()
 
-  const [leagueId, setLeagueId] = useState<string | undefined>(undefined)
+  // React Query hooks
+  const { data: playersData, isLoading: loadingPlayers, error: playersError } = usePlayers(teamId)
+  const { data: teamData } = useTeamById(teamId)
+  const { data: suspensionsData } = useTeamSuspensions(teamId)
+
+  // Mutations
+  const createMutation = useCreatePlayer()
+  const updateMutation = useUpdatePlayer()
+  const deleteMutation = useDeletePlayer()
+
+  // Extract data from React Query
+  const players = playersData?.players || []
+  const maxPlayersLimit = playersData?.maxLimit || null
+  const registrationOpen = playersData?.registrationOpen ?? true
+  const tournamentId = playersData?.tournamentId || null
+
+  // Memoize suspended players set
+  const suspendedPlayers = useMemo(() => {
+    return new Set(suspensionsData?.map(s => s.player_id) || [])
+  }, [suspensionsData])
+
+  // Team info
+  const teamInfo = useMemo(() => ({
+    name: teamData?.name || teamName,
+    logo: teamData?.logo || null
+  }), [teamData, teamName])
+
+  // League features
+  const leagueId = teamData?.league_id
   const { hasFeature } = useLeagueFeatures(leagueId)
 
+  // Local state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [updating, setUpdating] = useState(false)
   const [generatingQR, setGeneratingQR] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [currentQRData, setCurrentQRData] = useState<{
@@ -79,14 +102,6 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
     qrData: string,
     credential: any
   } | null>(null)
-  const [teamInfo, setTeamInfo] = useState<{
-    name: string,
-    logo?: string | null
-  }>({ name: teamName })
-  const [suspendedPlayers, setSuspendedPlayers] = useState<Set<string>>(new Set())
-  const [maxPlayersLimit, setMaxPlayersLimit] = useState<number | null>(null)
-  const [registrationOpen, setRegistrationOpen] = useState<boolean>(true)
-  const [tournamentId, setTournamentId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     position: "",
@@ -104,83 +119,9 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false)
   const [submittingRequest, setSubmittingRequest] = useState(false)
 
-  const supabase = createClientSupabaseClient()
-
-  // Load players when component mounts or teamId changes
-  useEffect(() => {
-    if (teamId) {
-      console.log('🔵 Loading players for teamId:', teamId)
-      getPlayersByTeam(teamId).catch(console.error)
-      loadSuspendedPlayers()
-    } else {
-      console.warn('⚠️ No teamId provided to PlayerManagement')
-    }
-  }, [teamId, getPlayersByTeam])
-
-  // Load suspended players
-  const loadSuspendedPlayers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('player_suspensions')
-        .select('player_id')
-        .eq('team_id', teamId)
-        .eq('status', 'active')
-
-      if (error) {
-        console.error('Error loading suspended players:', error)
-        return
-      }
-
-      const suspendedIds = new Set(data?.map(s => s.player_id) || [])
-      setSuspendedPlayers(suspendedIds)
-    } catch (error) {
-      console.error('Error loading suspended players:', error)
-    }
-  }
-
-  // Load team information and tournament max players
-  useEffect(() => {
-    if (teamId && getTeamById) {
-      getTeamById(teamId)
-        .then(async (team) => {
-          if (team) {
-            setTeamInfo({
-              name: team.name || teamName,
-              logo: team.logo || null
-            })
-
-            // Set league_id for feature checking
-            if (team.league_id) {
-              setLeagueId(team.league_id)
-            }
-
-            // Load tournament max_players and registration_open if team has a tournament
-            if (team.tournament_id) {
-              try {
-                const { data: tournament, error } = await supabase
-                  .from('tournaments')
-                  .select('max_players, registration_open, id')
-                  .eq('id', team.tournament_id)
-                  .single()
-
-                if (!error && tournament) {
-                  console.log('🔵 Tournament info loaded:', tournament)
-                  setMaxPlayersLimit(tournament.max_players)
-                  setRegistrationOpen(tournament.registration_open)
-                  setTournamentId(tournament.id)
-                  console.log('🔵 Registration open status:', tournament.registration_open)
-                }
-              } catch (err) {
-                console.error('Error loading tournament info:', err)
-              }
-            }
-          }
-        })
-        .catch(console.error)
-    }
-  }, [teamId, getTeamById, teamName])
-
-
+  // Usar useRef para evitar crear un nuevo cliente en cada render
+  const supabaseRef = useRef(createClientSupabaseClient())
+  const supabase = supabaseRef.current
 
   const handleCreatePlayer = async () => {
     if (!formData.name || !formData.position || !formData.jerseyNumber) {
@@ -206,8 +147,6 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       return
     }
 
-    setCreating(true)
-    
     try {
       const playerData: PlayerInsert = {
         name: formData.name,
@@ -219,9 +158,9 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         is_active: true,
       }
 
-      const createdPlayer = await createPlayer(playerData)
+      const createdPlayer = await createMutation.mutateAsync(playerData)
       console.log('✅ Jugador creado exitosamente:', createdPlayer)
-      
+
       // Generar QR automáticamente después de crear el jugador (solo si la feature está habilitada)
       if (createdPlayer?.id && profile?.league_id && hasFeature('qr_codes')) {
         setGeneratingQR(true)
@@ -238,7 +177,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
             },
             { format: 'legacy' }
           )
-          
+
           if (qrResult && qrResult.success) {
             console.log('✅ QR generado exitosamente')
             setCurrentQRData({
@@ -256,18 +195,15 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
           setGeneratingQR(false)
         }
       }
-      
+
+      const playerName = formData.name
       setFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", photo: "" })
       setIsCreateDialogOpen(false)
-      
-      // Reload players to show the new player
-      await getPlayersByTeam(teamId)
-      toast.success(`Jugador ${formData.name} registrado exitosamente`)
+
+      toast.success(`Jugador ${playerName} registrado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error creando jugador:', error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
-    } finally {
-      setCreating(false)
     }
   }
 
@@ -300,8 +236,6 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       return
     }
 
-    setUpdating(true)
-    
     try {
       const updates: PlayerUpdate = {
         name: formData.name,
@@ -311,20 +245,21 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         photo: formData.photo || null,
       }
 
-      const updatedPlayer = await updatePlayer(editingPlayer.id, updates)
-      console.log('✅ Jugador actualizado exitosamente:', updatedPlayer)
-      
+      await updateMutation.mutateAsync({
+        id: editingPlayer.id,
+        updates,
+        teamId
+      })
+      console.log('✅ Jugador actualizado exitosamente')
+
+      const playerName = formData.name
       setEditingPlayer(null)
       setFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", photo: "" })
-      
-      // Reload players to show the updated player
-      await getPlayersByTeam(teamId)
-      toast.success(`Jugador ${formData.name} actualizado exitosamente`)
+
+      toast.success(`Jugador ${playerName} actualizado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error actualizando jugador:', error)
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
-    } finally {
-      setUpdating(false)
     }
   }
 
@@ -333,15 +268,13 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
     if (!player) return
 
     const confirmMessage = `¿Estás seguro de que quieres eliminar a ${player.name}?`
-    
+
     if (!confirm(confirmMessage)) return
 
     try {
-      await deletePlayer(playerId)
+      await deleteMutation.mutateAsync({ id: playerId, teamId })
       console.log('✅ Jugador eliminado exitosamente')
-      
-      // Reload players to show the updated list
-      await getPlayersByTeam(teamId)
+
       toast.success(`Jugador ${player.name} eliminado exitosamente`)
     } catch (error: any) {
       console.error('❌ Error eliminando jugador:', error)
@@ -355,17 +288,17 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
 
     const action = player.is_active ? 'desactivar' : 'activar'
     const confirmMessage = `¿Estás seguro de que quieres ${action} a ${player.name}?`
-    
+
     if (!confirm(confirmMessage)) return
 
     try {
-      await updatePlayer(playerId, {
-        is_active: !player.is_active
+      await updateMutation.mutateAsync({
+        id: playerId,
+        updates: { is_active: !player.is_active },
+        teamId
       })
       console.log(`✅ Jugador ${action}do exitosamente`)
-      
-      // Reload players to show the updated status
-      await getPlayersByTeam(teamId)
+
       toast.success(`Jugador ${player.name} ${action}do exitosamente`)
     } catch (error: any) {
       console.error(`❌ Error al ${action} jugador:`, error)
@@ -508,13 +441,10 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
   const isAtLimit = maxPlayersLimit ? players.length >= maxPlayersLimit : false
   const canRegister = registrationOpen && !isAtLimit
 
-  console.log('🔍 Registration state:', {
-    registrationOpen,
-    isAtLimit,
-    canRegister,
-    maxPlayersLimit,
-    playersCount: players.length
-  })
+  const loading = loadingPlayers
+  const error = playersError?.message
+  const creating = createMutation.isPending
+  const updating = updateMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -559,29 +489,34 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Gestión de Jugadores</h2>
           <p className="text-white/80 drop-shadow">Administra los jugadores de tu equipo</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            if (open) {
+              setFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", photo: "" })
+            }
+            setIsCreateDialogOpen(open)
+          }}>
           <DialogTrigger asChild>
             <Button
-              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto"
               disabled={!canRegister}
             >
               <Plus className="w-4 h-4 mr-2" />
               {!registrationOpen ? 'Registros Cerrados' : isAtLimit ? 'Límite Alcanzado' : 'Nuevo Jugador'}
             </Button>
           </DialogTrigger>
-          <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+          <DialogContent className="bg-slate-900 border-slate-700">
             <DialogHeader>
-              <DialogTitle className="text-white drop-shadow-lg">Registrar Nuevo Jugador</DialogTitle>
-              <DialogDescription className="text-white/80 drop-shadow">Completa la información del jugador</DialogDescription>
+              <DialogTitle className="text-white">Registrar Nuevo Jugador</DialogTitle>
+              <DialogDescription className="text-slate-400">Completa la información del jugador</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-white drop-shadow">Fotografía del Jugador</Label>
+                <Label className="text-white">Fotografía del Jugador</Label>
                 <FileUpload
                   variant="avatar"
                   value={formData.photo}
@@ -589,27 +524,27 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                 />
               </div>
               <div>
-                <Label htmlFor="name" className="text-white drop-shadow">Nombre Completo</Label>
+                <Label htmlFor="name" className="text-white">Nombre Completo</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Carlos Rodríguez"
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <Label htmlFor="position" className="text-white drop-shadow">Posición</Label>
+                <Label htmlFor="position" className="text-white">Posición</Label>
                 <Select
                   value={formData.position}
                   onValueChange={(value) => setFormData({ ...formData, position: value })}
                 >
-                  <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-xl">
+                  <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                     <SelectValue placeholder="Seleccionar posición" />
                   </SelectTrigger>
-                  <SelectContent className="backdrop-blur-xl bg-white/10 border-white/20">
+                  <SelectContent className="bg-slate-800 border-slate-600">
                     {positions.map((position) => (
-                      <SelectItem key={position} value={position}>
+                      <SelectItem key={position} value={position} className="text-white hover:bg-slate-700">
                         {position}
                       </SelectItem>
                     ))}
@@ -617,7 +552,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                 </Select>
               </div>
               <div>
-                <Label htmlFor="jerseyNumber" className="text-white drop-shadow">Número de Camiseta</Label>
+                <Label htmlFor="jerseyNumber" className="text-white">Número de Camiseta</Label>
                 <Input
                   id="jerseyNumber"
                   type="number"
@@ -626,26 +561,26 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   value={formData.jerseyNumber}
                   onChange={(e) => setFormData({ ...formData, jerseyNumber: e.target.value })}
                   placeholder="9"
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                 />
                 {formData.jerseyNumber && getUsedJerseyNumbers().includes(Number.parseInt(formData.jerseyNumber)) && (
-                  <p className="text-sm text-red-300 drop-shadow mt-1">Este número ya está en uso</p>
+                  <p className="text-sm text-red-400 mt-1">Este número ya está en uso</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="birthDate" className="text-white drop-shadow">Fecha de Nacimiento</Label>
+                <Label htmlFor="birthDate" className="text-white">Fecha de Nacimiento</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={formData.birthDate}
                   onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-xl"
+                  className="bg-slate-800 border-slate-600 text-white"
                 />
               </div>
               <Button
                 onClick={handleCreatePlayer}
                 disabled={!formData.name.trim() || !formData.position || !formData.jerseyNumber || creating}
-                className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
                 {creating ? (
                   <>
@@ -756,14 +691,14 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
 
       {/* Edit Player Dialog */}
       <Dialog open={!!editingPlayer} onOpenChange={() => setEditingPlayer(null)}>
-        <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+        <DialogContent className="bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg">Editar Jugador</DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">Modifica la información del jugador</DialogDescription>
+            <DialogTitle className="text-white">Editar Jugador</DialogTitle>
+            <DialogDescription className="text-slate-400">Modifica la información del jugador</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Fotografía del Jugador</Label>
+              <Label className="text-white">Fotografía del Jugador</Label>
               <FileUpload
                 variant="avatar"
                 value={formData.photo}
@@ -771,26 +706,26 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
               />
             </div>
             <div>
-              <Label htmlFor="edit-name" className="text-white drop-shadow">Nombre Completo</Label>
+              <Label htmlFor="edit-name" className="text-white">Nombre Completo</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                className="bg-slate-800 border-slate-600 text-white"
               />
             </div>
             <div>
-              <Label htmlFor="edit-position">Posición</Label>
+              <Label htmlFor="edit-position" className="text-white">Posición</Label>
               <Select
                 value={formData.position}
                 onValueChange={(value) => setFormData({ ...formData, position: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-slate-800 border-slate-600">
                   {positions.map((position) => (
-                    <SelectItem key={position} value={position}>
+                    <SelectItem key={position} value={position} className="text-white hover:bg-slate-700">
                       {position}
                     </SelectItem>
                   ))}
@@ -798,7 +733,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-jerseyNumber">Número de Camiseta</Label>
+              <Label htmlFor="edit-jerseyNumber" className="text-white">Número de Camiseta</Label>
               <Input
                 id="edit-jerseyNumber"
                 type="number"
@@ -806,24 +741,26 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                 max="99"
                 value={formData.jerseyNumber}
                 onChange={(e) => setFormData({ ...formData, jerseyNumber: e.target.value })}
+                className="bg-slate-800 border-slate-600 text-white"
               />
               {formData.jerseyNumber && getUsedJerseyNumbers().includes(Number.parseInt(formData.jerseyNumber)) && (
-                <p className="text-sm text-red-600 mt-1">Este número ya está en uso</p>
+                <p className="text-sm text-red-400 mt-1">Este número ya está en uso</p>
               )}
             </div>
             <div>
-              <Label htmlFor="edit-birthDate">Fecha de Nacimiento</Label>
+              <Label htmlFor="edit-birthDate" className="text-white">Fecha de Nacimiento</Label>
               <Input
                 id="edit-birthDate"
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                className="bg-slate-800 border-slate-600 text-white"
               />
             </div>
-            <Button 
-              onClick={handleUpdatePlayer} 
+            <Button
+              onClick={handleUpdatePlayer}
               disabled={!formData.name.trim() || !formData.position || !formData.jerseyNumber || updating}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               {updating ? (
                 <>
@@ -864,35 +801,36 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   Solicitar Jugador
                 </Button>
               </DialogTrigger>
-              <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+              <DialogContent className="bg-slate-900 border-slate-700">
                 <DialogHeader>
-                  <DialogTitle>Solicitar Registro Excepcional</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-white">Solicitar Registro Excepcional</DialogTitle>
+                  <DialogDescription className="text-slate-400">
                     Completa la información del jugador y justifica la solicitud. El administrador de la liga revisará tu solicitud.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="request-name">Nombre Completo</Label>
+                    <Label htmlFor="request-name" className="text-white">Nombre Completo</Label>
                     <Input
                       id="request-name"
                       value={requestFormData.name}
                       onChange={(e) => setRequestFormData({ ...requestFormData, name: e.target.value })}
                       placeholder="Carlos Rodríguez"
+                      className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="request-position">Posición</Label>
+                    <Label htmlFor="request-position" className="text-white">Posición</Label>
                     <Select
                       value={requestFormData.position}
                       onValueChange={(value) => setRequestFormData({ ...requestFormData, position: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                         <SelectValue placeholder="Seleccionar posición" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-800 border-slate-600">
                         {positions.map((position) => (
-                          <SelectItem key={position} value={position}>
+                          <SelectItem key={position} value={position} className="text-white hover:bg-slate-700">
                             {position}
                           </SelectItem>
                         ))}
@@ -900,7 +838,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="request-jerseyNumber">Número de Camiseta</Label>
+                    <Label htmlFor="request-jerseyNumber" className="text-white">Número de Camiseta</Label>
                     <Input
                       id="request-jerseyNumber"
                       type="number"
@@ -909,34 +847,37 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                       value={requestFormData.jerseyNumber}
                       onChange={(e) => setRequestFormData({ ...requestFormData, jerseyNumber: e.target.value })}
                       placeholder="9"
+                      className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="request-birthDate">Fecha de Nacimiento (opcional)</Label>
+                    <Label htmlFor="request-birthDate" className="text-white">Fecha de Nacimiento (opcional)</Label>
                     <Input
                       id="request-birthDate"
                       type="date"
                       value={requestFormData.birthDate}
                       onChange={(e) => setRequestFormData({ ...requestFormData, birthDate: e.target.value })}
+                      className="bg-slate-800 border-slate-600 text-white"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="request-reason">Justificación de la Solicitud</Label>
+                    <Label htmlFor="request-reason" className="text-white">Justificación de la Solicitud</Label>
                     <Textarea
                       id="request-reason"
                       value={requestFormData.reason}
                       onChange={(e) => setRequestFormData({ ...requestFormData, reason: e.target.value })}
-                      placeholder="Ejemplo: El jugador titular sufrió una lesión de ligamento cruzado anterior y estará fuera por 6 meses. Necesitamos un reemplazo para completar el plantel."
+                      placeholder="Ejemplo: El jugador titular sufrió una lesión..."
                       rows={4}
+                      className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Explica detalladamente la razón por la cual necesitas registrar este jugador
                     </p>
                   </div>
                   <Button
                     onClick={handleRequestPlayer}
                     disabled={submittingRequest}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {submittingRequest ? (
                       <>

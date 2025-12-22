@@ -19,9 +19,9 @@ export const createClientSupabaseClient = () => {
     clientComponentSingleton = createClientComponentClient<Database>()
     
     // Agregar un mensaje de depuración
-    console.log('Supabase client singleton created')
+    // console.log('Supabase client singleton created')
   } else {
-    console.log('Reusing existing Supabase client singleton')
+    // console.log('Reusing existing Supabase client singleton')
   }
   
   return clientComponentSingleton

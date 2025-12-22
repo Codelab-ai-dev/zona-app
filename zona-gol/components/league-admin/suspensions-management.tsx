@@ -501,24 +501,27 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Create Suspension Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+        <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg">Nueva Suspensión</DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+              <Ban className="w-5 h-5 text-red-400" />
+              Nueva Suspensión
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               Crea una suspensión para un jugador por decisión disciplinaria
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="player" className="text-white/90 drop-shadow">Jugador *</Label>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Jugador *</Label>
               <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                <SelectTrigger className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                   <SelectValue placeholder="Selecciona un jugador" />
                 </SelectTrigger>
-                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
+                <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                   {players.map((player) => (
-                    <SelectItem key={player.id} value={player.id} className="text-white hover:bg-white/10">
+                    <SelectItem key={player.id} value={player.id} className="text-white text-sm">
                       {player.name} (#{player.jersey_number}) - {player.team_name}
                     </SelectItem>
                   ))}
@@ -527,64 +530,69 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-white/90 drop-shadow">Tipo de Suspensión *</Label>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Tipo de Suspensión *</Label>
               <Select value={suspensionType} onValueChange={setSuspensionType}>
-                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg">
+                <SelectTrigger className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="backdrop-blur-xl bg-gray-700/95 border-white/20">
-                  <SelectItem value="disciplinary_committee" className="text-white hover:bg-white/10">Comité Disciplinario</SelectItem>
-                  <SelectItem value="yellow_accumulation" className="text-white hover:bg-white/10">Acumulación de Amarillas</SelectItem>
-                  <SelectItem value="red_card" className="text-white hover:bg-white/10">Tarjeta Roja</SelectItem>
-                  <SelectItem value="other" className="text-white hover:bg-white/10">Otro</SelectItem>
+                <SelectContent className="bg-slate-900 border-white/10">
+                  <SelectItem value="disciplinary_committee" className="text-white text-sm">Comité Disciplinario</SelectItem>
+                  <SelectItem value="yellow_accumulation" className="text-white text-sm">Acumulación de Amarillas</SelectItem>
+                  <SelectItem value="red_card" className="text-white text-sm">Tarjeta Roja</SelectItem>
+                  <SelectItem value="other" className="text-white text-sm">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason" className="text-white/90 drop-shadow">Motivo *</Label>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Motivo *</Label>
               <Textarea
-                id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Describe el motivo de la suspensión..."
                 rows={3}
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
+                className="bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="matches" className="text-white/90 drop-shadow">Número de Partidos a Cumplir *</Label>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Número de Partidos a Cumplir *</Label>
               <Input
-                id="matches"
                 type="number"
                 min={1}
                 max={20}
                 value={matchesToServe}
                 onChange={(e) => setMatchesToServe(parseInt(e.target.value) || 1)}
-                className="backdrop-blur-md bg-white/10 border-white/30 text-white rounded-lg"
+                className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
               />
             </div>
 
-            <div className="p-4 backdrop-blur-xl bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
               <div className="flex gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-300 flex-shrink-0" />
-                <div className="text-sm text-white drop-shadow">
+                <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-yellow-300/90">
                   <p className="font-medium">Nota importante:</p>
-                  <p className="mt-1">
+                  <p className="mt-1 text-yellow-300/70">
                     El jugador no podrá registrar asistencia en los próximos {matchesToServe} partido(s) de su equipo.
-                    La suspensión se aplicará automáticamente.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button onClick={() => setCreateDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-white/10">
+            <Button
+              variant="ghost"
+              onClick={() => setCreateDialogOpen(false)}
+              className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleCreateSuspension} disabled={creating} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
+            <Button
+              onClick={handleCreateSuspension}
+              disabled={creating}
+              className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm"
+            >
               {creating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -600,51 +608,58 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Clear All Suspensions Dialog */}
       <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-red-900/95 to-red-900/95 border-red-300/30 shadow-2xl">
+        <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+            <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-400" />
               Limpiar Todas las Suspensiones
             </DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="backdrop-blur-md bg-red-500/20 border border-red-300/30 rounded-lg p-4 space-y-3">
-              <p className="text-white drop-shadow">
-                ¿Estás seguro de que quieres eliminar <span className="font-bold text-red-300">todas las suspensiones</span> de la liga?
+
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg space-y-3">
+              <p className="text-white text-sm">
+                ¿Estás seguro de que quieres eliminar <span className="font-bold text-red-400">todas las suspensiones</span> de la liga?
               </p>
-              <div className="space-y-2 text-sm text-white/90 drop-shadow">
-                <p className="font-medium">Esta acción eliminará:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
+              <div className="space-y-2 text-sm text-gray-300">
+                <p className="font-medium text-white">Esta acción eliminará:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2 text-gray-400">
                   <li>Todas las suspensiones activas ({suspensions.filter(s => s.status === 'active').length})</li>
                   <li>Todas las suspensiones completadas ({suspensions.filter(s => s.status === 'completed').length})</li>
                   <li>Todas las suspensiones canceladas ({suspensions.filter(s => s.status === 'cancelled').length})</li>
                   <li>El historial completo de suspensiones</li>
                 </ul>
-                <p className="font-medium mt-3">Total a eliminar: <span className="text-red-300">{suspensions.length} suspensiones</span></p>
+                <p className="font-medium mt-3 text-white">Total a eliminar: <span className="text-red-400">{suspensions.length} suspensiones</span></p>
               </div>
-              <div className="backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded p-3 mt-3">
-                <p className="text-xs text-yellow-200 drop-shadow">
+            </div>
+
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <div className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-yellow-300/90">
                   <strong>Advertencia:</strong> Esta acción es permanente y no se puede deshacer.
                   Todos los registros de suspensiones serán eliminados de la base de datos.
                 </p>
               </div>
             </div>
           </div>
-          <DialogFooter className="flex gap-2">
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-white/10">
             <Button
+              variant="ghost"
               onClick={() => setClearDialogOpen(false)}
               disabled={clearing}
-              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleClearAllSuspensions}
               disabled={clearing}
-              className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg"
+              className="h-9 bg-red-500 hover:bg-red-600 text-white text-sm"
             >
               {clearing ? (
                 <>
@@ -664,46 +679,51 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
 
       {/* Edit Suspension Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
+        <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-white drop-shadow-lg">Editar Suspensión</DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-blue-400" />
+              Editar Suspensión
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               Modifica el número de partidos de suspensión
             </DialogDescription>
           </DialogHeader>
 
           {editingSuspension && (
             <div className="space-y-4">
-              <div className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 shadow-lg">
-                <div className="space-y-2">
-                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                    <span className="text-sm text-white/80 drop-shadow">Jugador:</span>
-                    <span className="font-medium text-white drop-shadow">
+              <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Jugador</span>
+                    <span className="font-medium text-white text-sm flex items-center gap-2">
                       {editingSuspension.player_name}
-                      <Badge variant="outline" className="ml-2 backdrop-blur-md bg-white/10 border-white/30 text-white">
+                      <Badge className="bg-slate-700 text-white border-0 text-xs">
                         #{editingSuspension.jersey_number}
                       </Badge>
                     </span>
                   </div>
-                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                    <span className="text-sm text-white/80 drop-shadow">Equipo:</span>
-                    <span className="font-medium text-white drop-shadow">{editingSuspension.team_name}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Equipo</span>
+                    <span className="font-medium text-white text-sm">{editingSuspension.team_name}</span>
                   </div>
-                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                    <span className="text-sm text-white/80 drop-shadow">Tipo:</span>
-                    <Badge variant="secondary" className="backdrop-blur-md bg-blue-500/30 text-blue-300 border-blue-300/50">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Tipo</span>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">
                       {getSuspensionTypeLabel(editingSuspension.suspension_type)}
                     </Badge>
                   </div>
-                  <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                    <span className="text-sm text-white/80 drop-shadow">Partidos cumplidos:</span>
-                    <span className="font-medium text-white drop-shadow">{editingSuspension.matches_served}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Partidos cumplidos</span>
+                    <span className="font-medium text-white text-sm">{editingSuspension.matches_served}</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-matches" className="text-white drop-shadow">Número de Partidos a Cumplir *</Label>
+                <Label htmlFor="edit-matches" className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Número de Partidos a Cumplir *
+                </Label>
                 <Input
                   id="edit-matches"
                   type="number"
@@ -711,19 +731,19 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
                   max={20}
                   value={editMatchesToServe}
                   onChange={(e) => setEditMatchesToServe(parseInt(e.target.value) || 1)}
-                  className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-xl"
+                  className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                 />
-                <p className="text-sm text-white/70 drop-shadow">
+                <p className="text-xs text-gray-400">
                   Partidos restantes: {Math.max(0, editMatchesToServe - editingSuspension.matches_served)}
                 </p>
               </div>
 
-              <div className="p-4 backdrop-blur-md bg-yellow-500/20 border border-yellow-300/30 rounded-xl shadow-lg">
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <div className="flex gap-2">
-                  <AlertTriangle className="w-5 h-5 text-yellow-300 flex-shrink-0" />
-                  <div className="text-sm text-white/90 drop-shadow">
-                    <p className="font-medium text-white">Nota:</p>
-                    <p className="mt-1">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-yellow-300/90">
+                    <p className="font-medium">Nota:</p>
+                    <p className="mt-1 text-yellow-300/70">
                       Al modificar el número de partidos, se actualizará el total de partidos a cumplir.
                       Los partidos ya cumplidos ({editingSuspension.matches_served}) no se modificarán.
                     </p>
@@ -733,11 +753,19 @@ export function SuspensionsManagement({ leagueId }: SuspensionsManagementProps) 
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-white/10">
+            <Button
+              variant="ghost"
+              onClick={() => setEditDialogOpen(false)}
+              className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleUpdateSuspension} disabled={editing} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl">
+            <Button
+              onClick={handleUpdateSuspension}
+              disabled={editing}
+              className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm"
+            >
               {editing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

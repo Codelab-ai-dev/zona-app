@@ -33,7 +33,7 @@ export const leagueActions = {
       setLoading(true)
       setError(null)
 
-      console.log('🔍 Fetching active leagues from database...')
+      // console.log('🔍 Fetching active leagues from database...')
 
       const { data: leagues, error } = await supabase
         .from('leagues')
@@ -43,21 +43,21 @@ export const leagueActions = {
         .returns<League[]>()
 
       if (error) {
-        console.error('❌ Database error:', error)
+        // console.error('❌ Database error:', error)
         throw error
       }
 
-      console.log('✅ Database query successful. Found leagues:', leagues?.length || 0)
-      leagues?.forEach((league, index) => {
-        console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
-      })
+      // console.log('✅ Database query successful. Found leagues:', leagues?.length || 0)
+      // leagues?.forEach((league, index) => {
+      //   console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
+      // })
 
       setLeagues(leagues || [])
-      console.log('📦 Store updated with leagues')
+      // console.log('📦 Store updated with leagues')
 
       return leagues
     } catch (error) {
-      console.error('Get leagues error:', error)
+      // console.error('Get leagues error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leagues'
       setError(errorMessage)
       throw error
@@ -93,7 +93,7 @@ export const leagueActions = {
       setLeagues(leagues || [])
       return leagues
     } catch (error) {
-      console.error('Get admin leagues error:', error)
+      // console.error('Get admin leagues error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch admin leagues'
       setError(errorMessage)
       throw error
@@ -122,14 +122,14 @@ export const leagueActions = {
       }
 
       setLeagues(leagues || [])
-      console.log('📋 Todas las ligas obtenidas:', leagues?.map(l => ({
-        name: l.name,
-        is_active: l.is_active,
-        created_at: l.created_at
-      })))
+      // console.log('📋 Todas las ligas obtenidas:', leagues?.map(l => ({
+      //   name: l.name,
+      //   is_active: l.is_active,
+      //   created_at: l.created_at
+      // })))
       return leagues || []
     } catch (error) {
-      console.error('Get all leagues error:', error)
+      // console.error('Get all leagues error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load leagues'
       setError(errorMessage)
       throw error
@@ -164,7 +164,7 @@ export const leagueActions = {
       setCurrentLeague(league)
       return league
     } catch (error) {
-      console.error('Get league error:', error)
+      // console.error('Get league error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch league'
       setError(errorMessage)
       setCurrentLeague(null)
@@ -203,14 +203,14 @@ export const leagueActions = {
         throw error
       }
 
-      console.log('🏆 Liga creada por administrador:', league)
+      // console.log('🏆 Liga creada por administrador:', league)
 
       // 2. Asignar automáticamente la liga al administrador creador
       try {
-        console.log('🔄 Asignando liga al administrador creador:', {
-          leagueId: league.id,
-          adminId: user.id
-        })
+        // console.log('🔄 Asignando liga al administrador creador:', {
+        //   leagueId: league.id,
+        //   adminId: user.id
+        // })
 
         const { data: updatedAdmin, error: updateError } = await (supabase
           .from('users') as any)
@@ -224,20 +224,20 @@ export const leagueActions = {
           .single()
 
         if (updateError) {
-          console.warn('⚠️ Error asignando liga al administrador creador:', updateError)
+          // console.warn('⚠️ Error asignando liga al administrador creador:', updateError)
         } else {
-          console.log('✅ Liga asignada automáticamente al administrador creador:', updatedAdmin)
+          // console.log('✅ Liga asignada automáticamente al administrador creador:', updatedAdmin)
           // Actualizar el perfil en el store de autenticación
           setProfile(updatedAdmin)
         }
       } catch (assignError) {
-        console.warn('⚠️ Excepción asignando liga al administrador creador:', assignError)
+        // console.warn('⚠️ Excepción asignando liga al administrador creador:', assignError)
       }
 
       addLeague(league)
       return league
     } catch (error) {
-      console.error('Create league error:', error)
+      // console.error('Create league error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create league'
       setError(errorMessage)
       throw error
@@ -271,16 +271,16 @@ export const leagueActions = {
         throw error
       }
 
-      console.log('🏆 Liga creada:', league)
-      console.log('🔍 Estado is_active de la liga creada:', league.is_active)
+      // console.log('🏆 Liga creada:', league)
+      // console.log('🔍 Estado is_active de la liga creada:', league.is_active)
 
       // 2. Asignar automáticamente la liga al administrador
       if (league && leagueData.admin_id) {
         try {
-          console.log('🔄 Asignando liga al administrador:', {
-            leagueId: league.id,
-            adminId: leagueData.admin_id
-          })
+          // console.log('🔄 Asignando liga al administrador:', {
+          //   leagueId: league.id,
+          //   adminId: leagueData.admin_id
+          // })
 
           const { data: updatedAdmin, error: updateError } = await (supabase
             .from('users') as any)
@@ -294,13 +294,13 @@ export const leagueActions = {
             .single()
 
           if (updateError) {
-            console.warn('⚠️ Error asignando liga al administrador:', updateError)
+            // console.warn('⚠️ Error asignando liga al administrador:', updateError)
             // No lanzar error aquí para no fallar la creación de la liga
           } else {
-            console.log('✅ Liga asignada automáticamente al administrador:', updatedAdmin)
+            // console.log('✅ Liga asignada automáticamente al administrador:', updatedAdmin)
           }
         } catch (assignError) {
-          console.warn('⚠️ Excepción asignando liga al administrador:', assignError)
+          // console.warn('⚠️ Excepción asignando liga al administrador:', assignError)
           // No lanzar error aquí para no fallar la creación de la liga
         }
       }
@@ -308,7 +308,7 @@ export const leagueActions = {
       addLeague(league)
       return league
     } catch (error) {
-      console.error('Create league with admin error:', error)
+      // console.error('Create league with admin error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create league'
       setError(errorMessage)
       throw error
@@ -337,12 +337,12 @@ export const leagueActions = {
         throw error
       }
 
-      console.log('🔄 Liga actualizada en BD:', {
-        id: league.id,
-        name: league.name,
-        is_active: league.is_active,
-        updated_at: league.updated_at
-      })
+      // console.log('🔄 Liga actualizada en BD:', {
+      //   id: league.id,
+      //   name: league.name,
+      //   is_active: league.is_active,
+      //   updated_at: league.updated_at
+      // })
 
       updateLeague(league)
 
@@ -358,7 +358,7 @@ export const leagueActions = {
           if (activeLeagues) {
             const { setLeagues } = useLeagueStore.getState()
             setLeagues(activeLeagues)
-            console.log('🔄 Store actualizado con ligas activas:', activeLeagues?.length)
+            // console.log('🔄 Store actualizado con ligas activas:', activeLeagues?.length)
 
             // Trigger a refresh event for the public directory
             if (typeof window !== 'undefined') {
@@ -366,13 +366,13 @@ export const leagueActions = {
             }
           }
         } catch (error) {
-          console.warn('⚠️ Error refrescando store:', error)
+          // console.warn('⚠️ Error refrescando store:', error)
         }
       }, 100)
 
       return league
     } catch (error) {
-      console.error('Update league error:', error)
+      // console.error('Update league error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to update league'
       setError(errorMessage)
       throw error
@@ -402,7 +402,7 @@ export const leagueActions = {
 
       removeLeague(leagueId)
     } catch (error) {
-      console.error('Delete league error:', error)
+      // console.error('Delete league error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete league'
       setError(errorMessage)
       throw error
@@ -433,7 +433,7 @@ export const leagueActions = {
       setTournaments(tournaments || [])
       return tournaments
     } catch (error) {
-      console.error('Get tournaments error:', error)
+      // console.error('Get tournaments error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tournaments'
       setError(errorMessage)
       throw error
@@ -465,7 +465,7 @@ export const leagueActions = {
       setTeams(teams || [])
       return teams
     } catch (error) {
-      console.error('Get teams error:', error)
+      // console.error('Get teams error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch teams'
       setError(errorMessage)
       throw error
@@ -479,60 +479,78 @@ export const leagueActions = {
     const supabase = createClientSupabaseClient()
 
     try {
-      // Get teams count and recent teams
-      const { data: teams, count: teamsCount } = await supabase
-        .from('teams')
-        .select('*', { count: 'exact' })
-        .eq('league_id', leagueId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
+      // OPTIMIZACIÓN: Ejecutar queries independientes en paralelo
+      const [teamsResult, tournamentsResult] = await Promise.all([
+        // Get teams count and recent teams (solo campos necesarios)
+        supabase
+          .from('teams')
+          .select('id, name, slug, created_at', { count: 'exact' })
+          .eq('league_id', leagueId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(10),
 
-      // Get tournaments count and active tournament
-      const { data: tournaments, count: tournamentsCount } = await supabase
-        .from('tournaments')
-        .select('*', { count: 'exact' })
-        .eq('league_id', leagueId)
-        .order('created_at', { ascending: false })
+        // Get tournaments count and active tournament (solo campos necesarios)
+        supabase
+          .from('tournaments')
+          .select('id, name, is_active, tournament_format, start_date, end_date', { count: 'exact' })
+          .eq('league_id', leagueId)
+          .order('created_at', { ascending: false })
+      ])
 
+      const { data: teams, count: teamsCount } = teamsResult
+      const { data: tournaments, count: tournamentsCount } = tournamentsResult
       const activeTournament = tournaments?.find((t: any) => t.is_active)
 
-      // Get players count for the league
-      const { count: playersCount } = await supabase
-        .from('players')
-        .select('team_id', { count: 'exact', head: true })
-        .in('team_id', teams?.map((t: any) => t.id) || [])
-        .eq('is_active', true)
+      const teamIds = teams?.map((t: any) => t.id) || []
+      const tournamentIds = tournaments?.map((t: any) => t.id) || []
 
-      // Get matches count for the league (through tournaments)
-      const { count: matchesCount } = await supabase
-        .from('matches')
-        .select('*', { count: 'exact', head: true })
-        .in('tournament_id', tournaments?.map((t: any) => t.id) || [])
+      // OPTIMIZACIÓN: Ejecutar el segundo batch de queries en paralelo
+      const [playersResult, matchesCountResult, recentMatchesResult] = await Promise.all([
+        // Get players count for the league
+        teamIds.length > 0
+          ? supabase
+              .from('players')
+              .select('id', { count: 'exact', head: true })
+              .in('team_id', teamIds)
+              .eq('is_active', true)
+          : Promise.resolve({ count: 0 }),
 
-      // Get recent matches
-      const { data: recentMatches } = await supabase
-        .from('matches')
-        .select(`
-          *,
-          home_team:teams!matches_home_team_id_fkey(id, name, slug),
-          away_team:teams!matches_away_team_id_fkey(id, name, slug)
-        `)
-        .in('tournament_id', tournaments?.map((t: any) => t.id) || [])
-        .eq('status', 'scheduled')
-        .order('match_date', { ascending: true })
-        .limit(3)
+        // Get matches count for the league
+        tournamentIds.length > 0
+          ? supabase
+              .from('matches')
+              .select('id', { count: 'exact', head: true })
+              .in('tournament_id', tournamentIds)
+          : Promise.resolve({ count: 0 }),
+
+        // Get upcoming matches (solo campos necesarios)
+        tournamentIds.length > 0
+          ? supabase
+              .from('matches')
+              .select(`
+                id, match_date, match_time, status, round,
+                home_team:teams!matches_home_team_id_fkey(id, name, slug),
+                away_team:teams!matches_away_team_id_fkey(id, name, slug)
+              `)
+              .in('tournament_id', tournamentIds)
+              .eq('status', 'scheduled')
+              .order('match_date', { ascending: true })
+              .limit(3)
+          : Promise.resolve({ data: [] })
+      ])
 
       return {
         teamsCount: teamsCount || 0,
         tournamentsCount: tournamentsCount || 0,
-        playersCount: playersCount || 0,
-        matchesCount: matchesCount || 0,
+        playersCount: playersResult.count || 0,
+        matchesCount: matchesCountResult.count || 0,
         activeTournament,
         recentTeams: teams?.slice(0, 3) || [],
-        upcomingMatches: recentMatches || [],
+        upcomingMatches: recentMatchesResult.data || [],
       }
     } catch (error) {
-      console.error('Get league stats error:', error)
+      // console.error('Get league stats error:', error)
       throw error
     }
   },
@@ -542,43 +560,59 @@ export const leagueActions = {
     const supabase = createClientSupabaseClient()
 
     try {
-      // Get all leagues with counts
-      const { data: leagues, count: totalLeagues } = await supabase
-        .from('leagues')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
+      // OPTIMIZACIÓN: Ejecutar TODAS las queries en paralelo
+      const [
+        leaguesResult,
+        totalTournamentsResult,
+        activeTournamentsResult,
+        totalTeamsResult,
+        activeTeamsResult,
+        totalPlayersResult,
+        activePlayersResult
+      ] = await Promise.all([
+        // Get all leagues (solo campos necesarios)
+        supabase
+          .from('leagues')
+          .select('id, name, slug, is_active, created_at', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .limit(10),
 
+        // Get total tournaments count
+        supabase
+          .from('tournaments')
+          .select('id', { count: 'exact', head: true }),
+
+        // Get active tournaments count
+        supabase
+          .from('tournaments')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true),
+
+        // Get total teams count
+        supabase
+          .from('teams')
+          .select('id', { count: 'exact', head: true }),
+
+        // Get active teams count
+        supabase
+          .from('teams')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true),
+
+        // Get total players count
+        supabase
+          .from('players')
+          .select('id', { count: 'exact', head: true }),
+
+        // Get active players count
+        supabase
+          .from('players')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true)
+      ])
+
+      const { data: leagues, count: totalLeagues } = leaguesResult
       const activeLeagues = leagues?.filter((l: any) => l.is_active).length || 0
-
-      // Get all tournaments
-      const { count: totalTournaments } = await supabase
-        .from('tournaments')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: activeTournaments } = await supabase
-        .from('tournaments')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-
-      // Get all teams
-      const { count: totalTeams } = await supabase
-        .from('teams')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: activeTeams } = await supabase
-        .from('teams')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-
-      // Get all players
-      const { count: totalPlayers } = await supabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-
-      const { count: activePlayers } = await supabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
 
       return {
         leagues: {
@@ -587,20 +621,20 @@ export const leagueActions = {
           recentLeagues: leagues?.slice(0, 3) || []
         },
         tournaments: {
-          active: activeTournaments || 0,
-          total: totalTournaments || 0
+          active: activeTournamentsResult.count || 0,
+          total: totalTournamentsResult.count || 0
         },
         teams: {
-          active: activeTeams || 0,
-          total: totalTeams || 0
+          active: activeTeamsResult.count || 0,
+          total: totalTeamsResult.count || 0
         },
         players: {
-          active: activePlayers || 0,
-          total: totalPlayers || 0
+          active: activePlayersResult.count || 0,
+          total: totalPlayersResult.count || 0
         }
       }
     } catch (error) {
-      console.error('Get system stats error:', error)
+      // console.error('Get system stats error:', error)
       throw error
     }
   }
@@ -625,7 +659,7 @@ export const serverLeagueActions = {
 
       return leagues || []
     } catch (error) {
-      console.error('Get active leagues error:', error)
+      // console.error('Get active leagues error:', error)
       return []
     }
   },
@@ -647,7 +681,7 @@ export const serverLeagueActions = {
 
       return league
     } catch (error) {
-      console.error('Get league by slug error:', error)
+      // console.error('Get league by slug error:', error)
       throw error
     }
   },
@@ -668,7 +702,7 @@ export const serverLeagueActions = {
 
       return tournaments || []
     } catch (error) {
-      console.error('Get tournaments by league error:', error)
+      // console.error('Get tournaments by league error:', error)
       return []
     }
   },
@@ -690,7 +724,7 @@ export const serverLeagueActions = {
 
       return teams || []
     } catch (error) {
-      console.error('Get teams by league error:', error)
+      // console.error('Get teams by league error:', error)
       return []
     }
   },
@@ -699,35 +733,36 @@ export const serverLeagueActions = {
     const supabase = getServerSupabaseClient()
 
     try {
-      // Get teams count
-      const { count: teamsCount } = await supabase
-        .from('teams')
-        .select('*', { count: 'exact', head: true })
-        .eq('league_id', leagueId)
-        .eq('is_active', true)
+      // OPTIMIZACIÓN: Ejecutar queries independientes en paralelo
+      const [teamsResult, tournamentsResult, playersResult] = await Promise.all([
+        // Get teams count
+        supabase
+          .from('teams')
+          .select('id', { count: 'exact', head: true })
+          .eq('league_id', leagueId)
+          .eq('is_active', true),
 
-      // Get tournaments
-      const { data: tournaments, count: tournamentsCount } = await supabase
-        .from('tournaments')
-        .select('*', { count: 'exact' })
-        .eq('league_id', leagueId)
-        .order('created_at', { ascending: false })
-        .returns<Tournament[]>()
+        // Get tournaments
+        supabase
+          .from('tournaments')
+          .select('id, name, is_active, tournament_format, start_date, end_date', { count: 'exact' })
+          .eq('league_id', leagueId)
+          .order('created_at', { ascending: false }),
 
-      // Get players count
-      const { count: playersCount } = await supabase
-        .from('players')
-        .select('*, team:teams!inner(*)', { count: 'exact', head: true })
-        .eq('team.league_id', leagueId)
+        // Get players count
+        supabase
+          .from('players')
+          .select('id, team:teams!inner(id)', { count: 'exact', head: true })
+          .eq('team.league_id', leagueId)
+      ])
 
-      // First get tournament IDs for this league to filter matches correctly
-      const tournamentIds = tournaments?.map(t => t.id) || []
+      const teamsCount = teamsResult.count || 0
+      const tournaments = tournamentsResult.data || []
+      const tournamentsCount = tournamentsResult.count || 0
+      const playersCount = playersResult.count || 0
 
-      console.log('🏟️ League matches query:', {
-        leagueId,
-        tournamentIds,
-        tournamentsCount: tournaments?.length || 0
-      })
+      // Get tournament IDs for matches query
+      const tournamentIds = tournaments.map((t: any) => t.id)
 
       // Get matches count and data (only if there are tournaments)
       let matches: any[] = []
@@ -760,20 +795,6 @@ export const serverLeagueActions = {
         matches = matchesData || []
         matchesCount = matchesCountData || 0
       }
-
-      // Debug: Log all matches to understand the data
-      console.log('🔍 All matches for league:', leagueId, {
-        totalMatches: matches.length,
-        tournamentIds,
-        statuses: matches.map(m => ({
-          id: m.id,
-          status: m.status,
-          date: m.match_date,
-          tournament_id: m.tournament_id,
-          home: m.home_team?.name,
-          away: m.away_team?.name
-        }))
-      })
 
       // Get upcoming matches
       const upcomingMatches = matches.filter(match => {
@@ -820,15 +841,15 @@ export const serverLeagueActions = {
         .sort((a, b) => a - b)
 
       // Debug: Log filtered matches
-      console.log('🏆 Filtered matches:', {
-        upcomingCount: upcomingMatches.length,
-        recentCount: recentMatches.length,
-        totalRounds: roundNumbers.length,
-        matchesByRound: Object.keys(matchesByRound).map(round => ({
-          round,
-          matchCount: matchesByRound[round].length
-        }))
-      })
+      // console.log('🏆 Filtered matches:', {
+      //   upcomingCount: upcomingMatches.length,
+      //   recentCount: recentMatches.length,
+      //   totalRounds: roundNumbers.length,
+      //   matchesByRound: Object.keys(matchesByRound).map(round => ({
+      //     round,
+      //     matchCount: matchesByRound[round].length
+      //   }))
+      // })
 
       // Get all teams in the league
       const { data: allTeams } = await supabase
@@ -910,7 +931,7 @@ export const serverLeagueActions = {
         activeTournament: tournaments?.find(t => t.is_active) || null
       }
     } catch (error) {
-      console.error('Get league stats error:', error)
+      // console.error('Get league stats error:', error)
       return {
         teamsCount: 0,
         tournamentsCount: 0,
@@ -944,7 +965,7 @@ export const serverLeagueActions = {
 
       return teams || []
     } catch (error) {
-      console.error('Get teams by tournament error:', error)
+      // console.error('Get teams by tournament error:', error)
       return []
     }
   },
@@ -953,40 +974,45 @@ export const serverLeagueActions = {
     const supabase = getServerSupabaseClient()
 
     try {
-      // Get teams count
-      const { count: teamsCount } = await supabase
-        .from('teams')
-        .select('*', { count: 'exact', head: true })
-        .eq('tournament_id', tournamentId)
-        .eq('is_active', true)
+      // Parallelize teams and matches queries for better performance
+      const [teamsResult, matchesResult] = await Promise.all([
+        supabase
+          .from('teams')
+          .select('id, name, slug, logo')
+          .eq('tournament_id', tournamentId)
+          .eq('is_active', true),
+        supabase
+          .from('matches')
+          .select(`
+            id,
+            tournament_id,
+            home_team_id,
+            away_team_id,
+            home_score,
+            away_score,
+            match_date,
+            match_time,
+            field_number,
+            round,
+            status,
+            phase,
+            playoff_round,
+            created_at,
+            updated_at,
+            home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
+            away_team:teams!matches_away_team_id_fkey(id, name, slug, logo),
+            tournament:tournaments(id, name)
+          `, { count: 'exact' })
+          .eq('tournament_id', tournamentId)
+          .order('match_date', { ascending: false })
+      ])
 
-      // Get matches for this tournament
-      const { data: matches, count: matchesCount } = await supabase
-        .from('matches')
-        .select(`
-          id,
-          tournament_id,
-          home_team_id,
-          away_team_id,
-          home_score,
-          away_score,
-          match_date,
-          match_time,
-          field_number,
-          round,
-          status,
-          phase,
-          playoff_round,
-          created_at,
-          updated_at,
-          home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
-          away_team:teams!matches_away_team_id_fkey(id, name, slug, logo),
-          tournament:tournaments(id, name)
-        `, { count: 'exact' })
-        .eq('tournament_id', tournamentId)
-        .order('match_date', { ascending: false })
+      const teams = teamsResult.data || []
+      const teamsCount = teams.length
+      const matches = matchesResult.data || []
+      const matchesCount = matchesResult.count || 0
 
-      const allMatches: any[] = matches || []
+      const allMatches: any[] = matches
 
       // Get upcoming matches
       const upcomingMatches = allMatches.filter(match => {
@@ -1030,8 +1056,8 @@ export const serverLeagueActions = {
         .map(r => parseInt(r))
         .sort((a, b) => a - b)
 
-      // Calculate team standings
-      const teamStandings = await this.calculateTeamStandingsByTournament(tournamentId)
+      // Calculate team standings using already-fetched data (avoids duplicate queries)
+      const teamStandings = this.calculateStandingsFromData(teams, allMatches)
 
       return {
         teamsCount: teamsCount || 0,
@@ -1044,7 +1070,7 @@ export const serverLeagueActions = {
         teamStandings
       }
     } catch (error) {
-      console.error('Get tournament stats error:', error)
+      // console.error('Get tournament stats error:', error)
       return {
         teamsCount: 0,
         matchesCount: 0,
@@ -1056,6 +1082,69 @@ export const serverLeagueActions = {
         teamStandings: []
       }
     }
+  },
+
+  // Helper function to calculate standings from pre-fetched data (no additional queries)
+  calculateStandingsFromData(teams: any[], matches: any[]) {
+    // Initialize standings
+    const standings: any = {}
+    teams.forEach(team => {
+      standings[team.id] = {
+        team,
+        matches_played: 0,
+        matches_won: 0,
+        matches_drawn: 0,
+        matches_lost: 0,
+        goals_for: 0,
+        goals_against: 0,
+        goal_difference: 0,
+        points: 0
+      }
+    })
+
+    // Calculate standings from finished matches only
+    matches.filter(m => m.status === 'finished').forEach(match => {
+      if (match.home_score !== null && match.away_score !== null) {
+        const homeId = match.home_team_id
+        const awayId = match.away_team_id
+
+        if (standings[homeId] && standings[awayId]) {
+          standings[homeId].matches_played++
+          standings[awayId].matches_played++
+
+          standings[homeId].goals_for += match.home_score
+          standings[homeId].goals_against += match.away_score
+          standings[awayId].goals_for += match.away_score
+          standings[awayId].goals_against += match.home_score
+
+          if (match.home_score > match.away_score) {
+            standings[homeId].matches_won++
+            standings[homeId].points += 3
+            standings[awayId].matches_lost++
+          } else if (match.home_score < match.away_score) {
+            standings[awayId].matches_won++
+            standings[awayId].points += 3
+            standings[homeId].matches_lost++
+          } else {
+            standings[homeId].matches_drawn++
+            standings[awayId].matches_drawn++
+            standings[homeId].points++
+            standings[awayId].points++
+          }
+
+          standings[homeId].goal_difference = standings[homeId].goals_for - standings[homeId].goals_against
+          standings[awayId].goal_difference = standings[awayId].goals_for - standings[awayId].goals_against
+        }
+      }
+    })
+
+    // Convert to array and sort
+    return Object.values(standings).sort((a: any, b: any) => {
+      if (b.points !== a.points) return b.points - a.points
+      if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
+      if (b.goals_for !== a.goals_for) return b.goals_for - a.goals_for
+      return a.team.name.localeCompare(b.team.name)
+    })
   },
 
   async calculateTeamStandingsByTournament(tournamentId: string) {
@@ -1147,7 +1236,7 @@ export const serverLeagueActions = {
         return a.team.name.localeCompare(b.team.name)
       })
     } catch (error) {
-      console.error('Calculate team standings error:', error)
+      // console.error('Calculate team standings error:', error)
       return []
     }
   }

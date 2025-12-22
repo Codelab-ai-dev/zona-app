@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,23 +30,18 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Loader2, Edit, Save, X, AlertTriangle } from "lucide-react"
+import { Trophy, Loader2, Edit, AlertTriangle, X, Save } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { generateStandingsEmbedding } from "@/lib/utils/generate-embeddings"
+import { useTournamentsByLeague, useTeamStatsByTournament, useInvalidateTeamStats } from "@/lib/queries"
 
 interface StandingsManagementProps {
   leagueId: string
 }
 
-interface Tournament {
-  id: string
-  name: string
-  is_active: boolean
-}
-
 interface TeamStanding {
-  id: string
+  id: string | null
   team_id: string
   tournament_id: string
   matches_played: number
@@ -69,11 +63,50 @@ interface TeamStanding {
 
 export function StandingsManagement({ leagueId }: StandingsManagementProps) {
   const supabase = createClientSupabaseClient()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
+
+  // React Query para torneos
+  const { data: tournamentsData = [], isLoading: tournamentsLoading } = useTournamentsByLeague(leagueId)
+
+  // Transformar torneos para el select
+  const tournaments = useMemo(() => {
+    return tournamentsData.map(t => ({
+      id: t.id,
+      name: t.name,
+      is_active: t.is_active
+    }))
+  }, [tournamentsData])
+
   const [selectedTournament, setSelectedTournament] = useState<string>("")
-  const [standings, setStandings] = useState<TeamStanding[]>([])
+
+  // Auto-seleccionar torneo activo cuando cargan
+  useEffect(() => {
+    if (tournaments.length > 0 && !selectedTournament) {
+      const active = tournaments.find(t => t.is_active)
+      if (active) {
+        setSelectedTournament(active.id)
+      } else if (tournaments.length > 0) {
+        setSelectedTournament(tournaments[0].id)
+      }
+    }
+  }, [tournaments, selectedTournament])
+
+  // React Query para standings
+  const {
+    data: standingsData = [],
+    isLoading: standingsLoading,
+    refetch: refetchStandings
+  } = useTeamStatsByTournament(selectedTournament || undefined)
+
+  // Hook para invalidar cache
+  const { invalidateByTournament } = useInvalidateTeamStats()
+
+  // Transformar standings
+  const standings: TeamStanding[] = useMemo(() => {
+    return standingsData as TeamStanding[]
+  }, [standingsData])
+
+  const loading = tournamentsLoading || standingsLoading
+  const [saving, setSaving] = useState(false)
   const [editingTeam, setEditingTeam] = useState<TeamStanding | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -86,187 +119,6 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
     points_adjustment: 0,
     adjustment_reason: ""
   })
-
-  // Load tournaments
-  useEffect(() => {
-    const loadTournaments = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('tournaments')
-          .select('id, name, is_active')
-          .eq('league_id', leagueId)
-          .order('is_active', { ascending: false })
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-
-        setTournaments(data || [])
-
-        // Auto-select active tournament or first one
-        const active = data?.find(t => t.is_active)
-        if (active) {
-          setSelectedTournament(active.id)
-        } else if (data && data.length > 0) {
-          setSelectedTournament(data[0].id)
-        }
-      } catch (error) {
-        console.error('Error loading tournaments:', error)
-        toast.error('Error cargando torneos')
-      }
-    }
-
-    loadTournaments()
-  }, [leagueId, supabase])
-
-  // Load standings when tournament changes
-  useEffect(() => {
-    const loadStandings = async () => {
-      if (!selectedTournament) {
-        setStandings([])
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      try {
-        // First check if team_stats exists for this tournament
-        const { data: existingStats, error: statsError } = await supabase
-          .from('team_stats')
-          .select(`
-            id,
-            team_id,
-            tournament_id,
-            matches_played,
-            matches_won,
-            matches_drawn,
-            matches_lost,
-            goals_for,
-            goals_against,
-            goal_difference,
-            points,
-            points_adjustment,
-            adjustment_reason,
-            team:teams(id, name, logo)
-          `)
-          .eq('tournament_id', selectedTournament)
-          .order('points', { ascending: false })
-
-        if (statsError) throw statsError
-
-        if (existingStats && existingStats.length > 0) {
-          // Use existing stats
-          const formattedStandings = existingStats.map((stat: any) => ({
-            ...stat,
-            points_adjustment: stat.points_adjustment || 0,
-            adjustment_reason: stat.adjustment_reason || null,
-            team: stat.team
-          }))
-
-          // Sort by total points (points + adjustment)
-          formattedStandings.sort((a: any, b: any) => {
-            const totalA = a.points + (a.points_adjustment || 0)
-            const totalB = b.points + (b.points_adjustment || 0)
-            if (totalB !== totalA) return totalB - totalA
-            if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
-            return b.goals_for - a.goals_for
-          })
-
-          setStandings(formattedStandings)
-        } else {
-          // Calculate from matches if no team_stats exist
-          const { data: teams } = await supabase
-            .from('teams')
-            .select('id, name, logo')
-            .eq('tournament_id', selectedTournament)
-            .eq('is_active', true)
-
-          const { data: matches } = await supabase
-            .from('matches')
-            .select('home_team_id, away_team_id, home_score, away_score, status')
-            .eq('tournament_id', selectedTournament)
-            .eq('status', 'finished')
-
-          // Calculate standings
-          const standingsMap: Record<string, any> = {}
-
-          teams?.forEach(team => {
-            standingsMap[team.id] = {
-              id: null,
-              team_id: team.id,
-              tournament_id: selectedTournament,
-              matches_played: 0,
-              matches_won: 0,
-              matches_drawn: 0,
-              matches_lost: 0,
-              goals_for: 0,
-              goals_against: 0,
-              goal_difference: 0,
-              points: 0,
-              points_adjustment: 0,
-              adjustment_reason: null,
-              team
-            }
-          })
-
-          matches?.forEach(match => {
-            if (match.home_score !== null && match.away_score !== null) {
-              const homeId = match.home_team_id
-              const awayId = match.away_team_id
-
-              if (standingsMap[homeId]) {
-                standingsMap[homeId].matches_played++
-                standingsMap[homeId].goals_for += match.home_score
-                standingsMap[homeId].goals_against += match.away_score
-
-                if (match.home_score > match.away_score) {
-                  standingsMap[homeId].matches_won++
-                } else if (match.home_score < match.away_score) {
-                  standingsMap[homeId].matches_lost++
-                } else {
-                  standingsMap[homeId].matches_drawn++
-                }
-              }
-
-              if (standingsMap[awayId]) {
-                standingsMap[awayId].matches_played++
-                standingsMap[awayId].goals_for += match.away_score
-                standingsMap[awayId].goals_against += match.home_score
-
-                if (match.away_score > match.home_score) {
-                  standingsMap[awayId].matches_won++
-                } else if (match.away_score < match.home_score) {
-                  standingsMap[awayId].matches_lost++
-                } else {
-                  standingsMap[awayId].matches_drawn++
-                }
-              }
-            }
-          })
-
-          // Calculate points and goal difference
-          Object.values(standingsMap).forEach((team: any) => {
-            team.points = team.matches_won * 3 + team.matches_drawn
-            team.goal_difference = team.goals_for - team.goals_against
-          })
-
-          const calculatedStandings = Object.values(standingsMap).sort((a: any, b: any) => {
-            if (b.points !== a.points) return b.points - a.points
-            if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
-            return b.goals_for - a.goals_for
-          })
-
-          setStandings(calculatedStandings as TeamStanding[])
-        }
-      } catch (error) {
-        console.error('Error loading standings:', error)
-        toast.error('Error cargando tabla de posiciones')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadStandings()
-  }, [selectedTournament, supabase])
 
   const handleEditClick = (team: TeamStanding) => {
     setEditingTeam(team)
@@ -333,44 +185,9 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
         tournament_id: selectedTournament,
       }).catch(err => console.warn('Error generando embedding de standings:', err))
 
-      // Reload standings
-      const { data: updatedStats } = await supabase
-        .from('team_stats')
-        .select(`
-          id,
-          team_id,
-          tournament_id,
-          matches_played,
-          matches_won,
-          matches_drawn,
-          matches_lost,
-          goals_for,
-          goals_against,
-          goal_difference,
-          points,
-          points_adjustment,
-          adjustment_reason,
-          team:teams(id, name, logo)
-        `)
-        .eq('tournament_id', selectedTournament)
-
-      if (updatedStats) {
-        const formattedStandings = updatedStats.map((stat: any) => ({
-          ...stat,
-          points_adjustment: stat.points_adjustment || 0,
-          team: stat.team
-        }))
-
-        formattedStandings.sort((a: any, b: any) => {
-          const totalA = a.points + (a.points_adjustment || 0)
-          const totalB = b.points + (b.points_adjustment || 0)
-          if (totalB !== totalA) return totalB - totalA
-          if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference
-          return b.goals_for - a.goals_for
-        })
-
-        setStandings(formattedStandings)
-      }
+      // Invalidar cache y recargar standings
+      invalidateByTournament(selectedTournament)
+      refetchStandings()
     } catch (error: any) {
       console.error('Error saving standings:', error)
       toast.error(`Error guardando: ${error.message}`)
@@ -394,34 +211,36 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
 
   if (loading && !selectedTournament) {
     return (
-      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin mr-2 text-white" />
-          <span className="text-white drop-shadow">Cargando...</span>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-green-400" />
+          <span className="text-gray-400 text-sm">Cargando...</span>
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="backdrop-blur-xl bg-white/10 border-white/20">
-        <CardHeader>
-          <CardTitle className="flex items-center text-white drop-shadow-lg">
-            <Trophy className="w-5 h-5 mr-2 text-yellow-300" />
-            Tabla de Posiciones
-          </CardTitle>
-          <CardDescription className="text-white/80 drop-shadow">
-            Gestiona la tabla de posiciones. Puedes editar estadísticas y aplicar sanciones.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-4 md:space-y-6">
+      <div className="rounded-xl bg-slate-800/50 border border-white/10">
+        {/* Header */}
+        <div className="p-3 md:p-4 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-1">
+            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
+            <h2 className="text-sm md:text-base font-semibold text-white">Tabla de Posiciones</h2>
+          </div>
+          <p className="text-[10px] md:text-xs text-gray-500">
+            Gestiona la tabla de posiciones y aplica sanciones
+          </p>
+        </div>
+
+        <div className="p-3 md:p-4">
           {/* Tournament Selector */}
           {tournaments.length > 0 && (
-            <div className="mb-6">
-              <Label className="text-white drop-shadow mb-2 block">Seleccionar Torneo</Label>
+            <div className="mb-4">
+              <Label className="text-gray-400 text-xs mb-1.5 block">Seleccionar Torneo</Label>
               <Select value={selectedTournament} onValueChange={setSelectedTournament}>
-                <SelectTrigger className="w-full md:w-80 backdrop-blur-md bg-white/20 border-white/30 text-white">
+                <SelectTrigger className="w-full md:w-80 h-9 bg-slate-800/50 border-white/10 text-white text-sm">
                   <SelectValue placeholder="Seleccionar torneo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -436,31 +255,31 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin mr-2 text-white" />
-              <span className="text-white drop-shadow">Cargando tabla...</span>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mr-2 text-green-400" />
+              <span className="text-gray-400 text-sm">Cargando tabla...</span>
             </div>
           ) : standings.length === 0 ? (
-            <div className="text-center py-12">
-              <Trophy className="w-12 h-12 text-white/50 mx-auto mb-4" />
-              <p className="text-white/80 drop-shadow">No hay equipos en este torneo</p>
+            <div className="text-center py-8">
+              <Trophy className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">No hay equipos en este torneo</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-3 md:mx-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-white/20">
-                    <TableHead className="text-white/90 drop-shadow">Pos</TableHead>
-                    <TableHead className="text-white/90 drop-shadow">Equipo</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PJ</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PG</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PE</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PP</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">GF</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">GC</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">DIF</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">PTS</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Acciones</TableHead>
+                  <TableRow className="border-b border-white/10">
+                    <TableHead className="text-gray-400 text-[10px] md:text-xs font-medium w-8 md:w-10 px-1 md:px-2">#</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] md:text-xs font-medium px-1 md:px-2">Equipo</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1">PJ</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1">PG</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1">PE</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1">PP</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1 hidden md:table-cell">GF</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-7 md:w-10 px-1 hidden md:table-cell">GC</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-8 md:w-10 px-1">DG</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-9 md:w-12 px-1">PTS</TableHead>
+                    <TableHead className="text-center text-gray-400 text-[10px] md:text-xs font-medium w-8 md:w-10 px-1"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -471,68 +290,68 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
                     return (
                       <TableRow
                         key={team.team_id}
-                        className={`border-b border-white/20 hover:bg-white/5 ${hasAdjustment ? 'bg-red-500/10' : ''}`}
+                        className={`border-b border-white/5 hover:bg-slate-700/30 ${hasAdjustment ? 'bg-red-500/10' : ''}`}
                       >
-                        <TableCell className="font-bold text-white drop-shadow">
+                        <TableCell className="font-semibold text-white text-xs md:text-sm px-1 md:px-2">
                           {index + 1}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="w-8 h-8 border border-white/30">
+                        <TableCell className="px-1 md:px-2">
+                          <div className="flex items-center gap-1.5 md:gap-2">
+                            <Avatar className="w-6 h-6 md:w-8 md:h-8 border border-white/10 flex-shrink-0">
                               {team.team.logo && (
                                 <AvatarImage src={team.team.logo} alt={team.team.name} />
                               )}
-                              <AvatarFallback className="backdrop-blur-md bg-green-500/80 text-white text-xs font-bold">
+                              <AvatarFallback className="bg-green-500/20 text-green-400 text-[8px] md:text-xs font-bold">
                                 {getTeamInitials(team.team.name)}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <span className="font-medium text-white drop-shadow">{team.team.name}</span>
+                            <div className="min-w-0">
+                              <span className="font-medium text-white text-[10px] md:text-sm block truncate max-w-[80px] md:max-w-none">{team.team.name}</span>
                               {hasAdjustment && (
-                                <div className="flex items-center mt-1">
-                                  <AlertTriangle className="w-3 h-3 text-red-400 mr-1" />
-                                  <span className="text-xs text-red-300">
-                                    {team.points_adjustment > 0 ? '+' : ''}{team.points_adjustment} pts
+                                <div className="flex items-center">
+                                  <AlertTriangle className="w-2.5 h-2.5 text-red-400 mr-0.5" />
+                                  <span className="text-[8px] md:text-[10px] text-red-400">
+                                    {team.points_adjustment > 0 ? '+' : ''}{team.points_adjustment}
                                   </span>
                                 </div>
                               )}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center text-white/90">{team.matches_played}</TableCell>
-                        <TableCell className="text-center text-green-400">{team.matches_won}</TableCell>
-                        <TableCell className="text-center text-yellow-400">{team.matches_drawn}</TableCell>
-                        <TableCell className="text-center text-red-400">{team.matches_lost}</TableCell>
-                        <TableCell className="text-center text-white/90">{team.goals_for}</TableCell>
-                        <TableCell className="text-center text-white/90">{team.goals_against}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1">{team.matches_played}</TableCell>
+                        <TableCell className="text-center text-green-400 text-[10px] md:text-sm px-1">{team.matches_won}</TableCell>
+                        <TableCell className="text-center text-yellow-400 text-[10px] md:text-sm px-1">{team.matches_drawn}</TableCell>
+                        <TableCell className="text-center text-red-400 text-[10px] md:text-sm px-1">{team.matches_lost}</TableCell>
+                        <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1 hidden md:table-cell">{team.goals_for}</TableCell>
+                        <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1 hidden md:table-cell">{team.goals_against}</TableCell>
+                        <TableCell className="text-center text-[10px] md:text-sm px-1">
                           <span className={
                             team.goal_difference > 0 ? "text-green-400" :
-                            team.goal_difference < 0 ? "text-red-400" : "text-white/70"
+                            team.goal_difference < 0 ? "text-red-400" : "text-gray-500"
                           }>
                             {team.goal_difference > 0 ? '+' : ''}{team.goal_difference}
                           </span>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center px-1">
                           <div className="flex flex-col items-center">
-                            <span className="font-bold text-white drop-shadow-lg text-lg">
+                            <span className="font-bold text-white text-sm md:text-base">
                               {totalPoints}
                             </span>
                             {hasAdjustment && (
-                              <span className="text-xs text-white/50">
+                              <span className="text-[8px] md:text-[10px] text-gray-500">
                                 ({team.points}{team.points_adjustment >= 0 ? '+' : ''}{team.points_adjustment})
                               </span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center px-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleEditClick(team)}
-                            className="text-white hover:bg-white/20"
+                            className="h-7 w-7 md:h-8 md:w-8 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3 md:w-4 md:h-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -542,166 +361,166 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Edit Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-md backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20">
+        <DialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-white/10">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-white drop-shadow-lg">
-              <Edit className="w-5 h-5 mr-2" />
+            <DialogTitle className="flex items-center text-white text-sm md:text-base">
+              <Edit className="w-4 h-4 mr-2" />
               Editar Estadísticas
             </DialogTitle>
-            <DialogDescription className="text-white/80 drop-shadow">
+            <DialogDescription className="text-gray-400 text-xs md:text-sm">
               {editingTeam?.team.name}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 py-3">
             {/* Partidos */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2">
               <div>
-                <Label className="text-white/80 text-xs">PJ</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">PJ</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.matches_played}
                   onChange={(e) => setEditForm({ ...editForm, matches_played: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
               <div>
-                <Label className="text-white/80 text-xs">PG</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">PG</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.matches_won}
                   onChange={(e) => setEditForm({ ...editForm, matches_won: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
               <div>
-                <Label className="text-white/80 text-xs">PE</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">PE</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.matches_drawn}
                   onChange={(e) => setEditForm({ ...editForm, matches_drawn: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
               <div>
-                <Label className="text-white/80 text-xs">PP</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">PP</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.matches_lost}
                   onChange={(e) => setEditForm({ ...editForm, matches_lost: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
             </div>
 
             {/* Goles */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-white/80 text-xs">Goles a Favor (GF)</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">Goles a Favor</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.goals_for}
                   onChange={(e) => setEditForm({ ...editForm, goals_for: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
               <div>
-                <Label className="text-white/80 text-xs">Goles en Contra (GC)</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">Goles en Contra</Label>
                 <Input
                   type="number"
                   min="0"
                   value={editForm.goals_against}
                   onChange={(e) => setEditForm({ ...editForm, goals_against: parseInt(e.target.value) || 0 })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
+                  className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
                 />
               </div>
             </div>
 
             {/* Ajuste de Puntos */}
-            <div className="pt-4 border-t border-white/20">
-              <Label className="text-white/80 text-sm flex items-center mb-2">
-                <AlertTriangle className="w-4 h-4 mr-2 text-yellow-400" />
-                Ajuste de Puntos (sanción/bonificación)
+            <div className="pt-3 border-t border-white/10">
+              <Label className="text-gray-400 text-[10px] md:text-xs flex items-center mb-1.5">
+                <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-400" />
+                Ajuste de Puntos
               </Label>
               <Input
                 type="number"
                 value={editForm.points_adjustment}
                 onChange={(e) => setEditForm({ ...editForm, points_adjustment: parseInt(e.target.value) || 0 })}
-                className="backdrop-blur-md bg-white/20 border-white/30 text-white text-center"
-                placeholder="Ej: -3 para restar 3 puntos"
+                className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
+                placeholder="Ej: -3"
               />
-              <p className="text-xs text-white/60 mt-1">
-                Usa números negativos para restar puntos (ej: -3)
+              <p className="text-[10px] text-gray-500 mt-1">
+                Usa números negativos para restar puntos
               </p>
             </div>
 
             {/* Motivo del Ajuste */}
             {editForm.points_adjustment !== 0 && (
               <div>
-                <Label className="text-white/80 text-sm">Motivo del Ajuste</Label>
+                <Label className="text-gray-400 text-[10px] md:text-xs">Motivo del Ajuste</Label>
                 <Textarea
                   value={editForm.adjustment_reason}
                   onChange={(e) => setEditForm({ ...editForm, adjustment_reason: e.target.value })}
-                  className="backdrop-blur-md bg-white/20 border-white/30 text-white"
-                  placeholder="Ej: Incumplimiento de reglamento, falta de documentación, etc."
+                  className="bg-slate-800/50 border-white/10 text-white text-xs md:text-sm min-h-[60px]"
+                  placeholder="Ej: Incumplimiento de reglamento"
                   rows={2}
                 />
               </div>
             )}
 
             {/* Preview de puntos */}
-            <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-lg border border-blue-300/30">
-              <div className="flex justify-between items-center">
-                <span className="text-white/80">Puntos calculados:</span>
+            <div className="p-3 bg-slate-800/50 rounded-lg border border-white/10">
+              <div className="flex justify-between items-center text-xs md:text-sm">
+                <span className="text-gray-400">Puntos calculados:</span>
                 <span className="text-white font-medium">
                   {editForm.matches_won * 3 + editForm.matches_drawn}
                 </span>
               </div>
               {editForm.points_adjustment !== 0 && (
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-white/80">Ajuste:</span>
+                <div className="flex justify-between items-center mt-1 text-xs md:text-sm">
+                  <span className="text-gray-400">Ajuste:</span>
                   <span className={editForm.points_adjustment < 0 ? "text-red-400" : "text-green-400"}>
                     {editForm.points_adjustment > 0 ? '+' : ''}{editForm.points_adjustment}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/20">
-                <span className="text-white font-medium">Puntos totales:</span>
-                <span className="text-white font-bold text-lg">
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/10">
+                <span className="text-white font-medium text-xs md:text-sm">Puntos totales:</span>
+                <span className="text-green-400 font-bold text-base md:text-lg">
                   {editForm.matches_won * 3 + editForm.matches_drawn + editForm.points_adjustment}
                 </span>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-row gap-2">
             <Button
               variant="ghost"
               onClick={() => setEditModalOpen(false)}
-              className="text-white hover:bg-white/20"
+              className="flex-1 h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-xs md:text-sm"
             >
-              <X className="w-4 h-4 mr-2" />
+              <X className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
               Cancelar
             </Button>
             <Button
               onClick={handleSaveEdit}
               disabled={saving}
-              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+              className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1.5 animate-spin" />
               ) : (
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
               )}
               Guardar
             </Button>

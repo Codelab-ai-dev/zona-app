@@ -148,44 +148,44 @@ export function PlayerQRModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-slate-900 border-slate-700">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-blue-600" />
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <QrCode className="w-5 h-5 text-blue-400" />
             Credencial QR Generada
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-slate-400">
             Código QR para identificación del jugador
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Información del jugador */}
-          <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center space-x-3 p-4 bg-slate-800 border border-slate-700 rounded-lg">
             <Avatar className="w-12 h-12">
               {player.photo && (
-                <AvatarImage 
-                  src={player.photo} 
+                <AvatarImage
+                  src={player.photo}
                   alt={player.name}
                 />
               )}
-              <AvatarFallback className="bg-blue-100 text-blue-800 font-bold">
+              <AvatarFallback className="bg-blue-600 text-white font-bold">
                 {getPlayerInitials(player.name)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold flex items-center gap-2">
+              <h3 className="font-semibold flex items-center gap-2 text-white">
                 {player.name}
-                <Badge variant="secondary">#{player.jersey_number}</Badge>
+                <Badge variant="secondary" className="bg-green-600 text-white">#{player.jersey_number}</Badge>
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-400">
                 {isNewFormat ? 'Formato Nuevo' : 'Formato Legacy'}
               </p>
             </div>
           </div>
 
           {/* Código QR */}
-          <div className="flex justify-center p-4 sm:p-6 bg-white border-2 border-gray-200 rounded-lg">
+          <div className="flex justify-center p-4 sm:p-6 bg-white rounded-lg">
             <QRCode
               id="qr-code-svg"
               value={qrData}
@@ -199,27 +199,27 @@ export function PlayerQRModal({
           {/* Información de la credencial */}
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Tipo:</span>
-              <span className="font-medium">
+              <span className="text-slate-400">Tipo:</span>
+              <span className="font-medium text-white">
                 {isNewFormat ? `${(credential as PlayerQRCredential).typ} v${(credential as PlayerQRCredential).ver}` : `${(credential as LegacyPlayerQR).type} v${(credential as LegacyPlayerQR).version}`}
               </span>
             </div>
-            
+
             {isNewFormat && (
               <>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Temporada:</span>
-                  <span className="font-medium">{(credential as PlayerQRCredential).season}</span>
+                  <span className="text-slate-400">Temporada:</span>
+                  <span className="font-medium text-white">{(credential as PlayerQRCredential).season}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Válido hasta:</span>
-                  <span className="font-medium">
+                  <span className="text-slate-400">Válido hasta:</span>
+                  <span className="font-medium text-white">
                     {formatDateTime(getExpirationDate(credential as PlayerQRCredential))}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Días restantes:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="text-slate-400">Días restantes:</span>
+                  <span className="font-medium text-green-400">
                     {getDaysUntilExpiration(credential as PlayerQRCredential)} días
                   </span>
                 </div>
@@ -228,8 +228,8 @@ export function PlayerQRModal({
 
             {!isNewFormat && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Generado:</span>
-                <span className="font-medium">
+                <span className="text-slate-400">Generado:</span>
+                <span className="font-medium text-white">
                   {new Date((credential as LegacyPlayerQR).timestamp).toLocaleDateString('es-ES')}
                 </span>
               </div>
@@ -243,28 +243,28 @@ export function PlayerQRModal({
               disabled={copying}
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
             >
               <Copy className="w-4 h-4 mr-2" />
               {copying ? 'Copiado!' : 'Copiar'}
             </Button>
-            
+
             <Button
               onClick={handleDownloadQR}
               disabled={downloading}
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
             >
               <Download className="w-4 h-4 mr-2" />
               {downloading ? 'Descargando...' : 'Descargar'}
             </Button>
-            
+
             <Button
               onClick={handleShareQR}
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 bg-slate-800 border-slate-600 text-white hover:bg-slate-700"
             >
               <Share className="w-4 h-4 mr-2" />
               Compartir
@@ -272,12 +272,12 @@ export function PlayerQRModal({
           </div>
 
           {/* Instrucciones */}
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="p-4 bg-amber-900/50 border border-amber-700 rounded-lg">
             <div className="flex items-start gap-2">
-              <QrCode className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+              <QrCode className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="text-orange-800 font-medium mb-1">Instrucciones:</p>
-                <p className="text-orange-700">
+                <p className="text-amber-300 font-medium mb-1">Instrucciones:</p>
+                <p className="text-amber-200">
                   Imprime este QR y pégalo en la credencial del jugador para identificación rápida durante los partidos.
                 </p>
               </div>
