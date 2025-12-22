@@ -93,7 +93,6 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
                     <TableHead className="text-white/90 drop-shadow bg-transparent">Jugador</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Dorsal</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Goles</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow bg-transparent">Asistencias</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -117,11 +116,6 @@ export function TeamScorers({ teamId }: TeamScorersProps) {
                         <TableCell className="text-center bg-transparent">
                           <Badge variant="default" className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border-0">
                             ⚽ {scorer.goals}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center bg-transparent">
-                          <Badge variant="secondary" className="backdrop-blur-md bg-blue-500/30 text-blue-300 border-blue-300/50">
-                            {scorer.assists}
                           </Badge>
                         </TableCell>
                       </TableRow>

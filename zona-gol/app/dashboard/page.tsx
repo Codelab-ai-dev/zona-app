@@ -142,6 +142,14 @@ const TeamUniforms = dynamic(() => import("@/components/team-owner/team-uniforms
   loading: () => <ComponentSkeleton />,
   ssr: false
 })
+const TeamStandings = dynamic(() => import("@/components/team-owner/team-standings").then(mod => ({ default: mod.TeamStandings })), {
+  loading: () => <ComponentSkeleton />,
+  ssr: false
+})
+const TeamCalendar = dynamic(() => import("@/components/team-owner/team-calendar").then(mod => ({ default: mod.TeamCalendar })), {
+  loading: () => <ComponentSkeleton />,
+  ssr: false
+})
 
 export default function DashboardPage() {
   const { user, profile } = useAuth()
@@ -450,6 +458,8 @@ export default function DashboardPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-white/10">
                   <SelectItem value="overview" className="text-white hover:bg-slate-800">Resumen</SelectItem>
+                  <SelectItem value="standings" className="text-white hover:bg-slate-800">Posiciones</SelectItem>
+                  <SelectItem value="calendar" className="text-white hover:bg-slate-800">Calendario</SelectItem>
                   <SelectItem value="record" className="text-white hover:bg-slate-800">Estadísticas</SelectItem>
                   <SelectItem value="scorers" className="text-white hover:bg-slate-800">Goleadores</SelectItem>
                   <SelectItem value="players" className="text-white hover:bg-slate-800">Jugadores</SelectItem>
@@ -462,8 +472,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="hidden md:block overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-8 gap-1 min-w-max bg-slate-800/50 border border-white/10">
+              <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-10 gap-1 min-w-max bg-slate-800/50 border border-white/10">
                 <TabsTrigger value="overview" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Resumen</TabsTrigger>
+                <TabsTrigger value="standings" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Posiciones</TabsTrigger>
+                <TabsTrigger value="calendar" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Calendario</TabsTrigger>
                 <TabsTrigger value="record" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Estadísticas</TabsTrigger>
                 <TabsTrigger value="scorers" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Goleadores</TabsTrigger>
                 <TabsTrigger value="players" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Jugadores</TabsTrigger>
@@ -475,6 +487,12 @@ export default function DashboardPage() {
             </div>
             <TabsContent value="overview">
               <TeamStats teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="standings">
+              <TeamStandings teamId={profile.team_id} />
+            </TabsContent>
+            <TabsContent value="calendar">
+              <TeamCalendar teamId={profile.team_id} />
             </TabsContent>
             <TabsContent value="record">
               <TeamRecord teamId={profile.team_id} />

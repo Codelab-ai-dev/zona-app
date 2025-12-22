@@ -576,16 +576,44 @@ export function useTeamOwnerSummary(teamId: string | undefined) {
         suspendedPlayers.forEach(p => suspendedPlayersMap.set(p.id, { name: p.name, jersey_number: p.jersey_number || 0 }))
       }
 
-      // Players sin stats por ahora (se cargarán después si es necesario)
-      const playersWithStats = players.map(player => ({
-        ...player,
-        total_goals: 0,
-        total_assists: 0,
-        total_yellow_cards: 0,
-        total_red_cards: 0,
-        total_minutes_played: 0,
-        matches_played: 0,
-      }))
+      // Cargar estadísticas de jugadores
+      const playerIds = players.map(p => p.id)
+      let statsMap = new Map<string, { goals: number; assists: number; yellow_cards: number; red_cards: number; minutes_played: number; matches: number }>()
+
+      if (playerIds.length > 0) {
+        const { data: playerStats } = await supabase
+          .from('player_stats')
+          .select('player_id, goals, assists, yellow_cards, red_cards, minutes_played')
+          .in('player_id', playerIds)
+
+        // Agrupar estadísticas por jugador
+        ;(playerStats || []).forEach((stat) => {
+          if (!statsMap.has(stat.player_id)) {
+            statsMap.set(stat.player_id, { goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, minutes_played: 0, matches: 0 })
+          }
+          const current = statsMap.get(stat.player_id)!
+          current.goals += stat.goals || 0
+          current.assists += stat.assists || 0
+          current.yellow_cards += stat.yellow_cards || 0
+          current.red_cards += stat.red_cards || 0
+          current.minutes_played += stat.minutes_played || 0
+          current.matches += 1
+        })
+      }
+
+      // Combinar jugadores con sus estadísticas
+      const playersWithStats = players.map(player => {
+        const stats = statsMap.get(player.id)
+        return {
+          ...player,
+          total_goals: stats?.goals || 0,
+          total_assists: stats?.assists || 0,
+          total_yellow_cards: stats?.yellow_cards || 0,
+          total_red_cards: stats?.red_cards || 0,
+          total_minutes_played: stats?.minutes_played || 0,
+          matches_played: stats?.matches || 0,
+        }
+      })
 
       // Calcular stats del equipo
       const finishedMatches = matches.filter(m => m.status === 'finished')

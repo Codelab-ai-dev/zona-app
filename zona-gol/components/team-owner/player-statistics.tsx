@@ -29,7 +29,7 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
       if (b.total_goals !== a.total_goals) {
         return b.total_goals - a.total_goals
       }
-      return b.total_assists - a.total_assists
+      return b.total_minutes_played - a.total_minutes_played
     })
   }, [playersWithStats])
 
@@ -146,7 +146,6 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
                     <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow">PJ</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow">Goles</TableHead>
-                    <TableHead className="text-center text-white/90 drop-shadow">Asistencias</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow">TA</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow">TR</TableHead>
                     <TableHead className="text-center text-white/90 drop-shadow">Min</TableHead>
@@ -183,11 +182,6 @@ export function PlayerStatistics({ teamId }: PlayerStatisticsProps) {
                       <TableCell className="text-center">
                         <Badge variant="outline" className="backdrop-blur-md bg-green-500/20 text-green-300 border-green-300/50">
                           {player.total_goals}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="backdrop-blur-md bg-blue-500/20 text-blue-300 border-blue-300/50">
-                          {player.total_assists}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">

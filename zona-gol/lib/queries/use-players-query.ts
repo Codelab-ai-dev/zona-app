@@ -47,7 +47,7 @@ export function usePlayersByTeam(teamId: string | undefined) {
 
 /**
  * Hook para obtener estadísticas de todos los jugadores de un equipo
- * OPTIMIZADO: UNA sola query paralela - players + player_stats por team_id
+ * OPTIMIZADO: Primero carga jugadores, luego stats filtradas por player_ids
  */
 export function usePlayerStatsByTeam(teamId: string | undefined) {
   const supabase = createClientSupabaseClient()
@@ -57,31 +57,31 @@ export function usePlayerStatsByTeam(teamId: string | undefined) {
     queryFn: async (): Promise<PlayerWithStats[]> => {
       if (!teamId) return []
 
-      // Ejecutar AMBAS queries en PARALELO
-      const [playersResult, statsResult] = await Promise.all([
-        supabase
-          .from("players")
-          .select("*")
-          .eq("team_id", teamId)
-          .eq("is_active", true)
-          .order("jersey_number", { ascending: true }),
-        supabase
-          .from("player_stats")
-          .select("player_id, goals, assists, yellow_cards, red_cards, minutes_played")
-          .eq("team_id", teamId)  // Usar team_id directamente, no IN clause
-      ])
+      // Primero obtener los jugadores del equipo
+      const { data: players, error: playersError } = await supabase
+        .from("players")
+        .select("*")
+        .eq("team_id", teamId)
+        .eq("is_active", true)
+        .order("jersey_number", { ascending: true })
 
-      if (playersResult.error) throw playersResult.error
-      if (statsResult.error) throw statsResult.error
+      if (playersError) throw playersError
+      if (!players || players.length === 0) return []
 
-      const players = playersResult.data || []
-      const allStats = statsResult.data || []
+      // Obtener IDs de jugadores
+      const playerIds = players.map(p => p.id)
 
-      if (players.length === 0) return []
+      // Obtener stats de esos jugadores
+      const { data: allStats, error: statsError } = await supabase
+        .from("player_stats")
+        .select("player_id, goals, assists, yellow_cards, red_cards, minutes_played")
+        .in("player_id", playerIds)
+
+      if (statsError) throw statsError
 
       // Agrupar estadísticas por player_id usando Map (O(n))
       const statsMap = new Map<string, typeof allStats>()
-      allStats.forEach((stat) => {
+      ;(allStats || []).forEach((stat) => {
         if (!statsMap.has(stat.player_id)) {
           statsMap.set(stat.player_id, [])
         }

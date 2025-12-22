@@ -105,19 +105,12 @@ export function TeamStats({ teamId }: TeamStatsProps) {
     }
   }, [playersWithStats, matches])
 
-  // Top scorers and assisters
-  const { topScorers, topAssisters } = useMemo(() => {
-    const scorers = [...playersWithStats]
+  // Top scorers
+  const topScorers = useMemo(() => {
+    return [...playersWithStats]
       .filter(p => p.total_goals > 0)
       .sort((a, b) => b.total_goals - a.total_goals)
       .slice(0, 3)
-
-    const assisters = [...playersWithStats]
-      .filter(p => p.total_assists > 0)
-      .sort((a, b) => b.total_assists - a.total_assists)
-      .slice(0, 3)
-
-    return { topScorers: scorers, topAssisters: assisters }
   }, [playersWithStats])
 
   const getPlayerInitials = (name: string) => {
@@ -253,22 +246,10 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                       {playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}
                     </p>
                   </div>
-                  <div className="p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias Totales</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-blue-400 drop-shadow-lg">
-                      {playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}
-                    </p>
-                  </div>
                   <div className="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg">
                     <p className="text-sm text-white/80 drop-shadow mb-1">Goles por Jugador</p>
                     <p className="text-2xl sm:text-3xl font-bold text-purple-400 drop-shadow-lg">
                       {(playersWithStats.reduce((sum, p) => sum + p.total_goals, 0) / playersWithStats.length).toFixed(1)}
-                    </p>
-                  </div>
-                  <div className="p-4 backdrop-blur-md bg-indigo-500/20 rounded-xl border border-indigo-300/30 shadow-lg">
-                    <p className="text-sm text-white/80 drop-shadow mb-1">Asistencias por Jugador</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-indigo-400 drop-shadow-lg">
-                      {(playersWithStats.reduce((sum, p) => sum + p.total_assists, 0) / playersWithStats.length).toFixed(1)}
                     </p>
                   </div>
                 </div>
@@ -308,48 +289,6 @@ export function TeamStats({ teamId }: TeamStatsProps) {
                           <div className="text-right">
                             <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{player.total_goals}</p>
                             <p className="text-xs text-white/70 drop-shadow">goles</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Máximos Asistidores */}
-              {topAssisters.length > 0 && (
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-                    <Target className="w-5 h-5 mr-2 text-blue-400" />
-                    Máximos Asistidores
-                  </h3>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {topAssisters.map((player, index) => (
-                      <div key={player.id} className="p-4 backdrop-blur-md bg-white/10 rounded-xl border border-white/20 hover:bg-white/15 hover:shadow-xl transition-all">
-                        <div className="flex items-center space-x-3">
-                          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md border ${
-                            index === 0 ? 'bg-yellow-500/30 text-yellow-300 border-yellow-300/50' :
-                            index === 1 ? 'bg-gray-500/30 text-gray-300 border-gray-300/50' :
-                            'bg-orange-500/30 text-orange-300 border-orange-300/50'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <Avatar className="w-10 h-10">
-                            {player.photo ? (
-                              <AvatarImage src={player.photo} alt={player.name} />
-                            ) : (
-                              <AvatarFallback className="backdrop-blur-md bg-blue-500/30 text-white border border-blue-300/50">
-                                {getPlayerInitials(player.name)}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate text-white drop-shadow">{player.name}</p>
-                            <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-400 drop-shadow-lg">{player.total_assists}</p>
-                            <p className="text-xs text-white/70 drop-shadow">asist.</p>
                           </div>
                         </div>
                       </div>
