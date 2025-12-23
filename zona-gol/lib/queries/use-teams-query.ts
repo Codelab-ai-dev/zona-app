@@ -1051,6 +1051,7 @@ export function usePlayers(teamId: string | undefined) {
           .from("players")
           .select("*")
           .eq("team_id", teamId)
+          .eq("is_active", true)
           .order("jersey_number", { ascending: true }),
         supabase
           .from("teams")
@@ -1087,7 +1088,7 @@ export function usePlayers(teamId: string | undefined) {
       }
     },
     enabled: !!teamId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutos
   })
 }
 

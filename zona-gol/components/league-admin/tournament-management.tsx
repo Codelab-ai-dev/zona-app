@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/dialog"
 import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { Database } from "@/lib/supabase/database.types"
-import { Plus, Edit, Calendar, Trophy, Loader2, Users, Lock, Unlock, Trash2 } from "lucide-react"
+import { Plus, Edit, Calendar, Trophy, Loader2, Users, Lock, Unlock, Trash2, ShieldCheck, UserCheck } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -72,6 +73,15 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     teamsAdvancingPerGroup: "2",
     roundsPerSeason: "2",
     hasThirdPlaceMatch: false,
+    // Age validation fields
+    ageValidationEnabled: false,
+    minAge: "",
+    maxAge: "",
+    ageReferenceDate: "",
+    ageExceptionCount: "0",
+    ageExceptionMinAge: "",
+    ageExceptionMaxAge: "",
+    idDocumentRequired: false,
   })
 
   // Load tournaments when component mounts or leagueId changes
@@ -117,7 +127,16 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         teams_advancing_per_group: parseInt(formData.teamsAdvancingPerGroup),
         rounds_per_season: parseInt(formData.roundsPerSeason),
         has_third_place_match: formData.hasThirdPlaceMatch,
-        is_active: true
+        is_active: true,
+        // Age validation fields
+        age_validation_enabled: formData.ageValidationEnabled,
+        min_age: formData.minAge ? parseInt(formData.minAge) : null,
+        max_age: formData.maxAge ? parseInt(formData.maxAge) : null,
+        age_reference_date: formData.ageReferenceDate || null,
+        age_exception_count: parseInt(formData.ageExceptionCount) || 0,
+        age_exception_min_age: formData.ageExceptionMinAge ? parseInt(formData.ageExceptionMinAge) : null,
+        age_exception_max_age: formData.ageExceptionMaxAge ? parseInt(formData.ageExceptionMaxAge) : null,
+        id_document_required: formData.idDocumentRequired,
       })
 
       setFormData({
@@ -131,6 +150,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         teamsAdvancingPerGroup: "2",
         roundsPerSeason: "2",
         hasThirdPlaceMatch: false,
+        ageValidationEnabled: false,
+        minAge: "",
+        maxAge: "",
+        ageReferenceDate: "",
+        ageExceptionCount: "0",
+        ageExceptionMinAge: "",
+        ageExceptionMaxAge: "",
+        idDocumentRequired: false,
       })
       setIsCreateDialogOpen(false)
       toast.success(`Torneo "${formData.name}" creado exitosamente`)
@@ -156,6 +183,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
       teamsAdvancingPerGroup: tournament.teams_advancing_per_group ? tournament.teams_advancing_per_group.toString() : "2",
       roundsPerSeason: tournament.rounds_per_season ? tournament.rounds_per_season.toString() : "2",
       hasThirdPlaceMatch: tournament.has_third_place_match || false,
+      ageValidationEnabled: tournament.age_validation_enabled || false,
+      minAge: tournament.min_age ? tournament.min_age.toString() : "",
+      maxAge: tournament.max_age ? tournament.max_age.toString() : "",
+      ageReferenceDate: tournament.age_reference_date || "",
+      ageExceptionCount: tournament.age_exception_count ? tournament.age_exception_count.toString() : "0",
+      ageExceptionMinAge: tournament.age_exception_min_age ? tournament.age_exception_min_age.toString() : "",
+      ageExceptionMaxAge: tournament.age_exception_max_age ? tournament.age_exception_max_age.toString() : "",
+      idDocumentRequired: tournament.id_document_required || false,
     })
   }
 
@@ -163,7 +198,7 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
     if (!editingTournament) return
 
     setUpdating(true)
-    
+
     try {
       await updateTournament(editingTournament.id, {
         name: formData.name,
@@ -176,6 +211,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         teams_advancing_per_group: parseInt(formData.teamsAdvancingPerGroup),
         rounds_per_season: parseInt(formData.roundsPerSeason),
         has_third_place_match: formData.hasThirdPlaceMatch,
+        age_validation_enabled: formData.ageValidationEnabled,
+        min_age: formData.minAge ? parseInt(formData.minAge) : null,
+        max_age: formData.maxAge ? parseInt(formData.maxAge) : null,
+        age_reference_date: formData.ageReferenceDate || null,
+        age_exception_count: parseInt(formData.ageExceptionCount) || 0,
+        age_exception_min_age: formData.ageExceptionMinAge ? parseInt(formData.ageExceptionMinAge) : null,
+        age_exception_max_age: formData.ageExceptionMaxAge ? parseInt(formData.ageExceptionMaxAge) : null,
+        id_document_required: formData.idDocumentRequired,
       })
 
       setEditingTournament(null)
@@ -190,6 +233,14 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
         teamsAdvancingPerGroup: "2",
         roundsPerSeason: "2",
         hasThirdPlaceMatch: false,
+        ageValidationEnabled: false,
+        minAge: "",
+        maxAge: "",
+        ageReferenceDate: "",
+        ageExceptionCount: "0",
+        ageExceptionMinAge: "",
+        ageExceptionMaxAge: "",
+        idDocumentRequired: false,
       })
       toast.success(`Torneo "${formData.name}" actualizado exitosamente`)
       console.log('✅ Torneo actualizado exitosamente')
@@ -449,6 +500,128 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 </div>
               )}
 
+              {/* Age Validation Section */}
+              <div className="border-t border-white/10 pt-3 mt-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-400" />
+                    <Label className="text-gray-300 text-xs md:text-sm font-medium">Validación de Edad</Label>
+                  </div>
+                  <Switch
+                    checked={formData.ageValidationEnabled}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, ageValidationEnabled: checked })
+                    }
+                  />
+                </div>
+
+                {formData.ageValidationEnabled && (
+                  <div className="space-y-3 pl-6 border-l-2 border-blue-500/30">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label htmlFor="minAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Mínima</Label>
+                        <Input
+                          id="minAge"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.minAge}
+                          onChange={(e) => setFormData({ ...formData, minAge: e.target.value })}
+                          placeholder="Ej: 40"
+                          className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="maxAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Máxima</Label>
+                        <Input
+                          id="maxAge"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.maxAge}
+                          onChange={(e) => setFormData({ ...formData, maxAge: e.target.value })}
+                          placeholder="Sin límite"
+                          className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="ageReferenceDate" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Fecha de Referencia</Label>
+                      <Input
+                        id="ageReferenceDate"
+                        type="date"
+                        value={formData.ageReferenceDate}
+                        onChange={(e) => setFormData({ ...formData, ageReferenceDate: e.target.value })}
+                        className="h-9 bg-slate-800/50 border-white/10 text-white text-sm"
+                      />
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Fecha para calcular la edad de los jugadores (por defecto: inicio del torneo)
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label htmlFor="ageExceptionCount" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Excepciones</Label>
+                        <Input
+                          id="ageExceptionCount"
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={formData.ageExceptionCount}
+                          onChange={(e) => setFormData({ ...formData, ageExceptionCount: e.target.value })}
+                          placeholder="0"
+                          className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="ageExceptionMinAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Mín. Exc.</Label>
+                        <Input
+                          id="ageExceptionMinAge"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.ageExceptionMinAge}
+                          onChange={(e) => setFormData({ ...formData, ageExceptionMinAge: e.target.value })}
+                          placeholder="Ej: 37"
+                          className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="ageExceptionMaxAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Máx. Exc.</Label>
+                        <Input
+                          id="ageExceptionMaxAge"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.ageExceptionMaxAge}
+                          onChange={(e) => setFormData({ ...formData, ageExceptionMaxAge: e.target.value })}
+                          placeholder="Sin límite"
+                          className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-500">
+                      Número de jugadores que pueden registrarse fuera del rango de edad principal
+                    </p>
+
+                    <div className="flex items-center space-x-2 p-2 rounded-lg bg-slate-800/30">
+                      <Switch
+                        id="idDocumentRequired"
+                        checked={formData.idDocumentRequired}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, idDocumentRequired: checked })
+                        }
+                      />
+                      <Label htmlFor="idDocumentRequired" className="cursor-pointer text-gray-300 text-xs md:text-sm flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-green-400" />
+                        Requerir INE para registro
+                      </Label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 onClick={handleCreateTournament}
                 className="w-full h-10 bg-green-500 hover:bg-green-600 text-white text-sm"
@@ -529,6 +702,21 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                     {tournament.tournament_format === 'knockout' && '⚡ Eliminación'}
                     {tournament.tournament_format === 'group_knockout' && '🌍 Grupos + Eliminación'}
                   </Badge>
+                  {tournament.age_validation_enabled && (
+                    <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      {tournament.min_age && `+${tournament.min_age}`}
+                      {tournament.min_age && tournament.max_age && '-'}
+                      {tournament.max_age && `${tournament.max_age}`}
+                      {!tournament.min_age && !tournament.max_age && 'Edad'}
+                    </Badge>
+                  )}
+                  {tournament.id_document_required && (
+                    <Badge className="backdrop-blur-md bg-purple-500/80 text-white border-0 flex items-center gap-1">
+                      <UserCheck className="w-3 h-3" />
+                      INE
+                    </Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -740,6 +928,128 @@ export function TournamentManagement({ leagueId }: TournamentManagementProps) {
                 </Label>
               </div>
             )}
+
+            {/* Age Validation Section */}
+            <div className="border-t border-white/10 pt-3 mt-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-blue-400" />
+                  <Label className="text-gray-300 text-xs md:text-sm font-medium">Validación de Edad</Label>
+                </div>
+                <Switch
+                  checked={formData.ageValidationEnabled}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, ageValidationEnabled: checked })
+                  }
+                />
+              </div>
+
+              {formData.ageValidationEnabled && (
+                <div className="space-y-3 pl-6 border-l-2 border-blue-500/30">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="edit-minAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Mínima</Label>
+                      <Input
+                        id="edit-minAge"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={formData.minAge}
+                        onChange={(e) => setFormData({ ...formData, minAge: e.target.value })}
+                        placeholder="Ej: 40"
+                        className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-maxAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Máxima</Label>
+                      <Input
+                        id="edit-maxAge"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={formData.maxAge}
+                        onChange={(e) => setFormData({ ...formData, maxAge: e.target.value })}
+                        placeholder="Sin límite"
+                        className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-ageReferenceDate" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Fecha de Referencia</Label>
+                    <Input
+                      id="edit-ageReferenceDate"
+                      type="date"
+                      value={formData.ageReferenceDate}
+                      onChange={(e) => setFormData({ ...formData, ageReferenceDate: e.target.value })}
+                      className="h-9 bg-slate-800/50 border-white/10 text-white text-sm"
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Fecha para calcular la edad de los jugadores (por defecto: inicio del torneo)
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label htmlFor="edit-ageExceptionCount" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Excepciones</Label>
+                      <Input
+                        id="edit-ageExceptionCount"
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={formData.ageExceptionCount}
+                        onChange={(e) => setFormData({ ...formData, ageExceptionCount: e.target.value })}
+                        placeholder="0"
+                        className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-ageExceptionMinAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Mín. Exc.</Label>
+                      <Input
+                        id="edit-ageExceptionMinAge"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={formData.ageExceptionMinAge}
+                        onChange={(e) => setFormData({ ...formData, ageExceptionMinAge: e.target.value })}
+                        placeholder="Ej: 37"
+                        className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-ageExceptionMaxAge" className="text-gray-400 text-[10px] md:text-xs mb-1.5 block">Edad Máx. Exc.</Label>
+                      <Input
+                        id="edit-ageExceptionMaxAge"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={formData.ageExceptionMaxAge}
+                        onChange={(e) => setFormData({ ...formData, ageExceptionMaxAge: e.target.value })}
+                        placeholder="Sin límite"
+                        className="h-9 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    Número de jugadores que pueden registrarse fuera del rango de edad principal
+                  </p>
+
+                  <div className="flex items-center space-x-2 p-2 rounded-lg bg-slate-800/30">
+                    <Switch
+                      id="edit-idDocumentRequired"
+                      checked={formData.idDocumentRequired}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, idDocumentRequired: checked })
+                      }
+                    />
+                    <Label htmlFor="edit-idDocumentRequired" className="cursor-pointer text-gray-300 text-xs md:text-sm flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-green-400" />
+                      Requerir INE para registro
+                    </Label>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Button
               onClick={handleUpdateTournament}

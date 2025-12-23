@@ -108,6 +108,10 @@ const StandingsManagement = dynamic(() => import("@/components/league-admin/stan
   loading: () => <ComponentSkeleton />,
   ssr: false
 })
+const PlayerVerification = dynamic(() => import("@/components/league-admin/player-verification").then(mod => ({ default: mod.PlayerVerification })), {
+  loading: () => <ComponentSkeleton />,
+  ssr: false
+})
 const ProfileSettings = dynamic(() => import("@/components/league-admin/profile-settings").then(mod => ({ default: mod.ProfileSettings })), {
   loading: () => <ComponentSkeleton />,
   ssr: false
@@ -311,13 +315,13 @@ export default function DashboardPage() {
         const isKnockout = tournamentFormat === 'knockout'
         const isLeague = tournamentFormat === 'league'
 
-        // Calculate grid columns based on features (+ WhatsApp tab + Standings tab)
+        // Calculate grid columns based on features (+ WhatsApp tab + Standings tab + Verification tab)
         const hasQrFeature = hasFeature('qr_codes')
         const gridCols = isGroupKnockout
-          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
+          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-15' : 'md:grid-cols-5 lg:grid-cols-14')
           : isKnockout
-            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-13' : 'md:grid-cols-5 lg:grid-cols-12')
-            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
+            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
+            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-15' : 'md:grid-cols-5 lg:grid-cols-14')
 
         return (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
@@ -339,6 +343,7 @@ export default function DashboardPage() {
                   <SelectItem value="scorers" className="text-white hover:bg-slate-800">Goleadores</SelectItem>
                   <SelectItem value="discipline" className="text-white hover:bg-slate-800">Disciplina</SelectItem>
                   <SelectItem value="suspensions" className="text-white hover:bg-slate-800">Suspensiones</SelectItem>
+                  <SelectItem value="verification" className="text-white hover:bg-slate-800">Verificación</SelectItem>
                   {hasFeature('qr_codes') && <SelectItem value="qr-management" className="text-white hover:bg-slate-800">Gestión QR</SelectItem>}
                   <SelectItem value="whatsapp" className="text-white hover:bg-slate-800">WhatsApp</SelectItem>
                   <SelectItem value="settings" className="text-white hover:bg-slate-800">Configuración</SelectItem>
@@ -375,6 +380,7 @@ export default function DashboardPage() {
                 <TabsTrigger value="scorers" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Goleadores</TabsTrigger>
                 <TabsTrigger value="discipline" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Disciplina</TabsTrigger>
                 <TabsTrigger value="suspensions" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Suspensiones</TabsTrigger>
+                <TabsTrigger value="verification" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">Verificación</TabsTrigger>
                 {hasFeature('qr_codes') && (
                   <TabsTrigger value="qr-management" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Gestión QR</TabsTrigger>
                 )}
@@ -419,6 +425,9 @@ export default function DashboardPage() {
             </TabsContent>
             <TabsContent value="suspensions">
               <SuspensionsManagement leagueId={profile.league_id} />
+            </TabsContent>
+            <TabsContent value="verification">
+              <PlayerVerification leagueId={profile.league_id} />
             </TabsContent>
             {hasFeature('qr_codes') && (
               <TabsContent value="qr-management">

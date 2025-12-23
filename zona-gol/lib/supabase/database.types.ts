@@ -69,6 +69,14 @@ export interface Database {
           teams_advancing_per_group: number
           rounds_per_season: number
           has_third_place_match: boolean
+          age_validation_enabled: boolean
+          min_age: number | null
+          max_age: number | null
+          age_reference_date: string | null
+          age_exception_count: number
+          age_exception_min_age: number | null
+          age_exception_max_age: number | null
+          id_document_required: boolean
           created_at: string
           updated_at: string
         }
@@ -87,6 +95,14 @@ export interface Database {
           teams_advancing_per_group?: number
           rounds_per_season?: number
           has_third_place_match?: boolean
+          age_validation_enabled?: boolean
+          min_age?: number | null
+          max_age?: number | null
+          age_reference_date?: string | null
+          age_exception_count?: number
+          age_exception_min_age?: number | null
+          age_exception_max_age?: number | null
+          id_document_required?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -105,6 +121,14 @@ export interface Database {
           teams_advancing_per_group?: number
           rounds_per_season?: number
           has_third_place_match?: boolean
+          age_validation_enabled?: boolean
+          min_age?: number | null
+          max_age?: number | null
+          age_reference_date?: string | null
+          age_exception_count?: number
+          age_exception_min_age?: number | null
+          age_exception_max_age?: number | null
+          id_document_required?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -213,6 +237,13 @@ export interface Database {
           photo: string | null
           birth_date: string | null
           is_active: boolean
+          id_document_url: string | null
+          id_verified: boolean
+          id_verified_at: string | null
+          id_verified_by: string | null
+          id_verification_method: 'automatic' | 'manual' | null
+          extracted_name: string | null
+          extracted_curp: string | null
           created_at: string
           updated_at: string
         }
@@ -225,6 +256,13 @@ export interface Database {
           photo?: string | null
           birth_date?: string | null
           is_active?: boolean
+          id_document_url?: string | null
+          id_verified?: boolean
+          id_verified_at?: string | null
+          id_verified_by?: string | null
+          id_verification_method?: 'automatic' | 'manual' | null
+          extracted_name?: string | null
+          extracted_curp?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -237,6 +275,13 @@ export interface Database {
           photo?: string | null
           birth_date?: string | null
           is_active?: boolean
+          id_document_url?: string | null
+          id_verified?: boolean
+          id_verified_at?: string | null
+          id_verified_by?: string | null
+          id_verification_method?: 'automatic' | 'manual' | null
+          extracted_name?: string | null
+          extracted_curp?: string | null
           created_at?: string
           updated_at?: string
         }

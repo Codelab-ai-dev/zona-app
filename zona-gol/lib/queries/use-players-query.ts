@@ -178,9 +178,15 @@ export function useCreatePlayer() {
       return data as Player
     },
     onSuccess: (data) => {
-      // Invalidar queries de jugadores del equipo
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.byTeam(data.team_id) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.statsByTeam(data.team_id) })
+      // Invalidar y forzar refetch de queries de jugadores del equipo
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.players.byTeam(data.team_id),
+        refetchType: 'all'
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.players.statsByTeam(data.team_id),
+        refetchType: 'all'
+      })
     },
   })
 }
@@ -193,23 +199,29 @@ export function useUpdatePlayer() {
   const supabase = createClientSupabaseClient()
 
   return useMutation({
-    mutationFn: async ({ playerId, updates }: { playerId: string; updates: PlayerUpdate }) => {
+    mutationFn: async ({ id, updates, teamId }: { id: string; updates: PlayerUpdate; teamId: string }) => {
       const { data, error } = await supabase
         .from("players")
         .update(updates)
-        .eq("id", playerId)
+        .eq("id", id)
         .select()
         .single()
 
       if (error) throw error
-      return data as Player
+      return { player: data as Player, teamId }
     },
-    onSuccess: (data) => {
+    onSuccess: async ({ player, teamId }) => {
       // Actualizar caché individual
-      queryClient.setQueryData(queryKeys.players.detail(data.id), data)
-      // Invalidar lista del equipo
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.byTeam(data.team_id) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.statsByTeam(data.team_id) })
+      queryClient.setQueryData(queryKeys.players.detail(player.id), player)
+      // Forzar refetch inmediato de lista del equipo
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.players.byTeam(teamId),
+        type: 'active'
+      })
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.players.statsByTeam(teamId),
+        type: 'active'
+      })
     },
   })
 }
@@ -222,19 +234,14 @@ export function useDeletePlayer() {
   const supabase = createClientSupabaseClient()
 
   return useMutation({
-    mutationFn: async ({ playerId, teamId }: { playerId: string; teamId: string }) => {
+    mutationFn: async ({ id, teamId }: { id: string; teamId: string }) => {
       const { error } = await supabase
         .from("players")
         .update({ is_active: false })
-        .eq("id", playerId)
+        .eq("id", id)
 
       if (error) throw error
-      return { playerId, teamId }
-    },
-    onSuccess: ({ teamId }) => {
-      // Invalidar queries del equipo
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.byTeam(teamId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.players.statsByTeam(teamId) })
+      return { id, teamId }
     },
   })
 }
