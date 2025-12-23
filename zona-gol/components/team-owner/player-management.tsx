@@ -216,7 +216,18 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       }
 
       const createdPlayer = await createMutation.mutateAsync(playerData)
-      console.log('✅ Jugador creado exitosamente:', createdPlayer)
+
+      // Actualizar la lista local inmediatamente (optimistic update)
+      queryClient.setQueryData(
+        queryKeys.players.byTeam(teamId),
+        (oldData: any) => {
+          if (!oldData) return { players: [createdPlayer], maxLimit: maxPlayersLimit, registrationOpen, tournamentId }
+          return {
+            ...oldData,
+            players: [...oldData.players, createdPlayer]
+          }
+        }
+      )
 
       // Generar QR automáticamente después de crear el jugador (solo si la feature está habilitada)
       if (createdPlayer?.id && profile?.league_id && hasFeature('qr_codes')) {
@@ -304,14 +315,29 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         photo: formData.photo || null,
       }
 
+      const playerId = editingPlayer.id
+      const playerName = formData.name
+
       await updateMutation.mutateAsync({
-        id: editingPlayer.id,
+        id: playerId,
         updates,
         teamId
       })
-      console.log('✅ Jugador actualizado exitosamente')
 
-      const playerName = formData.name
+      // Optimistic update: actualizar el jugador en la lista local
+      queryClient.setQueryData(
+        queryKeys.players.byTeam(teamId),
+        (oldData: any) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            players: oldData.players.map((p: any) =>
+              p.id === playerId ? { ...p, ...updates } : p
+            )
+          }
+        }
+      )
+
       setEditingPlayer(null)
       setFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", photo: "", idDocumentUrl: "" })
 
@@ -364,27 +390,6 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
       toast.error(`Error: ${error.message || 'Error desconocido'}`)
       // Revertir: refetch para restaurar el estado real
       queryClient.refetchQueries({ queryKey: queryKeys.players.byTeam(teamId) })
-    }
-  }
-
-  const togglePlayerStatus = async (playerId: string) => {
-    const player = players.find(p => p.id === playerId)
-    if (!player) return
-
-    const action = player.is_active ? 'desactivar' : 'activar'
-
-    try {
-      await updateMutation.mutateAsync({
-        id: playerId,
-        updates: { is_active: !player.is_active },
-        teamId
-      })
-      console.log(`✅ Jugador ${action}do exitosamente`)
-
-      toast.success(`Jugador ${player.name} ${action}do exitosamente`)
-    } catch (error: any) {
-      console.error(`❌ Error al ${action} jugador:`, error)
-      toast.error(`Error: ${error.message || 'Error desconocido'}`)
     }
   }
 
@@ -663,12 +668,12 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
               {!registrationOpen ? 'Registros Cerrados' : isAtLimit ? 'Límite Alcanzado' : 'Nuevo Jugador'}
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogContent className="bg-slate-900 border-slate-700 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">Registrar Nuevo Jugador</DialogTitle>
               <DialogDescription className="text-slate-400">Completa la información del jugador</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               <div>
                 <Label className="text-white">Fotografía del Jugador</Label>
                 <FileUpload
@@ -968,9 +973,6 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                       <QrCode className="w-4 h-4" />
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" onClick={() => togglePlayerStatus(player.id)} className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20">
-                    {player.is_active ? "Desactivar" : "Activar"}
-                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

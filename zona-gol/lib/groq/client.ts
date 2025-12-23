@@ -5,9 +5,11 @@ let groqClient: Groq | null = null
 
 function getGroqClient(): Groq {
   if (!groqClient) {
-    groqClient = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    })
+    const apiKey = process.env.GROQ_API_KEY
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY no está configurada. Configura la variable de entorno para usar la extracción de INE.')
+    }
+    groqClient = new Groq({ apiKey })
   }
   return groqClient
 }
@@ -45,11 +47,15 @@ Si la imagen no es una INE válida o no puedes extraer los datos, responde:
 
 export async function extractINEData(imageBase64: string): Promise<INEExtractionResult> {
   try {
+    console.log('🔵 extractINEData: Iniciando extracción...')
+
     // Remove data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+    console.log('🔵 extractINEData: Base64 procesado, longitud:', base64Data.length)
 
+    console.log('🔵 extractINEData: Llamando a Groq API...')
     const response = await getGroqClient().chat.completions.create({
-      model: 'llama-3.2-11b-vision-preview',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [
         {
           role: 'user',

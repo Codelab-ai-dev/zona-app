@@ -177,17 +177,7 @@ export function useCreatePlayer() {
       if (error) throw error
       return data as Player
     },
-    onSuccess: (data) => {
-      // Invalidar y forzar refetch de queries de jugadores del equipo
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.players.byTeam(data.team_id),
-        refetchType: 'all'
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.players.statsByTeam(data.team_id),
-        refetchType: 'all'
-      })
-    },
+    // No hacemos refetch aquí - el componente usa optimistic update
   })
 }
 
@@ -210,19 +200,7 @@ export function useUpdatePlayer() {
       if (error) throw error
       return { player: data as Player, teamId }
     },
-    onSuccess: async ({ player, teamId }) => {
-      // Actualizar caché individual
-      queryClient.setQueryData(queryKeys.players.detail(player.id), player)
-      // Forzar refetch inmediato de lista del equipo
-      await queryClient.refetchQueries({
-        queryKey: queryKeys.players.byTeam(teamId),
-        type: 'active'
-      })
-      await queryClient.refetchQueries({
-        queryKey: queryKeys.players.statsByTeam(teamId),
-        type: 'active'
-      })
-    },
+    // No hacemos refetch aquí - el componente usa optimistic update
   })
 }
 
@@ -235,9 +213,10 @@ export function useDeletePlayer() {
 
   return useMutation({
     mutationFn: async ({ id, teamId }: { id: string; teamId: string }) => {
+      // Hard delete para liberar el número de camiseta
       const { error } = await supabase
         .from("players")
-        .update({ is_active: false })
+        .delete()
         .eq("id", id)
 
       if (error) throw error
