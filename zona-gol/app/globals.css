@@ -133,6 +133,68 @@
   --soccer-red-dark: #C0392B;
 }
 
+/* ============================================ */
+/* ZONA-PLAY: Paleta de colores púrpura/morada */
+/* ============================================ */
+:root {
+  /* Colores principales de zona-play */
+  --play-purple: #8B5CF6;         /* Púrpura vibrante */
+  --play-purple-light: #A78BFA;   /* Púrpura claro */
+  --play-purple-dark: #7C3AED;    /* Púrpura oscuro */
+  --play-violet: #6D28D9;         /* Violeta profundo */
+  --play-indigo: #4F46E5;         /* Índigo */
+  --play-pink: #EC4899;           /* Rosa accent */
+  --play-cyan: #06B6D4;           /* Cyan para live */
+  --play-dark: #0F0A1A;           /* Fondo oscuro */
+  --play-dark-card: #1A1425;      /* Cards oscuras */
+  --play-dark-elevated: #241B35; /* Superficies elevadas */
+}
+
+/* Tema de zona-play (siempre oscuro, estilo streaming) */
+.zona-play {
+  --background: oklch(0.12 0.03 290);           /* Fondo púrpura muy oscuro */
+  --foreground: oklch(0.95 0.01 290);           /* Texto claro */
+
+  --card: oklch(0.18 0.04 290);                 /* Cards púrpura oscuro */
+  --card-foreground: oklch(0.95 0.01 290);
+  --popover: oklch(0.20 0.04 290);
+  --popover-foreground: oklch(0.95 0.01 290);
+
+  /* Primary - Púrpura vibrante */
+  --primary: oklch(0.65 0.25 290);              /* Púrpura brillante */
+  --primary-foreground: oklch(0.98 0.01 290);
+
+  /* Secondary */
+  --secondary: oklch(0.25 0.05 290);
+  --secondary-foreground: oklch(0.90 0.02 290);
+
+  /* Muted */
+  --muted: oklch(0.22 0.04 290);
+  --muted-foreground: oklch(0.65 0.03 290);
+
+  /* Accent - Rosa/Magenta */
+  --accent: oklch(0.65 0.25 330);               /* Rosa vibrante */
+  --accent-foreground: oklch(0.98 0.01 290);
+
+  /* Destructive */
+  --destructive: oklch(0.60 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 0);
+
+  /* Bordes */
+  --border: oklch(0.30 0.05 290);
+  --input: oklch(0.20 0.04 290);
+  --ring: oklch(0.65 0.25 290);
+
+  /* Charts */
+  --chart-1: oklch(0.65 0.25 290);              /* Púrpura */
+  --chart-2: oklch(0.65 0.25 330);              /* Rosa */
+  --chart-3: oklch(0.70 0.20 200);              /* Cyan */
+  --chart-4: oklch(0.70 0.15 140);              /* Verde */
+  --chart-5: oklch(0.75 0.12 60);               /* Amarillo */
+
+  color-scheme: dark;
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -188,6 +250,18 @@
   --color-soccer-gold-dark: var(--soccer-gold-dark);
   --color-soccer-red-light: var(--soccer-red-light);
   --color-soccer-red-dark: var(--soccer-red-dark);
+
+  /* Zona-play colors for Tailwind */
+  --color-play-purple: var(--play-purple);
+  --color-play-purple-light: var(--play-purple-light);
+  --color-play-purple-dark: var(--play-purple-dark);
+  --color-play-violet: var(--play-violet);
+  --color-play-indigo: var(--play-indigo);
+  --color-play-pink: var(--play-pink);
+  --color-play-cyan: var(--play-cyan);
+  --color-play-dark: var(--play-dark);
+  --color-play-dark-card: var(--play-dark-card);
+  --color-play-dark-elevated: var(--play-dark-elevated);
 }
 
 @layer base {
