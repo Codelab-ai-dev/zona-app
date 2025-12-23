@@ -1,8 +1,16 @@
 import Groq from 'groq-sdk'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+// Lazy initialization to avoid build-time errors when env vars are not available
+let groqClient: Groq | null = null
+
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    groqClient = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    })
+  }
+  return groqClient
+}
 
 export interface INEExtractionResult {
   success: boolean
@@ -40,7 +48,7 @@ export async function extractINEData(imageBase64: string): Promise<INEExtraction
     // Remove data URL prefix if present
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
 
-    const response = await groq.chat.completions.create({
+    const response = await getGroqClient().chat.completions.create({
       model: 'llama-3.2-11b-vision-preview',
       messages: [
         {
