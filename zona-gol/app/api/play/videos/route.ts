@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const leagueId = searchParams.get("league_id");
     const teamId = searchParams.get("team_id");
     const status = searchParams.get("status") || "ready";
-    const visibility = searchParams.get("visibility") || "public";
+    const visibility = searchParams.get("visibility");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
@@ -22,17 +22,27 @@ export async function GET(request: NextRequest) {
         *,
         matches (
           id,
-          home_team:teams!matches_home_team_id_fkey (id, name, logo_url),
-          away_team:teams!matches_away_team_id_fkey (id, name, logo_url),
+          home_team:teams!matches_home_team_id_fkey (id, name),
+          away_team:teams!matches_away_team_id_fkey (id, name),
           home_score,
           away_score,
           match_date
         ),
         leagues (id, name, slug)
       `)
-      .eq("status", status)
-      .eq("visibility", visibility)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    // Aplicar filtro de status (si no es "all")
+    if (status && status !== "all") {
+      query = query.eq("status", status);
+    }
+
+    // Aplicar filtro de visibility (si se especifica)
+    if (visibility) {
+      query = query.eq("visibility", visibility);
+    }
+
+    query = query
       .range(offset, offset + limit - 1);
 
     // Aplicar filtros opcionales

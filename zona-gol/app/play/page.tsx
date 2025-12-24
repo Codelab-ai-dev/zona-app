@@ -1,172 +1,163 @@
 import Link from "next/link";
-import { Play, Clock, Eye, Calendar, ChevronRight, Tv } from "lucide-react";
+import { Play, Clock, Eye, Calendar, ChevronRight, Tv, Video } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-// Datos de ejemplo - después vendrán de la BD
-const featuredMatch = {
-  id: "featured-1",
-  title: "Liga Premier - Final",
-  homeTeam: "Tigres FC",
-  awayTeam: "Leones United",
-  score: "3 - 2",
-  thumbnail: "/placeholder-match.jpg",
-  duration: "1:45:30",
-  views: 1250,
-  date: "2024-12-20",
-  league: "Liga Premier",
-  isLive: false,
-};
+interface Recording {
+  id: string;
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  views_count: number;
+  created_at: string;
+  published_at: string | null;
+  matches: {
+    home_score: number;
+    away_score: number;
+    home_team: { name: string } | null;
+    away_team: { name: string } | null;
+  } | null;
+  leagues: { name: string; slug: string } | null;
+}
 
-const recentMatches = [
-  {
-    id: "match-1",
-    title: "Jornada 15",
-    homeTeam: "Águilas FC",
-    awayTeam: "Halcones",
-    score: "2 - 1",
-    thumbnail: "/placeholder-match.jpg",
-    duration: "1:32:15",
-    views: 458,
-    date: "2024-12-19",
-    league: "Liga Amateur",
-  },
-  {
-    id: "match-2",
-    title: "Semifinal Copa Local",
-    homeTeam: "Rayos",
-    awayTeam: "Toros FC",
-    score: "1 - 1 (4-3 pen)",
-    thumbnail: "/placeholder-match.jpg",
-    duration: "2:05:00",
-    views: 892,
-    date: "2024-12-18",
-    league: "Copa Local",
-  },
-  {
-    id: "match-3",
-    title: "Jornada 14",
-    homeTeam: "Pumas Jr",
-    awayTeam: "Chivas Local",
-    score: "0 - 3",
-    thumbnail: "/placeholder-match.jpg",
-    duration: "1:28:45",
-    views: 325,
-    date: "2024-12-17",
-    league: "Liga Premier",
-  },
-  {
-    id: "match-4",
-    title: "Jornada 13",
-    homeTeam: "América Local",
-    awayTeam: "Cruz Azul Jr",
-    score: "2 - 2",
-    thumbnail: "/placeholder-match.jpg",
-    duration: "1:35:20",
-    views: 567,
-    date: "2024-12-15",
-    league: "Liga Amateur",
-  },
-];
+async function getVideos() {
+  const supabase = await createServerSupabaseClient();
 
-const featuredClips = [
-  {
-    id: "clip-1",
-    title: "Golazo de media cancha",
-    player: "Carlos Hernández",
-    team: "Tigres FC",
-    duration: "0:45",
-    views: 3420,
-    type: "goal",
-  },
-  {
-    id: "clip-2",
-    title: "Atajada imposible",
-    player: "Miguel Torres",
-    team: "Leones United",
-    duration: "0:32",
-    views: 2150,
-    type: "save",
-  },
-  {
-    id: "clip-3",
-    title: "Jugada de fantasía",
-    player: "Juan López",
-    team: "Águilas FC",
-    duration: "0:58",
-    views: 1890,
-    type: "highlight",
-  },
-  {
-    id: "clip-4",
-    title: "Gol de último minuto",
-    player: "Roberto Sánchez",
-    team: "Rayos",
-    duration: "0:40",
-    views: 4200,
-    type: "goal",
-  },
-];
+  const { data } = await supabase
+    .from("match_recordings")
+    .select(`
+      id,
+      title,
+      description,
+      thumbnail_url,
+      duration_seconds,
+      views_count,
+      created_at,
+      published_at,
+      matches (
+        home_score,
+        away_score,
+        home_team:teams!matches_home_team_id_fkey (name),
+        away_team:teams!matches_away_team_id_fkey (name)
+      ),
+      leagues (name, slug)
+    `)
+    .eq("status", "ready")
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(10);
 
-const liveStreams = [
-  {
-    id: "live-1",
-    title: "Liga Premier - Jornada 16",
-    homeTeam: "Dragones",
-    awayTeam: "Fénix FC",
-    viewers: 156,
-    league: "Liga Premier",
-  },
-];
+  return (data || []) as Recording[];
+}
 
-function VideoCard({ match }: { match: typeof recentMatches[0] }) {
+async function getLiveStreams() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data } = await supabase
+    .from("live_streams")
+    .select(`
+      id,
+      title,
+      current_viewers,
+      matches (
+        home_team:teams!matches_home_team_id_fkey (name),
+        away_team:teams!matches_away_team_id_fkey (name)
+      ),
+      leagues (name)
+    `)
+    .eq("status", "live")
+    .limit(1);
+
+  return data || [];
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return "--:--";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function VideoCard({ video }: { video: Recording }) {
+  const match = video.matches;
+  const league = video.leagues;
+
+  const title = match
+    ? `${match.home_team?.name || "Local"} vs ${match.away_team?.name || "Visitante"}`
+    : video.title;
+
+  const score = match ? `${match.home_score} - ${match.away_score}` : null;
+
   return (
-    <Link href={`/play/watch/${match.id}`}>
+    <Link href={`/play/watch/${video.id}`}>
       <Card className="group overflow-hidden bg-card hover:bg-muted/50 transition-all duration-300 border-border/50 hover:border-primary/50">
         <CardContent className="p-0">
           {/* Thumbnail */}
           <div className="relative aspect-video bg-muted">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
+            {video.thumbnail_url ? (
+              <img
+                src={video.thumbnail_url}
+                alt={title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Video className="w-12 h-12 text-muted-foreground/50" />
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+              <div className="w-16 h-16 rounded-full bg-background/80 backdrop-blur flex items-center justify-center">
                 <Play className="w-6 h-6 text-primary fill-current ml-1" />
               </div>
             </div>
             {/* Duration badge */}
             <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-xs text-white font-medium">
-              {match.duration}
+              {formatDuration(video.duration_seconds)}
             </div>
             {/* League badge */}
-            <div className="absolute top-2 left-2">
-              <Badge variant="secondary" className="bg-primary/90 text-primary-foreground text-xs">
-                {match.league}
-              </Badge>
-            </div>
+            {league && (
+              <div className="absolute top-2 left-2">
+                <Badge variant="secondary" className="bg-primary/90 text-primary-foreground text-xs">
+                  {league.name}
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Info */}
           <div className="p-4 space-y-2">
-            <div className="text-sm font-medium text-muted-foreground">
-              {match.title}
+            <div className="text-sm font-medium text-muted-foreground line-clamp-1">
+              {video.title}
             </div>
-            <div className="font-semibold text-lg">
-              {match.homeTeam} vs {match.awayTeam}
+            <div className="font-semibold text-lg line-clamp-1">
+              {title}
             </div>
-            <div className="text-2xl font-bold text-primary">
-              {match.score}
-            </div>
+            {score && (
+              <div className="text-2xl font-bold text-primary">
+                {score}
+              </div>
+            )}
             <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />
-                {match.views.toLocaleString()}
+                {(video.views_count || 0).toLocaleString()}
               </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {new Date(match.date).toLocaleDateString("es-MX", {
-                  day: "numeric",
-                  month: "short"
-                })}
-              </span>
+              {video.published_at && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(video.published_at).toLocaleDateString("es-MX", {
+                    day: "numeric",
+                    month: "short"
+                  })}
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
@@ -175,50 +166,12 @@ function VideoCard({ match }: { match: typeof recentMatches[0] }) {
   );
 }
 
-function ClipCard({ clip }: { clip: typeof featuredClips[0] }) {
-  const typeColors = {
-    goal: "bg-green-500/20 text-green-400",
-    save: "bg-blue-500/20 text-blue-400",
-    highlight: "bg-yellow-500/20 text-yellow-400",
-  };
+function LiveBanner({ stream }: { stream: any }) {
+  if (!stream) return null;
 
-  return (
-    <Link href={`/play/watch/${clip.id}`}>
-      <Card className="group overflow-hidden bg-card hover:bg-muted/50 transition-all duration-300 border-border/50 hover:border-accent/50">
-        <CardContent className="p-0">
-          <div className="relative aspect-[9/16] bg-muted max-h-[280px]">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-background/80 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play className="w-5 h-5 text-accent fill-current ml-0.5" />
-              </div>
-            </div>
-            <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-xs text-white font-medium">
-              {clip.duration}
-            </div>
-            <div className="absolute top-2 left-2">
-              <Badge className={`text-xs ${typeColors[clip.type as keyof typeof typeColors]}`}>
-                {clip.type === "goal" ? "Gol" : clip.type === "save" ? "Atajada" : "Highlight"}
-              </Badge>
-            </div>
-          </div>
-          <div className="p-3 space-y-1">
-            <div className="font-medium text-sm line-clamp-2">{clip.title}</div>
-            <div className="text-xs text-muted-foreground">{clip.player}</div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Eye className="w-3 h-3" />
-              {clip.views.toLocaleString()}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function LiveBanner() {
-  if (liveStreams.length === 0) return null;
-
-  const stream = liveStreams[0];
+  const match = stream.matches;
+  const homeTeam = match?.home_team?.name || "Equipo A";
+  const awayTeam = match?.away_team?.name || "Equipo B";
 
   return (
     <Link href={`/play/live/${stream.id}`}>
@@ -231,14 +184,14 @@ function LiveBanner() {
             </div>
             <div className="hidden sm:block w-px h-8 bg-white/30" />
             <div className="text-white">
-              <div className="text-sm opacity-80">{stream.league}</div>
-              <div className="font-semibold">{stream.homeTeam} vs {stream.awayTeam}</div>
+              <div className="text-sm opacity-80">{stream.leagues?.name || "Liga"}</div>
+              <div className="font-semibold">{homeTeam} vs {awayTeam}</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1 text-white/80 text-sm">
               <Eye className="w-4 h-4" />
-              {stream.viewers}
+              {stream.current_viewers || 0}
             </div>
             <Button size="sm" variant="secondary" className="group-hover:bg-white group-hover:text-red-600">
               <Tv className="w-4 h-4 mr-2" />
@@ -251,104 +204,144 @@ function LiveBanner() {
   );
 }
 
-export default function PlayHomePage() {
+function EmptyState() {
   return (
-    <div className="container max-w-screen-2xl py-6 space-y-10">
+    <div className="text-center py-20 space-y-4">
+      <Video className="w-16 h-16 mx-auto text-muted-foreground/50" />
+      <h2 className="text-xl font-semibold">No hay videos todavía</h2>
+      <p className="text-muted-foreground max-w-md mx-auto">
+        Pronto tendremos partidos, highlights y más contenido para ti.
+      </p>
+      <Link href="/play/admin">
+        <Button variant="outline" className="mt-4">
+          Subir primer video
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+export default async function PlayHomePage() {
+  const [videos, liveStreams] = await Promise.all([
+    getVideos(),
+    getLiveStreams(),
+  ]);
+
+  const featuredVideo = videos[0];
+  const recentVideos = videos.slice(1, 5);
+  const liveStream = liveStreams[0];
+
+  if (videos.length === 0 && liveStreams.length === 0) {
+    return (
+      <div className="container max-w-screen-2xl py-10">
+        <EmptyState />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-screen-2xl py-10 space-y-12">
       {/* Live Banner */}
-      <LiveBanner />
+      {liveStream && <LiveBanner stream={liveStream} />}
 
       {/* Featured Match */}
-      <section>
-        <Link href={`/play/watch/${featuredMatch.id}`}>
-          <Card className="group overflow-hidden bg-card hover:bg-muted/30 transition-all duration-300 border-border/50 hover:border-primary/50">
-            <CardContent className="p-0">
-              <div className="grid md:grid-cols-2 gap-0">
-                {/* Thumbnail */}
-                <div className="relative aspect-video bg-muted">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-20 h-20 rounded-full bg-background/80 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Play className="w-8 h-8 text-primary fill-current ml-1" />
+      {featuredVideo && (
+        <section>
+          <Link href={`/play/watch/${featuredVideo.id}`}>
+            <Card className="group overflow-hidden bg-card hover:bg-muted/30 transition-all duration-300 border-border/50 hover:border-primary/50">
+              <CardContent className="p-0">
+                <div className="grid md:grid-cols-2 gap-0">
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video bg-muted">
+                    {featuredVideo.thumbnail_url ? (
+                      <img
+                        src={featuredVideo.thumbnail_url}
+                        alt={featuredVideo.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Video className="w-16 h-16 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                      <div className="w-20 h-20 rounded-full bg-background/80 backdrop-blur flex items-center justify-center">
+                        <Play className="w-8 h-8 text-primary fill-current ml-1" />
+                      </div>
+                    </div>
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-primary text-primary-foreground">
+                        Destacado
+                      </Badge>
+                    </div>
+                    <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded bg-black/80 text-sm text-white font-medium">
+                      {formatDuration(featuredVideo.duration_seconds)}
                     </div>
                   </div>
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-primary text-primary-foreground">
-                      Destacado
-                    </Badge>
-                  </div>
-                  <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded bg-black/80 text-sm text-white font-medium">
-                    {featuredMatch.duration}
+
+                  {/* Info */}
+                  <div className="p-6 md:p-8 flex flex-col justify-center space-y-4">
+                    <div className="space-y-2">
+                      {featuredVideo.leagues && (
+                        <Badge variant="outline" className="border-primary/50 text-primary">
+                          {featuredVideo.leagues.name}
+                        </Badge>
+                      )}
+                      <h2 className="text-2xl md:text-3xl font-bold">
+                        {featuredVideo.matches
+                          ? `${featuredVideo.matches.home_team?.name} vs ${featuredVideo.matches.away_team?.name}`
+                          : featuredVideo.title}
+                      </h2>
+                    </div>
+                    {featuredVideo.matches && (
+                      <div className="text-4xl md:text-5xl font-bold text-primary">
+                        {featuredVideo.matches.home_score} - {featuredVideo.matches.away_score}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        {(featuredVideo.views_count || 0).toLocaleString()} vistas
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {formatDuration(featuredVideo.duration_seconds)}
+                      </span>
+                      {featuredVideo.published_at && (
+                        <span className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(featuredVideo.published_at).toLocaleDateString("es-MX", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric"
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </section>
+      )}
 
-                {/* Info */}
-                <div className="p-6 md:p-8 flex flex-col justify-center space-y-4">
-                  <div className="space-y-2">
-                    <Badge variant="outline" className="border-primary/50 text-primary">
-                      {featuredMatch.league}
-                    </Badge>
-                    <h2 className="text-2xl md:text-3xl font-bold">
-                      {featuredMatch.homeTeam} vs {featuredMatch.awayTeam}
-                    </h2>
-                  </div>
-                  <div className="text-4xl md:text-5xl font-bold text-primary">
-                    {featuredMatch.score}
-                  </div>
-                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
-                      {featuredMatch.views.toLocaleString()} vistas
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      {featuredMatch.duration}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {new Date(featuredMatch.date).toLocaleDateString("es-MX", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </section>
-
-      {/* Recent Matches */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Partidos Recientes</h2>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            Ver todos <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {recentMatches.map((match) => (
-            <VideoCard key={match.id} match={match} />
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Clips */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Clips Destacados</h2>
-          <Link href="/play/clips">
+      {/* Recent Videos */}
+      {recentVideos.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Videos Recientes</h2>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               Ver todos <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {featuredClips.map((clip) => (
-            <ClipCard key={clip.id} clip={clip} />
-          ))}
-        </div>
-      </section>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {recentVideos.map((video) => (
+              <VideoCard key={video.id} video={video} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Call to Action */}
       <section className="text-center py-12 space-y-4">
@@ -362,9 +355,9 @@ export default function PlayHomePage() {
               Explorar ligas
             </Button>
           </Link>
-          <Link href="/play/clips">
+          <Link href="/play/admin">
             <Button className="bg-primary hover:bg-primary/90">
-              Ver clips
+              Subir video
             </Button>
           </Link>
         </div>

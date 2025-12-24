@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Play, Home, Video, Tv, Search, User } from "lucide-react";
+import Image from "next/image";
+import { Home, Video, Tv, Search, User } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Zona Play - Revive cada jugada",
@@ -10,15 +11,17 @@ export const metadata: Metadata = {
 function PlayHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
+      <div className="container flex h-28 max-w-screen-2xl items-center px-6 lg:px-10">
         {/* Logo */}
-        <Link href="/play" className="flex items-center gap-2 mr-6">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-            <Play className="w-4 h-4 text-primary-foreground fill-current" />
-          </div>
-          <span className="font-bold text-lg hidden sm:inline-block">
-            Zona <span className="text-primary">Play</span>
-          </span>
+        <Link href="/play" className="flex items-center mr-8">
+          <Image
+            src="/zona-play-logo.png"
+            alt="Zona Play"
+            width={300}
+            height={300}
+            className="h-24 sm:h-28 w-auto"
+            priority
+          />
         </Link>
 
         {/* Navigation */}
@@ -69,14 +72,17 @@ function PlayHeader() {
 
 function PlayFooter() {
   return (
-    <footer className="border-t border-border/40 py-6 mt-auto">
-      <div className="container max-w-screen-2xl">
+    <footer className="border-t border-border/40 py-8 mt-auto">
+      <div className="container max-w-screen-2xl px-6 lg:px-10">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="flex items-center justify-center w-6 h-6 rounded bg-primary">
-              <Play className="w-3 h-3 text-primary-foreground fill-current" />
-            </div>
-            <span>Zona Play</span>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Image
+              src="/zona-play-logo.png"
+              alt="Zona Play"
+              width={200}
+              height={200}
+              className="h-20 w-auto opacity-90"
+            />
             <span className="text-border">|</span>
             <span>Parte de Zona Gol</span>
           </div>
@@ -105,7 +111,7 @@ export default function PlayLayout({
   return (
     <div className="zona-play min-h-screen flex flex-col bg-background text-foreground">
       <PlayHeader />
-      <main className="flex-1">
+      <main className="flex-1 px-6 lg:px-10">
         {children}
       </main>
       <PlayFooter />

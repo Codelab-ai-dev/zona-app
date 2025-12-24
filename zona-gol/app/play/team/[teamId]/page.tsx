@@ -211,7 +211,7 @@ export default async function TeamPage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="container max-w-screen-2xl -mt-20 relative z-10">
+      <div className="container max-w-screen-2xl -mt-20 relative z-10 pb-10">
         {/* Back button */}
         <Link href="/play" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ChevronLeft className="w-4 h-4" />

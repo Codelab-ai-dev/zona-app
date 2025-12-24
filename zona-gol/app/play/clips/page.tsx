@@ -244,7 +244,7 @@ export default function ClipsPage() {
   const saveClips = clips.filter(c => c.type === "save");
 
   return (
-    <div className="container max-w-screen-2xl py-6 space-y-8">
+    <div className="container max-w-screen-2xl py-10 space-y-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -122,7 +122,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="container max-w-screen-xl py-6 space-y-6">
+    <div className="container max-w-screen-xl py-10 space-y-8">
       {/* Search Header */}
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Buscar</h1>

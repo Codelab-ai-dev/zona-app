@@ -73,7 +73,7 @@ export default async function LiveStreamPage({ params }: PageProps) {
   const elapsedMinutes = Math.floor((Date.now() - stream.startedAt.getTime()) / 60000);
 
   return (
-    <div className="container max-w-screen-2xl py-4">
+    <div className="container max-w-screen-2xl py-8">
       {/* Back button */}
       <Link href="/play" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
         <ChevronLeft className="w-4 h-4" />
