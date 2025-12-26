@@ -1,9 +1,14 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../core/config/theme.dart';
+
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/league_entity.dart';
 import '../../../domain/entities/team_entity.dart';
@@ -18,8 +23,24 @@ import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
 
-/// League Detail Screen
-/// Shows detailed information about a league
+/// Stadium Nights Design System
+class _StadiumNights {
+  static const Color backgroundDark = Color(0xFF050508);
+  static const Color surfaceDark = Color(0xFF0A0A0F);
+  static const Color cardDark = Color(0xFF12121A);
+  static const Color gold = Color(0xFFFFD700);
+  static const Color goldLight = Color(0xFFFFF0B3);
+  static const Color amber = Color(0xFFF59E0B);
+  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color success = Color(0xFF10B981);
+  static const Color error = Color(0xFFEF4444);
+  static const Color textPrimary = Color(0xFFFAFAFA);
+  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color textMuted = Color(0xFF6B7280);
+}
+
+/// League Detail Screen - Stadium Nights Edition
 class LeagueDetailScreen extends StatelessWidget {
   final LeagueEntity league;
 
@@ -31,130 +52,91 @@ class LeagueDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => sl<LeagueBloc>()
-        ..add(LoadLeagueByIdEvent(league.id)),
+      create: (context) => sl<LeagueBloc>()..add(LoadLeagueByIdEvent(league.id)),
       child: _LeagueDetailView(initialLeague: league),
     );
   }
 }
 
-class _LeagueDetailView extends StatelessWidget {
+class _LeagueDetailView extends StatefulWidget {
   final LeagueEntity initialLeague;
 
   const _LeagueDetailView({required this.initialLeague});
 
   @override
+  State<_LeagueDetailView> createState() => _LeagueDetailViewState();
+}
+
+class _LeagueDetailViewState extends State<_LeagueDetailView>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
+  late AnimationController _headerController;
+  late Animation<double> _headerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+
+    _headerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _headerAnimation = CurvedAnimation(
+      parent: _headerController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _headerController.forward();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _headerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: _StadiumNights.backgroundDark,
+      ),
       child: Scaffold(
+        backgroundColor: _StadiumNights.backgroundDark,
         body: BlocBuilder<LeagueBloc, LeagueState>(
           builder: (context, state) {
-            final league = state is LeagueDetailLoaded
-                ? state.league
-                : initialLeague;
+            final league =
+                state is LeagueDetailLoaded ? state.league : widget.initialLeague;
 
-            return NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  SliverAppBar(
-                    expandedHeight: 200,
-                    pinned: true,
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Text(
-                        league.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(0, 1),
-                              blurRadius: 3,
-                              color: Colors.black26,
-                            ),
-                          ],
-                        ),
-                      ),
-                      background: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Background gradient
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  AppTheme.primary,
-                                  AppTheme.primary.withOpacity(0.8),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Logo
-                          if (league.hasLogo)
-                            Center(
-                              child: Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: _buildLeagueHeaderLogo(league.logo!),
-                                ),
-                              ),
-                            )
-                          else
-                            const Center(
-                              child: Icon(
-                                Icons.emoji_events,
-                                size: 80,
-                                color: Colors.white70,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    bottom: TabBar(
-                      indicatorColor: Colors.white,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white70,
-                      tabs: const [
-                        Tab(
-                          icon: Icon(Icons.info_outline),
-                          text: 'Información',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.sports_soccer),
-                          text: 'Torneos',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.groups),
-                          text: 'Equipos',
-                        ),
-                      ],
-                    ),
+            return Stack(
+              children: [
+                // Background
+                const _StadiumFieldBackground(),
+
+                // Spotlight effects
+                _buildSpotlightEffects(),
+
+                // Main content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(context, league, innerBoxIsScrolled),
+                    ];
+                  },
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _InfoTab(league: league),
+                      _TournamentsTab(league: league),
+                      _TeamsTab(league: league),
+                    ],
                   ),
-                ];
-              },
-              body: TabBarView(
-                children: [
-                  _InfoTab(league: league),
-                  _TournamentsTab(league: league),
-                  _TeamsTab(league: league),
-                ],
-              ),
+                ),
+              ],
             );
           },
         ),
@@ -162,68 +144,267 @@ class _LeagueDetailView extends StatelessWidget {
     );
   }
 
-  /// Build league logo widget for header
-  /// Supports both base64 data URIs and HTTP/HTTPS URLs
-  Widget _buildLeagueHeaderLogo(String logoData) {
+  Widget _buildSpotlightEffects() {
+    return AnimatedBuilder(
+      animation: _headerAnimation,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            Positioned(
+              top: -100,
+              left: -50,
+              child: Opacity(
+                opacity: 0.25 * _headerAnimation.value,
+                child: Container(
+                  width: 300,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [
+                        _StadiumNights.gold.withOpacity(0.3),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: -80,
+              right: -80,
+              child: Opacity(
+                opacity: 0.2 * _headerAnimation.value,
+                child: Container(
+                  width: 350,
+                  height: 350,
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [
+                        _StadiumNights.amber.withOpacity(0.25),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSliverAppBar(
+      BuildContext context, LeagueEntity league, bool innerBoxIsScrolled) {
+    return SliverAppBar(
+      expandedHeight: 280,
+      pinned: true,
+      backgroundColor: _StadiumNights.surfaceDark,
+      foregroundColor: _StadiumNights.textPrimary,
+      leading: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.pop(context);
+        },
+        child: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _StadiumNights.gold.withOpacity(0.2)),
+          ),
+          child: Icon(
+            Icons.arrow_back,
+            color: _StadiumNights.gold,
+            size: 20,
+          ),
+        ),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        title: AnimatedBuilder(
+          animation: _headerAnimation,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _headerAnimation.value,
+              child: Text(
+                league.name,
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 22,
+                  color: _StadiumNights.textPrimary,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(0, 2),
+                      blurRadius: 8,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Gradient background
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _StadiumNights.backgroundDark,
+                    _StadiumNights.surfaceDark,
+                  ],
+                ),
+              ),
+            ),
+
+            // League logo
+            Center(
+              child: AnimatedBuilder(
+                animation: _headerAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 0.8 + (0.2 * _headerAnimation.value),
+                    child: Opacity(
+                      opacity: _headerAnimation.value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildLeagueLogo(league),
+              ),
+            ),
+
+            // Bottom gradient for title readability
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      _StadiumNights.surfaceDark.withOpacity(0.8),
+                      _StadiumNights.surfaceDark,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _StadiumNights.surfaceDark,
+            border: Border(
+              bottom: BorderSide(
+                color: _StadiumNights.gold.withOpacity(0.1),
+              ),
+            ),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: _StadiumNights.gold,
+            indicatorWeight: 3,
+            labelColor: _StadiumNights.gold,
+            unselectedLabelColor: _StadiumNights.textMuted,
+            labelStyle: GoogleFonts.outfit(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+            unselectedLabelStyle: GoogleFonts.outfit(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+            tabs: const [
+              Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Info'),
+              Tab(icon: Icon(Icons.sports_soccer, size: 20), text: 'Torneos'),
+              Tab(icon: Icon(Icons.groups, size: 20), text: 'Equipos'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeagueLogo(LeagueEntity league) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: _StadiumNights.cardDark,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _StadiumNights.gold.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _StadiumNights.gold.withOpacity(0.2),
+            blurRadius: 30,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: league.hasLogo
+            ? _buildLeagueLogoImage(league.logo!)
+            : Icon(
+                Icons.emoji_events,
+                size: 60,
+                color: _StadiumNights.gold,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildLeagueLogoImage(String logoData) {
     try {
       if (logoData.startsWith('data:image/')) {
-        // Data URI (Base64)
         final base64Data = logoData.split(',')[1];
         final Uint8List bytes = base64Decode(base64Data);
         return Image.memory(
           bytes,
           width: 120,
           height: 120,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(
-              Icons.emoji_events,
-              size: 80,
-              color: AppTheme.primary,
-            );
-          },
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackLogo(),
         );
       } else {
-        // HTTP/HTTPS URL
         return Image.network(
           logoData,
           width: 120,
           height: 120,
-          fit: BoxFit.contain,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-                strokeWidth: 3,
-                color: AppTheme.primary,
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(
-              Icons.emoji_events,
-              size: 80,
-              color: AppTheme.primary,
-            );
-          },
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackLogo(),
         );
       }
     } catch (e) {
-      // Fallback for any errors
-      return const Icon(
-        Icons.emoji_events,
-        size: 80,
-        color: AppTheme.primary,
-      );
+      return _buildFallbackLogo();
     }
+  }
+
+  Widget _buildFallbackLogo() {
+    return Icon(
+      Icons.emoji_events,
+      size: 60,
+      color: _StadiumNights.gold,
+    );
   }
 }
 
-/// Information Tab
+/// Information Tab - Stadium Nights
 class _InfoTab extends StatelessWidget {
   final LeagueEntity league;
 
@@ -231,144 +412,223 @@ class _InfoTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy');
+    final dateFormat = DateFormat('dd MMM yyyy', 'es');
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      color: _StadiumNights.backgroundDark,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // Status Badge
+          _buildStatusBadge(),
+          const SizedBox(height: 24),
+
+          // Description card
+          _buildInfoCard(
+            icon: Icons.description,
+            title: 'DESCRIPCIÓN',
+            child: Text(
+              league.description,
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                color: _StadiumNights.textSecondary,
+                height: 1.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Slug card
+          _buildInfoCard(
+            icon: Icons.link,
+            title: 'IDENTIFICADOR',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _StadiumNights.neonGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _StadiumNights.neonGreen.withOpacity(0.2),
+                ),
+              ),
+              child: Text(
+                '/${league.slug}',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 14,
+                  color: _StadiumNights.neonGreen,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Dates row
+          Row(
+            children: [
+              if (league.createdAt != null)
+                Expanded(
+                  child: _buildInfoCard(
+                    icon: Icons.calendar_today,
+                    title: 'CREADA',
+                    compact: true,
+                    child: Text(
+                      dateFormat.format(league.createdAt!),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: _StadiumNights.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              if (league.createdAt != null && league.updatedAt != null)
+                const SizedBox(width: 12),
+              if (league.updatedAt != null)
+                Expanded(
+                  child: _buildInfoCard(
+                    icon: Icons.update,
+                    title: 'ACTUALIZADA',
+                    compact: true,
+                    child: Text(
+                      dateFormat.format(league.updatedAt!),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: _StadiumNights.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Status Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             color: league.isActive
-                ? AppTheme.success.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+                ? _StadiumNights.neonGreen.withOpacity(0.15)
+                : _StadiumNights.textMuted.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: league.isActive
+                  ? _StadiumNights.neonGreen.withOpacity(0.3)
+                  : _StadiumNights.textMuted.withOpacity(0.3),
+            ),
+            boxShadow: league.isActive
+                ? [
+                    BoxShadow(
+                      color: _StadiumNights.neonGreen.withOpacity(0.2),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                league.isActive ? Icons.check_circle : Icons.cancel,
-                size: 16,
-                color: league.isActive ? AppTheme.success : Colors.grey,
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: league.isActive
+                      ? _StadiumNights.neonGreen
+                      : _StadiumNights.textMuted,
+                  shape: BoxShape.circle,
+                  boxShadow: league.isActive
+                      ? [
+                          BoxShadow(
+                            color: _StadiumNights.neonGreen.withOpacity(0.5),
+                            blurRadius: 6,
+                          ),
+                        ]
+                      : null,
+                ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 10),
               Text(
-                league.statusText,
-                style: TextStyle(
-                  color: league.isActive ? AppTheme.success : Colors.grey,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                league.statusText.toUpperCase(),
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 16,
+                  color: league.isActive
+                      ? _StadiumNights.neonGreen
+                      : _StadiumNights.textMuted,
+                  letterSpacing: 2,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-
-        // Description
-        _InfoSection(
-          title: 'Descripción',
-          icon: Icons.description,
-          child: Text(
-            league.description,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Slug
-        _InfoSection(
-          title: 'Identificador (Slug)',
-          icon: Icons.tag,
-          child: Text(
-            league.slug,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontFamily: 'monospace',
-                  color: AppTheme.primary,
-                ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Created Date
-        if (league.createdAt != null)
-          _InfoSection(
-            title: 'Fecha de Creación',
-            icon: Icons.calendar_today,
-            child: Text(
-              dateFormat.format(league.createdAt!),
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        const SizedBox(height: 16),
-
-        // Updated Date
-        if (league.updatedAt != null)
-          _InfoSection(
-            title: 'Última Actualización',
-            icon: Icons.update,
-            child: Text(
-              dateFormat.format(league.updatedAt!),
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        const SizedBox(height: 24),
-
-        // Actions (only for admins)
-        // TODO: Add permission checks
-        // _AdminActions(league: league),
       ],
     );
   }
-}
 
-/// Info Section Widget
-class _InfoSection extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  const _InfoSection({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: AppTheme.primary,
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required Widget child,
+    bool compact = false,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: EdgeInsets.all(compact ? 16 : 20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.08),
+                Colors.white.withOpacity(0.03),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: _StadiumNights.gold,
                   ),
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 14,
+                      color: _StadiumNights.gold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: compact ? 10 : 14),
+              child,
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: child,
-        ),
-      ],
+      ),
     );
   }
 }
 
-/// Tournaments Tab
+/// Tournaments Tab - Stadium Nights
 class _TournamentsTab extends StatelessWidget {
   final LeagueEntity league;
 
@@ -376,254 +636,231 @@ class _TournamentsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<TournamentBloc>()
-        ..add(LoadTournamentsByLeagueEvent(leagueId: league.id)),
-      child: BlocBuilder<TournamentBloc, TournamentState>(
-        builder: (context, state) {
-          if (state is TournamentLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Container(
+      color: _StadiumNights.backgroundDark,
+      child: BlocProvider(
+        create: (context) => sl<TournamentBloc>()
+          ..add(LoadTournamentsByLeagueEvent(leagueId: league.id)),
+        child: BlocBuilder<TournamentBloc, TournamentState>(
+          builder: (context, state) {
+            if (state is TournamentLoading) {
+              return _buildLoadingState();
+            }
 
-          if (state is TournamentError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppTheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error al cargar torneos',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+            if (state is TournamentError) {
+              return _buildErrorState(context, state.message, () {
+                context.read<TournamentBloc>().add(
+                      LoadTournamentsByLeagueEvent(leagueId: league.id),
+                    );
+              });
+            }
 
-          if (state is TournamentsLoaded) {
-            if (state.tournaments.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.sports_soccer,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Sin torneos',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        'Esta liga aún no tiene torneos creados',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Próximamente: Crear Torneo'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Crear Torneo'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
+            if (state is TournamentsLoaded) {
+              if (state.tournaments.isEmpty) {
+                return _buildEmptyState(
+                  icon: Icons.sports_soccer,
+                  title: 'SIN TORNEOS',
+                  subtitle: 'Esta liga aún no tiene torneos creados',
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  context.read<TournamentBloc>().add(
+                        LoadTournamentsByLeagueEvent(leagueId: league.id),
+                      );
+                },
+                color: _StadiumNights.gold,
+                backgroundColor: _StadiumNights.cardDark,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: state.tournaments.length,
+                  itemBuilder: (context, index) {
+                    return _TournamentCard(
+                      tournament: state.tournaments[index],
+                      index: index,
+                    );
+                  },
                 ),
               );
             }
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<TournamentBloc>().add(
-                      LoadTournamentsByLeagueEvent(leagueId: league.id),
-                    );
-              },
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.tournaments.length,
-                itemBuilder: (context, index) {
-                  final tournament = state.tournaments[index];
-                  return _TournamentCard(tournament: tournament);
-                },
-              ),
-            );
-          }
-
-          return const Center(child: Text('Cargando torneos...'));
-        },
+            return _buildLoadingState();
+          },
+        ),
       ),
     );
   }
 }
 
-/// Tournament Card Widget
-/// Displays a single tournament in a card format
+/// Tournament Card - Stadium Nights
 class _TournamentCard extends StatelessWidget {
   final TournamentEntity tournament;
+  final int index;
 
-  const _TournamentCard({required this.tournament});
+  const _TournamentCard({
+    required this.tournament,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
 
-    // Determine status color
+    // Status styling
     Color statusColor;
-    if (tournament.isCurrentlyActive) {
-      statusColor = AppTheme.success;
-    } else if (tournament.isUpcoming) {
-      statusColor = Colors.blue;
-    } else {
-      statusColor = Colors.grey;
-    }
-
-    // Determine status text
     String statusText;
+    IconData statusIcon;
+
     if (tournament.isCurrentlyActive) {
-      statusText = 'En curso';
+      statusColor = _StadiumNights.neonGreen;
+      statusText = 'EN CURSO';
+      statusIcon = Icons.play_circle;
     } else if (tournament.isUpcoming) {
-      statusText = 'Próximo';
+      statusColor = _StadiumNights.neonBlue;
+      statusText = 'PRÓXIMO';
+      statusIcon = Icons.schedule;
     } else {
-      statusText = 'Finalizado';
+      statusColor = _StadiumNights.textMuted;
+      statusText = 'FINALIZADO';
+      statusIcon = Icons.check_circle;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ver detalles de ${tournament.name}'),
-              duration: const Duration(seconds: 1),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Name and Status
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tournament.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(opacity: value, child: child),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.08),
+                    Colors.white.withOpacity(0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: statusColor.withOpacity(0.2),
+                ),
               ),
-              const SizedBox(height: 12),
-
-              // Format Info
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.emoji_events_outlined,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    tournament.formatText,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
+                  // Header: Name and Status
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          tournament.name,
+                          style: GoogleFonts.bebasNeue(
+                            fontSize: 20,
+                            color: _StadiumNights.textPrimary,
+                            letterSpacing: 1,
+                          ),
                         ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      '${dateFormat.format(tournament.startDate)} - ${dateFormat.format(tournament.endDate)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: statusColor.withOpacity(0.3),
                           ),
-                    ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(statusIcon, size: 14, color: statusColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              statusText,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Info row
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.emoji_events_outlined,
+                        size: 16,
+                        color: _StadiumNights.gold,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        tournament.formatText,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          color: _StadiumNights.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: _StadiumNights.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${dateFormat.format(tournament.startDate)} - ${dateFormat.format(tournament.endDate)}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: _StadiumNights.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Duration
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.timelapse,
+                        size: 14,
+                        color: _StadiumNights.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${tournament.durationInDays} días',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: _StadiumNights.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-
-              // Format Description
-              Text(
-                tournament.formatDescription,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[700],
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
-
-              // Duration
-              const SizedBox(height: 4),
-              Text(
-                'Duración: ${tournament.durationInDays} días',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -631,7 +868,7 @@ class _TournamentCard extends StatelessWidget {
   }
 }
 
-/// Teams Tab
+/// Teams Tab - Stadium Nights
 class _TeamsTab extends StatelessWidget {
   final LeagueEntity league;
 
@@ -639,230 +876,195 @@ class _TeamsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<TeamBloc>()
-        ..add(LoadTeamsByLeagueEvent(leagueId: league.id)),
-      child: BlocBuilder<TeamBloc, TeamState>(
-        builder: (context, state) {
-          if (state is TeamLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+    return Container(
+      color: _StadiumNights.backgroundDark,
+      child: BlocProvider(
+        create: (context) =>
+            sl<TeamBloc>()..add(LoadTeamsByLeagueEvent(leagueId: league.id)),
+        child: BlocBuilder<TeamBloc, TeamState>(
+          builder: (context, state) {
+            if (state is TeamLoading) {
+              return _buildLoadingState();
+            }
 
-          if (state is TeamError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 80,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error al cargar equipos',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<TeamBloc>().add(
-                            LoadTeamsByLeagueEvent(leagueId: league.id),
-                          );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Reintentar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+            if (state is TeamError) {
+              return _buildErrorState(context, state.message, () {
+                context.read<TeamBloc>().add(
+                      LoadTeamsByLeagueEvent(leagueId: league.id),
+                    );
+              });
+            }
 
-          if (state is TeamsLoaded) {
-            if (state.teams.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.groups,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Sin equipos',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        'Aún no hay equipos en esta liga',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                      ),
-                    ),
-                  ],
+            if (state is TeamsLoaded) {
+              if (state.teams.isEmpty) {
+                return _buildEmptyState(
+                  icon: Icons.groups,
+                  title: 'SIN EQUIPOS',
+                  subtitle: 'Aún no hay equipos en esta liga',
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  context.read<TeamBloc>().add(
+                        LoadTeamsByLeagueEvent(leagueId: league.id),
+                      );
+                },
+                color: _StadiumNights.gold,
+                backgroundColor: _StadiumNights.cardDark,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: state.teams.length,
+                  itemBuilder: (context, index) {
+                    return _TeamCard(
+                      team: state.teams[index],
+                      index: index,
+                    );
+                  },
                 ),
               );
             }
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<TeamBloc>().add(
-                      LoadTeamsByLeagueEvent(leagueId: league.id),
-                    );
-              },
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.teams.length,
-                itemBuilder: (context, index) {
-                  final team = state.teams[index];
-                  return _TeamCard(team: team);
-                },
-              ),
-            );
-          }
-
-          return const SizedBox.shrink();
-        },
+            return _buildLoadingState();
+          },
+        ),
       ),
     );
   }
 }
 
-/// Team Card Widget
+/// Team Card - Stadium Nights
 class _TeamCard extends StatelessWidget {
   final TeamEntity team;
+  final int index;
 
-  const _TeamCard({required this.team});
+  const _TeamCard({
+    required this.team,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 _TeamCard rendering: ${team.name}');
-    print('🎨 Team logo: ${team.logo}');
-    print('🎨 Has logo: ${team.hasLogo}');
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Detalles de ${team.name}')),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Team Name and Status
-              Row(
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(opacity: value, child: child),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.08),
+                    Colors.white.withOpacity(0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: team.isActive
+                      ? _StadiumNights.gold.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.05),
+                ),
+              ),
+              child: Row(
                 children: [
-                  // Logo or Icon - Circular Avatar
-                  if (team.hasLogo)
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.grey[200],
-                      child: ClipOval(
-                        child: _buildTeamLogo(team.logo!),
-                      ),
-                    )
-                  else
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: team.hasHomeColors && team.homePrimaryColor != null
-                          ? _parseColor(team.homePrimaryColor!)
-                          : AppTheme.primary.withOpacity(0.1),
-                      child: Icon(
-                        Icons.shield,
-                        size: 32,
-                        color: team.hasHomeColors && team.homePrimaryColor != null
-                            ? Colors.white
-                            : AppTheme.primary,
-                      ),
-                    ),
-                  const SizedBox(width: 12),
+                  // Team logo
+                  _buildTeamLogo(),
+                  const SizedBox(width: 16),
+
+                  // Team info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           team.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: GoogleFonts.bebasNeue(
+                            fontSize: 18,
+                            color: _StadiumNights.textPrimary,
+                            letterSpacing: 1,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          team.slug,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
-                                    fontFamily: 'monospace',
-                                  ),
+                          '/${team.slug}',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 11,
+                            color: _StadiumNights.textMuted,
+                          ),
                         ),
+                        if (team.groupName != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _StadiumNights.neonBlue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              team.groupDisplayText,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: _StadiumNights.neonBlue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  // Status Badge
+
+                  // Status badge
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: team.isActive
-                          ? AppTheme.success.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                          ? _StadiumNights.neonGreen.withOpacity(0.15)
+                          : _StadiumNights.textMuted.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          team.isActive ? Icons.check_circle : Icons.cancel,
-                          size: 14,
-                          color: team.isActive ? AppTheme.success : Colors.grey,
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: team.isActive
+                                ? _StadiumNights.neonGreen
+                                : _StadiumNights.textMuted,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Text(
                           team.isActive ? 'Activo' : 'Inactivo',
-                          style: TextStyle(
-                            color:
-                                team.isActive ? AppTheme.success : Colors.grey,
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: team.isActive
+                                ? _StadiumNights.neonGreen
+                                : _StadiumNights.textMuted,
                             fontWeight: FontWeight.w600,
-                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -870,167 +1072,336 @@ class _TeamCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // Description (if available)
-              if (team.description != null && team.description!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    team.description!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[700],
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-              // Group Info (if assigned to tournament)
-              if (team.groupName != null)
-                Row(
-                  children: [
-                    Icon(
-                      Icons.groups_3,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      team.groupDisplayText,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                  ],
-                ),
-
-              // Colors Info (if available)
-              if (team.hasHomeColors)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.sports_soccer,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Uniformes configurados',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Helper method to build team logo from URL or Base64
-  /// Supports: HTTP/HTTPS URLs and data:image URIs
-  Widget _buildTeamLogo(String logoData) {
+  Widget _buildTeamLogo() {
+    final Color primaryColor = team.hasHomeColors && team.homePrimaryColor != null
+        ? _parseColor(team.homePrimaryColor!)
+        : _StadiumNights.gold;
+
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: primaryColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: primaryColor.withOpacity(0.3),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: team.hasLogo
+            ? _buildTeamLogoImage(team.logo!)
+            : Icon(
+                Icons.shield,
+                size: 28,
+                color: primaryColor,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTeamLogoImage(String logoData) {
     try {
-      // Check if it's a data URI (base64)
       if (logoData.startsWith('data:image/')) {
-        // Extract base64 data after the comma
         final base64Data = logoData.split(',')[1];
         final Uint8List bytes = base64Decode(base64Data);
-
         return Image.memory(
           bytes,
           width: 56,
           height: 56,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            print('❌ Error loading base64 image: $error');
-            return Container(
-              width: 56,
-              height: 56,
-              color: AppTheme.primary.withOpacity(0.1),
-              child: const Icon(
-                Icons.shield,
-                size: 32,
-                color: AppTheme.primary,
-              ),
-            );
-          },
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.shield,
+            size: 28,
+            color: _StadiumNights.gold,
+          ),
         );
       } else {
-        // It's a regular HTTP/HTTPS URL
         return Image.network(
           logoData,
           width: 56,
           height: 56,
           fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-                strokeWidth: 2,
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            print('❌ Error loading network image: $error');
-            return Container(
-              width: 56,
-              height: 56,
-              color: AppTheme.primary.withOpacity(0.1),
-              child: const Icon(
-                Icons.shield,
-                size: 32,
-                color: AppTheme.primary,
-              ),
-            );
-          },
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.shield,
+            size: 28,
+            color: _StadiumNights.gold,
+          ),
         );
       }
     } catch (e) {
-      print('❌ Error building team logo: $e');
-      return Container(
-        width: 56,
-        height: 56,
-        color: AppTheme.primary.withOpacity(0.1),
-        child: const Icon(
-          Icons.shield,
-          size: 32,
-          color: AppTheme.primary,
-        ),
+      return Icon(
+        Icons.shield,
+        size: 28,
+        color: _StadiumNights.gold,
       );
     }
   }
 
-  /// Helper method to parse color strings (hex format)
-  /// Supports formats: "#FF5733", "FF5733", "0xFFFF5733"
   Color _parseColor(String colorString) {
     try {
       String hexColor = colorString.toUpperCase().replaceAll('#', '');
-
-      // Remove "0X" prefix if present
       if (hexColor.startsWith('0X')) {
         hexColor = hexColor.substring(2);
       }
-
-      // Add alpha channel if not present (6 digits -> 8 digits)
       if (hexColor.length == 6) {
         hexColor = 'FF$hexColor';
       }
-
       return Color(int.parse(hexColor, radix: 16));
     } catch (e) {
-      // Return default color if parsing fails
-      return AppTheme.primary;
+      return _StadiumNights.gold;
     }
+  }
+}
+
+// Shared UI Components
+
+Widget _buildLoadingState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 50,
+          height: 50,
+          child: CircularProgressIndicator(
+            strokeWidth: 3,
+            valueColor: AlwaysStoppedAnimation<Color>(_StadiumNights.gold),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'CARGANDO',
+          style: GoogleFonts.bebasNeue(
+            fontSize: 16,
+            color: _StadiumNights.textMuted,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildErrorState(
+    BuildContext context, String message, VoidCallback onRetry) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: _StadiumNights.error.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 36,
+              color: _StadiumNights.error,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'ERROR',
+            style: GoogleFonts.bebasNeue(
+              fontSize: 20,
+              color: _StadiumNights.textPrimary,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              color: _StadiumNights.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: onRetry,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_StadiumNights.gold, _StadiumNights.amber],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.refresh, color: Colors.black, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'REINTENTAR',
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 14,
+                      color: Colors.black,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildEmptyState({
+  required IconData icon,
+  required String title,
+  required String subtitle,
+}) {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  _StadiumNights.gold.withOpacity(0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 50,
+              color: _StadiumNights.gold.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            title,
+            style: GoogleFonts.bebasNeue(
+              fontSize: 24,
+              color: _StadiumNights.textPrimary,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              color: _StadiumNights.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Stadium Field Background
+class _StadiumFieldBackground extends StatefulWidget {
+  const _StadiumFieldBackground();
+
+  @override
+  State<_StadiumFieldBackground> createState() =>
+      _StadiumFieldBackgroundState();
+}
+
+class _StadiumFieldBackgroundState extends State<_StadiumFieldBackground>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _StadiumFieldPainter(
+              animationValue: _controller.value,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StadiumFieldPainter extends CustomPainter {
+  final double animationValue;
+
+  _StadiumFieldPainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _StadiumNights.neonGreen.withOpacity(0.02)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
+
+    final pulseScale = 1.0 + (math.sin(animationValue * 2 * math.pi) * 0.02);
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      60 * pulseScale,
+      paint,
+    );
+
+    canvas.drawLine(
+      Offset(0, centerY),
+      Offset(size.width, centerY),
+      paint,
+    );
+
+    final pitchRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.2,
+        size.width * 0.84,
+        size.height * 0.6,
+      ),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(pitchRect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _StadiumFieldPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
   }
 }

@@ -388,4 +388,63 @@ class ApiService {
       return false;
     }
   }
+
+  // Set player statistics for a specific match (absolute value, not increment)
+  static Future<bool> setPlayerStats({
+    required String playerId,
+    required String matchId,
+    required String statType,
+    required int value,
+  }) async {
+    try {
+      print('📊 Estableciendo estadística: $statType = $value para jugador $playerId en partido $matchId');
+
+      // Check if player_stats record exists for this player and match
+      final existingStats = await SupabaseConfig.client
+          .from('player_stats')
+          .select()
+          .eq('player_id', playerId)
+          .eq('match_id', matchId)
+          .maybeSingle();
+
+      if (existingStats != null) {
+        // Update existing record
+        await SupabaseConfig.client
+            .from('player_stats')
+            .update({
+              statType: value,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('player_id', playerId)
+            .eq('match_id', matchId);
+
+        print('✅ Estadística actualizada: $statType = $value');
+      } else {
+        // Create new record
+        final Map<String, dynamic> newStats = {
+          'player_id': playerId,
+          'match_id': matchId,
+          'goals': 0,
+          'assists': 0,
+          'yellow_cards': 0,
+          'red_cards': 0,
+          'minutes_played': 90,
+        };
+
+        // Set the specific stat
+        newStats[statType] = value;
+
+        await SupabaseConfig.client
+            .from('player_stats')
+            .insert(newStats);
+
+        print('✅ Nuevo registro de estadísticas creado con $statType = $value');
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ Error estableciendo estadísticas: $e');
+      return false;
+    }
+  }
 }

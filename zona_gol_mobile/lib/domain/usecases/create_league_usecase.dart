@@ -79,6 +79,7 @@ class CreateLeagueUseCase {
           description: params.description.trim(),
           adminId: params.adminId,
           logo: params.logo,
+          productMode: params.productMode,
         );
       },
     );
@@ -99,6 +100,7 @@ class CreateLeagueParams extends Equatable {
   final String description;
   final String adminId;
   final String? logo;
+  final String productMode; // 'full' or 'web_only'
 
   const CreateLeagueParams({
     required this.name,
@@ -106,8 +108,9 @@ class CreateLeagueParams extends Equatable {
     required this.description,
     required this.adminId,
     this.logo,
+    this.productMode = 'full',
   });
 
   @override
-  List<Object?> get props => [name, slug, description, adminId, logo];
+  List<Object?> get props => [name, slug, description, adminId, logo, productMode];
 }

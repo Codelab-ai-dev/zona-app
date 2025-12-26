@@ -102,6 +102,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
         description: event.description,
         adminId: event.adminId,
         logo: event.logo,
+        productMode: event.productMode,
       ),
     );
 

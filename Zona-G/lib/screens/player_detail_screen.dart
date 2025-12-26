@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/qr_data.dart';
 import '../models/player.dart';
 import '../services/api_service.dart';
 import '../services/photo_service.dart';
 import '../services/attendance_service.dart';
 import '../models/attendance.dart';
+import '../widgets/stadium_background.dart';
 import 'qr_scanner_screen.dart';
 
 class PlayerDetailScreen extends StatefulWidget {
@@ -15,7 +17,7 @@ class PlayerDetailScreen extends StatefulWidget {
   final String? matchId;
 
   const PlayerDetailScreen({
-    super.key, 
+    super.key,
     required this.qrData,
     this.matchId,
   });
@@ -24,7 +26,8 @@ class PlayerDetailScreen extends StatefulWidget {
   State<PlayerDetailScreen> createState() => _PlayerDetailScreenState();
 }
 
-class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
+class _PlayerDetailScreenState extends State<PlayerDetailScreen>
+    with SingleTickerProviderStateMixin {
   Player? player;
   bool isLoading = true;
   bool isUploadingPhoto = false;
@@ -40,10 +43,28 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     'red_cards': 0,
   };
 
+  late AnimationController _animController;
+
+  // Stadium Nights color palette
+  static const Color _primaryDark = Color(0xFF0A0A0A);
+  static const Color _neonGreen = Color(0xFF00FF7F);
+  static const Color _gold = Color(0xFFFFD700);
+  static const Color _surfaceDark = Color(0xFF1A1A1A);
+
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
     _loadPlayerData();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPlayerData() async {
@@ -58,8 +79,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         player = playerData;
         isLoading = false;
       });
+      _animController.forward();
 
-      // Check if player has attendance today and suspension status
       if (playerData != null) {
         _checkAttendanceToday();
         _loadCurrentStats();
@@ -82,7 +103,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         });
       }
     } catch (e) {
-      print('❌ Error verificando suspensión: $e');
+      debugPrint('Error verificando suspensión: $e');
     }
   }
 
@@ -93,21 +114,14 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       });
 
       final photoFile = await _showPhotoSourceDialog();
-      
+
       if (photoFile != null && player != null) {
         final success = await PhotoService.uploadPlayerPhoto(player!.id, photoFile);
-        
+
         if (success) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Foto subida exitosamente'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            _showSuccessSnackBar('Foto subida exitosamente');
           }
-          
-          // Reload player data to get updated photo
           await _loadPlayerData();
         } else {
           if (mounted) {
@@ -127,33 +141,106 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   Future<File?> _showPhotoSourceDialog() async {
     return await showDialog<File?>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Seleccionar foto'),
-        content: const Text('¿Cómo quieres agregar la foto del jugador?'),
-        actions: [
-          TextButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              final file = await PhotoService.takePhoto();
-              if (mounted) Navigator.pop(context, file);
-            },
-            icon: const Icon(Icons.camera),
-            label: const Text('Cámara'),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _surfaceDark,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-          TextButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              final file = await PhotoService.pickPhotoFromGallery();
-              if (mounted) Navigator.pop(context, file);
-            },
-            icon: const Icon(Icons.photo_library),
-            label: const Text('Galería'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'SELECCIONAR FOTO',
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 22,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Elige cómo agregar la foto del jugador',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: Colors.white54,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPhotoOptionButton(
+                      Icons.camera_alt,
+                      'Cámara',
+                      () async {
+                        Navigator.pop(context);
+                        final file = await PhotoService.takePhoto();
+                        if (mounted && file != null) Navigator.pop(context, file);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPhotoOptionButton(
+                      Icons.photo_library,
+                      'Galería',
+                      () async {
+                        Navigator.pop(context);
+                        final file = await PhotoService.pickPhotoFromGallery();
+                        if (mounted && file != null) Navigator.pop(context, file);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancelar',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white54,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoOptionButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _neonGreen.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: _neonGreen, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -161,37 +248,60 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content: Text(
+          message,
+          style: GoogleFonts.outfit(color: Colors.white),
+        ),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  // Check if player has attendance today or for specific match
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              message,
+              style: GoogleFonts.outfit(color: Colors.white),
+            ),
+          ],
+        ),
+        backgroundColor: _neonGreen.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   Future<void> _checkAttendanceToday() async {
     if (player == null) return;
-    
+
     try {
       bool hasAttendance;
       if (widget.matchId != null) {
-        // Check attendance for specific match
         hasAttendance = await AttendanceService.hasAttendanceForMatch(player!.id, widget.matchId!);
       } else {
-        // Check general attendance today
         hasAttendance = await AttendanceService.hasAttendanceToday(player!.id);
       }
-      
+
       if (mounted) {
         setState(() {
           hasAttendanceToday = hasAttendance;
         });
       }
     } catch (e) {
-      print('❌ Error verificando asistencia: $e');
+      debugPrint('Error verificando asistencia: $e');
     }
   }
 
-  // Register attendance for the player
   Future<void> _registerAttendance() async {
     if (player == null) return;
 
@@ -208,32 +318,18 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
 
       if (mounted) {
         if (success) {
+          HapticFeedback.heavyImpact();
           setState(() {
             hasAttendanceToday = true;
           });
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text('✅ Asistencia registrada para ${player!.name}'),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          _showSuccessSnackBar('Asistencia registrada para ${player!.name}');
         } else {
-          _showErrorSnackBar('❌ Error al registrar asistencia. Intenta de nuevo.');
+          _showErrorSnackBar('Error al registrar asistencia');
         }
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('❌ Error al registrar asistencia: ${e.toString()}');
+        _showErrorSnackBar('Error: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -244,17 +340,15 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     }
   }
 
-  // Load current stats for the player in this match
   Future<void> _loadCurrentStats() async {
     if (player == null || widget.matchId == null) return;
-    
+
     try {
-      // Get current stats from database
       final stats = await ApiService.getCurrentPlayerStats(
         playerId: player!.id,
         matchId: widget.matchId!,
       );
-      
+
       if (mounted) {
         setState(() {
           currentStats = stats ?? {
@@ -266,14 +360,13 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
         });
       }
     } catch (e) {
-      print('❌ Error cargando estadísticas actuales: $e');
+      debugPrint('Error cargando estadísticas: $e');
     }
   }
 
-  // Update player stats (goals, yellow cards, red cards)
   Future<void> _updatePlayerStats(String statType, int increment) async {
     if (player == null || widget.matchId == null) {
-      _showErrorSnackBar('No se puede actualizar estadísticas sin un partido activo');
+      _showErrorSnackBar('Se necesita un partido activo');
       return;
     }
 
@@ -291,39 +384,26 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
 
       if (mounted) {
         if (success) {
-          // Update local stats
+          HapticFeedback.lightImpact();
           setState(() {
             currentStats[statType] = (currentStats[statType]! + increment).clamp(0, 999);
           });
-          
+
           String message = '';
           switch (statType) {
             case 'goals':
-              message = increment > 0 ? '⚽ Gol agregado' : '⚽ Gol removido';
+              message = increment > 0 ? 'Gol agregado' : 'Gol removido';
               break;
             case 'yellow_cards':
-              message = increment > 0 ? '🟨 Tarjeta amarilla agregada' : '🟨 Tarjeta amarilla removida';
+              message = increment > 0 ? 'Tarjeta amarilla agregada' : 'Tarjeta amarilla removida';
               break;
             case 'red_cards':
-              message = increment > 0 ? '🟥 Tarjeta roja agregada' : '🟥 Tarjeta roja removida';
+              message = increment > 0 ? 'Tarjeta roja agregada' : 'Tarjeta roja removida';
               break;
           }
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(message)),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _showSuccessSnackBar(message);
         } else {
-          _showErrorSnackBar('Error al actualizar estadística');
+          _showErrorSnackBar('Error al actualizar');
         }
       }
     } catch (e) {
@@ -344,216 +424,236 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text('Estadísticas - ${player!.name}'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.matchId == null)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      'Nota: Se necesita un partido activo para registrar estadísticas',
-                      style: TextStyle(color: Colors.orange, fontSize: 12),
-                    ),
-                  ),
-                
-                // Goals section
-                _buildStatRowDialog(
-                  '⚽ Goles',
-                  currentValue: currentStats['goals'] ?? 0,
-                  onAdd: widget.matchId != null ? () async {
-                    await _updatePlayerStats('goals', 1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                  onRemove: widget.matchId != null ? () async {
-                    await _updatePlayerStats('goals', -1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Yellow cards section
-                _buildStatRowDialog(
-                  '🟨 Tarjetas Amarillas',
-                  currentValue: currentStats['yellow_cards'] ?? 0,
-                  onAdd: widget.matchId != null ? () async {
-                    await _updatePlayerStats('yellow_cards', 1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                  onRemove: widget.matchId != null ? () async {
-                    await _updatePlayerStats('yellow_cards', -1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Red cards section
-                _buildStatRowDialog(
-                  '🟥 Tarjetas Rojas',
-                  currentValue: currentStats['red_cards'] ?? 0,
-                  onAdd: widget.matchId != null ? () async {
-                    await _updatePlayerStats('red_cards', 1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                  onRemove: widget.matchId != null ? () async {
-                    await _updatePlayerStats('red_cards', -1);
-                    setDialogState(() {}); // Update dialog UI
-                  } : null,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Reload stats when dialog is closed
-                  _loadCurrentStats();
-                },
-                child: const Text('Cerrar'),
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              decoration: BoxDecoration(
+                color: _surfaceDark,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
               ),
-            ],
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'ESTADÍSTICAS',
+                      style: GoogleFonts.bebasNeue(
+                        fontSize: 24,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    Text(
+                      player!.name,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: _neonGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    if (widget.matchId == null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: _gold.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _gold.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: _gold, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Se necesita un partido activo',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: _gold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    _buildStatRowDialog(
+                      'Goles',
+                      Icons.sports_soccer,
+                      currentStats['goals'] ?? 0,
+                      Colors.white,
+                      onAdd: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('goals', 1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                      onRemove: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('goals', -1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildStatRowDialog(
+                      'T. Amarillas',
+                      Icons.square,
+                      currentStats['yellow_cards'] ?? 0,
+                      Colors.yellow,
+                      onAdd: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('yellow_cards', 1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                      onRemove: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('yellow_cards', -1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildStatRowDialog(
+                      'T. Rojas',
+                      Icons.square,
+                      currentStats['red_cards'] ?? 0,
+                      Colors.red,
+                      onAdd: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('red_cards', 1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                      onRemove: widget.matchId != null
+                          ? () async {
+                              await _updatePlayerStats('red_cards', -1);
+                              setDialogState(() {});
+                            }
+                          : null,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _loadCurrentStats();
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cerrar',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildStatRowDialog(String title, {required int currentValue, VoidCallback? onAdd, VoidCallback? onRemove}) {
-    final bool canModify = onAdd != null && onRemove != null && !isUpdatingStats;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: canModify && currentValue > 0 ? onRemove : null,
-                icon: isUpdatingStats 
-                    ? const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(strokeWidth: 2)
-                      )
-                    : const Icon(Icons.remove_circle),
-                color: canModify && currentValue > 0 ? Colors.red : Colors.grey,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isUpdatingStats 
-                      ? Colors.orange.withOpacity(0.1)
-                      : Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isUpdatingStats 
-                        ? Colors.orange.withOpacity(0.3)
-                        : Colors.blue.withOpacity(0.3)
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isUpdatingStats) ...[
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      '$currentValue',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isUpdatingStats ? Colors.orange : Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: canModify ? onAdd : null,
-                icon: isUpdatingStats 
-                    ? const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(strokeWidth: 2)
-                      )
-                    : const Icon(Icons.add_circle),
-                color: canModify ? Colors.green : Colors.grey,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildStatRowDialog(
+    String title,
+    IconData icon,
+    int currentValue,
+    Color iconColor, {
+    VoidCallback? onAdd,
+    VoidCallback? onRemove,
+  }) {
+    final canModify = onAdd != null && onRemove != null && !isUpdatingStats;
 
-  Widget _buildStatRow(String title, {required int currentValue, VoidCallback? onAdd, VoidCallback? onRemove}) {
-    final bool canModify = onAdd != null && onRemove != null && !isUpdatingStats;
-    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: canModify && currentValue > 0 ? onRemove : null,
-                icon: const Icon(Icons.remove_circle),
-                color: canModify && currentValue > 0 ? Colors.red : Colors.grey,
+          GestureDetector(
+            onTap: canModify && currentValue > 0 ? onRemove : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: canModify && currentValue > 0
+                    ? Colors.red.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Text(
-                  '$currentValue',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
+              child: Icon(
+                Icons.remove,
+                color: canModify && currentValue > 0 ? Colors.red : Colors.white24,
+                size: 20,
               ),
-              IconButton(
-                onPressed: canModify ? onAdd : null,
-                icon: const Icon(Icons.add_circle),
-                color: canModify ? Colors.green : Colors.grey,
+            ),
+          ),
+          Container(
+            width: 50,
+            alignment: Alignment.center,
+            child: Text(
+              '$currentValue',
+              style: GoogleFonts.bebasNeue(
+                fontSize: 24,
+                color: Colors.white,
               ),
-            ],
+            ),
+          ),
+          GestureDetector(
+            onTap: canModify ? onAdd : null,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: canModify
+                    ? _neonGreen.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.add,
+                color: canModify ? _neonGreen : Colors.white24,
+                size: 20,
+              ),
+            ),
           ),
         ],
       ),
@@ -565,355 +665,469 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     final birth = DateTime.parse(birthDate);
     final today = DateTime.now();
     int age = today.year - birth.year;
-    if (today.month < birth.month || (today.month == birth.month && today.day < birth.day)) {
+    if (today.month < birth.month ||
+        (today.month == birth.month && today.day < birth.day)) {
       age--;
     }
     return age;
   }
 
-  // Helper method to get appropriate ImageProvider for the photo
   ImageProvider? _getPhotoImageProvider(String? photoUrl) {
     if (photoUrl == null || photoUrl.isEmpty) return null;
-    
+
     if (photoUrl.startsWith('data:image/')) {
-      // Handle base64 images
       try {
-        final base64String = photoUrl.split(',')[1]; // Remove data:image/...;base64, prefix
+        final base64String = photoUrl.split(',')[1];
         final bytes = base64Decode(base64String);
-        print('✅ Convirtiendo imagen base64 a MemoryImage (${bytes.length} bytes)');
         return MemoryImage(bytes);
       } catch (e) {
-        print('❌ Error decodificando imagen base64: $e');
         return null;
       }
     } else {
-      // Handle regular URLs
-      print('✅ Usando NetworkImage para URL: $photoUrl');
       return NetworkImage(photoUrl);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Debug: Print photo URL when building
-    if (player?.photo != null) {
-      print('🖼️ Renderizando foto del jugador: ${player!.photo}');
-    } else {
-      print('⚠️ Jugador sin foto URL');
-    }
-    
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.qrData.playerName),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : player == null
-              ? const Center(
-                  child: Text(
-                    'Jugador no encontrado',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Player Photo
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 80,
-                            backgroundImage: _getPhotoImageProvider(player!.photo),
-                            child: _getPhotoImageProvider(player!.photo) == null 
-                                ? const Icon(Icons.person, size: 80) 
-                                : null,
-                            onBackgroundImageError: (exception, stackTrace) {
-                              print('❌ Error cargando imagen: $exception');
-                              print('🖼️ URL que falló: ${player!.photo}');
-                            },
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: FloatingActionButton.small(
-                              onPressed: isUploadingPhoto ? null : _takePhoto,
-                              backgroundColor: Colors.green,
-                              child: isUploadingPhoto
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.camera_alt, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Player Info Card
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      player!.name,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '#${player!.jerseyNumber}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              _buildInfoRow('Posición', player!.position),
-                              
-                              if (player!.birthDate != null) ...[
-                                const SizedBox(height: 8),
-                                _buildInfoRow('Edad', '${_calculateAge(player!.birthDate)} años'),
-                              ],
-                              
-                              const SizedBox(height: 8),
-                              _buildInfoRow(
-                                'Estado',
-                                player!.isActive ? 'Activo' : 'Inactivo',
-                                valueColor: player!.isActive ? Colors.green : Colors.red,
-                              ),
+      backgroundColor: _primaryDark,
+      body: Stack(
+        children: [
+          const StadiumBackground(),
 
-                              // Suspension status
-                              if (isSuspended) ...[
-                                const SizedBox(height: 8),
-                                _buildInfoRow(
-                                  'Suspensión',
-                                  'SUSPENDIDO',
-                                  valueColor: Colors.red,
-                                ),
-                              ],
-
-                              const SizedBox(height: 8),
-                              _buildInfoRow(
-                                'Registrado',
-                                '${player!.createdAt.day}/${player!.createdAt.month}/${player!.createdAt.year}',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
-
-                      // Suspension Warning Card
-                      if (isSuspended && suspensionDetails != null) ...[
-                        Card(
-                          color: Colors.red.shade50,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.block, color: Colors.red.shade700, size: 24),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'JUGADOR SUSPENDIDO',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                _buildSuspensionDetail(
-                                  'Tipo',
-                                  _getSuspensionTypeLabel(suspensionDetails!['suspension_type'] ?? ''),
-                                ),
-                                const SizedBox(height: 8),
-                                _buildSuspensionDetail(
-                                  'Partidos pendientes',
-                                  '${(suspensionDetails!['matches_to_serve'] ?? 0) - (suspensionDetails!['matches_served'] ?? 0)} de ${suspensionDetails!['matches_to_serve'] ?? 0}',
-                                ),
-                                if (suspensionDetails!['reason'] != null && suspensionDetails!['reason'].isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  _buildSuspensionDetail(
-                                    'Motivo',
-                                    suspensionDetails!['reason'],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // Attendance Registration Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: hasAttendanceToday || isRegisteringAttendance || isSuspended ? null : _registerAttendance,
-                          icon: isRegisteringAttendance
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  isSuspended
-                                      ? Icons.block
-                                      : (hasAttendanceToday ? Icons.check_circle : Icons.how_to_reg),
-                                  color: Colors.white,
-                                ),
-                          label: Text(
-                            isSuspended
-                                ? '⛔ Jugador suspendido - No puede participar'
-                                : hasAttendanceToday
-                                    ? (widget.matchId != null
-                                        ? '✅ Asistencia registrada al partido'
-                                        : '✅ Asistencia ya registrada')
-                                    : isRegisteringAttendance
-                                        ? 'Registrando asistencia...'
-                                        : (widget.matchId != null
-                                            ? 'Registrar Asistencia al Partido'
-                                            : 'Registrar Asistencia'),
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isSuspended ? Colors.red : (hasAttendanceToday ? Colors.grey : Colors.orange),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Match Stats Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _showStatsDialog,
-                          icon: const Icon(Icons.sports_soccer, color: Colors.white),
-                          label: const Text(
-                            'Registrar Estadísticas del Partido',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Action Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.popUntil(context, (route) => route.isFirst);
-                            },
-                            icon: const Icon(Icons.home),
-                            label: const Text('Inicio'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              // Importar QRScannerScreen y navegar de vuelta con pushReplacement
-                              // Esto reemplaza la pantalla actual con un nuevo escáner listo para usar
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => QRScannerScreen(
-                                    matchId: widget.matchId,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.qr_code_scanner),
-                            label: const Text('Escanear Otro'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: isLoading
+                      ? _buildLoadingState()
+                      : player == null
+                          ? _buildNotFoundState()
+                          : _buildPlayerContent(),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'JUGADOR',
+              style: GoogleFonts.bebasNeue(
+                fontSize: 24,
+                color: Colors.white,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          if (widget.matchId != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _neonGreen.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _neonGreen.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _neonGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'EN PARTIDO',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: _neonGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(_neonGreen),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Cargando jugador...',
+            style: GoogleFonts.outfit(
+              color: Colors.white54,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotFoundState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.person_off_outlined,
+            size: 64,
+            color: Colors.white24,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Jugador no encontrado',
+            style: GoogleFonts.bebasNeue(
+              fontSize: 22,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        children: [
+          // Player photo and basic info
+          _buildPlayerCard(),
+
+          const SizedBox(height: 16),
+
+          // Suspension warning
+          if (isSuspended && suspensionDetails != null)
+            _buildSuspensionCard(),
+
+          // Attendance button
+          _buildAttendanceButton(),
+
+          const SizedBox(height: 12),
+
+          // Stats button
+          _buildStatsButton(),
+
+          const SizedBox(height: 24),
+
+          // Action buttons
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerCard() {
+    final photoProvider = _getPhotoImageProvider(player!.photo);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.1),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Photo with camera button
+            Stack(
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: _surfaceDark,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSuspended
+                          ? Colors.red.withOpacity(0.5)
+                          : _neonGreen.withOpacity(0.5),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isSuspended ? Colors.red : _neonGreen).withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                    image: photoProvider != null
+                        ? DecorationImage(
+                            image: photoProvider,
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: photoProvider == null
+                      ? Icon(
+                          Icons.person,
+                          size: 56,
+                          color: Colors.white24,
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: isUploadingPhoto ? null : _takePhoto,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _neonGreen,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _primaryDark, width: 3),
+                      ),
+                      child: isUploadingPhoto
+                          ? Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(_primaryDark),
+                              ),
+                            )
+                          : Icon(
+                              Icons.camera_alt,
+                              color: _primaryDark,
+                              size: 20,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Name and jersey number
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    player!.name,
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 28,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _gold.withOpacity(0.3),
+                        _gold.withOpacity(0.15),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _gold.withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    '#${player!.jerseyNumber}',
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 22,
+                      color: _gold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Player info grid
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  _buildPlayerInfoRow('Posición', player!.position),
+                  if (player!.birthDate != null) ...[
+                    const SizedBox(height: 10),
+                    _buildPlayerInfoRow('Edad', '${_calculateAge(player!.birthDate)} años'),
+                  ],
+                  const SizedBox(height: 10),
+                  _buildPlayerInfoRow(
+                    'Estado',
+                    player!.isActive ? 'Activo' : 'Inactivo',
+                    valueColor: player!.isActive ? _neonGreen : Colors.red,
+                  ),
+                  if (isSuspended) ...[
+                    const SizedBox(height: 10),
+                    _buildPlayerInfoRow(
+                      'Suspensión',
+                      'SUSPENDIDO',
+                      valueColor: Colors.red,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerInfoRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 13,
+            color: Colors.white54,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 14,
+            color: valueColor ?? Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuspensionCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.withOpacity(0.2),
+            Colors.red.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.block, color: Colors.red, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'JUGADOR SUSPENDIDO',
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 18,
+                  color: Colors.red,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildSuspensionInfoRow(
+            'Tipo',
+            _getSuspensionTypeLabel(suspensionDetails!['suspension_type'] ?? ''),
+          ),
+          const SizedBox(height: 6),
+          _buildSuspensionInfoRow(
+            'Partidos pendientes',
+            '${(suspensionDetails!['matches_to_serve'] ?? 0) - (suspensionDetails!['matches_served'] ?? 0)} de ${suspensionDetails!['matches_to_serve'] ?? 0}',
+          ),
+          if (suspensionDetails!['reason'] != null &&
+              suspensionDetails!['reason'].isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _buildSuspensionInfoRow('Motivo', suspensionDetails!['reason']),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuspensionInfoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            '$label:',
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
+        Text(
+          '$label: ',
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            color: Colors.red.shade300,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
-              fontSize: 16,
-              color: valueColor ?? Colors.black87,
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: Colors.red.shade200,
             ),
           ),
         ),
@@ -921,27 +1135,196 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen> {
     );
   }
 
-  Widget _buildSuspensionDetail(String label, String value) {
+  Widget _buildAttendanceButton() {
+    final bool isDisabled = hasAttendanceToday || isRegisteringAttendance || isSuspended;
+
+    Color bgColor;
+    Color textColor;
+    String text;
+    IconData icon;
+
+    if (isSuspended) {
+      bgColor = Colors.red;
+      textColor = Colors.white;
+      text = 'Jugador suspendido';
+      icon = Icons.block;
+    } else if (hasAttendanceToday) {
+      bgColor = Colors.white.withOpacity(0.1);
+      textColor = _neonGreen;
+      text = widget.matchId != null ? 'Asistencia registrada' : 'Asistencia ya registrada';
+      icon = Icons.check_circle;
+    } else if (isRegisteringAttendance) {
+      bgColor = _gold;
+      textColor = _primaryDark;
+      text = 'Registrando...';
+      icon = Icons.hourglass_empty;
+    } else {
+      bgColor = _neonGreen;
+      textColor = _primaryDark;
+      text = widget.matchId != null ? 'Registrar Asistencia al Partido' : 'Registrar Asistencia';
+      icon = Icons.how_to_reg;
+    }
+
+    return GestureDetector(
+      onTap: isDisabled ? null : () {
+        HapticFeedback.mediumImpact();
+        _registerAttendance();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: hasAttendanceToday && !isSuspended
+              ? Border.all(color: _neonGreen.withOpacity(0.5))
+              : null,
+          boxShadow: !isDisabled
+              ? [
+                  BoxShadow(
+                    color: bgColor.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isRegisteringAttendance)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              )
+            else
+              Icon(icon, color: textColor, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                color: textColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showStatsDialog();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.bar_chart, color: Colors.white70, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              'Registrar Estadísticas',
+              style: GoogleFonts.outfit(
+                fontSize: 15,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.red.shade900,
-              fontSize: 14,
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.home, color: Colors.white70, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Inicio',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.red.shade800,
+          child: GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      QRScannerScreen(matchId: widget.matchId),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  transitionDuration: const Duration(milliseconds: 300),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_neonGreen, _neonGreen.withOpacity(0.8)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.qr_code_scanner, color: _primaryDark, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Escanear Otro',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: _primaryDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
