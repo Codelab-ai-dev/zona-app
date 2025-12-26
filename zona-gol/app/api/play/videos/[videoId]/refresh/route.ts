@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Mux from "@mux/mux-node";
 
-const mux = new Mux({
+// Lazy initialization to avoid build-time errors
+const getMux = () => new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
   tokenSecret: process.env.MUX_TOKEN_SECRET!,
 });
 
-// Admin client para bypass RLS
-const supabaseAdmin = createClient(
+const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -20,6 +20,8 @@ export async function POST(
 ) {
   try {
     const { videoId } = await params;
+    const mux = getMux();
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Obtener el registro de la BD
     const { data: recording, error: fetchError } = await supabaseAdmin
