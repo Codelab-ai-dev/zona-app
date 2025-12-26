@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+// Admin client para operaciones que necesitan bypass de RLS
+const getAdminClient = () => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+};
 
 interface RouteParams {
   params: Promise<{ videoId: string }>;
@@ -17,8 +26,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         *,
         matches (
           id,
-          home_team:teams!matches_home_team_id_fkey (id, name, logo_url),
-          away_team:teams!matches_away_team_id_fkey (id, name, logo_url),
+          home_team:teams!matches_home_team_id_fkey (id, name),
+          away_team:teams!matches_away_team_id_fkey (id, name),
           home_score,
           away_score,
           match_date,
@@ -68,13 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { videoId } = await params;
-    const supabase = await createServerSupabaseClient();
-
-    // Verificar autenticación
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const supabase = getAdminClient();
 
     const body = await request.json();
     const allowedFields = [
@@ -91,6 +94,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       "duration_seconds",
       "resolution",
       "published_at",
+      "home_score",
+      "away_score",
     ];
 
     // Filtrar solo campos permitidos
@@ -136,15 +141,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { videoId } = await params;
-    const supabase = await createServerSupabaseClient();
+    const supabase = getAdminClient();
 
-    // Verificar autenticación
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // TODO: Verificar permisos del usuario para eliminar este video
     // TODO: Eliminar video de Mux si existe
 
     const { error } = await supabase

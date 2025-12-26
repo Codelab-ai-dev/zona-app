@@ -13,7 +13,8 @@ import {
   Loader2,
   Trash2,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Pencil
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { VideoUpload } from "@/components/play/video-upload";
 
 interface Recording {
@@ -52,6 +64,8 @@ interface Recording {
   thumbnail_url: string | null;
   created_at: string;
   published_at: string | null;
+  home_score: number | null;
+  away_score: number | null;
 }
 
 const statusConfig = {
@@ -77,6 +91,12 @@ export default function PlayAdminPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("videos");
+  const [editingVideo, setEditingVideo] = useState<Recording | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editHomeScore, setEditHomeScore] = useState<string>("");
+  const [editAwayScore, setEditAwayScore] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   const fetchRecordings = async () => {
     setLoading(true);
@@ -113,6 +133,52 @@ export default function PlayAdminPage() {
   const handleUploadComplete = (recording: Recording) => {
     setRecordings([recording, ...recordings]);
     setActiveTab("videos");
+  };
+
+  const openEditDialog = (recording: Recording) => {
+    setEditingVideo(recording);
+    setEditTitle(recording.title);
+    setEditDescription(recording.description || "");
+    setEditHomeScore(recording.home_score?.toString() || "");
+    setEditAwayScore(recording.away_score?.toString() || "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingVideo) return;
+
+    setSaving(true);
+    try {
+      const homeScore = editHomeScore ? parseInt(editHomeScore) : null;
+      const awayScore = editAwayScore ? parseInt(editAwayScore) : null;
+
+      const response = await fetch(`/api/play/videos/${editingVideo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          home_score: homeScore,
+          away_score: awayScore,
+        }),
+      });
+
+      if (response.ok) {
+        setRecordings(recordings.map(r =>
+          r.id === editingVideo.id
+            ? { ...r, title: editTitle, description: editDescription, home_score: homeScore, away_score: awayScore }
+            : r
+        ));
+        setEditingVideo(null);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Error al guardar");
+      }
+    } catch (error) {
+      console.error("Error saving:", error);
+      alert("Error al guardar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -327,6 +393,14 @@ export default function PlayAdminPage() {
                                   </Button>
                                 </Link>
                               )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditDialog(recording)}
+                                title="Editar video"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="text-destructive">
@@ -369,6 +443,70 @@ export default function PlayAdminPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingVideo} onOpenChange={(open) => !open && setEditingVideo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Video</DialogTitle>
+            <DialogDescription>
+              Modifica el título y descripción del video
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Título</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Título del video"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descripción</Label>
+              <Textarea
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Descripción del video"
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Marcador</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min="0"
+                  value={editHomeScore}
+                  onChange={(e) => setEditHomeScore(e.target.value)}
+                  placeholder="Local"
+                  className="w-24 text-center"
+                />
+                <span className="text-xl font-bold text-muted-foreground">-</span>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editAwayScore}
+                  onChange={(e) => setEditAwayScore(e.target.value)}
+                  placeholder="Visitante"
+                  className="w-24 text-center"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingVideo(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving || !editTitle.trim()}>
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

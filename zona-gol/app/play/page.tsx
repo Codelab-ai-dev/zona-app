@@ -14,6 +14,8 @@ interface Recording {
   views_count: number;
   created_at: string;
   published_at: string | null;
+  home_score: number | null;
+  away_score: number | null;
   matches: {
     home_score: number;
     away_score: number;
@@ -37,6 +39,8 @@ async function getVideos() {
       views_count,
       created_at,
       published_at,
+      home_score,
+      away_score,
       matches (
         home_score,
         away_score,
@@ -93,7 +97,10 @@ function VideoCard({ video }: { video: Recording }) {
     ? `${match.home_team?.name || "Local"} vs ${match.away_team?.name || "Visitante"}`
     : video.title;
 
-  const score = match ? `${match.home_score} - ${match.away_score}` : null;
+  // Usar marcador del recording si existe, sino del match
+  const score = (video.home_score !== null && video.away_score !== null)
+    ? `${video.home_score} - ${video.away_score}`
+    : match ? `${match.home_score} - ${match.away_score}` : null;
 
   return (
     <Link href={`/play/watch/${video.id}`}>
@@ -132,15 +139,12 @@ function VideoCard({ video }: { video: Recording }) {
           </div>
 
           {/* Info */}
-          <div className="p-4 space-y-2">
-            <div className="text-sm font-medium text-muted-foreground line-clamp-1">
-              {video.title}
-            </div>
+          <div className="p-4 space-y-1">
             <div className="font-semibold text-lg line-clamp-1">
               {title}
             </div>
             {score && (
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-xl font-bold text-primary">
                 {score}
               </div>
             )}
@@ -293,9 +297,12 @@ export default async function PlayHomePage() {
                           : featuredVideo.title}
                       </h2>
                     </div>
-                    {featuredVideo.matches && (
+                    {(featuredVideo.home_score !== null || featuredVideo.matches) && (
                       <div className="text-4xl md:text-5xl font-bold text-primary">
-                        {featuredVideo.matches.home_score} - {featuredVideo.matches.away_score}
+                        {featuredVideo.home_score !== null
+                          ? `${featuredVideo.home_score} - ${featuredVideo.away_score}`
+                          : `${featuredVideo.matches?.home_score} - ${featuredVideo.matches?.away_score}`
+                        }
                       </div>
                     )}
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
