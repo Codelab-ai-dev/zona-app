@@ -186,9 +186,10 @@ class LeagueRepositoryImpl implements LeagueRepository {
     required String description,
     required String adminId,
     String? logo,
+    String productMode = 'full',
   }) async {
     try {
-      print('➕ Creating league: $name...');
+      print('➕ Creating league: $name (mode: $productMode)...');
 
       // Check network connectivity
       final isConnected = await networkInfo.isConnected;
@@ -202,6 +203,7 @@ class LeagueRepositoryImpl implements LeagueRepository {
         'slug': slug,
         'description': description,
         'admin_id': adminId,
+        'product_mode': productMode,
         if (logo != null) 'logo': logo,
         'is_active': true,
       };
@@ -215,6 +217,22 @@ class LeagueRepositoryImpl implements LeagueRepository {
 
       final league = LeagueMapper.fromJson(response as Map<String, dynamic>);
       print('✅ Successfully created league: ${league.name}');
+
+      // Update the admin's user profile with the league_id
+      try {
+        await supabaseService.client
+            .from('users')
+            .update({
+              'league_id': league.id,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', adminId);
+        print('✅ Admin league_id assigned successfully');
+      } catch (e) {
+        print('⚠️ Warning: Could not assign league_id to admin: $e');
+        // Don't fail the league creation if this fails
+      }
+
       return Right(league);
     } on PostgrestException catch (e) {
       print('❌ Postgrest error creating league: ${e.message}');

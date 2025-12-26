@@ -54,6 +54,7 @@ class CreateLeagueEvent extends LeagueEvent {
   final String description;
   final String adminId;
   final String? logo;
+  final String productMode; // 'full' or 'web_only'
 
   const CreateLeagueEvent({
     required this.name,
@@ -61,10 +62,11 @@ class CreateLeagueEvent extends LeagueEvent {
     required this.description,
     required this.adminId,
     this.logo,
+    this.productMode = 'full',
   });
 
   @override
-  List<Object?> get props => [name, slug, description, adminId, logo];
+  List<Object?> get props => [name, slug, description, adminId, logo, productMode];
 }
 
 /// Search Leagues Event

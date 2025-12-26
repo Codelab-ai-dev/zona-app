@@ -42,12 +42,14 @@ abstract class LeagueRepository {
   /// Creates a new league with the provided data
   /// Returns the created league entity
   /// Only super_admin users should be able to create leagues
+  /// [productMode] can be 'full' or 'web_only'
   Future<Either<Failure, LeagueEntity>> createLeague({
     required String name,
     required String slug,
     required String description,
     required String adminId,
     String? logo,
+    String productMode = 'full',
   });
 
   /// Update a league
