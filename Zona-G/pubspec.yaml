@@ -66,9 +66,12 @@ dependencies:
 
   # Supabase client
   supabase_flutter: ^2.8.0
-  
+
   # Date formatting
   intl: ^0.19.0
+
+  # Google Fonts for premium typography
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
