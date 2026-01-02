@@ -129,9 +129,11 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 # Configuración para los iconos de la aplicación
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  # Use the 3x resolution spade image to auto-generate all sizes
-  background: "#000000"
-  image_path: assets/images/zona-gol-nbg.png
+  image_path: assets/images/zona-gol-padded.png
+  remove_alpha_ios: true
+  background_color: "#1a1a2e"
+  adaptive_icon_background: "#1a1a2e"
+  adaptive_icon_foreground: assets/images/zona-gol-padded.png
