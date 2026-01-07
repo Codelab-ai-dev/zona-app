@@ -10,22 +10,14 @@ class MatchService {
   static final ConnectivityService _connectivity = ConnectivityService();
   static final CacheService _cache = CacheService();
 
-  // n8n webhook URL for generating embeddings
-  static const String _embeddingWebhookUrl =
-      'https://n8n.zona-gol.com/webhook/embeddings';
+  // Next.js API URL for generating embeddings (replaces n8n)
+  static const String _embeddingApiUrl =
+      'https://admin.zona-gol.com/api/generate-embedding';
 
-  // n8n webhook URL for match finalization notifications
-  static const String _notificationWebhookUrl =
-      'https://n8n.zona-gol.com/webhook-test/zona-gol';
+  // Next.js API URL for match finalization notifications (replaces n8n)
+  static const String _notificationApiUrl =
+      'https://admin.zona-gol.com/api/notifications/match-finalized';
 
-  // Kapso WhatsApp API configuration
-  static const String _kapsoWhatsAppUrl =
-      'https://api.kapso.ai/meta/whatsapp/v21.0/860360857167907/messages';
-  static const String _kapsoAccessToken =
-      'b8625d29852d906f25a5f113f294df0c79d9671e2681e39bb2797af6dd34c8d1'; // TODO: Reemplazar con tu token real
-  // Número de WhatsApp al que enviar notificaciones (formato: 521234567890)
-  static const String _whatsappNotificationNumber =
-      '12039715442'; // TODO: Reemplazar con el número real
 
   // Helper method to get weekday name
   static String _getWeekdayName(int weekday) {
@@ -444,11 +436,9 @@ class MatchService {
       // Step 5: Generate embedding for knowledge base (async, don't wait)
       _generateMatchEmbedding(matchId);
 
-      // Step 6: Send notification webhook (async, don't wait)
+      // Step 6: Send notification to Next.js API (async, don't wait)
+      // This will send WhatsApp notifications to all linked users
       _notifyMatchFinalized(matchId, homeScore, awayScore);
-
-      // Step 7: Send WhatsApp notification (async, don't wait)
-      _sendWhatsAppNotification(matchId, homeScore, awayScore);
 
       print('✅ Partido finalizado exitosamente con estadísticas actualizadas');
       return true;
@@ -908,10 +898,10 @@ class MatchService {
   }
 
   // ============================================================================
-  // 🔥 GENERATE EMBEDDING FOR KNOWLEDGE BASE (n8n integration)
+  // 🔥 GENERATE EMBEDDING FOR KNOWLEDGE BASE (Next.js API)
   // ============================================================================
 
-  /// Generate embedding for a finished match by calling n8n webhook
+  /// Generate embedding for a finished match by calling Next.js API
   /// This runs asynchronously and doesn't block the main finalize flow
   static Future<void> _generateMatchEmbedding(String matchId) async {
     try {
@@ -943,10 +933,10 @@ class MatchService {
 
       print('📝 Contenido encontrado (${contentText.length} caracteres)');
 
-      // Call n8n webhook to generate embedding
+      // Call Next.js API to generate embedding
       final response = await http
           .post(
-            Uri.parse(_embeddingWebhookUrl),
+            Uri.parse(_embeddingApiUrl),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'knowledge_base_id': knowledgeBaseId,
@@ -958,7 +948,7 @@ class MatchService {
             const Duration(seconds: 30),
             onTimeout: () {
               throw Exception(
-                'Timeout: n8n webhook no respondió en 30 segundos',
+                'Timeout: Next.js API no respondió en 30 segundos',
               );
             },
           );
@@ -978,10 +968,10 @@ class MatchService {
   }
 
   // ============================================================================
-  // 🔔 NOTIFY MATCH FINALIZED (n8n integration)
+  // 🔔 NOTIFY MATCH FINALIZED (Next.js API)
   // ============================================================================
 
-  /// Send match finalization notification to n8n webhook
+  /// Send match finalization notification to Next.js API
   /// This runs asynchronously and doesn't block the main finalize flow
   static Future<void> _notifyMatchFinalized(
     String matchId,
@@ -1066,17 +1056,17 @@ class MatchService {
         'player_highlights': playerStats,
       };
 
-      // Call n8n notification webhook
+      // Call Next.js notification API
       final response = await http
           .post(
-            Uri.parse(_notificationWebhookUrl),
+            Uri.parse(_notificationApiUrl),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(payload),
           )
           .timeout(
             const Duration(seconds: 15),
             onTimeout: () {
-              throw Exception('Timeout: webhook no respondió en 15 segundos');
+              throw Exception('Timeout: Next.js API no respondió en 15 segundos');
             },
           );
 
@@ -1094,154 +1084,6 @@ class MatchService {
     }
   }
 
-  // ============================================================================
-  // 📱 SEND WHATSAPP NOTIFICATION VIA KAPSO
-  // ============================================================================
-
-  /// Send WhatsApp message via Kapso API when match is finalized
-  /// This runs asynchronously and doesn't block the main finalize flow
-  static Future<void> _sendWhatsAppNotification(
-    String matchId,
-    int homeScore,
-    int awayScore,
-  ) async {
-    try {
-      print('📱 Enviando notificación de WhatsApp vía Kapso...');
-
-      // Get full match details
-      final match = await getMatchById(matchId);
-
-      if (match == null) {
-        print('⚠️ No se encontró el partido para WhatsApp');
-        return;
-      }
-
-      // Determine result emoji and text
-      String resultEmoji;
-      String resultText;
-      if (homeScore > awayScore) {
-        resultEmoji = '🏆';
-        resultText = 'Victoria ${match.homeTeamName ?? 'Local'}';
-      } else if (awayScore > homeScore) {
-        resultEmoji = '🏆';
-        resultText = 'Victoria ${match.awayTeamName ?? 'Visitante'}';
-      } else {
-        resultEmoji = '🤝';
-        resultText = 'Empate';
-      }
-
-      // Get top scorers for the match
-      final playerStats = await SupabaseConfig.client
-          .from('player_stats')
-          .select('''
-            *,
-            player:players(name, jersey_number, team_id)
-          ''')
-          .eq('match_id', matchId)
-          .gt('goals', 0)
-          .order('goals', ascending: false)
-          .limit(5);
-
-      String scorersText = '';
-      if (playerStats.isNotEmpty) {
-        scorersText = '\n\n⚽ *Goleadores:*';
-        for (var stat in playerStats) {
-          final playerName = stat['player']['name'];
-          final goals = stat['goals'];
-          final jerseyNumber = stat['player']['jersey_number'] ?? 'S/N';
-          scorersText +=
-              '\n• $playerName (#$jerseyNumber) - $goals gol${goals > 1 ? 'es' : ''}';
-        }
-      }
-
-      // Get red cards
-      final redCards = await SupabaseConfig.client
-          .from('player_stats')
-          .select('''
-            *,
-            player:players(name, jersey_number)
-          ''')
-          .eq('match_id', matchId)
-          .gt('red_cards', 0);
-
-      String redCardsText = '';
-      if (redCards.isNotEmpty) {
-        redCardsText = '\n\n🟥 *Expulsados:*';
-        for (var card in redCards) {
-          final playerName = card['player']['name'];
-          final jerseyNumber = card['player']['jersey_number'] ?? 'S/N';
-          redCardsText += '\n• $playerName (#$jerseyNumber)';
-        }
-      }
-
-      // Build WhatsApp message
-      final message =
-          '''
-⚽ *PARTIDO FINALIZADO*
-
-${match.homeTeamName ?? 'Local'} *$homeScore - $awayScore* ${match.awayTeamName ?? 'Visitante'}
-
-$resultEmoji *$resultText*
-
-📅 Jornada: ${match.round ?? 'N/A'}
-🏆 ${match.tournamentName ?? 'Torneo'}
-📆 ${_formatDate(match.matchDate)}${match.fieldNumber != null ? '\n🏟️ Cancha ${match.fieldNumber}' : ''}$scorersText$redCardsText
-
----
-_Notificación automática de Zona-G_
-''';
-
-      // Prepare Kapso API request
-      final payload = {
-        'messaging_product': 'whatsapp',
-        'recipient_type': 'individual',
-        'to': _whatsappNotificationNumber,
-        'type': 'text',
-        'text': {'preview_url': false, 'body': message},
-      };
-
-      print('📤 Enviando mensaje a WhatsApp: $_whatsappNotificationNumber');
-
-      // Call Kapso API
-      final response = await http
-          .post(
-            Uri.parse(_kapsoWhatsAppUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_kapsoAccessToken',
-            },
-            body: jsonEncode(payload),
-          )
-          .timeout(
-            const Duration(seconds: 20),
-            onTimeout: () {
-              throw Exception('Timeout: Kapso API no respondió en 20 segundos');
-            },
-          );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Mensaje de WhatsApp enviado exitosamente');
-        print('   Response: ${response.body}');
-      } else {
-        print('⚠️ Error enviando WhatsApp: ${response.statusCode}');
-        print('   Response: ${response.body}');
-      }
-    } catch (e) {
-      print('⚠️ Error en _sendWhatsAppNotification: $e');
-      // Don't throw - we don't want to fail the match finalization
-      // if WhatsApp notification fails
-    }
-  }
-
-  // Helper method to format date for WhatsApp message
-  static String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year;
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/$year $hour:$minute';
-  }
 }
 
 /// Result of match selection operation
