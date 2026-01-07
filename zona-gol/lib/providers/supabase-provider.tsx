@@ -30,9 +30,18 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         
         // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession()
-        
+
         if (error) {
           console.error('Error getting session:', error)
+          // Handle specific refresh token errors gracefully
+          if (error.message?.includes('Refresh Token') || error.message?.includes('refresh_token')) {
+            console.warn('Refresh token invalid, clearing session...')
+            setSession(null)
+            setUser(null)
+            setProfile(null)
+            setError(null) // Don't show error to user, just clear session
+            return
+          }
           setError(error.message)
           return
         }
@@ -42,20 +51,45 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          // Get user profile
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-            
+          // Get user profile with retry logic for network issues
+          let retries = 3
+          let profile = null
+          let profileError = null
+
+          while (retries > 0 && !profile) {
+            const result = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+
+            if (result.data) {
+              profile = result.data
+              profileError = null
+            } else if (result.error) {
+              profileError = result.error
+              // Only retry on network errors
+              if (result.error.message?.includes('ETIMEDOUT') ||
+                  result.error.message?.includes('fetch failed') ||
+                  result.error.message?.includes('network')) {
+                retries--
+                if (retries > 0) {
+                  console.warn(`Profile fetch failed, retrying... (${retries} attempts left)`)
+                  await new Promise(r => setTimeout(r, 1000)) // Wait 1 second before retry
+                }
+              } else {
+                break // Don't retry on non-network errors
+              }
+            }
+          }
+
           if (profile && !profileError) {
             setProfile(profile)
           } else {
-            console.warn('No profile found for user:', session.user.id)
+            console.warn('No profile found for user:', session.user.id, profileError?.message)
           }
         }
-        
+
         initializedRef.current = true
         setError(null)
       } catch (error) {
@@ -77,12 +111,21 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       async (event: AuthChangeEvent, session: Session | null) => {
         // Skip state change during initialization
         if (isInitializing) return
-        
-        // Skip redundant events to avoid unnecessary reloads
-        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+
+        // Handle token refresh - update session silently
+        if (event === 'TOKEN_REFRESHED') {
+          if (session) {
+            setSession(session)
+            setUser(session.user)
+          }
           return
         }
-        
+
+        // Skip initial session event
+        if (event === 'INITIAL_SESSION') {
+          return
+        }
+
         console.log('Auth state changed:', event, session?.user?.email)
         
         // Get current state to avoid redundant operations
@@ -111,18 +154,32 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             setUser(session?.user ?? null)
             
             if (session?.user) {
-              // Get user profile
-              const { data: profile, error: profileError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single()
-                
-              if (profile && !profileError) {
-                setProfile(profile)
+              // Get user profile with retry for network issues
+              let retries = 2
+              let profile = null
+
+              while (retries > 0 && !profile) {
+                const result = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .single()
+
+                if (result.data) {
+                  profile = result.data
+                  setProfile(profile)
+                } else if (result.error?.message?.includes('ETIMEDOUT') ||
+                          result.error?.message?.includes('fetch failed')) {
+                  retries--
+                  if (retries > 0) {
+                    await new Promise(r => setTimeout(r, 1000))
+                  }
+                } else {
+                  break
+                }
               }
             }
-            
+
             setError(null)
           } catch (error) {
             console.error('Auth state change error:', error)
