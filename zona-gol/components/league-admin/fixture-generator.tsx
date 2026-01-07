@@ -92,6 +92,15 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
   const [loadingExistingRounds, setLoadingExistingRounds] = useState(false)
   const [existingRoundsCount, setExistingRoundsCount] = useState<number>(0)
+
+  // Edit existing round states
+  const [manualMode, setManualMode] = useState<'create' | 'edit'>('create')
+  const [existingRoundsList, setExistingRoundsList] = useState<number[]>([])
+  const [selectedEditRound, setSelectedEditRound] = useState<number | null>(null)
+  const [editRoundMatches, setEditRoundMatches] = useState<ManualMatch[]>([])
+  const [loadingEditRound, setLoadingEditRound] = useState(false)
+  const [savingEditRound, setSavingEditRound] = useState(false)
+  const [originalMatchIds, setOriginalMatchIds] = useState<string[]>([])
   
   const [config, setConfig] = useState<FixtureConfig>({
     tournamentId: "",
@@ -143,6 +152,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     if (!tournamentId) {
       setNextRoundNumber(1)
       setExistingRoundsCount(0)
+      setExistingRoundsList([])
       setManualRounds([])
       return
     }
@@ -163,8 +173,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
       if (error) throw error
 
       // Find the highest round number
-      const maxRound = existingMatches && existingMatches.length > 0
-        ? (existingMatches[0].round || 0)
+      const matchesWithRound = existingMatches as { round: number | null }[] | null
+      const maxRound = matchesWithRound && matchesWithRound.length > 0
+        ? (matchesWithRound[0].round || 0)
         : 0
 
       // Count total existing rounds
@@ -176,16 +187,192 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
       if (roundsError) throw roundsError
 
-      const uniqueRounds = new Set(roundsData?.map(m => m.round) || [])
-      setExistingRoundsCount(uniqueRounds.size)
+      const roundsDataTyped = roundsData as { round: number | null }[] | null
+      const uniqueRounds = Array.from(new Set(roundsDataTyped?.map(m => m.round).filter((r): r is number => r !== null) || []))
+      uniqueRounds.sort((a, b) => a - b)
+      setExistingRoundsList(uniqueRounds)
+      setExistingRoundsCount(uniqueRounds.length)
       setNextRoundNumber(maxRound + 1)
       setManualRounds([])
     } catch (error) {
       console.error('Error loading existing rounds:', error)
       setNextRoundNumber(1)
       setExistingRoundsCount(0)
+      setExistingRoundsList([])
     } finally {
       setLoadingExistingRounds(false)
+    }
+  }
+
+  // Load matches from a specific round for editing
+  const loadRoundMatches = async (roundNumber: number) => {
+    if (!manualTournamentId || roundNumber === null) return
+
+    setLoadingEditRound(true)
+    setMessage(null)
+    try {
+      const supabase = createClientSupabaseClient()
+
+      const { data: matches, error } = await supabase
+        .from('matches')
+        .select('id, home_team_id, away_team_id, match_date, match_time, field_number')
+        .eq('tournament_id', manualTournamentId)
+        .eq('round', roundNumber)
+        .order('match_date', { ascending: true })
+        .order('match_time', { ascending: true })
+
+      if (error) throw error
+
+      type MatchRow = { id: string; home_team_id: string; away_team_id: string; match_date: string | null; match_time: string | null; field_number: number | null }
+      const matchesTyped = (matches || []) as MatchRow[]
+      const loadedMatches: ManualMatch[] = matchesTyped.map(m => {
+        // Ensure time format is HH:MM (without seconds)
+        const rawTime = m.match_time || '08:00'
+        const timeFormatted = rawTime.length === 5 ? rawTime : rawTime.substring(0, 5)
+        return {
+          id: m.id,
+          homeTeamId: m.home_team_id,
+          awayTeamId: m.away_team_id,
+          date: m.match_date ? m.match_date.split('T')[0] : '',
+          time: timeFormatted,
+          field: m.field_number || 1
+        }
+      })
+
+      setEditRoundMatches(loadedMatches)
+      setOriginalMatchIds(loadedMatches.map(m => m.id))
+      setSelectedEditRound(roundNumber)
+    } catch (error) {
+      console.error('Error loading round matches:', error)
+      setMessage({ type: 'error', text: 'Error cargando partidos de la jornada' })
+    } finally {
+      setLoadingEditRound(false)
+    }
+  }
+
+  // Save edited round matches
+  const saveEditedRound = async () => {
+    if (!manualTournamentId || selectedEditRound === null) return
+
+    setSavingEditRound(true)
+    setMessage(null)
+
+    try {
+      const supabase = createClientSupabaseClient()
+
+      // Validate all matches have required data
+      const invalidMatch = editRoundMatches.find(m => !m.homeTeamId || !m.awayTeamId || !m.date)
+      if (invalidMatch) {
+        setMessage({ type: 'error', text: 'Todos los partidos deben tener equipos y fecha' })
+        setSavingEditRound(false)
+        return
+      }
+
+      // Find matches to delete (original IDs not in current list)
+      const currentIds = editRoundMatches.filter(m => !m.id.startsWith('new-')).map(m => m.id)
+      const idsToDelete = originalMatchIds.filter(id => !currentIds.includes(id))
+
+      console.log('📝 Saving edited round:', {
+        selectedEditRound,
+        totalMatches: editRoundMatches.length,
+        toDelete: idsToDelete.length,
+        toUpdate: currentIds.length,
+        toInsert: editRoundMatches.filter(m => m.id.startsWith('new-')).length
+      })
+
+      // Delete removed matches
+      if (idsToDelete.length > 0) {
+        console.log('🗑️ Deleting matches:', idsToDelete)
+        const { error: deleteError } = await (supabase
+          .from('matches') as any)
+          .delete()
+          .in('id', idsToDelete)
+
+        if (deleteError) {
+          console.error('❌ Delete error:', deleteError)
+          throw new Error(`Error eliminando partidos: ${deleteError.message || JSON.stringify(deleteError)}`)
+        }
+        console.log('✅ Deleted successfully')
+      }
+
+      // Update existing matches
+      const existingMatchesToUpdate = editRoundMatches.filter(m => !m.id.startsWith('new-'))
+      for (const match of existingMatchesToUpdate) {
+        console.log('📝 Updating match:', match.id)
+        // Ensure time format is HH:MM (without seconds)
+        const timeFormatted = match.time.length === 5 ? match.time : match.time.substring(0, 5)
+        const updateData = {
+          home_team_id: match.homeTeamId,
+          away_team_id: match.awayTeamId,
+          match_date: `${match.date}T${timeFormatted}:00`,
+          match_time: timeFormatted,
+          field_number: match.field,
+          updated_at: new Date().toISOString()
+        }
+        const { error: updateError } = await (supabase
+          .from('matches') as any)
+          .update(updateData)
+          .eq('id', match.id)
+
+        if (updateError) {
+          console.error('❌ Update error for match', match.id, ':', updateError)
+          throw new Error(`Error actualizando partido: ${updateError.message || JSON.stringify(updateError)}`)
+        }
+        console.log('✅ Updated match:', match.id)
+      }
+
+      // Insert new matches
+      const newMatches = editRoundMatches.filter(m => m.id.startsWith('new-'))
+      if (newMatches.length > 0) {
+        console.log('➕ Inserting new matches:', newMatches.length)
+        const matchesToInsert = newMatches.map(match => {
+          // Ensure time format is HH:MM (without seconds)
+          const timeFormatted = match.time.length === 5 ? match.time : match.time.substring(0, 5)
+          return {
+            tournament_id: manualTournamentId,
+            home_team_id: match.homeTeamId,
+            away_team_id: match.awayTeamId,
+            match_date: `${match.date}T${timeFormatted}:00`,
+            match_time: timeFormatted,
+            field_number: match.field,
+            round: selectedEditRound,
+            status: 'scheduled' as const
+          }
+        })
+
+        const { error: insertError } = await (supabase
+          .from('matches') as any)
+          .insert(matchesToInsert)
+
+        if (insertError) {
+          console.error('❌ Insert error:', insertError)
+          throw new Error(`Error insertando partidos: ${insertError.message || JSON.stringify(insertError)}`)
+        }
+        console.log('✅ Inserted new matches')
+      }
+
+      // Regenerate embeddings for this round
+      const tournament = tournaments.find(t => t.id === manualTournamentId)
+      if (tournament && leagueId) {
+        generateMultipleJornadaEmbeddings(leagueId, manualTournamentId, [selectedEditRound])
+          .catch(err => console.warn('Error regenerando embeddings de jornada:', err))
+      }
+
+      setMessage({ type: 'success', text: `Jornada ${selectedEditRound} actualizada exitosamente` })
+
+      // Reset edit mode
+      setSelectedEditRound(null)
+      setEditRoundMatches([])
+      setOriginalMatchIds([])
+      setManualMode('create')
+
+      // Reload rounds info
+      await loadExistingRounds(manualTournamentId)
+    } catch (error: any) {
+      console.error('Error saving edited round:', error)
+      setMessage({ type: 'error', text: `Error guardando jornada: ${error.message || 'Error desconocido'}` })
+    } finally {
+      setSavingEditRound(false)
     }
   }
 
@@ -1316,51 +1503,335 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 {/* Rounds List */}
                 {manualTournamentId && (
                   <div className="space-y-4">
-                    {/* Existing Rounds Info */}
+                    {/* Create/Edit Mode Toggle - Only show when there are existing rounds */}
                     {existingRoundsCount > 0 && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-blue-500/20">
-                            <Trophy className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-blue-300">
-                              {existingRoundsCount} jornada{existingRoundsCount !== 1 ? 's' : ''} existente{existingRoundsCount !== 1 ? 's' : ''}
-                            </p>
-                            <p className="text-xs text-blue-400/70">
-                              Las nuevas jornadas comenzarán desde la Jornada {nextRoundNumber}
-                            </p>
-                          </div>
+                      <div className="bg-slate-800/50 p-3 rounded-xl border border-white/10">
+                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-2 block">Acción</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant={manualMode === 'create' ? "default" : "outline"}
+                            onClick={() => {
+                              setManualMode('create')
+                              setSelectedEditRound(null)
+                              setEditRoundMatches([])
+                            }}
+                            className={`h-10 flex items-center justify-center gap-2 ${
+                              manualMode === 'create'
+                                ? 'bg-green-500 hover:bg-green-600 text-white border-0'
+                                : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs font-medium">Crear Nueva</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={manualMode === 'edit' ? "default" : "outline"}
+                            onClick={() => {
+                              setManualMode('edit')
+                              setManualRounds([])
+                            }}
+                            className={`h-10 flex items-center justify-center gap-2 ${
+                              manualMode === 'edit'
+                                ? 'bg-orange-500 hover:bg-orange-600 text-white border-0'
+                                : 'bg-slate-700/50 border-white/10 text-gray-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span className="text-xs font-medium">Editar Anterior</span>
+                          </Button>
                         </div>
                       </div>
                     )}
 
-                    {loadingExistingRounds && (
-                      <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
-                        <Loader2 className="w-8 h-8 mx-auto mb-2 text-green-400 animate-spin" />
-                        <p className="text-gray-400 text-sm">Cargando jornadas existentes...</p>
+                    {/* Edit Existing Round Mode */}
+                    {manualMode === 'edit' && existingRoundsCount > 0 && (
+                      <div className="space-y-4">
+                        {/* Round Selector */}
+                        {selectedEditRound === null && (
+                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                            <Label className="text-[10px] text-orange-400 uppercase tracking-wide mb-3 block">Seleccionar Jornada a Editar</Label>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                              {existingRoundsList.map(roundNum => (
+                                <Button
+                                  key={roundNum}
+                                  type="button"
+                                  onClick={() => loadRoundMatches(roundNum)}
+                                  disabled={loadingEditRound}
+                                  className="h-12 flex flex-col items-center justify-center bg-slate-700/50 border-white/10 text-gray-300 hover:bg-orange-500/30 hover:text-orange-300 hover:border-orange-500/30"
+                                >
+                                  <span className="text-sm font-semibold">J{roundNum}</span>
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Loading indicator */}
+                        {loadingEditRound && (
+                          <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
+                            <Loader2 className="w-8 h-8 mx-auto mb-2 text-orange-400 animate-spin" />
+                            <p className="text-gray-400 text-sm">Cargando partidos de la jornada...</p>
+                          </div>
+                        )}
+
+                        {/* Edit Round Form */}
+                        {selectedEditRound !== null && !loadingEditRound && (
+                          <div className="bg-slate-800/50 rounded-xl border border-orange-500/20 overflow-hidden">
+                            {/* Round Header */}
+                            <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10 bg-orange-500/10">
+                              <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
+                                <span className="text-sm md:text-base font-semibold text-white">Editando Jornada {selectedEditRound}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                                  {editRoundMatches.length} partido{editRoundMatches.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedEditRound(null)
+                                  setEditRoundMatches([])
+                                  setOriginalMatchIds([])
+                                }}
+                                className="h-8 px-3 bg-slate-600/50 hover:bg-slate-600/70 text-gray-300 border-0"
+                              >
+                                Cambiar Jornada
+                              </Button>
+                            </div>
+
+                            {/* Matches in this round */}
+                            <div className="p-3 md:p-4 space-y-3">
+                              {editRoundMatches.length === 0 && (
+                                <p className="text-gray-500 text-xs text-center py-3">No hay partidos en esta jornada</p>
+                              )}
+
+                              {editRoundMatches.map((match, matchIndex) => (
+                                <div key={match.id} className="bg-slate-700/30 p-3 rounded-lg border border-white/5">
+                                  <div className="space-y-3">
+                                    {/* Teams Row */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Local</Label>
+                                        <Select
+                                          value={match.homeTeamId}
+                                          onValueChange={(value) => {
+                                            const newMatches = [...editRoundMatches]
+                                            newMatches[matchIndex].homeTeamId = value
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                        >
+                                          <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
+                                            <SelectValue placeholder="Seleccionar" />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-slate-900 border-white/10">
+                                            {activeTeams.map(team => (
+                                              <SelectItem key={team.id} value={team.id} className="text-white text-xs">
+                                                {team.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Visitante</Label>
+                                        <Select
+                                          value={match.awayTeamId}
+                                          onValueChange={(value) => {
+                                            const newMatches = [...editRoundMatches]
+                                            newMatches[matchIndex].awayTeamId = value
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                        >
+                                          <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
+                                            <SelectValue placeholder="Seleccionar" />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-slate-900 border-white/10">
+                                            {activeTeams.map(team => (
+                                              <SelectItem key={team.id} value={team.id} className="text-white text-xs">
+                                                {team.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+
+                                    {/* Date, Time, Field Row */}
+                                    <div className="grid grid-cols-4 gap-2">
+                                      <div className="col-span-2 sm:col-span-1">
+                                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Fecha</Label>
+                                        <Input
+                                          type="date"
+                                          value={match.date}
+                                          onChange={(e) => {
+                                            const newMatches = [...editRoundMatches]
+                                            newMatches[matchIndex].date = e.target.value
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                          className="bg-slate-800/50 border-white/10 text-white h-9 text-xs"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Hora</Label>
+                                        <Input
+                                          type="time"
+                                          value={match.time}
+                                          onChange={(e) => {
+                                            const newMatches = [...editRoundMatches]
+                                            newMatches[matchIndex].time = e.target.value
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                          className="bg-slate-800/50 border-white/10 text-white h-9 text-xs"
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 block">Cancha</Label>
+                                        <Select
+                                          value={match.field.toString()}
+                                          onValueChange={(value) => {
+                                            const newMatches = [...editRoundMatches]
+                                            newMatches[matchIndex].field = parseInt(value)
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                        >
+                                          <SelectTrigger className="bg-slate-800/50 border-white/10 text-white text-xs h-9">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-slate-900 border-white/10">
+                                            {[1,2,3,4,5,6].map(num => (
+                                              <SelectItem key={num} value={num.toString()} className="text-white text-xs">
+                                                {num}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="flex items-end">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            const newMatches = editRoundMatches.filter((_, idx) => idx !== matchIndex)
+                                            setEditRoundMatches(newMatches)
+                                          }}
+                                          className="h-9 w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 border-0"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Add Match Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditRoundMatches([...editRoundMatches, {
+                                    id: `new-${Date.now()}-${Math.random()}`,
+                                    homeTeamId: '',
+                                    awayTeamId: '',
+                                    date: '',
+                                    time: '08:00',
+                                    field: 1
+                                  }])
+                                }}
+                                className="w-full h-9 bg-slate-600/50 border-white/10 text-gray-300 hover:bg-slate-600/70 hover:text-white text-xs"
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                Agregar Partido
+                              </Button>
+                            </div>
+
+                            {/* Save/Cancel Buttons */}
+                            <div className="flex gap-3 p-3 md:p-4 border-t border-white/10 bg-slate-700/30">
+                              <Button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedEditRound(null)
+                                  setEditRoundMatches([])
+                                  setOriginalMatchIds([])
+                                }}
+                                className="flex-1 h-10 text-sm bg-slate-600/50 border-white/10 text-gray-300 hover:bg-slate-600/70 hover:text-white"
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                onClick={saveEditedRound}
+                                disabled={savingEditRound || editRoundMatches.length === 0}
+                                className="flex-1 h-10 text-sm bg-orange-500 hover:bg-orange-600 text-white border-0"
+                              >
+                                {savingEditRound ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Guardando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trophy className="w-4 h-4 mr-2" />
+                                    Guardar Cambios
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {!loadingExistingRounds && manualRounds.length === 0 && (
-                      <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
-                        <Calendar className="w-10 h-10 mx-auto mb-3 text-white/60" />
-                        <p className="text-gray-400 text-sm mb-4">
-                          {existingRoundsCount > 0
-                            ? 'Agrega una nueva jornada para continuar el torneo'
-                            : 'No hay jornadas creadas aún'}
-                        </p>
-                        <Button
-                          onClick={() => setManualRounds([{ round: nextRoundNumber, matches: [] }])}
-                          className="bg-green-500 hover:bg-green-600 text-white border-0"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          {existingRoundsCount > 0
-                            ? `Crear Jornada ${nextRoundNumber}`
-                            : 'Crear Primera Jornada'}
-                        </Button>
-                      </div>
-                    )}
+                    {/* Create New Round Mode */}
+                    {manualMode === 'create' && (
+                      <>
+                        {/* Existing Rounds Info */}
+                        {existingRoundsCount > 0 && (
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-blue-500/20">
+                                <Trophy className="w-5 h-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-blue-300">
+                                  {existingRoundsCount} jornada{existingRoundsCount !== 1 ? 's' : ''} existente{existingRoundsCount !== 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs text-blue-400/70">
+                                  Las nuevas jornadas comenzarán desde la Jornada {nextRoundNumber}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {loadingExistingRounds && (
+                          <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
+                            <Loader2 className="w-8 h-8 mx-auto mb-2 text-green-400 animate-spin" />
+                            <p className="text-gray-400 text-sm">Cargando jornadas existentes...</p>
+                          </div>
+                        )}
+
+                        {!loadingExistingRounds && manualRounds.length === 0 && (
+                          <div className="bg-slate-800/50 p-6 rounded-xl shadow-xl border border-white/10 text-center">
+                            <Calendar className="w-10 h-10 mx-auto mb-3 text-white/60" />
+                            <p className="text-gray-400 text-sm mb-4">
+                              {existingRoundsCount > 0
+                                ? 'Agrega una nueva jornada para continuar el torneo'
+                                : 'No hay jornadas creadas aún'}
+                            </p>
+                            <Button
+                              onClick={() => setManualRounds([{ round: nextRoundNumber, matches: [] }])}
+                              className="bg-green-500 hover:bg-green-600 text-white border-0"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              {existingRoundsCount > 0
+                                ? `Crear Jornada ${nextRoundNumber}`
+                                : 'Crear Primera Jornada'}
+                            </Button>
+                          </div>
+                        )}
 
                     {manualRounds.map((roundData, roundIndex) => (
                       <div key={roundIndex} className="bg-slate-800/50 rounded-xl border border-white/10 overflow-hidden">
@@ -1599,6 +2070,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                         </Button>
                       </div>
                     )}
+                      </>
+                    )}
+                    {/* End of Create Mode */}
                   </div>
                 )}
               </div>

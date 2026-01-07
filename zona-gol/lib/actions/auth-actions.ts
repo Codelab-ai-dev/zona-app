@@ -178,23 +178,31 @@ export const authActions = {
   async signOut() {
     const supabase = createClientSupabaseClient()
     const { setLoading, setError, signOut } = useAuthStore.getState()
-    
+
     try {
       setLoading(true)
       setError(null)
-      
+
+      // Intentar cerrar sesión en Supabase
       const { error } = await supabase.auth.signOut()
-      
+
+      // Si hay error de "Auth session missing", ignorarlo y continuar
+      // ya que significa que no hay sesión que cerrar
       if (error) {
-        throw error
+        const isSessionMissingError = error.message?.includes('Auth session missing') ||
+                                       error.name === 'AuthSessionMissingError'
+        if (!isSessionMissingError) {
+          console.error('Sign out error:', error)
+        }
+        // No lanzar error, simplemente limpiar el estado local
       }
-      
+
+      // Siempre limpiar el estado local
       signOut()
     } catch (error) {
       console.error('Sign out error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Sign out failed'
-      setError(errorMessage)
-      throw error
+      // Aún así limpiar el estado local para permitir logout
+      signOut()
     } finally {
       setLoading(false)
     }

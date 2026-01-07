@@ -304,29 +304,65 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
 
       if (matchError) throw matchError
 
-      // 2. Guardar goles
-      for (const goal of allGoals) {
-        const { error: goalError } = await supabase
-          .from('goals')
+      // 2. Guardar goles del equipo local
+      for (const goal of homeGoals) {
+        if (!goal.player_id) continue
+        const { error: goalError } = await (supabase
+          .from('match_goals') as any)
           .insert({
             match_id: selectedMatch.id,
             player_id: goal.player_id,
-            minute: goal.minute,
-            assist_player_id: goal.assist_player_id
+            team_id: selectedMatch.home_teams.id,
+            minute: goal.minute && goal.minute > 0 ? goal.minute : 1,
+            assist_player_id: goal.assist_player_id || null
           })
 
         if (goalError) throw goalError
       }
 
-      // 3. Guardar tarjetas
-      for (const card of allCards) {
-        const { error: cardError } = await supabase
-          .from('cards')
+      // 3. Guardar goles del equipo visitante
+      for (const goal of awayGoals) {
+        if (!goal.player_id) continue
+        const { error: goalError } = await (supabase
+          .from('match_goals') as any)
+          .insert({
+            match_id: selectedMatch.id,
+            player_id: goal.player_id,
+            team_id: selectedMatch.away_teams.id,
+            minute: goal.minute && goal.minute > 0 ? goal.minute : 1,
+            assist_player_id: goal.assist_player_id || null
+          })
+
+        if (goalError) throw goalError
+      }
+
+      // 4. Guardar tarjetas del equipo local
+      for (const card of homeCards) {
+        if (!card.player_id) continue
+        const { error: cardError } = await (supabase
+          .from('match_cards') as any)
           .insert({
             match_id: selectedMatch.id,
             player_id: card.player_id,
+            team_id: selectedMatch.home_teams.id,
             card_type: card.type,
-            minute: card.minute
+            minute: card.minute && card.minute > 0 ? card.minute : 1
+          })
+
+        if (cardError) throw cardError
+      }
+
+      // 5. Guardar tarjetas del equipo visitante
+      for (const card of awayCards) {
+        if (!card.player_id) continue
+        const { error: cardError } = await (supabase
+          .from('match_cards') as any)
+          .insert({
+            match_id: selectedMatch.id,
+            player_id: card.player_id,
+            team_id: selectedMatch.away_teams.id,
+            card_type: card.type,
+            minute: card.minute && card.minute > 0 ? card.minute : 1
           })
 
         if (cardError) throw cardError
