@@ -185,28 +185,6 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
     return acc
   }, {})
 
-  // Debug logging
-  console.log('🏆 League data:', {
-    leagueId: league.id,
-    teamStandings: teamStandings.length,
-    hasRealStats: data.stats?.teamStandings?.length > 0,
-    upcomingMatches: upcomingMatches.length,
-    recentMatches: recentMatches.length,
-    allMatches: leagueMatches.length,
-    rounds: roundNumbers.length,
-    sample: teamStandings[0]
-  })
-
-  // Debug rounds specifically
-  console.log('🗓️ Rounds debug:', {
-    roundNumbers,
-    matchesByRound: Object.keys(matchesByRound).map(round => ({
-      round,
-      matches: matchesByRound[round].length,
-      finished: matchesByRound[round].filter((m: Match) => m.status === 'finished').length,
-      scheduled: matchesByRound[round].filter((m: Match) => m.status !== 'finished').length
-    }))
-  })
 
   const getTeamInitials = (teamName: string) => {
     return teamName
