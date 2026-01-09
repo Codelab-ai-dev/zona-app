@@ -17,63 +17,82 @@ import { WasabiStorageProvider } from './wasabi-provider'
 import { BunnyStorageProvider } from './bunny-provider'
 
 class StorageService {
-  private supabase: StorageProvider
+  private supabase: StorageProvider | null = null
   private wasabi: StorageProvider | null = null
   private bunny: StorageProvider | null = null
-  private config: StorageConfig
+  private _config: StorageConfig | null = null
 
-  constructor() {
-    this.supabase = new SupabaseStorageProvider()
+  // Lazy initialization to ensure env vars are available
+  private get config(): StorageConfig {
+    if (!this._config) {
+      const provider = (process.env.STORAGE_PROVIDER as StorageConfig['provider']) || 'supabase'
+      const dualWrite = process.env.STORAGE_DUAL_WRITE === 'true'
+      const primaryRead = (process.env.STORAGE_PRIMARY_READ as StorageConfig['primaryRead']) || 'supabase'
 
-    // Only initialize providers if needed
-    const provider = (process.env.STORAGE_PROVIDER as StorageConfig['provider']) || 'supabase'
-    const dualWrite = process.env.STORAGE_DUAL_WRITE === 'true'
-    const primaryRead = (process.env.STORAGE_PRIMARY_READ as StorageConfig['primaryRead']) || 'supabase'
+      this._config = {
+        provider,
+        dualWrite,
+        primaryRead,
+      }
 
-    if (provider === 'wasabi' || provider === 'dual' || (dualWrite && primaryRead === 'wasabi')) {
+      console.log(`[Storage] Initialized with provider=${provider}, dualWrite=${dualWrite}, primaryRead=${primaryRead}`)
+    }
+    return this._config
+  }
+
+  private getSupabase(): StorageProvider {
+    if (!this.supabase) {
+      this.supabase = new SupabaseStorageProvider()
+    }
+    return this.supabase
+  }
+
+  private getWasabi(): StorageProvider {
+    if (!this.wasabi) {
       this.wasabi = new WasabiStorageProvider()
     }
+    return this.wasabi
+  }
 
-    if (provider === 'bunny' || provider === 'dual' || (dualWrite && primaryRead === 'bunny')) {
+  private getBunny(): StorageProvider {
+    if (!this.bunny) {
       this.bunny = new BunnyStorageProvider()
     }
-
-    this.config = {
-      provider,
-      dualWrite,
-      primaryRead,
-    }
+    return this.bunny
   }
 
   private getPrimaryProvider(): StorageProvider {
-    if (this.config.provider === 'bunny' && this.bunny) {
-      return this.bunny
+    if (this.config.provider === 'bunny') {
+      return this.getBunny()
     }
-    if (this.config.provider === 'wasabi' && this.wasabi) {
-      return this.wasabi
+    if (this.config.provider === 'wasabi') {
+      return this.getWasabi()
     }
     if (this.config.provider === 'dual') {
-      if (this.config.primaryRead === 'bunny' && this.bunny) {
-        return this.bunny
+      if (this.config.primaryRead === 'bunny') {
+        return this.getBunny()
       }
-      if (this.config.primaryRead === 'wasabi' && this.wasabi) {
-        return this.wasabi
+      if (this.config.primaryRead === 'wasabi') {
+        return this.getWasabi()
       }
-      return this.supabase
+      return this.getSupabase()
     }
-    return this.supabase
+    return this.getSupabase()
   }
 
   private getSecondaryProvider(): StorageProvider | null {
     if (this.config.provider === 'dual' || this.config.dualWrite) {
       if (this.config.primaryRead === 'bunny') {
-        return this.supabase
+        return this.getSupabase()
       }
       if (this.config.primaryRead === 'wasabi') {
-        return this.supabase
+        return this.getSupabase()
       }
       // Primary is supabase, return bunny or wasabi as secondary
-      return this.bunny || this.wasabi
+      if (this.config.dualWrite) {
+        return this.getBunny()
+      }
+      return null
     }
     return null
   }
@@ -154,18 +173,12 @@ class StorageService {
    */
   getProvider(name: 'supabase' | 'wasabi' | 'bunny'): StorageProvider {
     if (name === 'bunny') {
-      if (!this.bunny) {
-        this.bunny = new BunnyStorageProvider()
-      }
-      return this.bunny
+      return this.getBunny()
     }
     if (name === 'wasabi') {
-      if (!this.wasabi) {
-        this.wasabi = new WasabiStorageProvider()
-      }
-      return this.wasabi
+      return this.getWasabi()
     }
-    return this.supabase
+    return this.getSupabase()
   }
 
   /**

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -26,8 +25,6 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
   const [files, setFiles] = useState<AppFile[]>([])
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClientSupabaseClient()
-
   useEffect(() => {
     loadFiles()
   }, [leagueId])
@@ -35,21 +32,28 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
   const loadFiles = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.storage
-        .from('app-releases')
-        .list(`${leagueId}/`, {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        })
 
-      if (error) {
-        console.error('Error loading files:', error)
+      const response = await fetch(`/api/storage/list?bucket=app-releases&prefix=${leagueId}`)
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Error loading files:', result.error)
         toast.error('Error al cargar los archivos')
         return
       }
 
-      setFiles(data || [])
+      // Map storage files to AppFile format
+      const mappedFiles: AppFile[] = result.files.map((f: any) => ({
+        name: f.name,
+        id: f.etag || f.name,
+        created_at: f.createdAt,
+        metadata: {
+          size: f.size,
+          mimetype: f.contentType,
+        }
+      }))
+
+      setFiles(mappedFiles)
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al cargar los archivos')
@@ -60,25 +64,22 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
 
   const handleDownload = async (file: AppFile) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('app-releases')
-        .download(`${leagueId}/${file.name}`)
+      // Get public URL and download
+      const response = await fetch(`/api/storage/url?bucket=app-releases&path=${leagueId}/${file.name}`)
+      const result = await response.json()
 
-      if (error) {
-        console.error('Download error:', error)
-        toast.error('Error al descargar el archivo')
+      if (!response.ok) {
+        toast.error('Error al obtener el archivo')
         return
       }
 
-      // Crear URL y descargar
-      const url = URL.createObjectURL(data)
+      // Open download URL
       const a = document.createElement('a')
-      a.href = url
+      a.href = result.url
       a.download = file.name
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
 
       toast.success('Descarga iniciada')
     } catch (error) {
@@ -89,13 +90,14 @@ export function AppDownload({ leagueId }: AppDownloadProps) {
 
   const handleGetPublicLink = async (file: AppFile) => {
     try {
-      const { data } = await supabase.storage
-        .from('app-releases')
-        .getPublicUrl(`${leagueId}/${file.name}`)
+      const response = await fetch(`/api/storage/url?bucket=app-releases&path=${leagueId}/${file.name}`)
+      const result = await response.json()
 
-      if (data.publicUrl) {
-        await navigator.clipboard.writeText(data.publicUrl)
+      if (response.ok && result.url) {
+        await navigator.clipboard.writeText(result.url)
         toast.success('Enlace público copiado al portapapeles')
+      } else {
+        toast.error('Error al obtener el enlace')
       }
     } catch (error) {
       console.error('Error:', error)

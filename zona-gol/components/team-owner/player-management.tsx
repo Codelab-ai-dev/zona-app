@@ -28,6 +28,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { FileUpload } from "@/components/ui/file-upload"
+import { FileUploadStorage } from "@/components/ui/file-upload-storage"
 import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
@@ -122,7 +123,9 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
   // Local state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
+  const [newPlayerId, setNewPlayerId] = useState<string>(() => crypto.randomUUID())
   const [generatingQR, setGeneratingQR] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [currentQRData, setCurrentQRData] = useState<{
     player: Player,
@@ -652,6 +655,7 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             if (open) {
+              setNewPlayerId(crypto.randomUUID()) // Generate new ID for photo upload
               setFormData({ name: "", position: "", jerseyNumber: "", birthDate: "", photo: "", idDocumentUrl: "" })
               resetIneState()
             } else {
@@ -676,10 +680,14 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
             <div className="space-y-4 pb-4">
               <div>
                 <Label className="text-white">Fotografía del Jugador</Label>
-                <FileUpload
+                <FileUploadStorage
                   variant="avatar"
+                  bucket="player-photos"
+                  fileId={newPlayerId}
                   value={formData.photo}
-                  onChange={(file, dataUrl) => setFormData({ ...formData, photo: dataUrl || "" })}
+                  onChange={(url) => setFormData({ ...formData, photo: url || "" })}
+                  onUploadStart={() => setUploadingPhoto(true)}
+                  onUploadEnd={() => setUploadingPhoto(false)}
                 />
               </div>
               <div>
@@ -875,12 +883,18 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
                   !formData.position ||
                   !formData.jerseyNumber ||
                   creating ||
+                  uploadingPhoto ||
                   (isIdDocumentRequired && !ineImage) ||
                   (ageValidationResult && !ageValidationResult.isValid)
                 }
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
-                {creating ? (
+                {uploadingPhoto ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Subiendo foto...
+                  </>
+                ) : creating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Creando jugador...
@@ -1000,10 +1014,14 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
           <div className="space-y-4">
             <div>
               <Label className="text-white">Fotografía del Jugador</Label>
-              <FileUpload
+              <FileUploadStorage
                 variant="avatar"
+                bucket="player-photos"
+                fileId={editingPlayer?.id || ''}
                 value={formData.photo}
-                onChange={(file, dataUrl) => setFormData({ ...formData, photo: dataUrl || "" })}
+                onChange={(url) => setFormData({ ...formData, photo: url || "" })}
+                onUploadStart={() => setUploadingPhoto(true)}
+                onUploadEnd={() => setUploadingPhoto(false)}
               />
             </div>
             <div>
@@ -1060,10 +1078,15 @@ export function PlayerManagement({ teamId, teamName = "Equipo" }: PlayerManageme
             </div>
             <Button
               onClick={handleUpdatePlayer}
-              disabled={!formData.name.trim() || !formData.position || !formData.jerseyNumber || updating}
+              disabled={!formData.name.trim() || !formData.position || !formData.jerseyNumber || updating || uploadingPhoto}
               className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
-              {updating ? (
+              {uploadingPhoto ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Subiendo foto...
+                </>
+              ) : updating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Actualizando jugador...

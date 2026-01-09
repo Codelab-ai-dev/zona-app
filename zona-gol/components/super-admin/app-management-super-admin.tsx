@@ -78,21 +78,28 @@ export function AppManagementSuperAdmin() {
   const loadFiles = async (leagueId: string) => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.storage
-        .from('app-releases')
-        .list(`${leagueId}/`, {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' }
-        })
 
-      if (error) {
-        console.error('Error loading files:', error)
+      const response = await fetch(`/api/storage/list?bucket=app-releases&prefix=${leagueId}`)
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Error loading files:', result.error)
         toast.error('Error al cargar los archivos')
         return
       }
 
-      setFiles(data || [])
+      // Map storage files to AppFile format
+      const mappedFiles: AppFile[] = result.files.map((f: any) => ({
+        name: f.name,
+        id: f.etag || f.name,
+        created_at: f.createdAt,
+        metadata: {
+          size: f.size,
+          mimetype: f.contentType,
+        }
+      }))
+
+      setFiles(mappedFiles)
     } catch (error) {
       console.error('Error:', error)
       toast.error('Error al cargar los archivos')
@@ -133,23 +140,29 @@ export function AppManagementSuperAdmin() {
     try {
       // Generar nombre único con timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      const fileName = `ZonaGol-${timestamp}.apk`
-      const filePath = `${selectedLeague}/${fileName}`
+      const fileId = `ZonaGol-${timestamp}`
 
-      // Subir archivo
-      const { error: uploadError } = await supabase.storage
-        .from('app-releases')
-        .upload(filePath, selectedFile, {
-          cacheControl: '3600',
-          upsert: false
-        })
+      // Subir archivo via API (uses configured storage provider)
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('bucket', 'app-releases')
+      formData.append('fileId', fileId)
+      formData.append('leagueId', selectedLeague)
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        toast.error('Error al subir el archivo: ' + uploadError.message)
+      const response = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Upload error:', result.error)
+        toast.error('Error al subir el archivo: ' + result.error)
         return
       }
 
+      console.log('[AppManagement] APK uploaded successfully:', result.publicUrl)
       toast.success('APK subido exitosamente')
       setSelectedFile(null)
       // Reset input
@@ -168,25 +181,22 @@ export function AppManagementSuperAdmin() {
 
   const handleDownload = async (file: AppFile) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('app-releases')
-        .download(`${selectedLeague}/${file.name}`)
+      // Get public URL and download
+      const response = await fetch(`/api/storage/url?bucket=app-releases&path=${selectedLeague}/${file.name}`)
+      const result = await response.json()
 
-      if (error) {
-        console.error('Download error:', error)
-        toast.error('Error al descargar el archivo')
+      if (!response.ok) {
+        toast.error('Error al obtener el archivo')
         return
       }
 
-      // Crear URL y descargar
-      const url = URL.createObjectURL(data)
+      // Open download URL
       const a = document.createElement('a')
-      a.href = url
+      a.href = result.url
       a.download = file.name
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
 
       toast.success('Descarga iniciada')
     } catch (error) {
@@ -197,13 +207,14 @@ export function AppManagementSuperAdmin() {
 
   const handleGetPublicLink = async (file: AppFile) => {
     try {
-      const { data } = await supabase.storage
-        .from('app-releases')
-        .getPublicUrl(`${selectedLeague}/${file.name}`)
+      const response = await fetch(`/api/storage/url?bucket=app-releases&path=${selectedLeague}/${file.name}`)
+      const result = await response.json()
 
-      if (data.publicUrl) {
-        await navigator.clipboard.writeText(data.publicUrl)
+      if (response.ok && result.url) {
+        await navigator.clipboard.writeText(result.url)
         toast.success('Enlace público copiado al portapapeles')
+      } else {
+        toast.error('Error al obtener el enlace')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -217,12 +228,13 @@ export function AppManagementSuperAdmin() {
     }
 
     try {
-      const { error } = await supabase.storage
-        .from('app-releases')
-        .remove([`${selectedLeague}/${file.name}`])
+      const response = await fetch(`/api/storage/delete?bucket=app-releases&path=${selectedLeague}/${file.name}`, {
+        method: 'DELETE',
+      })
 
-      if (error) {
-        console.error('Delete error:', error)
+      if (!response.ok) {
+        const result = await response.json()
+        console.error('Delete error:', result.error)
         toast.error('Error al eliminar el archivo')
         return
       }

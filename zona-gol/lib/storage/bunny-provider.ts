@@ -5,11 +5,13 @@
 
 import type { StorageProvider, BucketName, UploadOptions, UploadResult, StorageFile } from './types'
 
-// Bunny Storage configuration
-const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE || ''
-const BUNNY_API_KEY = process.env.BUNNY_STORAGE_API_KEY || ''
-const BUNNY_HOSTNAME = process.env.BUNNY_STORAGE_HOSTNAME || 'la.storage.bunnycdn.com'
-const BUNNY_CDN_URL = process.env.BUNNY_CDN_URL || 'https://zonagol.b-cdn.net'
+// Lazy getters for environment variables (to ensure they're available in Next.js)
+const getConfig = () => ({
+  storageZone: process.env.BUNNY_STORAGE_ZONE || '',
+  apiKey: process.env.BUNNY_STORAGE_API_KEY || '',
+  hostname: process.env.BUNNY_STORAGE_HOSTNAME || 'la.storage.bunnycdn.com',
+  cdnUrl: process.env.BUNNY_CDN_URL || 'https://zonagol.b-cdn.net',
+})
 
 interface BunnyFile {
   Guid: string
@@ -33,12 +35,14 @@ export class BunnyStorageProvider implements StorageProvider {
   name: 'bunny' = 'bunny'
 
   private getStorageUrl(folder: string, path: string): string {
-    return `https://${BUNNY_HOSTNAME}/${BUNNY_STORAGE_ZONE}/${folder}/${path}`
+    const config = getConfig()
+    return `https://${config.hostname}/${config.storageZone}/${folder}/${path}`
   }
 
   private getHeaders(): HeadersInit {
+    const config = getConfig()
     return {
-      'AccessKey': BUNNY_API_KEY,
+      'AccessKey': config.apiKey,
     }
   }
 
@@ -48,8 +52,9 @@ export class BunnyStorageProvider implements StorageProvider {
     path: string,
     options?: UploadOptions
   ): Promise<UploadResult> {
-    if (!BUNNY_API_KEY || !BUNNY_STORAGE_ZONE) {
-      throw new Error('Bunny Storage credentials not configured')
+    const config = getConfig()
+    if (!config.apiKey || !config.storageZone) {
+      throw new Error(`Bunny Storage credentials not configured. BUNNY_STORAGE_ZONE=${config.storageZone ? 'set' : 'missing'}, BUNNY_STORAGE_API_KEY=${config.apiKey ? 'set' : 'missing'}`)
     }
 
     const url = this.getStorageUrl(bucket, path)
@@ -104,12 +109,14 @@ export class BunnyStorageProvider implements StorageProvider {
   }
 
   getPublicUrl(bucket: BucketName, path: string): string {
-    return `${BUNNY_CDN_URL}/${bucket}/${path}`
+    const config = getConfig()
+    return `${config.cdnUrl}/${bucket}/${path}`
   }
 
   async list(bucket: BucketName, prefix?: string): Promise<StorageFile[]> {
+    const config = getConfig()
     const folderPath = prefix ? `${bucket}/${prefix}` : bucket
-    const url = `https://${BUNNY_HOSTNAME}/${BUNNY_STORAGE_ZONE}/${folderPath}/`
+    const url = `https://${config.hostname}/${config.storageZone}/${folderPath}/`
 
     const response = await fetch(url, {
       method: 'GET',

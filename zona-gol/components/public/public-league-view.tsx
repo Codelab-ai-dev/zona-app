@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { serverLeagueActions } from "@/lib/actions/league-actions"
-import { Trophy, Users, Calendar, Shield, ArrowRight, Home, ArrowLeft } from "lucide-react"
+import { Trophy, Users, Calendar, Shield, ArrowRight, Home, ArrowLeft, Loader2 } from "lucide-react"
 import { Database } from "@/lib/supabase/database.types"
 
 type League = Database['public']['Tables']['leagues']['Row']
@@ -64,6 +64,7 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
   })
   const [loading, setLoading] = useState(!initialData)
   const [selectedRound, setSelectedRound] = useState<string | null>(null)
+  const [navigating, setNavigating] = useState<string | null>(null) // Track which button is navigating
 
   useEffect(() => {
     // Si ya tenemos initialData, no cargar de nuevo
@@ -246,21 +247,37 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <Button
-                onClick={() => router.push(`/liga/${league.slug}`)}
+                onClick={() => {
+                  setNavigating('back')
+                  router.push(`/liga/${league.slug}`)
+                }}
                 variant="ghost"
                 size="sm"
+                disabled={navigating !== null}
                 className="text-gray-400 hover:text-white hover:bg-white/10"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                {navigating === 'back' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                )}
                 Torneos
               </Button>
               <Button
-                onClick={() => router.push('/')}
+                onClick={() => {
+                  setNavigating('home')
+                  router.push('/')
+                }}
                 variant="ghost"
                 size="sm"
+                disabled={navigating !== null}
                 className="text-gray-400 hover:text-white hover:bg-white/10"
               >
-                <Home className="w-4 h-4 mr-2" />
+                {navigating === 'home' ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Home className="w-4 h-4 mr-2" />
+                )}
                 Inicio
               </Button>
             </div>
