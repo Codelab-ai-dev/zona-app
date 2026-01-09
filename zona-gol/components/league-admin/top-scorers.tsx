@@ -3,8 +3,12 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Loader2, Trophy, Target } from "lucide-react"
+import { Loader2, Trophy, Target, Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import {
   Table,
   TableBody,
@@ -13,9 +17,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface TopScorerProps {
   leagueId: string
+}
+
+interface TeamData {
+  id: string
+  name: string
+}
+
+interface PlayerData {
+  id: string
+  name: string
+  jersey_number: number
 }
 
 interface ScorerData {
@@ -34,9 +64,249 @@ export function TopScorers({ leagueId }: TopScorerProps) {
   const [loading, setLoading] = useState(true)
   const supabase = createClientSupabaseClient()
 
+  // Estados para el modal de goles extemporáneos
+  const [isAddGoalsOpen, setIsAddGoalsOpen] = useState(false)
+  const [teams, setTeams] = useState<TeamData[]>([])
+  const [players, setPlayers] = useState<PlayerData[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("")
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("")
+  const [goalsToAdd, setGoalsToAdd] = useState<number>(1)
+  const [assistsToAdd, setAssistsToAdd] = useState<number>(0)
+  const [description, setDescription] = useState<string>("")
+  const [savingGoals, setSavingGoals] = useState(false)
+  const [loadingTeams, setLoadingTeams] = useState(false)
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
+
+  // Estado para editar goles existentes
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingPlayer, setEditingPlayer] = useState<ScorerData | null>(null)
+  const [editGoals, setEditGoals] = useState<number>(0)
+  const [editAssists, setEditAssists] = useState<number>(0)
+
   useEffect(() => {
     loadTopScorers()
   }, [leagueId])
+
+  // Cargar equipos cuando se abre el modal
+  useEffect(() => {
+    if (isAddGoalsOpen) {
+      loadTeams()
+    }
+  }, [isAddGoalsOpen])
+
+  // Cargar jugadores cuando se selecciona un equipo
+  useEffect(() => {
+    if (selectedTeamId) {
+      loadPlayers(selectedTeamId)
+    } else {
+      setPlayers([])
+      setSelectedPlayerId("")
+    }
+  }, [selectedTeamId])
+
+  const loadTeams = async () => {
+    setLoadingTeams(true)
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id, name')
+        .eq('league_id', leagueId)
+        .order('name')
+
+      if (error) throw error
+      setTeams(data || [])
+    } catch (error) {
+      console.error('Error loading teams:', error)
+      toast.error('Error al cargar equipos')
+    } finally {
+      setLoadingTeams(false)
+    }
+  }
+
+  const loadPlayers = async (teamId: string) => {
+    setLoadingPlayers(true)
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('id, name, jersey_number')
+        .eq('team_id', teamId)
+        .eq('is_active', true)
+        .order('jersey_number')
+
+      if (error) throw error
+      setPlayers(data || [])
+    } catch (error) {
+      console.error('Error loading players:', error)
+      toast.error('Error al cargar jugadores')
+    } finally {
+      setLoadingPlayers(false)
+    }
+  }
+
+  const handleAddExtemporaneousGoals = async () => {
+    if (!selectedPlayerId || goalsToAdd < 1) {
+      toast.error('Selecciona un jugador y al menos 1 gol')
+      return
+    }
+
+    setSavingGoals(true)
+    try {
+      // Verificar si ya existe un registro extemporáneo para este jugador (match_id IS NULL)
+      const { data: existingStats, error: fetchError } = await supabase
+        .from('player_stats')
+        .select('id, goals, assists')
+        .eq('player_id', selectedPlayerId)
+        .is('match_id', null)
+        .maybeSingle()
+
+      if (fetchError) throw fetchError
+
+      if (existingStats) {
+        // Actualizar el registro existente
+        const { error: updateError } = await supabase
+          .from('player_stats')
+          .update({
+            goals: existingStats.goals + goalsToAdd,
+            assists: existingStats.assists + assistsToAdd,
+          })
+          .eq('id', existingStats.id)
+
+        if (updateError) throw updateError
+      } else {
+        // Crear nuevo registro extemporáneo (match_id = null)
+        const { error: insertError } = await supabase
+          .from('player_stats')
+          .insert({
+            player_id: selectedPlayerId,
+            match_id: null,
+            goals: goalsToAdd,
+            assists: assistsToAdd,
+            yellow_cards: 0,
+            red_cards: 0,
+            minutes_played: 0,
+          })
+
+        if (insertError) throw insertError
+      }
+
+      toast.success(`Se agregaron ${goalsToAdd} gol(es) ${assistsToAdd > 0 ? `y ${assistsToAdd} asistencia(s)` : ''} correctamente`)
+
+      // Resetear formulario y cerrar modal
+      setSelectedTeamId("")
+      setSelectedPlayerId("")
+      setGoalsToAdd(1)
+      setAssistsToAdd(0)
+      setDescription("")
+      setIsAddGoalsOpen(false)
+
+      // Recargar goleadores
+      loadTopScorers()
+    } catch (error) {
+      console.error('Error adding goals:', error)
+      toast.error('Error al agregar goles')
+    } finally {
+      setSavingGoals(false)
+    }
+  }
+
+  const handleEditScorer = (scorer: ScorerData) => {
+    setEditingPlayer(scorer)
+    setEditGoals(scorer.total_goals)
+    setEditAssists(scorer.total_assists)
+    setIsEditMode(true)
+  }
+
+  const handleUpdateScorer = async () => {
+    if (!editingPlayer) return
+
+    setSavingGoals(true)
+    try {
+      // Obtener todos los registros del jugador para calcular la diferencia
+      const { data: allStats, error: fetchError } = await supabase
+        .from('player_stats')
+        .select('id, goals, assists, match_id')
+        .eq('player_id', editingPlayer.player_id)
+
+      if (fetchError) throw fetchError
+
+      const currentTotal = allStats?.reduce((sum, s) => sum + (s.goals || 0), 0) || 0
+      const currentAssists = allStats?.reduce((sum, s) => sum + (s.assists || 0), 0) || 0
+      const goalsDiff = editGoals - currentTotal
+      const assistsDiff = editAssists - currentAssists
+
+      if (goalsDiff === 0 && assistsDiff === 0) {
+        toast.info('No hay cambios que guardar')
+        setIsEditMode(false)
+        setEditingPlayer(null)
+        return
+      }
+
+      // Buscar registro extemporáneo existente (match_id IS NULL)
+      const extemporaneousRecord = allStats?.find(s => s.match_id === null)
+
+      if (extemporaneousRecord) {
+        // Actualizar registro extemporáneo existente
+        const newGoals = Math.max(0, extemporaneousRecord.goals + goalsDiff)
+        const newAssists = Math.max(0, extemporaneousRecord.assists + assistsDiff)
+
+        if (newGoals === 0 && newAssists === 0) {
+          // Si quedan en 0, eliminar el registro extemporáneo
+          await supabase
+            .from('player_stats')
+            .delete()
+            .eq('id', extemporaneousRecord.id)
+        } else {
+          await supabase
+            .from('player_stats')
+            .update({ goals: newGoals, assists: newAssists })
+            .eq('id', extemporaneousRecord.id)
+        }
+      } else if (goalsDiff > 0 || assistsDiff > 0) {
+        // Crear nuevo registro extemporáneo (match_id = null)
+        await supabase
+          .from('player_stats')
+          .insert({
+            player_id: editingPlayer.player_id,
+            match_id: null,
+            goals: Math.max(0, goalsDiff),
+            assists: Math.max(0, assistsDiff),
+            yellow_cards: 0,
+            red_cards: 0,
+            minutes_played: 0,
+          })
+      }
+
+      toast.success('Estadísticas actualizadas correctamente')
+      setIsEditMode(false)
+      setEditingPlayer(null)
+      loadTopScorers()
+    } catch (error) {
+      console.error('Error updating scorer:', error)
+      toast.error('Error al actualizar estadísticas')
+    } finally {
+      setSavingGoals(false)
+    }
+  }
+
+  const handleDeleteExtemporaneousGoals = async (playerId: string) => {
+    if (!confirm('¿Estás seguro de eliminar los goles extemporáneos de este jugador?')) return
+
+    try {
+      const { error } = await supabase
+        .from('player_stats')
+        .delete()
+        .eq('player_id', playerId)
+        .is('match_id', null)
+
+      if (error) throw error
+
+      toast.success('Goles extemporáneos eliminados')
+      loadTopScorers()
+    } catch (error) {
+      console.error('Error deleting extemporaneous goals:', error)
+      toast.error('Error al eliminar goles')
+    }
+  }
 
   const loadTopScorers = async () => {
     setLoading(true)
@@ -206,9 +476,18 @@ export function TopScorers({ leagueId }: TopScorerProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Tabla de Goleadores</h2>
-        <p className="text-white/80 drop-shadow">Ranking de goleadores de la liga</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Tabla de Goleadores</h2>
+          <p className="text-white/80 drop-shadow">Ranking de goleadores de la liga</p>
+        </div>
+        <Button
+          onClick={() => setIsAddGoalsOpen(true)}
+          className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Agregar Goles
+        </Button>
       </div>
 
       <Card className="backdrop-blur-xl bg-white/10 border-white/20">
@@ -245,6 +524,7 @@ export function TopScorers({ leagueId }: TopScorerProps) {
                     <TableHead className="text-center text-white/90">Goles</TableHead>
                     <TableHead className="text-center text-white/90">Asistencias</TableHead>
                     <TableHead className="text-center text-white/90">Promedio</TableHead>
+                    <TableHead className="text-center text-white/90">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -283,6 +563,16 @@ export function TopScorers({ leagueId }: TopScorerProps) {
                         </TableCell>
                         <TableCell className="text-center text-sm text-white/70">
                           {scorer.goals_per_match.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditScorer(scorer)}
+                            className="text-white/70 hover:text-white hover:bg-white/10"
+                          >
+                            Editar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
@@ -350,6 +640,195 @@ export function TopScorers({ leagueId }: TopScorerProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal para agregar goles extemporáneos */}
+      <Dialog open={isAddGoalsOpen} onOpenChange={setIsAddGoalsOpen}>
+        <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 to-slate-800/95 border-white/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg flex items-center gap-2">
+              <Plus className="w-5 h-5 text-green-400" />
+              Agregar Goles Extemporáneos
+            </DialogTitle>
+            <DialogDescription className="text-white/70">
+              Agrega goles históricos a jugadores para ligas que comenzaron antes del sistema.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Selector de equipo */}
+            <div className="space-y-2">
+              <Label className="text-white/90">Equipo</Label>
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white">
+                  <SelectValue placeholder={loadingTeams ? "Cargando equipos..." : "Selecciona un equipo"} />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/20">
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id} className="text-white hover:bg-white/10">
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selector de jugador */}
+            <div className="space-y-2">
+              <Label className="text-white/90">Jugador</Label>
+              <Select
+                value={selectedPlayerId}
+                onValueChange={setSelectedPlayerId}
+                disabled={!selectedTeamId}
+              >
+                <SelectTrigger className="backdrop-blur-md bg-white/10 border-white/30 text-white disabled:opacity-50">
+                  <SelectValue placeholder={
+                    !selectedTeamId
+                      ? "Primero selecciona un equipo"
+                      : loadingPlayers
+                        ? "Cargando jugadores..."
+                        : "Selecciona un jugador"
+                  } />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/20">
+                  {players.map((player) => (
+                    <SelectItem key={player.id} value={player.id} className="text-white hover:bg-white/10">
+                      #{player.jersey_number} - {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Cantidad de goles */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/90">Goles</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={goalsToAdd}
+                  onChange={(e) => setGoalsToAdd(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/90">Asistencias (opcional)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={assistsToAdd}
+                  onChange={(e) => setAssistsToAdd(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddGoalsOpen(false)}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddExtemporaneousGoals}
+              disabled={savingGoals || !selectedPlayerId || goalsToAdd < 1}
+              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+            >
+              {savingGoals ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Goles
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar goles de un jugador existente */}
+      <Dialog open={isEditMode} onOpenChange={(open) => {
+        if (!open) {
+          setIsEditMode(false)
+          setEditingPlayer(null)
+        }
+      }}>
+        <DialogContent className="backdrop-blur-xl bg-gradient-to-br from-slate-900/95 to-slate-800/95 border-white/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white drop-shadow-lg">
+              Editar Estadísticas - {editingPlayer?.player_name}
+            </DialogTitle>
+            <DialogDescription className="text-white/70">
+              Modifica los goles y asistencias totales del jugador.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-white/90">Total Goles</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editGoals}
+                  onChange={(e) => setEditGoals(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/90">Total Asistencias</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editAssists}
+                  onChange={(e) => setEditAssists(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="backdrop-blur-md bg-white/10 border-white/30 text-white"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-white/50">
+              Los cambios se aplicarán como ajuste extemporáneo. Los goles registrados en partidos no serán modificados.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditMode(false)
+                setEditingPlayer(null)
+              }}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdateScorer}
+              disabled={savingGoals}
+              className="backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0"
+            >
+              {savingGoals ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Cambios'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

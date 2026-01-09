@@ -1,47 +1,30 @@
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { storageService, type BucketName } from '@/lib/storage'
 
 export interface UploadResult {
   publicUrl: string
   path: string
 }
 
-type BucketName = 'player-photos' | 'team-logos' | 'league-logos'
-
 export class FileUploadService {
-  private supabase = createClientSupabaseClient()
-
   /**
-   * Sube un archivo a Supabase Storage
+   * Sube un archivo al storage (Supabase, Wasabi, o ambos según configuración)
    * @param file - Archivo a subir
-   * @param bucket - Nombre del bucket ('player-photos', 'team-logos', 'league-logos')
+   * @param bucket - Nombre del bucket ('player-photos', 'team-logos', 'league-logos', 'app-releases')
    * @param fileName - Nombre del archivo (sin extensión, se genera automáticamente)
    */
   async upload(file: File, bucket: BucketName, fileName: string): Promise<UploadResult> {
     try {
-      // Obtener extensión del archivo
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
       const path = `${fileName}.${ext}`
 
-      // Subir a Supabase Storage
-      const { error: uploadError } = await this.supabase.storage
-        .from(bucket)
-        .upload(path, file, {
-          contentType: file.type,
-          upsert: true // Reemplazar si existe
-        })
-
-      if (uploadError) {
-        throw new Error(`Error subiendo archivo: ${uploadError.message}`)
-      }
-
-      // Obtener URL pública
-      const { data: { publicUrl } } = this.supabase.storage
-        .from(bucket)
-        .getPublicUrl(path)
+      const result = await storageService.upload(file, bucket, path, {
+        contentType: file.type,
+        upsert: true,
+      })
 
       return {
-        publicUrl,
-        path
+        publicUrl: result.publicUrl,
+        path: result.path,
       }
     } catch (error) {
       console.error('File upload service error:', error)
@@ -87,13 +70,7 @@ export class FileUploadService {
    */
   async delete(bucket: BucketName, path: string): Promise<void> {
     try {
-      const { error } = await this.supabase.storage
-        .from(bucket)
-        .remove([path])
-
-      if (error) {
-        console.warn('Error eliminando archivo:', error.message)
-      }
+      await storageService.delete(bucket, path)
     } catch (error) {
       console.warn('Delete file service error:', error)
     }
@@ -104,9 +81,10 @@ export class FileUploadService {
    * @deprecated Usar delete(bucket, path)
    */
   async deleteLogo(path: string): Promise<void> {
-    // Intentar eliminar de ambos buckets
-    await this.delete('team-logos', path)
-    await this.delete('player-photos', path)
+    await Promise.allSettled([
+      storageService.delete('team-logos', path),
+      storageService.delete('player-photos', path),
+    ])
   }
 }
 

@@ -211,13 +211,21 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("es-ES", {
+    // Parse the date and treat it as-is (without timezone conversion)
+    // The dates are stored with the local time but marked as UTC
+    const date = new Date(dateString)
+    return date.toLocaleDateString("es-ES", {
       weekday: "short",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      timeZone: "UTC", // Treat as UTC to avoid timezone conversion
     })
+  }
+
+  const formatTime = (timeString: string) => {
+    // Format time string (HH:MM:SS) to HH:MM
+    if (!timeString) return ""
+    return timeString.substring(0, 5)
   }
 
   return (
@@ -572,6 +580,9 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                     <div className="flex flex-col items-end space-y-1">
                                       <p className="text-sm font-medium text-white drop-shadow">
                                         {formatDate(match.match_date)}
+                                        {match.match_time && (
+                                          <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
+                                        )}
                                       </p>
                                       <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                         {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
@@ -620,6 +631,9 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                     <div className="flex flex-col items-end space-y-1">
                                       <p className="text-sm font-medium text-white drop-shadow">
                                         {formatDate(match.match_date)}
+                                        {match.match_time && (
+                                          <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
+                                        )}
                                       </p>
                                       <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                         {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
@@ -663,6 +677,9 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                     <div className="flex flex-col items-end space-y-1">
                                       <p className="text-sm font-medium text-white drop-shadow">
                                         {formatDate(match.match_date)}
+                                        {match.match_time && (
+                                          <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
+                                        )}
                                       </p>
                                       <Badge className={`text-xs backdrop-blur-md border-0 ${isFinished ? 'bg-gray-500/80 text-white' : 'bg-blue-500/80 text-white'}`}>
                                         {isFinished ? "Finalizado" : match.status === 'in_progress' ? "En progreso" : "Programado"}
@@ -706,6 +723,9 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                     <div className="flex flex-col items-end space-y-1">
                                       <p className="text-base font-bold text-white drop-shadow">
                                         {formatDate(match.match_date)}
+                                        {match.match_time && (
+                                          <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
+                                        )}
                                       </p>
                                       <Badge className={`text-sm backdrop-blur-md border-0 ${isFinished ? 'bg-green-500/80 text-white' : 'bg-yellow-500/80 text-white'}`}>
                                         {isFinished ? "✅ FINALIZADO" : match.status === 'in_progress' ? "⚽ EN VIVO" : "📅 PROGRAMADO"}
@@ -839,7 +859,12 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                           </Avatar>
                         </div>
                         <div className="text-right ml-2 md:ml-4 flex-shrink-0">
-                          <p className="text-[9px] md:text-xs text-gray-400">{formatDate(match.match_date)}</p>
+                          <p className="text-[9px] md:text-xs text-gray-400">
+                            {formatDate(match.match_date)}
+                            {match.match_time && (
+                              <span className="ml-1 text-white/70">{formatTime(match.match_time)}</span>
+                            )}
+                          </p>
                           <Badge className="text-[9px] md:text-[10px] bg-blue-500/20 text-blue-400 border-0 px-1 md:px-1.5 py-0">
                             Prog.
                           </Badge>
@@ -874,7 +899,12 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                               </Avatar>
                             </div>
                             <div className="text-right ml-2 flex-shrink-0">
-                              <p className="text-[9px] text-gray-400">{formatDate(match.match_date)}</p>
+                              <p className="text-[9px] text-gray-400">
+                                {formatDate(match.match_date)}
+                                {match.match_time && (
+                                  <span className="ml-1 text-white/70">{formatTime(match.match_time)}</span>
+                                )}
+                              </p>
                               {match.playoff_round && (
                                 <Badge className="text-[9px] bg-yellow-500/20 text-yellow-400 border-0 px-1 py-0">
                                   {match.playoff_round === 'final' ? 'Final' : match.playoff_round === 'semifinals' ? 'Semi' : 'Cuartos'}
@@ -923,7 +953,12 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                           </Avatar>
                         </div>
                         <div className="text-right ml-2 flex-shrink-0">
-                          <p className="text-[9px] md:text-xs text-gray-400">{formatDate(match.match_date)}</p>
+                          <p className="text-[9px] md:text-xs text-gray-400">
+                            {formatDate(match.match_date)}
+                            {match.match_time && (
+                              <span className="ml-1 text-white/70">{formatTime(match.match_time)}</span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -957,7 +992,12 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                               </Avatar>
                             </div>
                             <div className="text-right ml-2 flex-shrink-0">
-                              <p className="text-[9px] text-gray-400">{formatDate(match.match_date)}</p>
+                              <p className="text-[9px] text-gray-400">
+                                {formatDate(match.match_date)}
+                                {match.match_time && (
+                                  <span className="ml-1 text-white/70">{formatTime(match.match_time)}</span>
+                                )}
+                              </p>
                               {match.playoff_round && (
                                 <Badge className="text-[9px] bg-green-500/20 text-green-400 border-0 px-1 py-0">
                                   {match.playoff_round === 'final' ? 'Final' : match.playoff_round === 'semifinals' ? 'Semi' : 'Cuartos'}
@@ -1083,7 +1123,7 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                             <p className="text-sm font-medium text-white drop-shadow">
                                               {formatDate(match.match_date)}
                                               {match.match_time && (
-                                                <span className="ml-2 text-white/70">{match.match_time}</span>
+                                                <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
                                               )}
                                             </p>
                                             {match.field_number && (
@@ -1137,7 +1177,7 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                             <p className="text-sm font-medium text-white drop-shadow">
                                               {formatDate(match.match_date)}
                                               {match.match_time && (
-                                                <span className="ml-2 text-white/70">{match.match_time}</span>
+                                                <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
                                               )}
                                             </p>
                                             {match.field_number && (
@@ -1186,7 +1226,7 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                             <p className="text-sm font-medium text-white drop-shadow">
                                               {formatDate(match.match_date)}
                                               {match.match_time && (
-                                                <span className="ml-2 text-white/70">{match.match_time}</span>
+                                                <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
                                               )}
                                             </p>
                                             {match.field_number && (
@@ -1235,7 +1275,7 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                             <p className="text-base font-bold text-white drop-shadow">
                                               {formatDate(match.match_date)}
                                               {match.match_time && (
-                                                <span className="ml-2 text-white/70">{match.match_time}</span>
+                                                <span className="ml-2 text-white/70">{formatTime(match.match_time)}</span>
                                               )}
                                             </p>
                                             {match.field_number && (
@@ -1328,7 +1368,12 @@ export function PublicLeagueView({ league, tournamentId, initialData }: PublicLe
                                     </div>
                                   </div>
                                   <div className="text-right ml-3">
-                                    <p className="text-[10px] text-gray-400">{formatDate(match.match_date)}</p>
+                                    <p className="text-[10px] text-gray-400">
+                                      {formatDate(match.match_date)}
+                                      {match.match_time && (
+                                        <span className="ml-1 text-white/70">{formatTime(match.match_time)}</span>
+                                      )}
+                                    </p>
                                     {match.field_number && (
                                       <p className="text-[10px] text-gray-500">Campo {match.field_number}</p>
                                     )}
