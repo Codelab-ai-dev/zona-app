@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.966.0",
+    "@aws-sdk/lib-storage": "^3.966.0",
     "@hookform/resolvers": "^3.10.0",
     "@mux/mux-node": "^12.8.1",
     "@mux/mux-player-react": "^3.10.2",
