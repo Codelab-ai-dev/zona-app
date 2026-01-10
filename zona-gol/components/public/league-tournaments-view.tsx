@@ -28,6 +28,7 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
   const [tournaments, setTournaments] = useState<TournamentWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [navigating, setNavigating] = useState<string | null>(null)
 
   useEffect(() => {
     const loadTournaments = async () => {
@@ -183,12 +184,20 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
         <header className="pt-4 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <Button
-              onClick={() => router.push('/')}
+              onClick={() => {
+                setNavigating('home')
+                router.push('/')
+              }}
               variant="ghost"
               size="sm"
+              disabled={navigating !== null}
               className="text-gray-400 hover:text-white hover:bg-white/10"
             >
-              <Home className="w-4 h-4 mr-2" />
+              {navigating === 'home' ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Home className="w-4 h-4 mr-2" />
+              )}
               Inicio
             </Button>
           </div>
@@ -326,15 +335,27 @@ export function LeagueTournamentsView({ league }: LeagueTournamentsViewProps) {
                       </div>
 
                       {/* Botón */}
-                      <Link href={`/liga/${league.slug}/torneo/${tournament.id}`}>
-                        <Button
-                          className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md shadow-green-500/25 transition-all duration-300"
-                          size="sm"
-                        >
-                          Ver Torneo
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
+                      <Button
+                        onClick={() => {
+                          setNavigating(tournament.id)
+                          router.push(`/liga/${league.slug}/torneo/${tournament.id}`)
+                        }}
+                        disabled={navigating !== null}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md shadow-green-500/25 transition-all duration-300 disabled:opacity-70"
+                        size="sm"
+                      >
+                        {navigating === tournament.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cargando...
+                          </>
+                        ) : (
+                          <>
+                            Ver Torneo
+                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 ))}

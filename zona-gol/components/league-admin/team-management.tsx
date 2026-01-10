@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { FileUpload } from "@/components/ui/file-upload"
+import { FileUploadStorage } from "@/components/ui/file-upload-storage"
 import {
   Dialog,
   DialogContent,
@@ -71,6 +71,8 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   const [updating, setUpdating] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [newTeamId, setNewTeamId] = useState<string>(() => crypto.randomUUID())
   const [selectedTournamentFilter, setSelectedTournamentFilter] = useState<string>("all")
   const [formData, setFormData] = useState({
     name: "",
@@ -244,10 +246,10 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
     })
   }
 
-  const handleLogoChange = (file: File | null, dataUrl?: string) => {
+  const handleLogoChange = (url: string | null) => {
     setFormData({
       ...formData,
-      logo: dataUrl || "",
+      logo: url || "",
     })
   }
 
@@ -379,7 +381,8 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
           if (open) {
-            // Limpiar formulario al abrir
+            // Limpiar formulario y generar nuevo ID al abrir
+            setNewTeamId(crypto.randomUUID())
             setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
           }
           setIsCreateDialogOpen(open)
@@ -406,12 +409,16 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                 <h4 className="font-medium text-white text-xs md:text-sm border-b border-white/10 pb-2">Información del Equipo</h4>
 
                 <div className="flex justify-center">
-                  <FileUpload
+                  <FileUploadStorage
                     variant="avatar"
+                    bucket="team-logos"
+                    fileId={newTeamId}
                     accept="image/*"
                     maxSize={2}
                     value={formData.logo}
                     onChange={handleLogoChange}
+                    onUploadStart={() => setUploadingLogo(true)}
+                    onUploadEnd={() => setUploadingLogo(false)}
                   />
                 </div>
 
@@ -525,10 +532,15 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
               </Button>
               <Button
                 onClick={handleCreateTeam}
-                disabled={!formData.name.trim() || !formData.ownerName.trim() || !formData.ownerEmail.trim() || creating}
+                disabled={!formData.name.trim() || !formData.ownerName.trim() || !formData.ownerEmail.trim() || creating || uploadingLogo}
                 className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
               >
-                {creating ? (
+                {uploadingLogo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    Subiendo logo...
+                  </>
+                ) : creating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                     Creando...
@@ -709,12 +721,16 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="flex justify-center">
-              <FileUpload
+              <FileUploadStorage
                 variant="avatar"
+                bucket="team-logos"
+                fileId={editingTeam?.id || ''}
                 accept="image/*"
                 maxSize={2}
                 value={formData.logo}
                 onChange={handleLogoChange}
+                onUploadStart={() => setUploadingLogo(true)}
+                onUploadEnd={() => setUploadingLogo(false)}
               />
             </div>
             <div>
@@ -817,10 +833,15 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
             </Button>
             <Button
               onClick={handleUpdateTeam}
-              disabled={!formData.name.trim() || updating}
+              disabled={!formData.name.trim() || updating || uploadingLogo}
               className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
             >
-              {updating ? (
+              {uploadingLogo ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  Subiendo logo...
+                </>
+              ) : updating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                   Actualizando...

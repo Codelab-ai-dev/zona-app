@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -42,11 +43,13 @@ interface LeagueDirectoryProps {
 }
 
 export function LeagueDirectory({ initialData }: LeagueDirectoryProps) {
+  const router = useRouter()
   const { getActiveLeagues, getLeagueStats, loading: hookLoading, error, leagues: hookLeagues } = useLeagues()
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
   const [mounted, setMounted] = useState(false)
+  const [navigating, setNavigating] = useState<string | null>(null)
 
   const [leagueStats, setLeagueStats] = useState<Record<string, LeagueStats>>(
     initialData?.leagueStats || {}
@@ -405,14 +408,25 @@ export function LeagueDirectory({ initialData }: LeagueDirectoryProps) {
 
                                     {/* CTA Button */}
                                     <Button
-                                      asChild
-                                      className="group relative w-full md:w-auto h-9 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:via-emerald-300 hover:to-emerald-400 text-white font-semibold px-5 rounded-lg border-0 overflow-hidden shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                                      onClick={() => {
+                                        setNavigating(league.id)
+                                        router.push(`/liga/${league.slug}`)
+                                      }}
+                                      disabled={navigating !== null}
+                                      className="group relative w-full md:w-auto h-9 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 hover:from-emerald-400 hover:via-emerald-300 hover:to-emerald-400 text-white font-semibold px-5 rounded-lg border-0 overflow-hidden shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
-                                      <Link href={`/liga/${league.slug}`} className="flex items-center justify-center gap-2">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                                        <span className="relative text-sm">Ver Liga</span>
-                                        <ArrowRight className="relative w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
-                                      </Link>
+                                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                                      {navigating === league.id ? (
+                                        <>
+                                          <Loader2 className="relative w-4 h-4 mr-2 animate-spin" />
+                                          <span className="relative text-sm">Cargando...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="relative text-sm">Ver Liga</span>
+                                          <ArrowRight className="relative w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+                                        </>
+                                      )}
                                     </Button>
                                   </div>
                                 </div>
