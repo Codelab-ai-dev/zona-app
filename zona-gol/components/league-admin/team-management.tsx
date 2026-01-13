@@ -86,6 +86,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
   })
   const [showCredentials, setShowCredentials] = useState(false)
   const [ownerCredentials, setOwnerCredentials] = useState<{email: string, password: string, name: string} | null>(null)
+  const [navigatingToTeam, setNavigatingToTeam] = useState<string | null>(null)
 
   // Helper para invalidar caché después de operaciones
   const invalidateTeamsCache = () => {
@@ -335,6 +336,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
 
   const handleTeamClick = (teamId: string) => {
     console.log('🔵 Navigating to team:', teamId)
+    setNavigatingToTeam(teamId)
     router.push(`/equipos/${teamId}`)
   }
 
@@ -608,7 +610,15 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
       ) : (
         <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTeams.map((team) => (
-            <Card key={team.id} className="cursor-pointer backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all">
+            <Card key={team.id} className="cursor-pointer backdrop-blur-xl bg-white/10 border-white/20 hover:bg-white/15 transition-all relative">
+              {navigatingToTeam === team.id && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-green-400" />
+                    <p className="text-white text-sm font-medium">Cargando equipo...</p>
+                  </div>
+                </div>
+              )}
               <CardHeader onClick={() => handleTeamClick(team.id)}>
                 <div className="flex items-center space-x-3">
                   <Avatar className="w-12 h-12">

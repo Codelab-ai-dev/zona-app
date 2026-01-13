@@ -33,7 +33,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
     // Verificar que el torneo existe en los resultados
     const tournamentExists = tournaments?.some(t => t.id === tournamentId)
     if (!tournamentExists) {
-      console.error('Tournament not found in league')
+      // Esto es un 404 esperado, no un error del sistema
       notFound()
     }
 
@@ -49,8 +49,11 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
         }}
       />
     )
-  } catch (error) {
-    console.error('Error loading tournament page:', error)
+  } catch (error: any) {
+    // Solo loguear errores reales del sistema, no 404s esperados
+    if (error?.code !== 'PGRST116') {
+      console.error('Error loading tournament page:', error)
+    }
     notFound()
   }
 }
