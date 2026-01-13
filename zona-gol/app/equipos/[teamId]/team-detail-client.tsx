@@ -263,10 +263,8 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
 
       const allCredentials = [...playersWithQR, ...staffWithQR]
 
-      const printWindow = window.open('', '_blank')
-      if (!printWindow) {
-        throw new Error('No se pudo abrir ventana de impresión')
-      }
+      // Detectar si es móvil
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
       const teamLogoHTML = team?.logo
         ? `<img src="${team.logo}" alt="Logo ${team.name}" class="team-logo" crossorigin="anonymous" />`
@@ -342,7 +340,7 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
         }
       }).join('')
 
-      printWindow.document.write(`
+      const printHTML = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -381,15 +379,57 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
             <div class="credentials-container">${credentialsHTML}</div>
           </body>
         </html>
-      `)
+      `
 
-      printWindow.document.close()
-      printWindow.onload = () => {
+      if (isMobile) {
+        // En móvil: usar iframe oculto para evitar bloqueos
+        const iframe = document.createElement('iframe')
+        iframe.style.position = 'fixed'
+        iframe.style.right = '0'
+        iframe.style.bottom = '0'
+        iframe.style.width = '0'
+        iframe.style.height = '0'
+        iframe.style.border = 'none'
+
+        document.body.appendChild(iframe)
+
+        const iframeDoc = iframe.contentWindow?.document
+        if (!iframeDoc) {
+          document.body.removeChild(iframe)
+          throw new Error('No se pudo crear contenido de impresión')
+        }
+
+        iframeDoc.open()
+        iframeDoc.write(printHTML)
+        iframeDoc.close()
+
+        // Esperar a que las imágenes carguen
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        iframe.contentWindow?.focus()
+        iframe.contentWindow?.print()
+
+        // Limpiar después de imprimir
         setTimeout(() => {
-          printWindow.print()
-          printWindow.close()
+          document.body.removeChild(iframe)
           setPrintingAll(false)
-        }, 500)
+        }, 1500)
+      } else {
+        // En desktop: usar window.open
+        const printWindow = window.open('', '_blank')
+        if (!printWindow) {
+          throw new Error('No se pudo abrir ventana de impresión. Por favor permite ventanas emergentes.')
+        }
+
+        printWindow.document.write(printHTML)
+        printWindow.document.close()
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print()
+            printWindow.close()
+            setPrintingAll(false)
+          }, 500)
+        }
       }
 
     } catch (error: any) {

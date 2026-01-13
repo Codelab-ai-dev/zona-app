@@ -667,23 +667,23 @@ export const serverLeagueActions = {
   async getLeagueBySlug(slug: string) {
     const supabase = getServerSupabaseClient()
 
-    try {
-      const { data: league, error } = await supabase
-        .from('leagues')
-        .select('*')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .single()
+    const { data: league, error } = await supabase
+      .from('leagues')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .single()
 
-      if (error) {
-        throw error
+    if (error) {
+      // PGRST116 es esperado cuando no se encuentra la liga (404)
+      // Solo loguear errores reales de base de datos
+      if (error.code !== 'PGRST116') {
+        console.error(`Database error loading league '${slug}':`, error)
       }
-
-      return league
-    } catch (error) {
-      // console.error('Get league by slug error:', error)
       throw error
     }
+
+    return league
   },
 
   async getTournamentsByLeague(leagueId: string) {

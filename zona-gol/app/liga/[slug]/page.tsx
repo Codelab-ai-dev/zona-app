@@ -16,8 +16,11 @@ export default async function PublicLeaguePage({ params }: PublicLeaguePageProps
     const { slug } = await params
     const league = await serverLeagueActions.getLeagueBySlug(slug)
     return <LeagueTournamentsView league={league} />
-  } catch (error) {
-    console.error('Error loading league:', error)
+  } catch (error: any) {
+    // Solo loguear errores reales, no 404s esperados (PGRST116)
+    if (error?.code !== 'PGRST116') {
+      console.error('Error loading league:', error)
+    }
     notFound()
   }
 }
