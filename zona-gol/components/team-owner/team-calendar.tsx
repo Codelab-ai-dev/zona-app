@@ -1,15 +1,49 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, CalendarDays } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Loader2, Calendar, Clock, MapPin, AlertCircle, CheckCircle2, CalendarDays, FileText, ChevronDown, ChevronUp } from "lucide-react"
 import { useMatchesByTeam } from "@/lib/queries"
 import { cn } from "@/lib/utils"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 interface TeamCalendarProps {
   teamId: string
+}
+
+interface MatchGoal {
+  id: string
+  player_id: string
+  minute: number
+  assist_player_id: string | null
+  player: {
+    name: string
+    jersey_number: number
+  }
+  assist_player?: {
+    name: string
+    jersey_number: number
+  } | null
+}
+
+interface MatchCard {
+  id: string
+  player_id: string
+  card_type: 'yellow' | 'red'
+  minute: number
+  player: {
+    name: string
+    jersey_number: number
+  }
+}
+
+interface MatchCedula {
+  goals: MatchGoal[]
+  cards: MatchCard[]
+  observations: string | null
 }
 
 export function TeamCalendar({ teamId }: TeamCalendarProps) {
@@ -92,10 +126,72 @@ export function TeamCalendar({ teamId }: TeamCalendarProps) {
   }
 
   const MatchCard = ({ match }: { match: typeof matches[0] }) => {
+    const supabase = createClientSupabaseClient()
     const isHome = match.home_team_id === teamId
     const opponent = isHome ? match.away_team : match.home_team
     const result = getMatchResult(match)
     const isFinished = match.status === 'finished'
+    const [showCedula, setShowCedula] = useState(false)
+    const [cedula, setCedula] = useState<MatchCedula | null>(null)
+    const [loadingCedula, setLoadingCedula] = useState(false)
+
+    const loadCedula = async () => {
+      if (cedula || !isFinished) return // Ya cargada o partido no finalizado
+
+      setLoadingCedula(true)
+      try {
+        // Cargar goles
+        const { data: goals } = await supabase
+          .from('match_goals')
+          .select(`
+            id,
+            player_id,
+            minute,
+            assist_player_id,
+            player:players!match_goals_player_id_fkey(name, jersey_number),
+            assist_player:players!match_goals_assist_player_id_fkey(name, jersey_number)
+          `)
+          .eq('match_id', match.id)
+          .order('minute')
+
+        // Cargar tarjetas
+        const { data: cards } = await supabase
+          .from('match_cards')
+          .select(`
+            id,
+            player_id,
+            card_type,
+            minute,
+            player:players(name, jersey_number)
+          `)
+          .eq('match_id', match.id)
+          .order('minute')
+
+        // Cargar observaciones
+        const { data: report } = await supabase
+          .from('match_referee_reports')
+          .select('general_observations')
+          .eq('match_id', match.id)
+          .maybeSingle()
+
+        setCedula({
+          goals: goals || [],
+          cards: cards || [],
+          observations: report?.general_observations || null
+        })
+      } catch (error) {
+        console.error('Error loading cedula:', error)
+      } finally {
+        setLoadingCedula(false)
+      }
+    }
+
+    const toggleCedula = () => {
+      if (!showCedula && !cedula) {
+        loadCedula()
+      }
+      setShowCedula(!showCedula)
+    }
 
     return (
       <div className={cn(
@@ -203,6 +299,114 @@ export function TeamCalendar({ teamId }: TeamCalendarProps) {
             </div>
           )}
         </div>
+
+        {/* Botón de cédula arbitral (solo para partidos finalizados) */}
+        {isFinished && (
+          <>
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleCedula}
+                className="w-full text-white/70 hover:text-white hover:bg-white/10 text-xs h-8"
+              >
+                <FileText className="w-3.5 h-3.5 mr-2" />
+                Cédula Arbitral
+                {showCedula ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+              </Button>
+            </div>
+
+            {/* Contenido de la cédula arbitral */}
+            {showCedula && (
+              <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
+                {loadingCedula ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-white/50" />
+                    <span className="ml-2 text-xs text-white/50">Cargando cédula...</span>
+                  </div>
+                ) : cedula ? (
+                  <>
+                    {/* Goles */}
+                    {cedula.goals.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-white/90 mb-2 flex items-center gap-1.5">
+                          ⚽ Goles ({cedula.goals.length})
+                        </h4>
+                        <div className="space-y-1.5">
+                          {cedula.goals.map((goal) => (
+                            <div key={goal.id} className="text-xs text-white/70 bg-white/5 rounded p-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-white/90">
+                                  #{goal.player.jersey_number} {goal.player.name}
+                                </span>
+                                <span className="text-[10px] text-white/50">{goal.minute}'</span>
+                              </div>
+                              {goal.assist_player && (
+                                <div className="text-[10px] text-white/50 mt-0.5">
+                                  Asistencia: #{goal.assist_player.jersey_number} {goal.assist_player.name}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tarjetas */}
+                    {cedula.cards.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-white/90 mb-2 flex items-center gap-1.5">
+                          🟨🟥 Tarjetas ({cedula.cards.length})
+                        </h4>
+                        <div className="space-y-1.5">
+                          {cedula.cards.map((card) => (
+                            <div key={card.id} className="text-xs text-white/70 bg-white/5 rounded p-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "w-3 h-4 rounded-sm flex-shrink-0",
+                                    card.card_type === 'yellow' ? "bg-yellow-500" : "bg-red-500"
+                                  )} />
+                                  <span className="font-medium text-white/90">
+                                    #{card.player.jersey_number} {card.player.name}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-white/50">{card.minute}'</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Observaciones */}
+                    {cedula.observations && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-white/90 mb-2 flex items-center gap-1.5">
+                          📋 Observaciones del Árbitro
+                        </h4>
+                        <div className="text-xs text-white/70 bg-white/5 rounded p-2">
+                          {cedula.observations}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sin incidencias */}
+                    {cedula.goals.length === 0 && cedula.cards.length === 0 && !cedula.observations && (
+                      <div className="text-center py-4">
+                        <p className="text-xs text-white/50">No hay incidencias registradas</p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-white/50">Error al cargar la cédula</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     )
   }
