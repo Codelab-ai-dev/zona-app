@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -118,6 +119,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
   const [homeCards, setHomeCards] = useState<Card[]>([])
   const [awayCards, setAwayCards] = useState<Card[]>([])
 
+  const [observations, setObservations] = useState("")
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
 
   const loadMatchPlayers = async (match: Match) => {
@@ -158,6 +160,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
     setAwayGoals([])
     setHomeCards([])
     setAwayCards([])
+    setObservations("")
 
     await loadMatchPlayers(match)
   }
@@ -368,8 +371,18 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
         if (cardError) throw cardError
       }
 
-      // 4. Actualizar estadísticas de equipos (opcional, depende de tu lógica)
-      // Esto se puede hacer con triggers en la BD o aquí manualmente
+      // 4. Guardar observaciones del árbitro (si existen)
+      if (observations.trim()) {
+        const { error: reportsError } = await supabase
+          .from('match_referee_reports')
+          .upsert({
+            match_id: selectedMatch.id,
+            general_observations: observations.trim(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'match_id' })
+
+        if (reportsError) throw reportsError
+      }
 
       // 5. Generate embedding for match result (async, don't wait)
       if (selectedMatch.tournament_id && selectedMatch.tournaments.league_id) {
@@ -423,6 +436,7 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
       setAwayGoals([])
       setHomeCards([])
       setAwayCards([])
+      setObservations("")
 
       // Recargar partidos e invalidar cache
       refetchMatches()
@@ -783,6 +797,23 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Observaciones del Árbitro */}
+            <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+              <Label className="text-[10px] text-gray-500 uppercase tracking-wide mb-2 block">
+                Observaciones del Árbitro (Opcional)
+              </Label>
+              <Textarea
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+                placeholder="Ej: Partido muy disputado, hubo una lesión en el minuto 45..."
+                className="min-h-[80px] bg-slate-700/50 border-white/10 text-white text-sm resize-none"
+                maxLength={500}
+              />
+              <p className="text-[10px] text-gray-500 mt-1 text-right">
+                {observations.length}/500 caracteres
+              </p>
             </div>
 
             {/* Info + Guardar */}
