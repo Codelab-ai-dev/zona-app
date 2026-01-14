@@ -120,7 +120,7 @@ vi.mock('sonner', () => ({
 vi.mock('@/components/ui/file-upload-storage', () => ({
   FileUploadStorage: ({ onUploadComplete }: any) => (
     <div data-testid="file-upload-storage">
-      <button onClick={() => onUploadComplete('https://example.com/new-logo.png')}>
+      <button onClick={() => onUploadComplete?.('https://example.com/new-logo.png')}>
         Upload Logo
       </button>
     </div>
