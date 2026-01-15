@@ -6,11 +6,13 @@ import { LoginForm } from '../login-form'
 // Mock next/navigation
 const mockPush = vi.fn()
 const mockRefresh = vi.fn()
+const mockSearchParams = new URLSearchParams()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     refresh: mockRefresh,
   }),
+  useSearchParams: () => mockSearchParams,
 }))
 
 // Mock useAuth hook
