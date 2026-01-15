@@ -24,10 +24,12 @@ import { Database } from "@/lib/supabase/database.types"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { fileUploadService } from "@/lib/utils/file-upload"
 import { FileUpload } from "@/components/ui/file-upload"
-import { Plus, Edit, Trash2, Users, Copy, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Users, Copy, Eye, EyeOff, Loader2, Settings } from "lucide-react"
 import { toast } from "sonner"
 import { ProductModeSelector } from "@/components/super-admin/product-mode-selector"
-import type { ProductMode } from "@/lib/types/product-mode"
+import { LeagueFeaturesEditor } from "@/components/super-admin/league-features-editor"
+import type { ProductMode, LeagueFeatures } from "@/lib/types/product-mode"
+import { PRODUCT_MODE_CONFIG } from "@/lib/types/product-mode"
 
 // Definir tipos
 type League = Database['public']['Tables']['leagues']['Row']
@@ -54,6 +56,7 @@ export function LeagueManagement() {
     product_mode: "full" as ProductMode,
   })
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [editingFeatures, setEditingFeatures] = useState<League | null>(null)
 
   // Debug effect to track modal state
   // useEffect(() => {
@@ -766,6 +769,15 @@ export function LeagueManagement() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setEditingFeatures(league)}
+                className="bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20 h-7 px-2"
+                title="Configurar features"
+              >
+                <Settings className="w-3 h-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => toggleLeagueStatus(league.id)}
                 className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700 h-7 px-2 text-[10px]"
               >
@@ -874,6 +886,35 @@ export function LeagueManagement() {
               Actualizar Liga
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Features Editor Dialog */}
+      <Dialog open={!!editingFeatures} onOpenChange={() => setEditingFeatures(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white text-base md:text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-400" />
+              Configurar Features
+            </DialogTitle>
+            <DialogDescription className="text-gray-500 text-xs md:text-sm">
+              Activa o desactiva funcionalidades para {editingFeatures?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {editingFeatures && (
+            <LeagueFeaturesEditor
+              leagueId={editingFeatures.id}
+              leagueName={editingFeatures.name}
+              currentFeatures={
+                ((editingFeatures as any).features as LeagueFeatures) ||
+                PRODUCT_MODE_CONFIG[(editingFeatures as any).product_mode || 'full'].features
+              }
+              onUpdate={() => {
+                getAllLeagues()
+                setEditingFeatures(null)
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
