@@ -27,6 +27,9 @@ const API_ROUTES = [
   '/api/cron',
 ]
 
+// Timeout para operaciones de auth en el middleware (5 segundos)
+const AUTH_TIMEOUT_MS = 5000
+
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some(route => pathname.startsWith(route))
 }
@@ -44,6 +47,46 @@ function isApiRoute(pathname: string): boolean {
   return API_ROUTES.some(route => pathname.startsWith(route))
 }
 
+// Helper para crear una promesa con timeout
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    ),
+  ])
+}
+
+// Helper para limpiar cookies de sesión y redirigir a login
+function clearSessionAndRedirect(request: NextRequest, reason: string): NextResponse {
+  console.warn(`[Middleware] ${reason}, clearing session`)
+
+  const loginUrl = new URL('/login', request.url)
+  loginUrl.searchParams.set('expired', 'true')
+
+  const response = NextResponse.redirect(loginUrl)
+
+  // Limpiar todas las cookies de Supabase
+  const cookiesToClear = [
+    'sb-access-token',
+    'sb-refresh-token',
+    'supabase-auth-token',
+  ]
+
+  // También limpiar cookies con el prefijo del proyecto
+  request.cookies.getAll().forEach(cookie => {
+    if (cookie.name.startsWith('sb-') || cookie.name.includes('supabase')) {
+      cookiesToClear.push(cookie.name)
+    }
+  })
+
+  cookiesToClear.forEach(name => {
+    response.cookies.delete(name)
+  })
+
+  return response
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -57,39 +100,49 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Para rutas públicas que no son login, permitir sin verificar auth
+  // Esto evita llamadas innecesarias a Supabase
+  if (isPublicRoute(pathname) && pathname !== '/login') {
+    return NextResponse.next()
+  }
+
   // Create response and Supabase client
   const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
+
+  // Crear cliente con auto-refresh deshabilitado para evitar loops
+  const supabase = createMiddlewareClient(
+    { req: request, res },
+    {
+      options: {
+        auth: {
+          autoRefreshToken: false, // Deshabilitar auto-refresh en middleware
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
+      },
+    }
+  )
 
   try {
-    // Refresh session - this will automatically handle token refresh
-    const { data: { session }, error } = await supabase.auth.getSession()
+    // Obtener sesión con timeout para evitar que se cuelgue
+    const sessionPromise = supabase.auth.getSession()
+    const { data: { session }, error } = await withTimeout(
+      sessionPromise,
+      AUTH_TIMEOUT_MS,
+      'Auth timeout'
+    )
 
-    // Handle refresh token errors
+    // Handle any auth errors
     if (error) {
       console.error('[Middleware] Auth error:', error.message)
 
-      // Check if it's a refresh token error
-      const isRefreshTokenError =
-        error.message?.includes('Refresh Token') ||
-        error.message?.includes('refresh_token') ||
-        (error as any).code === 'refresh_token_not_found'
-
-      if (isRefreshTokenError) {
-        console.warn('[Middleware] Invalid refresh token, redirecting to login')
-
-        // Clear the session cookies by redirecting to login
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('expired', 'true')
-
-        const response = NextResponse.redirect(loginUrl)
-
-        // Clear Supabase cookies
-        response.cookies.delete('sb-access-token')
-        response.cookies.delete('sb-refresh-token')
-
-        return response
+      // Para rutas protegidas, redirigir a login
+      if (isProtectedRoute(pathname)) {
+        return clearSessionAndRedirect(request, `Auth error: ${error.message}`)
       }
+
+      // Para otras rutas, continuar sin sesión
+      return res
     }
 
     // For protected routes, check if user is authenticated
@@ -109,10 +162,29 @@ export async function middleware(request: NextRequest) {
 
     return res
   } catch (error) {
-    console.error('[Middleware] Unexpected error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[Middleware] Unexpected error:', errorMessage)
 
-    // On unexpected errors, allow the request to continue
-    // The client-side auth will handle it
+    // Si es un error de timeout o red en ruta protegida, redirigir a login
+    if (isProtectedRoute(pathname)) {
+      // Verificar si es error de red/timeout
+      const isNetworkError =
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('fetch') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('ETIMEDOUT')
+
+      if (isNetworkError) {
+        return clearSessionAndRedirect(request, `Network error: ${errorMessage}`)
+      }
+
+      // Para otros errores en rutas protegidas, también redirigir
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('error', 'auth_error')
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // Para rutas públicas, permitir continuar
     return res
   }
 }
