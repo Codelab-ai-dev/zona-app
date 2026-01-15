@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
-import { Mail, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
+import { Mail, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -30,8 +30,22 @@ export function LoginForm() {
   const [resetLoading, setResetLoading] = useState(false)
   const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [showExpiredMessage, setShowExpiredMessage] = useState(false)
   const { signIn, loading, error, isAuthenticated } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Check if session expired
+  useEffect(() => {
+    const expired = searchParams.get('expired')
+    if (expired === 'true') {
+      setShowExpiredMessage(true)
+      // Remove the expired param from URL after showing message
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('expired')
+      window.history.replaceState({}, '', newUrl.pathname)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     setMounted(true)
@@ -200,6 +214,30 @@ export function LoginForm() {
               {/* Decorative corner accents */}
               <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-emerald-500/30 rounded-tl-2xl" />
               <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-emerald-500/30 rounded-br-2xl" />
+
+              {/* Session expired message */}
+              {showExpiredMessage && (
+                <div className="mb-6 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 animate-fade-in">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-amber-400 text-sm font-medium">Tu sesión ha expirado</p>
+                      <p className="text-amber-400/70 text-xs mt-1">
+                        Por seguridad, inicia sesión nuevamente para continuar.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowExpiredMessage(false)}
+                      className="text-amber-400/50 hover:text-amber-400 transition-colors ml-auto"
+                    >
+                      <span className="sr-only">Cerrar</span>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Email field */}
@@ -454,6 +492,13 @@ export function LoginForm() {
         }
         .animate-shake {
           animation: shake 0.5s ease-in-out;
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
         }
       `}</style>
     </div>
