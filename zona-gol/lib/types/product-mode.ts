@@ -15,6 +15,10 @@ export interface LeagueFeatures {
   public_portal: boolean
   statistics: boolean
   ai_agent: boolean
+  // Finance module features
+  finance: boolean
+  finance_auto_fines: boolean
+  finance_payments: boolean
 }
 
 export interface LeagueWithMode {
@@ -47,6 +51,9 @@ export const PRODUCT_MODE_CONFIG: Record<ProductMode, {
       public_portal: true,
       statistics: true,
       ai_agent: true,
+      finance: true,
+      finance_auto_fines: true,
+      finance_payments: true,
     },
     icon: '🏆',
   },
@@ -63,6 +70,9 @@ export const PRODUCT_MODE_CONFIG: Record<ProductMode, {
       public_portal: true,
       statistics: true,
       ai_agent: true,
+      finance: true,
+      finance_auto_fines: false,
+      finance_payments: false,
     },
     icon: '🌐',
   },
@@ -77,6 +87,9 @@ export const FEATURE_LABELS: Record<keyof LeagueFeatures, string> = {
   public_portal: 'Portal Público',
   statistics: 'Estadísticas Avanzadas',
   ai_agent: 'Agente AI por WhatsApp',
+  finance: 'Gestión Financiera',
+  finance_auto_fines: 'Multas Automáticas',
+  finance_payments: 'Pagos en Línea',
 }
 
 export const FEATURE_DESCRIPTIONS: Record<keyof LeagueFeatures, string> = {
@@ -88,4 +101,7 @@ export const FEATURE_DESCRIPTIONS: Record<keyof LeagueFeatures, string> = {
   public_portal: 'Portal web público con tablas de posiciones y calendario',
   statistics: 'Estadísticas detalladas de jugadores y equipos',
   ai_agent: 'Consultas por WhatsApp sobre partidos y estadísticas',
+  finance: 'Control de cuotas, multas, pagos y estados de cuenta por equipo',
+  finance_auto_fines: 'Genera multas automáticamente al registrar tarjetas en partidos',
+  finance_payments: 'Integración con pasarelas de pago (MercadoPago, Stripe)',
 }

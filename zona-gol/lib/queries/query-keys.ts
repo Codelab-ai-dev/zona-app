@@ -79,4 +79,23 @@ export const queryKeys = {
     all: ['uniforms'] as const,
     byTeam: (teamId: string) => [...queryKeys.uniforms.all, 'byTeam', teamId] as const,
   },
+
+  // Finance
+  finance: {
+    all: ['finance'] as const,
+    // Transactions
+    transactions: () => [...queryKeys.finance.all, 'transactions'] as const,
+    transactionsByLeague: (leagueId: string) => [...queryKeys.finance.all, 'transactions', 'league', leagueId] as const,
+    transactionsByTeam: (teamId: string) => [...queryKeys.finance.all, 'transactions', 'team', teamId] as const,
+    transactionsByMatch: (matchId: string) => [...queryKeys.finance.all, 'transactions', 'match', matchId] as const,
+    transactionDetail: (id: string) => [...queryKeys.finance.all, 'transactions', 'detail', id] as const,
+    // Config
+    config: (leagueId: string) => [...queryKeys.finance.all, 'config', leagueId] as const,
+    configByTournament: (leagueId: string, tournamentId: string) => [...queryKeys.finance.all, 'config', leagueId, tournamentId] as const,
+    // Balances
+    teamBalances: (leagueId: string) => [...queryKeys.finance.all, 'balances', leagueId] as const,
+    teamBalance: (teamId: string) => [...queryKeys.finance.all, 'balance', teamId] as const,
+    // Summary
+    leagueSummary: (leagueId: string) => [...queryKeys.finance.all, 'summary', leagueId] as const,
+  },
 }

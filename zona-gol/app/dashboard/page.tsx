@@ -116,6 +116,10 @@ const ProfileSettings = dynamic(() => import("@/components/league-admin/profile-
   loading: () => <ComponentSkeleton />,
   ssr: false
 })
+const FinanceModule = dynamic(() => import("@/components/league-admin/finance").then(mod => ({ default: mod.FinanceModule })), {
+  loading: () => <ComponentSkeleton />,
+  ssr: false
+})
 
 // LAZY LOADING: Componentes Team Owner
 const TeamStats = dynamic(() => import("@/components/team-owner/team-stats").then(mod => ({ default: mod.TeamStats })), {
@@ -315,13 +319,23 @@ export default function DashboardPage() {
         const isKnockout = tournamentFormat === 'knockout'
         const isLeague = tournamentFormat === 'league'
 
-        // Calculate grid columns based on features (+ WhatsApp tab + Standings tab + Verification tab)
+        // Calculate grid columns based on features (+ WhatsApp tab + Standings tab + Verification tab + Finance tab)
         const hasQrFeature = hasFeature('qr_codes')
-        const gridCols = isGroupKnockout
-          ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-15' : 'md:grid-cols-5 lg:grid-cols-14')
-          : isKnockout
-            ? (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-14' : 'md:grid-cols-5 lg:grid-cols-13')
-            : (hasQrFeature ? 'md:grid-cols-5 lg:grid-cols-15' : 'md:grid-cols-5 lg:grid-cols-14')
+        const hasFinanceFeature = hasFeature('finance')
+        const getGridCols = () => {
+          const baseCount = isGroupKnockout ? 14 : isKnockout ? 13 : 14
+          const extraCount = (hasQrFeature ? 1 : 0) + (hasFinanceFeature ? 1 : 0)
+          const total = baseCount + extraCount
+          // Tailwind needs explicit class names for purging
+          const colsMap: Record<number, string> = {
+            13: 'md:grid-cols-5 lg:grid-cols-13',
+            14: 'md:grid-cols-5 lg:grid-cols-14',
+            15: 'md:grid-cols-5 lg:grid-cols-15',
+            16: 'md:grid-cols-5 lg:grid-cols-16',
+          }
+          return colsMap[total] || 'md:grid-cols-5 lg:grid-cols-14'
+        }
+        const gridCols = getGridCols()
 
         return (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
@@ -345,6 +359,7 @@ export default function DashboardPage() {
                   <SelectItem value="suspensions" className="text-white hover:bg-slate-800">Suspensiones</SelectItem>
                   <SelectItem value="verification" className="text-white hover:bg-slate-800">Verificación</SelectItem>
                   {hasFeature('qr_codes') && <SelectItem value="qr-management" className="text-white hover:bg-slate-800">Gestión QR</SelectItem>}
+                  {hasFeature('finance') && <SelectItem value="finance" className="text-white hover:bg-slate-800">Finanzas</SelectItem>}
                   <SelectItem value="whatsapp" className="text-white hover:bg-slate-800">WhatsApp</SelectItem>
                   <SelectItem value="settings" className="text-white hover:bg-slate-800">Configuración</SelectItem>
                 </SelectContent>
@@ -383,6 +398,9 @@ export default function DashboardPage() {
                 <TabsTrigger value="verification" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">Verificación</TabsTrigger>
                 {hasFeature('qr_codes') && (
                   <TabsTrigger value="qr-management" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Gestión QR</TabsTrigger>
+                )}
+                {hasFeature('finance') && (
+                  <TabsTrigger value="finance" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">Finanzas</TabsTrigger>
                 )}
                 <TabsTrigger value="whatsapp" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">WhatsApp</TabsTrigger>
                 <TabsTrigger value="settings" className="text-xs whitespace-nowrap text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">Configuración</TabsTrigger>
@@ -432,6 +450,11 @@ export default function DashboardPage() {
             {hasFeature('qr_codes') && (
               <TabsContent value="qr-management">
                 <QRBatchUpdate />
+              </TabsContent>
+            )}
+            {hasFeature('finance') && (
+              <TabsContent value="finance">
+                <FinanceModule leagueId={profile.league_id} />
               </TabsContent>
             )}
             <TabsContent value="whatsapp">
