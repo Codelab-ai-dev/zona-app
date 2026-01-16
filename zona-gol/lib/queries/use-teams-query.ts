@@ -520,13 +520,13 @@ export function useTeamOwnerSummary(teamId: string | undefined) {
           .eq('team_id', teamId)
           .eq('is_active', true)
           .order('jersey_number', { ascending: true }),
-        // Matches
+        // Matches - incluir is_published para filtrar en frontend
         supabase
           .from('matches')
-          .select('id, match_date, status, round, home_score, away_score, home_team_id, away_team_id')
+          .select('id, match_date, status, round, home_score, away_score, home_team_id, away_team_id, is_published')
           .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
           .order('match_date', { ascending: false })
-          .limit(10),
+          .limit(20),
         // Suspensions
         supabase
           .from('player_suspensions')

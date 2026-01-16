@@ -17,7 +17,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, Users, Trophy, Loader2, Plus, Eye, X } from "lucide-react"
+import { Calendar, Clock, Users, Trophy, Loader2, Plus, Eye, X, Sparkles, Cpu } from "lucide-react"
 import { useTeams } from "@/lib/hooks/use-teams"
 import { useTournaments } from "@/lib/hooks/use-tournaments"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -57,6 +57,7 @@ interface GeneratedMatch {
   date: string
   time: string
   field: number
+  byeTeam?: Team // Equipo que descansa en esta jornada (solo en el primer partido de la jornada)
 }
 
 interface ManualMatch {
@@ -101,14 +102,18 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const [loadingEditRound, setLoadingEditRound] = useState(false)
   const [savingEditRound, setSavingEditRound] = useState(false)
   const [originalMatchIds, setOriginalMatchIds] = useState<string[]>([])
-  
+
+  // AI Generation state
+  const [useAI, setUseAI] = useState(true) // Usar IA por defecto
+  const [generatingAI, setGeneratingAI] = useState(false)
+
   const [config, setConfig] = useState<FixtureConfig>({
     tournamentId: "",
     startDate: "",
     endDate: "",
     matchDays: ["saturday"],
     startTime: "08:00",
-    endTime: "22:00",
+    endTime: "", // Vacío = modo automático (genera los horarios necesarios)
     fieldsAvailable: 1,
     doubleRound: false,
     matchDuration: {
@@ -376,6 +381,58 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     }
   }
 
+  // Load existing matches from tournament to avoid duplicates in auto mode
+  const loadExistingMatchPairs = async (tournamentId: string, isDoubleRound: boolean): Promise<{
+    existingPairs: Set<string>,
+    lastRound: number,
+    totalExistingMatches: number
+  }> => {
+    const supabase = createClientSupabaseClient()
+
+    const { data: existingMatches, error } = await supabase
+      .from('matches')
+      .select('home_team_id, away_team_id, round')
+      .eq('tournament_id', tournamentId)
+      .not('round', 'is', null)
+
+    if (error) {
+      console.error('Error loading existing matches:', error)
+      return { existingPairs: new Set(), lastRound: 0, totalExistingMatches: 0 }
+    }
+
+    const matchesTyped = existingMatches as { home_team_id: string, away_team_id: string, round: number | null }[] | null
+
+    if (!matchesTyped || matchesTyped.length === 0) {
+      return { existingPairs: new Set(), lastRound: 0, totalExistingMatches: 0 }
+    }
+
+    const existingPairs = new Set<string>()
+    let maxRound = 0
+
+    matchesTyped.forEach(match => {
+      if (isDoubleRound) {
+        // For ida y vuelta: A vs B and B vs A are DIFFERENT matches
+        // Only add the exact match (home-away in that order)
+        existingPairs.add(`${match.home_team_id}-${match.away_team_id}`)
+      } else {
+        // For solo ida: A vs B and B vs A are the SAME match
+        // Add both directions to filter the pair regardless of home/away
+        existingPairs.add(`${match.home_team_id}-${match.away_team_id}`)
+        existingPairs.add(`${match.away_team_id}-${match.home_team_id}`)
+      }
+
+      if (match.round && match.round > maxRound) {
+        maxRound = match.round
+      }
+    })
+
+    return {
+      existingPairs,
+      lastRound: maxRound,
+      totalExistingMatches: matchesTyped.length
+    }
+  }
+
   // Effect to load existing rounds when manual tournament changes
   useEffect(() => {
     if (mode === 'manual' && manualTournamentId) {
@@ -403,47 +460,56 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   }
 
   // Generate round-robin fixtures
-  const generateRoundRobinFixtures = (teams: Team[], doubleRound = false): Array<{round: number, matches: Array<{home: Team, away: Team}>}> => {
+  const generateRoundRobinFixtures = (teams: Team[], doubleRound = false): Array<{round: number, matches: Array<{home: Team, away: Team}>, byeTeam?: Team}> => {
     if (teams.length < 2) return []
-    
+
     const teamList = [...teams]
-    const rounds: Array<{round: number, matches: Array<{home: Team, away: Team}>}> = []
-    
+    const rounds: Array<{round: number, matches: Array<{home: Team, away: Team}>, byeTeam?: Team}> = []
+    const hasOddTeams = teamList.length % 2 !== 0
+
     // If odd number of teams, add a "bye" team
-    if (teamList.length % 2 !== 0) {
+    if (hasOddTeams) {
       teamList.push({ id: 'bye', name: 'Descanso', slug: 'bye' } as Team)
     }
-    
+
     const numTeams = teamList.length
     const numRounds = numTeams - 1
     const matchesPerRound = numTeams / 2
-    
+
     for (let round = 0; round < numRounds; round++) {
       const roundMatches: Array<{home: Team, away: Team}> = []
-      
+      let byeTeam: Team | undefined = undefined
+
       for (let match = 0; match < matchesPerRound; match++) {
         const home = (round + match) % (numTeams - 1)
         const away = (numTeams - 1 - match + round) % (numTeams - 1)
-        
+
         let homeTeam = teamList[home]
         let awayTeam = teamList[away]
-        
+
         // The last team stays fixed
         if (match === 0) {
           awayTeam = teamList[numTeams - 1]
         }
-        
+
+        // Track the team that has a bye (rest)
+        if (homeTeam.id === 'bye') {
+          byeTeam = awayTeam
+        } else if (awayTeam.id === 'bye') {
+          byeTeam = homeTeam
+        }
+
         // Skip matches with "bye" team
         if (homeTeam.id !== 'bye' && awayTeam.id !== 'bye') {
           roundMatches.push({ home: homeTeam, away: awayTeam })
         }
       }
-      
+
       if (roundMatches.length > 0) {
-        rounds.push({ round: round + 1, matches: roundMatches })
+        rounds.push({ round: round + 1, matches: roundMatches, byeTeam })
       }
     }
-    
+
     // If double round (ida y vuelta), add return fixtures
     if (doubleRound) {
       const returnRounds = rounds.map(round => ({
@@ -451,11 +517,12 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
         matches: round.matches.map(match => ({
           home: match.away,
           away: match.home
-        }))
+        })),
+        byeTeam: round.byeTeam // Same team rests in both halves
       }))
       rounds.push(...returnRounds)
     }
-    
+
     return rounds
   }
 
@@ -468,11 +535,11 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   }
 
   // Generate available time slots based on start time and match duration
-  const generateAvailableTimeSlots = (): string[] => {
+  // If endTime is empty or "auto", generates enough slots for all matches in a round
+  const generateAvailableTimeSlots = (matchesPerRound?: number): string[] => {
     if (!config.startTime) return []
 
     const timeSlots: string[] = []
-    const MAX_SLOTS_PER_DAY = 8 // Número máximo de espacios por día
 
     // Parse start time
     const [startHour, startMinute] = config.startTime.split(':').map(Number)
@@ -483,8 +550,24 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     // Calculate total match duration (including halftime, break, and rest between matches)
     const matchDurationMinutes = (config.matchDuration.halfTime * 2) + config.matchDuration.breakTime + config.breakBetweenMatches
 
-    // Generate time slots (limited to MAX_SLOTS_PER_DAY)
-    for (let i = 0; i < MAX_SLOTS_PER_DAY; i++) {
+    // Determine how many slots we need
+    let maxSlots: number
+
+    if (!config.endTime || config.endTime === 'auto') {
+      // Auto mode: calculate slots needed based on matches per round and fields
+      const slotsNeeded = matchesPerRound
+        ? Math.ceil(matchesPerRound / config.fieldsAvailable)
+        : 15 // Default to 15 slots if not specified
+      maxSlots = slotsNeeded
+    } else {
+      // Fixed end time mode
+      const [endHour, endMinute] = config.endTime.split(':').map(Number)
+      const endMinutes = endHour * 60 + endMinute
+      maxSlots = Math.floor((endMinutes - currentMinutes) / matchDurationMinutes)
+    }
+
+    // Generate time slots
+    for (let i = 0; i < maxSlots; i++) {
       const hours = Math.floor(currentMinutes / 60)
       const minutes = currentMinutes % 60
 
@@ -501,7 +584,164 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     return timeSlots
   }
 
-  const generateFixtures = () => {
+  // Generate fixtures using AI (Groq)
+  const generateFixturesWithAI = async () => {
+    const filteredTeams = getFilteredTeams()
+
+    if (!config.tournamentId || !config.startDate || !config.endDate || filteredTeams.length < 2) {
+      setMessage({ type: 'error', text: 'Faltan datos requeridos o no hay suficientes equipos' })
+      return
+    }
+
+    setGeneratingAI(true)
+    setMessage(null)
+
+    try {
+      // Load existing matches
+      const { existingPairs, lastRound, totalExistingMatches } = await loadExistingMatchPairs(config.tournamentId, config.doubleRound)
+
+      // Prepare teams data for AI
+      const teamsData = filteredTeams.map(t => ({ id: t.id, name: t.name }))
+
+      // Prepare existing matches data
+      const supabase = createClientSupabaseClient()
+      const { data: existingMatchesData } = await supabase
+        .from('matches')
+        .select('home_team_id, away_team_id, round')
+        .eq('tournament_id', config.tournamentId)
+
+      const existingMatches = (existingMatchesData || []).map(m => ({
+        homeTeamId: m.home_team_id,
+        awayTeamId: m.away_team_id,
+        round: m.round || 0
+      }))
+
+      console.log('🔢 Llamando a CP-SAT Solver para generar fixtures...')
+
+      const response = await fetch('/api/fixtures/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teams: teamsData,
+          existingMatches,
+          isDoubleRound: config.doubleRound
+        })
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        // If there are duplicates, fetch detailed info
+        if (result.error?.includes('Conflictos') || result.error?.includes('duplicado')) {
+          const dupResponse = await fetch(`/api/fixtures/duplicates?tournamentId=${config.tournamentId}`)
+          const dupResult = await dupResponse.json()
+
+          if (dupResult.success && dupResult.duplicates?.length > 0) {
+            const dupList = dupResult.duplicates.map((d: any) =>
+              `• ${d.pair}: Jornadas ${d.matches.map((m: any) => m.round).join(' y ')} (IDs: ${d.matches.map((m: any) => m.id.slice(0,8)).join(', ')})`
+            ).join('\n')
+
+            throw new Error(`Se encontraron ${dupResult.duplicatesFound} partidos duplicados:\n\n${dupList}\n\nDebes eliminar los duplicados antes de generar nuevos fixtures.`)
+          }
+        }
+        throw new Error(result.error || 'Error al generar fixtures')
+      }
+
+      // Transform AI response to GeneratedMatch format
+      const aiRounds = result.data.rounds
+      const generatedMatches: GeneratedMatch[] = []
+
+      // Generate time slots
+      const maxMatchesPerRound = Math.max(...aiRounds.map((r: any) => r.matches.length))
+      const availableTimes = generateAvailableTimeSlots(maxMatchesPerRound)
+
+      if (availableTimes.length === 0) {
+        throw new Error('No se pueden generar horarios con la configuración actual')
+      }
+
+      // Calculate dates for each round
+      const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number)
+      const startDateObj = new Date(startYear, startMonth - 1, startDay)
+
+      const targetDays = config.matchDays.map(day => {
+        switch(day) {
+          case 'sunday': return 0
+          case 'monday': return 1
+          case 'tuesday': return 2
+          case 'wednesday': return 3
+          case 'thursday': return 4
+          case 'friday': return 5
+          case 'saturday': return 6
+          default: return 6
+        }
+      })
+
+      // Find available match dates
+      const getNextMatchDate = (fromDate: Date): Date => {
+        const date = new Date(fromDate)
+        while (!targetDays.includes(date.getDay())) {
+          date.setDate(date.getDate() + 1)
+        }
+        return date
+      }
+
+      let currentDate = getNextMatchDate(startDateObj)
+
+      // Create team lookup map
+      const teamMap = new Map(filteredTeams.map(t => [t.id, t]))
+
+      aiRounds.forEach((round: any, roundIdx: number) => {
+        round.matches.forEach((match: any, matchIdx: number) => {
+          const homeTeam = teamMap.get(match.homeTeamId)
+          const awayTeam = teamMap.get(match.awayTeamId)
+
+          if (!homeTeam || !awayTeam) {
+            console.warn(`Equipo no encontrado: ${match.homeTeamId} o ${match.awayTeamId}`)
+            return
+          }
+
+          const timeSlotIdx = matchIdx % availableTimes.length
+          const fieldNumber = (Math.floor(matchIdx / availableTimes.length) % config.fieldsAvailable) + 1
+
+          generatedMatches.push({
+            round: round.round, // AI already returns correct round numbers
+            homeTeam,
+            awayTeam,
+            date: formatDateToYYYYMMDD(currentDate),
+            time: availableTimes[timeSlotIdx],
+            field: fieldNumber,
+            byeTeam: matchIdx === 0 && round.byeTeamId ? teamMap.get(round.byeTeamId) : undefined
+          })
+        })
+
+        // Move to next match day for next round
+        currentDate.setDate(currentDate.getDate() + 1)
+        currentDate = getNextMatchDate(currentDate)
+      })
+
+      if (generatedMatches.length === 0) {
+        throw new Error('La IA no generó partidos válidos')
+      }
+
+      setGeneratedFixtures(generatedMatches)
+      setIsPreviewOpen(true)
+      setMessage({
+        type: 'success',
+        text: `✅ Se generaron ${generatedMatches.length} partidos en ${aiRounds.length} jornadas`
+      })
+
+    } catch (error) {
+      console.error('Error generating fixtures:', error)
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Error al generar fixtures'
+      })
+    } finally {
+      setGeneratingAI(false)
+    }
+  }
+
+  const generateFixtures = async () => {
     const filteredTeams = getFilteredTeams()
 
     // Validations
@@ -528,7 +768,16 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
     setMessage(null)
 
     try {
-      let allRounds: Array<{round: number, matches: Array<{home: Team, away: Team}>}> = []
+      // Check for existing matches in this tournament
+      const { existingPairs, lastRound, totalExistingMatches } = await loadExistingMatchPairs(config.tournamentId, config.doubleRound)
+
+      console.log('📊 Partidos existentes:', {
+        totalExistingMatches,
+        lastRound,
+        existingPairsCount: existingPairs.size / 2 // Divided by 2 because we store both directions
+      })
+
+      let allRounds: Array<{round: number, matches: Array<{home: Team, away: Team}>, byeTeam?: Team}> = []
 
       // For group_knockout format, generate fixtures per group
       if (selectedTournament?.tournament_format === 'group_knockout') {
@@ -552,15 +801,82 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
         allRounds = generateRoundRobinFixtures(filteredTeams, config.doubleRound)
       }
 
+      // If there are existing matches, filter out already played/scheduled matchups
+      if (totalExistingMatches > 0) {
+        console.log('🔍 Filtrando partidos ya existentes...')
+
+        // Collect all remaining matches (not yet played)
+        const remainingMatches: Array<{home: Team, away: Team}> = []
+
+        allRounds.forEach(round => {
+          round.matches.forEach(match => {
+            const pairKey = `${match.home.id}-${match.away.id}`
+            const isExisting = existingPairs.has(pairKey)
+            if (!isExisting) {
+              remainingMatches.push(match)
+            } else {
+              console.log(`  ⏭️ Saltando partido existente: ${match.home.name} vs ${match.away.name}`)
+            }
+          })
+        })
+
+        console.log(`📊 Partidos restantes por programar: ${remainingMatches.length}`)
+
+        // Check if there are any new matches to generate
+        if (remainingMatches.length === 0) {
+          setMessage({
+            type: 'error',
+            text: 'Ya se han generado todos los partidos posibles para este torneo. No hay más emparejamientos disponibles.'
+          })
+          setGenerating(false)
+          return
+        }
+
+        // Simple approach: filter existing matches from the original round-robin structure
+        // This preserves the round-robin's natural distribution
+        const teamsInTournament = filteredTeams
+        const matchesPerRound = Math.floor(teamsInTournament.length / 2)
+
+        console.log(`📊 Configuración: ${teamsInTournament.length} equipos, ${matchesPerRound} partidos por jornada`)
+
+        // Filter each round, keeping only non-existing matches
+        const filteredRounds: Array<{round: number, matches: Array<{home: Team, away: Team}>, byeTeam?: Team}> = []
+
+        allRounds.forEach(round => {
+          const filteredMatches = round.matches.filter(match => {
+            const pairKey = `${match.home.id}-${match.away.id}`
+            return !existingPairs.has(pairKey)
+          })
+
+          if (filteredMatches.length > 0) {
+            filteredRounds.push({
+              round: lastRound + filteredRounds.length + 1,
+              matches: filteredMatches,
+              byeTeam: round.byeTeam
+            })
+          }
+        })
+
+        allRounds = filteredRounds
+
+        // Log final statistics
+        const totalMatchesDistributed = allRounds.reduce((sum, r) => sum + r.matches.length, 0)
+        console.log(`✅ Jornadas generadas: ${allRounds.length}`)
+        console.log(`   - Partidos distribuidos: ${totalMatchesDistributed}`)
+      }
+
       const generatedMatches: GeneratedMatch[] = []
 
+      // Calculate max matches per round to determine time slots needed
+      const maxMatchesPerRound = Math.max(...allRounds.map(r => r.matches.length))
+
       // Generate available time slots based on configuration
-      const availableTimes = generateAvailableTimeSlots()
+      const availableTimes = generateAvailableTimeSlots(maxMatchesPerRound)
 
       if (availableTimes.length === 0) {
         setMessage({
           type: 'error',
-          text: 'No se pueden generar horarios con la configuración actual. Verifica el horario de inicio, fin y duración de partidos.'
+          text: 'No se pueden generar horarios con la configuración actual. Verifica el horario de inicio y duración de partidos.'
         })
         setGenerating(false)
         return
@@ -722,7 +1038,9 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
             awayTeam: match.away,
             date: formattedDate,
             time: assignedTime,
-            field: fieldNumber
+            field: fieldNumber,
+            // Solo agregar byeTeam en el primer partido de la jornada
+            ...(matchCounter === 0 && round.byeTeam ? { byeTeam: round.byeTeam } : {})
           })
 
           matchCounter++
@@ -750,9 +1068,19 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
       setGeneratedFixtures(generatedMatches)
       setIsPreviewOpen(true)
 
-      const successMsg = selectedTournament?.tournament_format === 'group_knockout'
-        ? `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas para ${selectedGroups.length} grupo(s)`
-        : `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas`
+      // Build success message with info about existing rounds
+      let successMsg: string
+      if (selectedTournament?.tournament_format === 'group_knockout') {
+        successMsg = `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas para ${selectedGroups.length} grupo(s)`
+      } else {
+        successMsg = `Se generaron ${generatedMatches.length} partidos en ${allRounds.length} jornadas`
+      }
+
+      // Add info about continuing from previous rounds
+      if (totalExistingMatches > 0) {
+        const firstNewRound = allRounds[0]?.round || lastRound + 1
+        successMsg += ` (continuando desde jornada ${firstNewRound}, ${totalExistingMatches} partidos previos detectados)`
+      }
 
       setMessage({ type: 'success', text: successMsg })
       
@@ -1451,7 +1779,35 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
               </div>
             </div>
 
-            <div className="flex gap-4 sm:p-6 pt-6 border-t border-white/10 mt-8">
+            {/* Toggle between AI and traditional algorithm */}
+            <div className="flex items-center justify-center gap-4 sm:p-4 pt-4 border-t border-white/10 mt-6">
+              <button
+                type="button"
+                onClick={() => setUseAI(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  useAI
+                    ? 'bg-purple-500/30 border border-purple-400/50 text-purple-300'
+                    : 'bg-slate-700/30 border border-white/10 text-gray-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm font-medium">CP-SAT Solver</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseAI(false)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  !useAI
+                    ? 'bg-blue-500/30 border border-blue-400/50 text-blue-300'
+                    : 'bg-slate-700/30 border border-white/10 text-gray-400 hover:text-white'
+                }`}
+              >
+                <Cpu className="w-4 h-4" />
+                <span className="text-sm font-medium">Algoritmo tradicional</span>
+              </button>
+            </div>
+
+            <div className="flex gap-4 sm:p-6 pt-4">
               <Button
                 type="button"
                 onClick={() => setIsGeneratorOpen(false)}
@@ -1460,19 +1816,23 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                 Cancelar
               </Button>
               <Button
-                onClick={generateFixtures}
-                disabled={generating || !config.tournamentId || !config.startDate || !config.endDate || !config.startTime || config.matchDays.length === 0 || generateAvailableTimeSlots().length === 0}
-                className="flex-1 h-12 text-base backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+                onClick={useAI ? generateFixturesWithAI : generateFixtures}
+                disabled={(useAI ? generatingAI : generating) || !config.tournamentId || !config.startDate || !config.endDate || !config.startTime || config.matchDays.length === 0}
+                className={`flex-1 h-12 text-base backdrop-blur-md text-white border-0 shadow-lg ${
+                  useAI
+                    ? 'bg-purple-500/80 hover:bg-purple-500/90'
+                    : 'bg-green-500/80 hover:bg-green-500/90'
+                }`}
               >
-                {generating ? (
+                {(useAI ? generatingAI : generating) ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Generando...
+                    {useAI ? 'Calculando...' : 'Generando...'}
                   </>
                 ) : (
                   <>
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Generar Calendario
+                    {useAI ? <Sparkles className="w-5 h-5 mr-2" /> : <Calendar className="w-5 h-5 mr-2" />}
+                    {useAI ? 'Generar con CP-SAT' : 'Generar Calendario'}
                   </>
                 )}
               </Button>
@@ -2104,13 +2464,24 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
             )}
 
             <div className="space-y-8 max-w-7xl mx-auto">
-              {Object.entries(groupFixturesByRound(generatedFixtures)).map(([round, matches]) => (
+              {Object.entries(groupFixturesByRound(generatedFixtures)).map(([round, matches]) => {
+                // Buscar el equipo que descansa en esta jornada (está en el primer partido)
+                const byeTeam = matches.find(m => m.byeTeam)?.byeTeam
+                return (
                 <Card key={round} className="shadow-sm border-soccer-gold/20">
                   <CardHeader className="pb-4 bg-soccer-gold/10">
                     <CardTitle className="text-xl text-foreground flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-soccer-gold" />
                       Jornada {round}
                     </CardTitle>
+                    {byeTeam && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                          <Users className="w-3 h-3 mr-1" />
+                          Descansa: {byeTeam.name}
+                        </Badge>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="grid gap-4">
@@ -2144,7 +2515,8 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
+
 
               <div className="flex gap-4 sm:p-6 pt-6 border-t mt-8 max-w-7xl mx-auto">
                 <Button

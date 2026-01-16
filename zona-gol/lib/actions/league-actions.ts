@@ -524,7 +524,7 @@ export const leagueActions = {
               .in('tournament_id', tournamentIds)
           : Promise.resolve({ count: 0 }),
 
-        // Get upcoming matches (solo campos necesarios)
+        // Get upcoming matches (solo campos necesarios, solo publicados)
         tournamentIds.length > 0
           ? supabase
               .from('matches')
@@ -535,6 +535,7 @@ export const leagueActions = {
               `)
               .in('tournament_id', tournamentIds)
               .eq('status', 'scheduled')
+              .eq('is_published', true)
               .order('match_date', { ascending: true })
               .limit(3)
           : Promise.resolve({ data: [] })
@@ -997,6 +998,7 @@ export const serverLeagueActions = {
             status,
             phase,
             playoff_round,
+            is_published,
             created_at,
             updated_at,
             home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
@@ -1004,6 +1006,7 @@ export const serverLeagueActions = {
             tournament:tournaments(id, name)
           `, { count: 'exact' })
           .eq('tournament_id', tournamentId)
+          .eq('is_published', true)
           .order('match_date', { ascending: false })
       ])
 

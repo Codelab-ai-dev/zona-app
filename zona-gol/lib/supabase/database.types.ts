@@ -359,6 +359,7 @@ export interface Database {
           playoff_round: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position: number | null
           leg: "first" | "second" | null
+          is_published: boolean
           created_at: string
           updated_at: string
         }
@@ -378,6 +379,7 @@ export interface Database {
           playoff_round?: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position?: number | null
           leg?: "first" | "second" | null
+          is_published?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -397,6 +399,7 @@ export interface Database {
           playoff_round?: "quarterfinals" | "semifinals" | "final" | "third_place" | null
           playoff_position?: number | null
           leg?: "first" | "second" | null
+          is_published?: boolean
           created_at?: string
           updated_at?: string
         }

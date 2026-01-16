@@ -47,7 +47,8 @@ interface MatchCedula {
 }
 
 export function TeamCalendar({ teamId }: TeamCalendarProps) {
-  const { data: matches = [], isLoading, error } = useMatchesByTeam(teamId)
+  // Solo mostrar partidos publicados para los dueños de equipos
+  const { data: matches = [], isLoading, error } = useMatchesByTeam(teamId, { publishedOnly: true })
 
   // Separar y agrupar partidos por jornada
   const { finishedByRound, scheduledByRound, finishedMatches, scheduledMatches } = useMemo(() => {

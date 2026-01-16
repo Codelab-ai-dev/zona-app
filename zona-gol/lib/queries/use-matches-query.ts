@@ -16,16 +16,23 @@ type MatchWithTeams = Match & {
 
 /**
  * Hook para obtener partidos de un torneo
+ * @param tournamentId - ID del torneo
+ * @param options - Opciones adicionales
+ * @param options.publishedOnly - Si es true, solo devuelve partidos publicados (para vistas públicas)
  */
-export function useMatchesByTournament(tournamentId: string | undefined) {
+export function useMatchesByTournament(
+  tournamentId: string | undefined,
+  options: { publishedOnly?: boolean } = {}
+) {
   const supabase = createClientSupabaseClient()
+  const { publishedOnly = false } = options
 
   return useQuery({
-    queryKey: queryKeys.matches.byTournament(tournamentId || ""),
+    queryKey: [...queryKeys.matches.byTournament(tournamentId || ""), { publishedOnly }],
     queryFn: async (): Promise<MatchWithTeams[]> => {
       if (!tournamentId) return []
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("matches")
         .select(`
           *,
@@ -34,6 +41,13 @@ export function useMatchesByTournament(tournamentId: string | undefined) {
           tournament:tournaments(id, name)
         `)
         .eq("tournament_id", tournamentId)
+
+      // Filtrar solo partidos publicados si es vista pública
+      if (publishedOnly) {
+        query = query.eq("is_published", true)
+      }
+
+      const { data, error } = await query
         .order("round", { ascending: true })
         .order("match_date", { ascending: true })
         .limit(200)
@@ -49,16 +63,23 @@ export function useMatchesByTournament(tournamentId: string | undefined) {
 
 /**
  * Hook para obtener partidos de un equipo
+ * @param teamId - ID del equipo
+ * @param options - Opciones adicionales
+ * @param options.publishedOnly - Si es true, solo devuelve partidos publicados (para vistas públicas)
  */
-export function useMatchesByTeam(teamId: string | undefined) {
+export function useMatchesByTeam(
+  teamId: string | undefined,
+  options: { publishedOnly?: boolean } = {}
+) {
   const supabase = createClientSupabaseClient()
+  const { publishedOnly = false } = options
 
   return useQuery({
-    queryKey: queryKeys.matches.byTeam(teamId || ""),
+    queryKey: [...queryKeys.matches.byTeam(teamId || ""), { publishedOnly }],
     queryFn: async (): Promise<MatchWithTeams[]> => {
       if (!teamId) return []
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("matches")
         .select(`
           *,
@@ -67,6 +88,13 @@ export function useMatchesByTeam(teamId: string | undefined) {
           tournament:tournaments(id, name)
         `)
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+
+      // Filtrar solo partidos publicados si es vista pública
+      if (publishedOnly) {
+        query = query.eq("is_published", true)
+      }
+
+      const { data, error } = await query
         .order("match_date", { ascending: false })
         .limit(50)
 
@@ -79,18 +107,27 @@ export function useMatchesByTeam(teamId: string | undefined) {
 
 /**
  * Hook para obtener próximos partidos de un torneo
+ * @param tournamentId - ID del torneo
+ * @param limit - Número máximo de partidos a devolver
+ * @param options - Opciones adicionales
+ * @param options.publishedOnly - Si es true, solo devuelve partidos publicados (para vistas públicas)
  */
-export function useUpcomingMatches(tournamentId: string | undefined, limit = 10) {
+export function useUpcomingMatches(
+  tournamentId: string | undefined,
+  limit = 10,
+  options: { publishedOnly?: boolean } = {}
+) {
   const supabase = createClientSupabaseClient()
+  const { publishedOnly = false } = options
 
   return useQuery({
-    queryKey: [...queryKeys.matches.upcoming(tournamentId || ""), limit],
+    queryKey: [...queryKeys.matches.upcoming(tournamentId || ""), limit, { publishedOnly }],
     queryFn: async (): Promise<MatchWithTeams[]> => {
       if (!tournamentId) return []
 
       const now = new Date().toISOString()
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("matches")
         .select(`
           *,
@@ -100,6 +137,13 @@ export function useUpcomingMatches(tournamentId: string | undefined, limit = 10)
         .eq("tournament_id", tournamentId)
         .eq("status", "scheduled")
         .gte("match_date", now)
+
+      // Filtrar solo partidos publicados si es vista pública
+      if (publishedOnly) {
+        query = query.eq("is_published", true)
+      }
+
+      const { data, error } = await query
         .order("match_date", { ascending: true })
         .limit(limit)
 
@@ -129,16 +173,23 @@ type PendingMatch = {
 /**
  * Hook para obtener partidos pendientes (scheduled/in_progress) de una liga
  * Usado en el tab de Resultados
+ * @param leagueId - ID de la liga
+ * @param options - Opciones adicionales
+ * @param options.publishedOnly - Si es true, solo devuelve partidos publicados (para vistas públicas)
  */
-export function usePendingMatchesByLeague(leagueId: string | undefined) {
+export function usePendingMatchesByLeague(
+  leagueId: string | undefined,
+  options: { publishedOnly?: boolean } = {}
+) {
   const supabase = createClientSupabaseClient()
+  const { publishedOnly = false } = options
 
   return useQuery({
-    queryKey: queryKeys.matches.pendingByLeague(leagueId || ""),
+    queryKey: [...queryKeys.matches.pendingByLeague(leagueId || ""), { publishedOnly }],
     queryFn: async (): Promise<PendingMatch[]> => {
       if (!leagueId) return []
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('matches')
         .select(`
           id,
@@ -158,6 +209,13 @@ export function usePendingMatchesByLeague(leagueId: string | undefined) {
         `)
         .eq('tournaments.league_id', leagueId)
         .in('status', ['scheduled', 'in_progress'])
+
+      // Filtrar solo partidos publicados si es vista pública
+      if (publishedOnly) {
+        query = query.eq("is_published", true)
+      }
+
+      const { data, error } = await query
         .order('match_date')
         .order('match_time')
         .limit(50)

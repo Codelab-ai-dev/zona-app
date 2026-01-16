@@ -26,6 +26,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Python virtual environment
+.venv/
+__pycache__/
+
 # PWA generated files
 /public/sw.js
 /public/sw.js.map

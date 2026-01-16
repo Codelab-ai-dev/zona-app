@@ -74,7 +74,8 @@ export function TeamStats({ teamId }: TeamStatsProps) {
   const { activePlayers, finishedMatches, upcomingMatches, positionStats } = useMemo(() => {
     const active = playersWithStats.filter((p) => p.is_active)
     const finished = matches.filter((m) => m.status === "finished")
-    const upcoming = matches.filter((m) => m.status === "scheduled")
+    // Solo mostrar partidos programados que estén publicados
+    const upcoming = matches.filter((m) => m.status === "scheduled" && m.is_published === true)
 
     const getPositionCount = (position: string) => active.filter((p) => p.position === position).length
 
