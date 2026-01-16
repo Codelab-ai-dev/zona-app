@@ -45,6 +45,189 @@ Si la imagen no es una INE válida o no puedes extraer los datos, responde:
   "error": "descripción del problema"
 }`
 
+// Fixture Generation using Circle Method (Round-Robin Algorithm)
+export interface FixtureGenerationResult {
+  success: boolean
+  data?: {
+    rounds: Array<{
+      round: number
+      matches: Array<{
+        homeTeamId: string
+        awayTeamId: string
+      }>
+      byeTeamId?: string
+    }>
+  }
+  error?: string
+}
+
+interface TeamInfo {
+  id: string
+  name: string
+}
+
+interface ExistingMatch {
+  homeTeamId: string
+  awayTeamId: string
+  round: number
+}
+
+/**
+ * Circle Method Algorithm for Round-Robin Tournament
+ * This is a proven algorithm that guarantees:
+ * - Each team plays exactly once against every other team
+ * - Each team plays at most once per round
+ * - Optimal distribution of matches
+ */
+export async function generateFixturesWithAI(
+  teams: TeamInfo[],
+  existingMatches: ExistingMatch[] = [],
+  isDoubleRound: boolean = false
+): Promise<FixtureGenerationResult> {
+  try {
+    console.log('🔄 generateFixtures: Usando algoritmo Circle Method...')
+    console.log(`   - Equipos: ${teams.length}`)
+    console.log(`   - Partidos existentes: ${existingMatches.length}`)
+    console.log(`   - Doble vuelta: ${isDoubleRound}`)
+
+    if (teams.length < 2) {
+      return {
+        success: false,
+        error: 'Se necesitan al menos 2 equipos',
+      }
+    }
+
+    // Create set of existing pairs to skip
+    const existingPairs = new Set<string>()
+    existingMatches.forEach(m => {
+      if (!isDoubleRound) {
+        // For solo ida, A vs B = B vs A
+        const pair = [m.homeTeamId, m.awayTeamId].sort().join('|')
+        existingPairs.add(pair)
+      } else {
+        existingPairs.add(`${m.homeTeamId}|${m.awayTeamId}`)
+      }
+    })
+
+    // Get the last round number
+    const lastRound = existingMatches.length > 0 ? Math.max(...existingMatches.map(m => m.round)) : 0
+
+    // Circle method setup
+    const teamIds = teams.map(t => t.id)
+    const n = teamIds.length
+    const hasOddTeams = n % 2 !== 0
+
+    // If odd number of teams, add a "BYE" placeholder
+    const circleTeams = hasOddTeams ? [...teamIds, 'BYE'] : [...teamIds]
+    const numTeams = circleTeams.length
+    const totalRoundsFirstLeg = numTeams - 1
+    const totalRounds = isDoubleRound ? totalRoundsFirstLeg * 2 : totalRoundsFirstLeg
+    const matchesPerRound = Math.floor(numTeams / 2)
+
+    console.log(`   - Total jornadas: ${totalRounds}`)
+    console.log(`   - Partidos por jornada: ${matchesPerRound}`)
+    console.log(`   - Última jornada existente: ${lastRound}`)
+
+    const rounds: Array<{
+      round: number
+      matches: Array<{ homeTeamId: string; awayTeamId: string }>
+      byeTeamId?: string
+    }> = []
+
+    // Generate all rounds using circle method
+    for (let roundNum = 1; roundNum <= totalRounds; roundNum++) {
+      // Skip rounds that already have matches
+      if (roundNum <= lastRound) {
+        continue
+      }
+
+      const isSecondLeg = roundNum > totalRoundsFirstLeg
+      const effectiveRound = isSecondLeg ? roundNum - totalRoundsFirstLeg : roundNum
+
+      // Circle method: fix first team, rotate others
+      const rotation = effectiveRound - 1
+      const rotatedTeams = [circleTeams[0]]
+
+      // Rotate the remaining teams
+      for (let i = 1; i < numTeams; i++) {
+        const newIndex = ((i - 1 + rotation) % (numTeams - 1)) + 1
+        rotatedTeams.push(circleTeams[newIndex])
+      }
+
+      const roundMatches: Array<{ homeTeamId: string; awayTeamId: string }> = []
+      let byeTeamId: string | undefined
+
+      // Pair teams: first with last, second with second-to-last, etc.
+      for (let i = 0; i < matchesPerRound; i++) {
+        const team1 = rotatedTeams[i]
+        const team2 = rotatedTeams[numTeams - 1 - i]
+
+        // Skip if one team is BYE
+        if (team1 === 'BYE') {
+          byeTeamId = team2
+          continue
+        }
+        if (team2 === 'BYE') {
+          byeTeamId = team1
+          continue
+        }
+
+        // Determine home/away (alternate for balance, swap for second leg)
+        let homeTeam = i % 2 === 0 ? team1 : team2
+        let awayTeam = i % 2 === 0 ? team2 : team1
+
+        // In second leg, swap home/away
+        if (isSecondLeg) {
+          [homeTeam, awayTeam] = [awayTeam, homeTeam]
+        }
+
+        // Check if this match already exists
+        const pairKey = !isDoubleRound
+          ? [homeTeam, awayTeam].sort().join('|')
+          : `${homeTeam}|${awayTeam}`
+
+        if (existingPairs.has(pairKey)) {
+          console.log(`   Saltando partido existente: ${homeTeam} vs ${awayTeam}`)
+          continue
+        }
+
+        roundMatches.push({
+          homeTeamId: homeTeam,
+          awayTeamId: awayTeam,
+        })
+
+        // Mark as used to avoid duplicates
+        existingPairs.add(pairKey)
+      }
+
+      // Only add round if it has matches
+      if (roundMatches.length > 0) {
+        rounds.push({
+          round: roundNum,
+          matches: roundMatches,
+          byeTeamId,
+        })
+      }
+    }
+
+    const totalMatches = rounds.reduce((sum, r) => sum + r.matches.length, 0)
+    console.log(`✅ Fixtures generados: ${rounds.length} jornadas, ${totalMatches} partidos`)
+
+    return {
+      success: true,
+      data: {
+        rounds,
+      },
+    }
+  } catch (error) {
+    console.error('Error generating fixtures:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido al generar fixtures',
+    }
+  }
+}
+
 export async function extractINEData(imageBase64: string): Promise<INEExtractionResult> {
   try {
     console.log('🔵 extractINEData: Iniciando extracción...')

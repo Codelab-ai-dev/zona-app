@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, MapPin, Users, Trophy, Loader2, Edit, Save, X, RefreshCw, Trash, Settings, AlertTriangle, Shield } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, Trophy, Loader2, Edit, Save, X, RefreshCw, Trash, Settings, AlertTriangle, Shield, Eye, EyeOff, Send } from "lucide-react"
 import Image from "next/image"
 import { useTeamsByLeague, useTournamentsByLeague, useMatchesByTournament, useInvalidateMatches } from "@/lib/queries"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -46,6 +46,7 @@ interface CalendarMatch {
   phase?: 'regular' | 'playoffs'
   playoffRound?: 'quarterfinals' | 'semifinals' | 'final' | 'third_place' | null
   playoffPosition?: number | null
+  isPublished?: boolean
 }
 
 interface EditingMatch extends CalendarMatch {
@@ -94,7 +95,8 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         byeTeamId: match.bye_team_id,
         phase: match.phase || 'regular',
         playoffRound: match.playoff_round,
-        playoffPosition: match.playoff_position
+        playoffPosition: match.playoff_position,
+        isPublished: match.is_published ?? false
       }
     })
   }, [matchesData])
@@ -114,6 +116,13 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
   const [editHomeScore, setEditHomeScore] = useState<number>(0)
   const [editAwayScore, setEditAwayScore] = useState<number>(0)
   const [savingScore, setSavingScore] = useState(false)
+
+  // Publishing state
+  const [publishingRound, setPublishingRound] = useState<number | null>(null)
+
+  // Deleting round state
+  const [deletingRound, setDeletingRound] = useState<number | null>(null)
+  const [confirmDeleteRound, setConfirmDeleteRound] = useState<number | null>(null)
 
   // Ref para evitar cargar múltiples veces
   const initialLoadDone = useRef(false)
@@ -137,6 +146,111 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
   // Alias for loading state
   const loading = matchesLoading
+
+  // Check if a round is fully published
+  const isRoundPublished = (roundMatches: CalendarMatch[]): boolean => {
+    return roundMatches.length > 0 && roundMatches.every(m => m.isPublished)
+  }
+
+  // Publish/Unpublish a round
+  const toggleRoundPublish = async (round: number, publish: boolean) => {
+    if (!selectedTournamentId) return
+
+    setPublishingRound(round)
+    try {
+      const supabase = createClientSupabaseClient()
+
+      const { error } = await supabase
+        .from('matches')
+        .update({ is_published: publish, updated_at: new Date().toISOString() })
+        .eq('tournament_id', selectedTournamentId)
+        .eq('round', round)
+
+      if (error) throw error
+
+      // Refresh matches data
+      await refetchMatches()
+
+      setMessage({
+        type: 'success',
+        text: publish
+          ? `Jornada ${round} publicada exitosamente. Ahora es visible para equipos y público.`
+          : `Jornada ${round} despublicada. Ya no es visible públicamente.`
+      })
+
+      // If publishing, also send notification
+      if (publish) {
+        const roundMatches = matches.filter(m => m.round === round)
+        const tournament = tournaments.find(t => t.id === selectedTournamentId)
+        const league = { id: leagueId } // Simplified
+
+        if (tournament && roundMatches.length > 0) {
+          try {
+            await sendJornadaNotification({
+              league_id: leagueId,
+              league_name: tournament.name,
+              tournament_name: tournament.name,
+              round: round,
+              matches: roundMatches.map(m => ({
+                home_team: m.homeTeam.name,
+                away_team: m.awayTeam.name,
+                date: m.date,
+                time: m.time,
+                field: m.field
+              }))
+            })
+          } catch (notifError) {
+            console.warn('Error enviando notificación:', notifError)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling round publish:', error)
+      setMessage({
+        type: 'error',
+        text: `Error al ${publish ? 'publicar' : 'despublicar'} la jornada ${round}`
+      })
+    } finally {
+      setPublishingRound(null)
+    }
+  }
+
+  // Delete all matches from a round
+  const deleteRound = async (round: number) => {
+    if (!selectedTournamentId) return
+
+    setDeletingRound(round)
+    try {
+      const supabase = createClientSupabaseClient()
+
+      const { error } = await supabase
+        .from('matches')
+        .delete()
+        .eq('tournament_id', selectedTournamentId)
+        .eq('round', round)
+
+      if (error) throw error
+
+      // Refresh matches data
+      await refetchMatches()
+      invalidateByTournament(selectedTournamentId)
+
+      setMessage({
+        type: 'success',
+        text: `Jornada ${round} eliminada exitosamente.`
+      })
+
+      setConfirmDeleteRound(null)
+    } catch (error) {
+      console.error('Error deleting round:', error)
+      setMessage({
+        type: 'error',
+        text: `Error al eliminar la jornada ${round}`
+      })
+    } finally {
+      setDeletingRound(null)
+    }
+  }
 
   const updateMatch = async (matchId: string, updates: Partial<CalendarMatch>) => {
     try {
@@ -1340,16 +1454,93 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
 
       {getFilteredMatches(matches).length > 0 && (
         <div className="space-y-4">
-          {Object.entries(groupMatchesByRound(getFilteredMatches(matches))).map(([round, roundMatches]) => (
-            <div key={round} className="rounded-xl bg-slate-800/50 border border-white/10">
+          {Object.entries(groupMatchesByRound(getFilteredMatches(matches))).map(([round, roundMatches]) => {
+            const published = isRoundPublished(roundMatches)
+            const roundNum = parseInt(round)
+            return (
+            <div key={round} className={`rounded-xl border ${published ? 'bg-slate-800/50 border-green-500/30' : 'bg-slate-800/50 border-white/10'}`}>
               <div className="flex items-center justify-between p-3 md:p-4 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
                   <span className="text-sm md:text-base font-semibold text-white">Jornada {round}</span>
+                  {published ? (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px]">
+                      <Eye className="w-3 h-3 mr-1" />
+                      Publicada
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-[10px]">
+                      <EyeOff className="w-3 h-3 mr-1" />
+                      Borrador
+                    </Badge>
+                  )}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-gray-400">
-                  {roundMatches.length} partidos
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-gray-400">
+                    {roundMatches.length} partidos
+                  </span>
+                  <Button
+                    size="sm"
+                    variant={published ? "outline" : "default"}
+                    onClick={() => toggleRoundPublish(roundNum, !published)}
+                    disabled={publishingRound === roundNum}
+                    className={published
+                      ? "h-7 text-xs bg-transparent border-orange-500/50 text-orange-400 hover:bg-orange-500/20"
+                      : "h-7 text-xs bg-green-500/80 hover:bg-green-500 text-white border-0"
+                    }
+                  >
+                    {publishingRound === roundNum ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : published ? (
+                      <>
+                        <EyeOff className="w-3 h-3 mr-1" />
+                        Despublicar
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3 h-3 mr-1" />
+                        Publicar
+                      </>
+                    )}
+                  </Button>
+                  {/* Delete Round Button */}
+                  {confirmDeleteRound === roundNum ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteRound(roundNum)}
+                        disabled={deletingRound === roundNum}
+                        className="h-7 text-xs bg-red-600 hover:bg-red-700"
+                      >
+                        {deletingRound === roundNum ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          "Confirmar"
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmDeleteRound(null)}
+                        disabled={deletingRound === roundNum}
+                        className="h-7 text-xs bg-transparent border-white/20 text-white hover:bg-white/10"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteRound(roundNum)}
+                      className="h-7 text-xs bg-transparent border-red-500/50 text-red-400 hover:bg-red-500/20"
+                      title="Eliminar jornada"
+                    >
+                      <Trash className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="divide-y divide-white/5">
                 {roundMatches.map((match, matchIndex) => {
@@ -1599,7 +1790,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
                 )
               })()}
             </div>
-          ))}
+          )})}
         </div>
       )}
 
