@@ -800,9 +800,11 @@ describe('league-actions', () => {
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [],
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: [],
+                  }),
                 }),
               }),
             }),
