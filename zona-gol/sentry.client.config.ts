@@ -5,17 +5,19 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: "https://a5e72479c23fdd444190dd12412156d5@o4510726280642560.ingest.us.sentry.io/4510726281887744",
 
   // Define how likely traces are sampled. Adjust this value in production.
-  // For performance monitoring
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.2 : 1.0,
+  tracesSampleRate: 1,
 
-  // Set sampling rate for profiling - this is relative to tracesSampleRate
-  profilesSampleRate: 1.0,
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
 
-  // Enable debug mode in development
-  debug: false,
+  // Enable sending user PII
+  sendDefaultPii: true,
+
+  // Enable debug mode to see what's happening
+  debug: process.env.NODE_ENV === "development",
 
   // Replay configuration for session recording
   replaysOnErrorSampleRate: 1.0, // Always capture replay when error occurs
