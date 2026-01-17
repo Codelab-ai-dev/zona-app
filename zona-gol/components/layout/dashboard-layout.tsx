@@ -38,10 +38,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     profile?.role === 'league_admin' ? profile?.league_id : undefined
   )
 
-  // Activar detector de inactividad (20 minutos por defecto)
+  // Activar detector de inactividad y refresh proactivo del token
   useIdleTimeout({
     timeout: authConfig.idleTimeout,
     promptBeforeIdle: authConfig.idleWarningTime,
+    tokenRefreshInterval: authConfig.tokenRefreshInterval,
   })
 
   const handleSignOut = async () => {
