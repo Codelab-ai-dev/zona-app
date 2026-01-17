@@ -25,6 +25,7 @@ const API_ROUTES = [
   '/api/auth',
   '/api/upload',
   '/api/cron',
+  '/monitoring', // Sentry tunnel route
 ]
 
 // Timeout para operaciones de auth en el middleware (5 segundos)
