@@ -39,3 +39,5 @@ __pycache__/
 /public/worker-*.js.map
 /public/fallback-*.js
 /public/fallback-*.js.map
+# Sentry Config File
+.env.sentry-build-plugin
