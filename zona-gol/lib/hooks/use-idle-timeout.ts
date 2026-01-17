@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './use-auth'
+import { useSupabase } from '../providers/supabase-provider'
 import { toast } from 'sonner'
 import { authConfig } from '../config/auth-config'
 
@@ -10,18 +11,24 @@ interface UseIdleTimeoutOptions {
   timeout?: number // Timeout en milisegundos (por defecto 20 minutos)
   onIdle?: () => void
   promptBeforeIdle?: number // Tiempo en ms para mostrar advertencia antes del cierre
+  tokenRefreshInterval?: number // Intervalo para refrescar el token (por defecto 10 minutos)
 }
 
 export function useIdleTimeout({
   timeout = 20 * 60 * 1000, // 20 minutos por defecto
   onIdle,
   promptBeforeIdle = 2 * 60 * 1000, // 2 minutos de advertencia
+  tokenRefreshInterval = 10 * 60 * 1000, // Refrescar token cada 10 minutos
 }: UseIdleTimeoutOptions = {}) {
   const { signOut, isAuthenticated } = useAuth()
+  const { supabase } = useSupabase()
   const router = useRouter()
 
   // Usamos ref para el timestamp de última actividad para evitar re-renders
   const lastActivityRef = useRef<number>(Date.now())
+
+  // Timestamp del último refresh del token
+  const lastTokenRefreshRef = useRef<number>(Date.now())
 
   // Para controlar si ya mostramos el warning y evitar múltiples toasts
   const warningShownRef = useRef<boolean>(false)
@@ -72,6 +79,33 @@ export function useIdleTimeout({
       }
     )
   }, [promptBeforeIdle])
+
+  // Función para refrescar el token de Supabase mientras el usuario esté activo
+  const refreshTokenIfNeeded = useCallback(async () => {
+    const now = Date.now()
+    const timeSinceLastRefresh = now - lastTokenRefreshRef.current
+    const timeSinceLastActivity = now - lastActivityRef.current
+
+    // Solo refrescar si:
+    // 1. Ha pasado suficiente tiempo desde el último refresh
+    // 2. El usuario ha tenido actividad reciente (no está inactivo)
+    if (timeSinceLastRefresh >= tokenRefreshInterval && timeSinceLastActivity < timeout) {
+      try {
+        console.log('[Auth] Refreshing session token proactively...')
+        const { error } = await supabase.auth.refreshSession()
+
+        if (error) {
+          console.warn('[Auth] Token refresh failed:', error.message)
+          // No hacer logout aquí, el SupabaseProvider se encargará si es un error crítico
+        } else {
+          console.log('[Auth] Session token refreshed successfully')
+          lastTokenRefreshRef.current = now
+        }
+      } catch (error) {
+        console.warn('[Auth] Token refresh error:', error)
+      }
+    }
+  }, [supabase, tokenRefreshInterval, timeout])
 
   // Actualizar timestamp de actividad
   const updateActivity = useCallback(() => {
@@ -140,6 +174,10 @@ export function useIdleTimeout({
         showWarning()
       }
 
+      // Caso 3: Usuario activo - refrescar token si es necesario
+      // Esto mantiene el token de Supabase válido mientras el usuario trabaja
+      refreshTokenIfNeeded()
+
     }, 5000)
 
     // Cleanup
@@ -158,7 +196,7 @@ export function useIdleTimeout({
 
       toast.dismiss('idle-warning')
     }
-  }, [isAuthenticated, timeout, promptBeforeIdle, handleLogout, showWarning, updateActivity])
+  }, [isAuthenticated, timeout, promptBeforeIdle, handleLogout, showWarning, updateActivity, refreshTokenIfNeeded])
 
   return {
     lastActivity: lastActivityRef.current,
