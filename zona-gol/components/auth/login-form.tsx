@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { createClientSupabaseClient } from "@/lib/supabase/client"
+import { useSupabase } from "@/lib/providers/supabase-provider"
 import { Mail, Eye, EyeOff, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
 export function LoginForm() {
@@ -32,6 +32,7 @@ export function LoginForm() {
   const [mounted, setMounted] = useState(false)
   const [showExpiredMessage, setShowExpiredMessage] = useState(false)
   const { signIn, loading, error, isAuthenticated } = useAuth()
+  const { supabase } = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -54,7 +55,6 @@ export function LoginForm() {
   useEffect(() => {
     const checkSupabase = async () => {
       try {
-        const supabase = createClientSupabaseClient()
         const { data, error } = await supabase.from('users').select('count').limit(1)
         if (error) {
           setLocalError('Error de conexión a la base de datos.')
@@ -66,7 +66,7 @@ export function LoginForm() {
       }
     }
     checkSupabase()
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -116,7 +116,6 @@ export function LoginForm() {
     setResetLoading(true)
 
     try {
-      const supabase = createClientSupabaseClient()
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: 'https://admin.zona-gol.com/reset-password',
       })
