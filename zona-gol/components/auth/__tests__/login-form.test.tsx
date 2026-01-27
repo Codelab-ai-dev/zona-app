@@ -52,6 +52,11 @@ vi.mock('@/lib/supabase/client', () => ({
   createClientSupabaseClient: () => mockSupabaseClient,
 }))
 
+// Mock useSupabase hook from provider
+vi.mock('@/lib/providers/supabase-provider', () => ({
+  useSupabase: () => ({ supabase: mockSupabaseClient }),
+}))
+
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
