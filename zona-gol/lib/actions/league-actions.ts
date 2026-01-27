@@ -4,17 +4,13 @@ import { useLeagueStore } from '../stores/league-store'
 import { useAuthStore } from '../stores/auth-store'
 import { Database } from '../supabase/database.types'
 
-// Helper para crear cliente de Supabase en el servidor de forma lazy
-// Evita errores durante el build cuando las env vars no están disponibles
+// Hardcoded values para evitar problemas con variables de entorno
+const SUPABASE_URL = 'https://api.zona-gol.com'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+
+// Helper para crear cliente de Supabase en el servidor
 function getServerSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase environment variables')
-  }
-
-  return createClient<Database>(url, key)
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
 }
 
 type League = Database['public']['Tables']['leagues']['Row']
