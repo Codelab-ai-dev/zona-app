@@ -87,8 +87,8 @@ class AttendanceService {
           .from('asistencias_qr')
           .select('id')
           .eq('player_id', playerId)
-          .gte('server_timestamp', startOfDay.toIso8601String())
-          .lt('server_timestamp', endOfDay.toIso8601String())
+          .gte('created_at', startOfDay.toIso8601String())
+          .lt('created_at', endOfDay.toIso8601String())
           .limit(1);
 
       return response.isNotEmpty;
@@ -122,7 +122,7 @@ class AttendanceService {
           .from('asistencias_qr')
           .select()
           .eq('player_id', playerId)
-          .order('server_timestamp', ascending: false)
+          .order('created_at', ascending: false)
           .limit(limit);
 
       return response
@@ -144,7 +144,7 @@ class AttendanceService {
             players(id, name, jersey_number)
           ''')
           .eq('match_id', matchId)
-          .order('server_timestamp', ascending: false);
+          .order('created_at', ascending: false);
 
       return response
           .map<Attendance>((data) => Attendance.fromJson(data))
@@ -205,16 +205,16 @@ class AttendanceService {
       // Return default stats if function doesn't exist
       final attendances = await getPlayerAttendance(playerId, limit: 100);
       final now = DateTime.now();
-      final thisMonth = attendances.where((a) => 
-          a.serverTimestamp != null &&
-          a.serverTimestamp!.year == now.year &&
-          a.serverTimestamp!.month == now.month
+      final thisMonth = attendances.where((a) =>
+          a.createdAt != null &&
+          a.createdAt!.year == now.year &&
+          a.createdAt!.month == now.month
       ).length;
-      
+
       final weekAgo = now.subtract(const Duration(days: 7));
-      final thisWeek = attendances.where((a) => 
-          a.serverTimestamp != null &&
-          a.serverTimestamp!.isAfter(weekAgo)
+      final thisWeek = attendances.where((a) =>
+          a.createdAt != null &&
+          a.createdAt!.isAfter(weekAgo)
       ).length;
 
       return {
