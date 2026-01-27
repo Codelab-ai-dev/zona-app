@@ -789,26 +789,32 @@ class _MatchDetailScreenState extends State<MatchDetailScreen>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                player['name'] ?? 'Jugador',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (player['position'] != null)
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 120),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  player['position'],
+                                  player['name'] ?? 'Jugador',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 10,
-                                    color: Colors.white54,
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                            ],
+                                if (player['position'] != null)
+                                  Text(
+                                    player['position'],
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      color: Colors.white54,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Icon(
