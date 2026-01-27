@@ -70,9 +70,11 @@ export function LoginForm() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard')
+      // Usar window.location para forzar una recarga completa
+      // Esto permite que el middleware lea las cookies correctamente
+      window.location.href = '/dashboard'
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
