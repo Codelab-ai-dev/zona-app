@@ -54,19 +54,26 @@ const SUPABASE_URL = 'https://api.zona-gol.com'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
 
 // Función para crear o devolver el cliente de Supabase para componentes
+// IMPORTANTE: Usa createClientComponentClient para sincronizar sesión en cookies
+// Esto es necesario para que el middleware pueda leer la sesión
 export const createClientSupabaseClient = () => {
   // En el servidor, siempre crear una nueva instancia
   if (typeof window === 'undefined') {
     return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
   }
 
-  // En el cliente, reutilizar la instancia existente
+  // En el cliente, usar createClientComponentClient que maneja cookies
   if (!clientComponentSingleton) {
-    // Crear una única instancia con opciones de timeout usando URL hardcodeada
-    clientComponentSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
+    // createClientComponentClient sincroniza la sesión en cookies además de localStorage
+    // Esto permite que el middleware pueda leer la sesión
+    clientComponentSingleton = createClientComponentClient<Database>({
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY,
+      options: getSupabaseOptions(),
+    })
   }
 
-  return clientComponentSingleton as any
+  return clientComponentSingleton
 }
 
 // Cliente directo para cuando necesitas más control (singleton)
@@ -86,9 +93,13 @@ export const getDirectSupabaseClient = () => {
     return createClient<Database>(url, key, getSupabaseOptions())
   }
 
-  // En el cliente, reutilizar la instancia existente
+  // En el cliente, usar createClientComponentClient para consistencia con cookies
   if (!directClientSingleton) {
-    directClientSingleton = createClient<Database>(url, key, getSupabaseOptions())
+    directClientSingleton = createClientComponentClient<Database>({
+      supabaseUrl: url,
+      supabaseKey: key,
+      options: getSupabaseOptions(),
+    })
   }
 
   return directClientSingleton
