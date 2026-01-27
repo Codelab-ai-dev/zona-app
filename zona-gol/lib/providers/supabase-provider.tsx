@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useRef, useCallback } from 'react'
+import { createContext, useContext, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Session, AuthChangeEvent, AuthError } from '@supabase/supabase-js'
 import { useAuthStore } from '../stores/auth-store'
@@ -11,6 +11,9 @@ interface SupabaseContextType {
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
+
+// Singleton instance - created once at module level for the browser
+const getSupabaseInstance = () => createClientSupabaseClient()
 
 // Helper para detectar errores de refresh token
 function isRefreshTokenError(error: AuthError | Error | unknown): boolean {
@@ -43,14 +46,20 @@ function isNetworkError(error: Error | unknown): boolean {
 }
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClientSupabaseClient()
+  // Use memoized instance to prevent re-creation on every render
+  const supabase = useMemo(() => getSupabaseInstance(), [])
   const router = useRouter()
   const { setUser, setSession, setProfile, setLoading, setError } = useAuthStore()
   const initializedRef = useRef(false)
   const isHandlingAuthErrorRef = useRef(false)
 
+  // Store router in a ref to avoid dependency issues
+  const routerRef = useRef(router)
+  routerRef.current = router
+
   // Función para manejar logout forzado cuando el refresh token es inválido
-  const handleForceLogout = useCallback(async (reason: string) => {
+  // Using refs to avoid recreating the callback on every render
+  const handleForceLogout = async (reason: string) => {
     // Prevenir múltiples llamadas simultáneas
     if (isHandlingAuthErrorRef.current) return
     isHandlingAuthErrorRef.current = true
@@ -58,7 +67,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     console.warn(`[Auth] Force logout triggered: ${reason}`)
 
     try {
-      // Limpiar estado local primero
+      // Limpiar estado local primero (use getState for latest)
+      const { setSession, setUser, setProfile, setError } = useAuthStore.getState()
       setSession(null)
       setUser(null)
       setProfile(null)
@@ -72,14 +82,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Redirigir al login con parámetro de sesión expirada
-      router.push('/login?expired=true')
+      routerRef.current.push('/login?expired=true')
     } finally {
       // Permitir nuevos intentos después de un delay
       setTimeout(() => {
         isHandlingAuthErrorRef.current = false
       }, 2000)
     }
-  }, [router, setSession, setUser, setProfile, setError, supabase.auth])
+  }
 
   useEffect(() => {
     let isInitializing = true
@@ -298,7 +308,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         window.removeEventListener('unhandledrejection', handleGlobalAuthError)
       }
     }
-  }, [handleForceLogout])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]) // Only depend on supabase instance which is stable
 
   return (
     <SupabaseContext.Provider value={{ supabase }}>
