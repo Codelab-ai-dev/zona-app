@@ -49,30 +49,33 @@ const getSupabaseOptions = (): SupabaseClientOptions<'public'> => ({
   },
 })
 
+// Hardcoded values to bypass env var caching issues
+const SUPABASE_URL = 'https://api.zona-gol.com'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+
 // Función para crear o devolver el cliente de Supabase para componentes
 export const createClientSupabaseClient = () => {
   // En el servidor, siempre crear una nueva instancia
   if (typeof window === 'undefined') {
-    return createClientComponentClient<Database>()
+    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
   }
 
   // En el cliente, reutilizar la instancia existente
   if (!clientComponentSingleton) {
-    // Crear una única instancia con opciones de timeout
-    clientComponentSingleton = createClientComponentClient<Database>({
-      options: getSupabaseOptions(),
-    })
+    // Crear una única instancia con opciones de timeout usando URL hardcodeada
+    clientComponentSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
   }
 
-  return clientComponentSingleton
+  return clientComponentSingleton as any
 }
 
 // Cliente directo para cuando necesitas más control (singleton)
 // IMPORTANTE: Esta es una función, no una constante ejecutada inmediatamente
 // para evitar errores de build cuando las env vars no están disponibles
 export const getDirectSupabaseClient = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  // Hardcoded URL to bypass env var caching issues
+  const url = 'https://api.zona-gol.com'
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
 
   if (!url || !key) {
     throw new Error('Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY)')
