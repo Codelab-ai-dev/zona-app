@@ -127,6 +127,24 @@ export const createClientSupabaseClient = () => {
 // Alias para compatibilidad
 export const getDirectSupabaseClient = createClientSupabaseClient
 
+// Cliente simple para consultas públicas (sin storage complejo)
+let publicClientSingleton: ReturnType<typeof createClient<Database>> | null = null
+
+export const createPublicSupabaseClient = () => {
+  if (!publicClientSingleton) {
+    publicClientSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        fetch: createFetchWithTimeout(FETCH_TIMEOUT_MS),
+      },
+    })
+  }
+  return publicClientSingleton
+}
+
 // Alias para compatibilidad con código existente (legacy)
 // NOTA: Solo usar en contexto de cliente
 export const supabase = typeof window !== 'undefined'
