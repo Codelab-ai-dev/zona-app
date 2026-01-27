@@ -1,15 +1,6 @@
-import * as Sentry from "@sentry/nextjs";
+// Instrumentation file for Next.js
+// Add any server-side instrumentation here if needed
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    // Server-side Sentry initialization
-    await import("./sentry.server.config");
-  }
-
-  if (process.env.NEXT_RUNTIME === "edge") {
-    // Edge runtime Sentry initialization
-    await import("./sentry.edge.config");
-  }
+  // Add any initialization logic here
 }
-
-export const onRequestError = Sentry.captureRequestError;

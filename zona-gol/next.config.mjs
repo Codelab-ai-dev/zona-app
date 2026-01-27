@@ -1,5 +1,4 @@
 import withPWA from 'next-pwa';
-import { withSentryConfig } from '@sentry/nextjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -138,42 +137,5 @@ const withPWAConfig = withPWA({
   },
 });
 
-// Sentry configuration options
-const sentryWebpackPluginOptions = {
-  // Suppresses source map uploading logs during build
-  silent: true,
-
-  // Organization and project from Sentry
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-
-  // Auth token for uploading source maps
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Automatically tree-shake Sentry logger statements to reduce bundle size
-  disableLogger: true,
-
-  // Hides source maps from generated client bundles
-  hideSourceMaps: true,
-
-  // Enables automatic instrumentation of Vercel Cron Monitors
-  automaticVercelMonitors: true,
-};
-
-// Combine PWA and Sentry configs
-const configWithPWA = withPWAConfig(nextConfig);
-
-export default withSentryConfig(configWithPWA, {
-  org: "gustavo-q2",
-  project: "javascript-nextjs",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  // tunnelRoute deshabilitado - causaba problemas con el middleware
-  disableLogger: true,
-});
+// Export config with PWA
+export default withPWAConfig(nextConfig);

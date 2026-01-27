@@ -1,8 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
-
 export default function GlobalError({
   error,
   reset,
@@ -10,11 +7,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // Log the error to Sentry
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <html>
       <body>
@@ -72,8 +64,7 @@ export default function GlobalError({
                 lineHeight: "1.6",
               }}
             >
-              Ha ocurrido un error inesperado. Nuestro equipo ha sido notificado
-              y estamos trabajando para solucionarlo.
+              Ha ocurrido un error inesperado. Por favor intenta de nuevo.
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button
