@@ -33,7 +33,7 @@ export const leagueActions = {
       setLoading(true)
       setError(null)
 
-      // console.log('🔍 Fetching active leagues from database...')
+      console.log('🔍 [DEBUG] Fetching active leagues from database...')
 
       const { data: leagues, error } = await supabase
         .from('leagues')
@@ -43,21 +43,23 @@ export const leagueActions = {
         .returns<League[]>()
 
       if (error) {
-        // console.error('❌ Database error:', error)
+        console.error('❌ [DEBUG] Database error:', error)
         throw error
       }
 
-      // console.log('✅ Database query successful. Found leagues:', leagues?.length || 0)
-      // leagues?.forEach((league, index) => {
-      //   console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
-      // })
+      console.log('✅ [DEBUG] Database query successful. Found leagues:', leagues?.length || 0)
+      if (leagues && leagues.length > 0) {
+        leagues.forEach((league, index) => {
+          console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
+        })
+      }
 
       setLeagues(leagues || [])
-      // console.log('📦 Store updated with leagues')
+      console.log('📦 [DEBUG] Store updated with leagues')
 
       return leagues
     } catch (error) {
-      // console.error('Get leagues error:', error)
+      console.error('❌ [DEBUG] Get leagues error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leagues'
       setError(errorMessage)
       throw error
