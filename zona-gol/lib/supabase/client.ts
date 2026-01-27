@@ -1,4 +1,3 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { createClient, SupabaseClientOptions } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
@@ -33,9 +32,60 @@ function createFetchWithTimeout(timeoutMs: number): typeof fetch {
   }
 }
 
-// Variables para almacenar las instancias singleton
-let clientComponentSingleton: ReturnType<typeof createClientComponentClient<Database>> | null = null
-let directClientSingleton: ReturnType<typeof createClient<Database>> | null = null
+// Hardcoded values to bypass env var caching issues
+const SUPABASE_URL = 'https://api.zona-gol.com'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+
+// Nombre de cookie para sincronización
+const COOKIE_NAME = 'sb-zona-gol-auth-token'
+
+// Storage personalizado que sincroniza localStorage con cookies
+const createCookieSyncStorage = () => {
+  if (typeof window === 'undefined') {
+    // En el servidor, retornar storage vacío
+    return {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    }
+  }
+
+  return {
+    getItem: (key: string) => {
+      try {
+        return localStorage.getItem(key)
+      } catch {
+        return null
+      }
+    },
+    setItem: (key: string, value: string) => {
+      try {
+        localStorage.setItem(key, value)
+
+        // Sincronizar con cookie para que el middleware pueda leerla
+        // Cookie expira en 7 días
+        const expires = new Date()
+        expires.setDate(expires.getDate() + 7)
+        document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`
+      } catch (e) {
+        console.warn('Error setting storage:', e)
+      }
+    },
+    removeItem: (key: string) => {
+      try {
+        localStorage.removeItem(key)
+
+        // Eliminar la cookie también
+        document.cookie = `${COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+      } catch (e) {
+        console.warn('Error removing storage:', e)
+      }
+    },
+  }
+}
+
+// Variable para almacenar la instancia singleton
+let clientSingleton: ReturnType<typeof createClient<Database>> | null = null
 
 // Opciones comunes para el cliente de Supabase
 const getSupabaseOptions = (): SupabaseClientOptions<'public'> => ({
@@ -43,70 +93,42 @@ const getSupabaseOptions = (): SupabaseClientOptions<'public'> => ({
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    storage: createCookieSyncStorage(),
+    storageKey: 'supabase.auth.token',
   },
   global: {
     fetch: createFetchWithTimeout(FETCH_TIMEOUT_MS),
   },
 })
 
-// Hardcoded values to bypass env var caching issues
-const SUPABASE_URL = 'https://api.zona-gol.com'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
-
 // Función para crear o devolver el cliente de Supabase para componentes
-// IMPORTANTE: Usa createClientComponentClient para sincronizar sesión en cookies
-// Esto es necesario para que el middleware pueda leer la sesión
 export const createClientSupabaseClient = () => {
-  // En el servidor, siempre crear una nueva instancia
+  // En el servidor, siempre crear una nueva instancia sin storage
   if (typeof window === 'undefined') {
-    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
-  }
-
-  // En el cliente, usar createClientComponentClient que maneja cookies
-  if (!clientComponentSingleton) {
-    // createClientComponentClient sincroniza la sesión en cookies además de localStorage
-    // Esto permite que el middleware pueda leer la sesión
-    clientComponentSingleton = createClientComponentClient<Database>({
-      supabaseUrl: SUPABASE_URL,
-      supabaseKey: SUPABASE_ANON_KEY,
-      options: getSupabaseOptions(),
+    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        fetch: createFetchWithTimeout(FETCH_TIMEOUT_MS),
+      },
     })
   }
 
-  return clientComponentSingleton
+  // En el cliente, reutilizar la instancia existente
+  if (!clientSingleton) {
+    clientSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
+  }
+
+  return clientSingleton
 }
 
-// Cliente directo para cuando necesitas más control (singleton)
-// IMPORTANTE: Esta es una función, no una constante ejecutada inmediatamente
-// para evitar errores de build cuando las env vars no están disponibles
-export const getDirectSupabaseClient = () => {
-  // Hardcoded URL to bypass env var caching issues
-  const url = 'https://api.zona-gol.com'
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY)')
-  }
-
-  // En el servidor, siempre crear una nueva instancia con timeout
-  if (typeof window === 'undefined') {
-    return createClient<Database>(url, key, getSupabaseOptions())
-  }
-
-  // En el cliente, usar createClientComponentClient para consistencia con cookies
-  if (!directClientSingleton) {
-    directClientSingleton = createClientComponentClient<Database>({
-      supabaseUrl: url,
-      supabaseKey: key,
-      options: getSupabaseOptions(),
-    })
-  }
-
-  return directClientSingleton
-}
+// Alias para compatibilidad
+export const getDirectSupabaseClient = createClientSupabaseClient
 
 // Alias para compatibilidad con código existente (legacy)
-// NOTA: Solo usar en contexto de cliente, no en el servidor durante build
+// NOTA: Solo usar en contexto de cliente
 export const supabase = typeof window !== 'undefined'
-  ? getDirectSupabaseClient()
+  ? createClientSupabaseClient()
   : (null as unknown as ReturnType<typeof createClient<Database>>)

@@ -218,7 +218,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           setSession(null)
           setUser(null)
           setProfile(null)
-          router.push('/')
+          // Usar window.location para forzar recarga completa y limpiar estado
+          window.location.href = '/'
           return
         }
 
