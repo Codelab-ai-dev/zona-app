@@ -30,6 +30,7 @@ const mockAuthStore = {
 // Mock modules
 vi.mock('../../supabase/client', () => ({
   createClientSupabaseClient: () => mockSupabaseClient,
+  createPublicSupabaseClient: () => mockSupabaseClient,
 }))
 
 vi.mock('../../stores/league-store', () => ({

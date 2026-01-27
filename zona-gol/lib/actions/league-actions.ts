@@ -1,4 +1,4 @@
-import { createClientSupabaseClient } from '../supabase/client'
+import { createClientSupabaseClient, createPublicSupabaseClient } from '../supabase/client'
 import { createClient } from '@supabase/supabase-js'
 import { useLeagueStore } from '../stores/league-store'
 import { useAuthStore } from '../stores/auth-store'
@@ -26,7 +26,8 @@ type Team = Database['public']['Tables']['teams']['Row']
 export const leagueActions = {
   // Get all active leagues (public)
   async getActiveLeagues() {
-    const supabase = createClientSupabaseClient()
+    // Usar cliente público sin storage para consultas públicas
+    const supabase = createPublicSupabaseClient()
     const { setLoading, setError, setLeagues } = useLeagueStore.getState()
 
     try {
