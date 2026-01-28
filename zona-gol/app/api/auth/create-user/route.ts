@@ -1,26 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Hardcoded Supabase URL
+const SUPABASE_URL = 'https://api.zona-gol.com'
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password, user_metadata } = await request.json()
-    
+
     console.log('🔵 Creating user with admin API:', { email, hasPassword: !!password })
-    
-    // Verificar que tenemos las variables de entorno necesarias
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL')
-      return NextResponse.json({ error: 'Missing Supabase URL' }, { status: 500 })
-    }
-    
+
+    // Verificar que tenemos la service role key
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY')
       return NextResponse.json({ error: 'Missing service role key' }, { status: 500 })
     }
-    
+
     // Usar el cliente de servicio con permisos de administrador
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key for admin operations
       {
         auth: {
