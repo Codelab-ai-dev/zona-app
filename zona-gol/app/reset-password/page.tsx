@@ -41,12 +41,43 @@ function ResetPasswordContent() {
     const checkResetSession = async () => {
       try {
         const supabase = createClientSupabaseClient()
+
+        // Check if we have a recovery token in URL
+        const token = searchParams.get('token')
+        const type = searchParams.get('type')
+
+        if (token && type === 'recovery') {
+          // Verify the recovery token to create a session
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'recovery',
+          })
+
+          if (error) {
+            console.error('Token verification error:', error)
+            setMessage({
+              type: 'error',
+              text: 'Enlace de recuperación inválido o expirado. Por favor, solicita un nuevo enlace.'
+            })
+            setIsValidSession(false)
+            setCheckingSession(false)
+            return
+          }
+
+          if (data.session) {
+            setIsValidSession(true)
+            setCheckingSession(false)
+            return
+          }
+        }
+
+        // Check for existing session (for users already authenticated via callback)
         const { data: { session }, error } = await supabase.auth.getSession()
-        
+
         if (error || !session) {
-          setMessage({ 
-            type: 'error', 
-            text: 'Enlace de recuperación inválido o expirado. Por favor, solicita un nuevo enlace.' 
+          setMessage({
+            type: 'error',
+            text: 'Enlace de recuperación inválido o expirado. Por favor, solicita un nuevo enlace.'
           })
           setIsValidSession(false)
         } else {
@@ -54,9 +85,9 @@ function ResetPasswordContent() {
         }
       } catch (error) {
         console.error('Error checking reset session:', error)
-        setMessage({ 
-          type: 'error', 
-          text: 'Error al verificar el enlace de recuperación.' 
+        setMessage({
+          type: 'error',
+          text: 'Error al verificar el enlace de recuperación.'
         })
         setIsValidSession(false)
       } finally {
@@ -65,7 +96,7 @@ function ResetPasswordContent() {
     }
 
     checkResetSession()
-  }, [])
+  }, [searchParams])
 
   const checkPasswordStrength = (password: string) => {
     return passwordRequirements.map(req => ({

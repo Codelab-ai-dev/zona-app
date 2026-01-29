@@ -24,18 +24,13 @@ export async function GET(request: Request) {
         }
     }
 
-    // Handle password recovery token
+    // Handle password recovery token - pass to reset-password page
     if (token && type === 'recovery') {
-        const { error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'recovery',
-        })
-        if (error) {
-            console.error('Recovery token verification error:', error)
-            return NextResponse.redirect(`${requestUrl.origin}/login?error=recovery-token-error`)
-        }
-        // Redirect to reset password page
-        return NextResponse.redirect(`${requestUrl.origin}/reset-password`)
+        // Pass the token to reset-password page to handle verification
+        const resetUrl = new URL('/reset-password', requestUrl.origin)
+        resetUrl.searchParams.set('token', token)
+        resetUrl.searchParams.set('type', 'recovery')
+        return NextResponse.redirect(resetUrl.toString())
     }
 
     // Handle email confirmation token
