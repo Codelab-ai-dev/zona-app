@@ -36,8 +36,9 @@ ARG CACHEBUST=1
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# Hard-fail si faltan (evita builds malos)
-RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL" && exit 1)
+# Debug: Print and verify the URL value
+RUN echo "DEBUG: NEXT_PUBLIC_SUPABASE_URL is: $NEXT_PUBLIC_SUPABASE_URL"
+RUN if [ "$NEXT_PUBLIC_SUPABASE_URL" != "https://api.zona-gol.com" ]; then echo "ERROR: Wrong URL detected: $NEXT_PUBLIC_SUPABASE_URL" && exit 1; fi
 RUN test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_ANON_KEY" && exit 1)
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
