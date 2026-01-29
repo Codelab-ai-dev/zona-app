@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Hardcoded Supabase URL
-const SUPABASE_URL = 'https://api.zona-gol.com'
+// Obtener URL de Supabase con fallback
+const getSupabaseUrl = () => {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.zona-gol.com'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Usar el cliente de servicio con permisos de administrador
     const supabaseAdmin = createClient(
-      SUPABASE_URL,
+      getSupabaseUrl(),
       process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key for admin operations
       {
         auth: {

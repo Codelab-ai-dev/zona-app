@@ -16,8 +16,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files (except .env.production which only has public vars)
 .env*
+!.env.production
 
 # vercel
 .vercel
