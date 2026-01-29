@@ -32,9 +32,13 @@ function createFetchWithTimeout(timeoutMs: number): typeof fetch {
   }
 }
 
-// Hardcoded values to bypass env var caching issues
-const SUPABASE_URL = 'https://api.zona-gol.com'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+// Obtener URL y Key de Supabase con fallback
+const getSupabaseConfig = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.zona-gol.com'
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+
+  return { url, key }
+}
 
 // Nombre de cookie para sincronización
 const COOKIE_NAME = 'sb-zona-gol-auth-token'
@@ -103,9 +107,11 @@ const getSupabaseOptions = (): SupabaseClientOptions<'public'> => ({
 
 // Función para crear o devolver el cliente de Supabase para componentes
 export const createClientSupabaseClient = () => {
+  const { url, key } = getSupabaseConfig()
+
   // En el servidor, siempre crear una nueva instancia sin storage
   if (typeof window === 'undefined') {
-    return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    return createClient<Database>(url, key, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -118,21 +124,20 @@ export const createClientSupabaseClient = () => {
 
   // En el cliente, reutilizar la instancia existente
   if (!clientSingleton) {
-    clientSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, getSupabaseOptions())
+    clientSingleton = createClient<Database>(url, key, getSupabaseOptions())
   }
 
   return clientSingleton
 }
 
-// Alias para compatibilidad
-export const getDirectSupabaseClient = createClientSupabaseClient
-
 // Cliente simple para consultas públicas (sin storage complejo)
 let publicClientSingleton: ReturnType<typeof createClient<Database>> | null = null
 
 export const createPublicSupabaseClient = () => {
+  const { url, key } = getSupabaseConfig()
+
   if (!publicClientSingleton) {
-    publicClientSingleton = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    publicClientSingleton = createClient<Database>(url, key, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -144,6 +149,9 @@ export const createPublicSupabaseClient = () => {
   }
   return publicClientSingleton
 }
+
+// Alias para compatibilidad
+export const getDirectSupabaseClient = createClientSupabaseClient
 
 // Alias para compatibilidad con código existente (legacy)
 // NOTA: Solo usar en contexto de cliente

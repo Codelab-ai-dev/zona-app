@@ -4,13 +4,17 @@ import { useLeagueStore } from '../stores/league-store'
 import { useAuthStore } from '../stores/auth-store'
 import { Database } from '../supabase/database.types'
 
-// Hardcoded values para evitar problemas con variables de entorno
-const SUPABASE_URL = 'https://api.zona-gol.com'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+// Obtener URL y Key de Supabase con fallback
+const getSupabaseConfig = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.zona-gol.com'
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY'
+  return { url, key }
+}
 
 // Helper para crear cliente de Supabase en el servidor
 function getServerSupabaseClient() {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const { url, key } = getSupabaseConfig()
+  return createClient<Database>(url, key)
 }
 
 type League = Database['public']['Tables']['leagues']['Row']
@@ -30,8 +34,6 @@ export const leagueActions = {
       setLoading(true)
       setError(null)
 
-      console.log('🔍 [DEBUG] Fetching active leagues from database...')
-
       const { data: leagues, error } = await supabase
         .from('leagues')
         .select('*')
@@ -40,23 +42,12 @@ export const leagueActions = {
         .returns<League[]>()
 
       if (error) {
-        console.error('❌ [DEBUG] Database error:', error)
         throw error
       }
 
-      console.log('✅ [DEBUG] Database query successful. Found leagues:', leagues?.length || 0)
-      if (leagues && leagues.length > 0) {
-        leagues.forEach((league, index) => {
-          console.log(`  ${index + 1}. ${league.name} (is_active: ${league.is_active})`)
-        })
-      }
-
       setLeagues(leagues || [])
-      console.log('📦 [DEBUG] Store updated with leagues')
-
       return leagues
     } catch (error) {
-      console.error('❌ [DEBUG] Get leagues error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leagues'
       setError(errorMessage)
       throw error
