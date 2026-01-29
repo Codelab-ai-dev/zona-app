@@ -117,7 +117,7 @@ function clearSessionAndRedirect(request: NextRequest, reason: string): NextResp
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
 
   // Skip middleware for static files and API routes
   if (
@@ -127,6 +127,19 @@ export async function middleware(request: NextRequest) {
     isApiRoute(pathname)
   ) {
     return NextResponse.next()
+  }
+
+  // Handle auth callback tokens (recovery, email verification, etc.)
+  // If token and type params are present, redirect to auth callback
+  const token = searchParams.get('token')
+  const type = searchParams.get('type')
+  if (token && type && (type === 'recovery' || type === 'email' || type === 'signup')) {
+    const callbackUrl = new URL('/api/auth/callback', request.url)
+    // Pass all search params to the callback
+    searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value)
+    })
+    return NextResponse.redirect(callbackUrl)
   }
 
   // Para rutas públicas que no son login, permitir sin verificar auth

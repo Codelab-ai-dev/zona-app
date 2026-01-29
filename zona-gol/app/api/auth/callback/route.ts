@@ -5,31 +5,56 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-    // Obtener URL y code
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
+    const token = requestUrl.searchParams.get('token')
+    const type = requestUrl.searchParams.get('type')
     const next = requestUrl.searchParams.get('next')
+    const redirectTo = requestUrl.searchParams.get('redirect_to')
 
+    const cookieStore = await cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) })
+
+    // Handle PKCE code exchange
     if (code) {
-        const cookieStore = await cookies()
-        const supabase = createRouteHandlerClient({ cookies: () => Promise.resolve(cookieStore) })
-
-        // Intercambiar el código por una sesión
         const { error } = await supabase.auth.exchangeCodeForSession(code)
-
         if (error) {
             console.error('Auth code exchange error:', error)
-            // Redirigir a login con error
             return NextResponse.redirect(`${requestUrl.origin}/login?error=auth-code-error`)
         }
     }
 
-    // URL a redirigir después del intercambio
-    // Si hay un parámetro 'next', usarlo (ej: /reset-password)
-    // Si no, ir al dashboard
-    if (next) {
-        return NextResponse.redirect(`${requestUrl.origin}${next}`)
+    // Handle password recovery token
+    if (token && type === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'recovery',
+        })
+        if (error) {
+            console.error('Recovery token verification error:', error)
+            return NextResponse.redirect(`${requestUrl.origin}/login?error=recovery-token-error`)
+        }
+        // Redirect to reset password page
+        return NextResponse.redirect(`${requestUrl.origin}/reset-password`)
     }
 
-    return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+    // Handle email confirmation token
+    if (token && type === 'email') {
+        const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'email',
+        })
+        if (error) {
+            console.error('Email verification error:', error)
+            return NextResponse.redirect(`${requestUrl.origin}/login?error=email-verification-error`)
+        }
+    }
+
+    // Determine redirect URL
+    const finalRedirect = next || redirectTo || '/dashboard'
+    const redirectUrl = finalRedirect.startsWith('http')
+        ? finalRedirect
+        : `${requestUrl.origin}${finalRedirect}`
+
+    return NextResponse.redirect(redirectUrl)
 }
