@@ -31,18 +31,17 @@ COPY . .
 ARG CACHEBUST=1
 
 # Set environment variables for build
-ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 # Remove any .env files that might have been copied and create fresh ones
 RUN rm -f .env .env.local .env.production .env.development 2>/dev/null || true
 
-# Create .env.local with the correct values from build args
-RUN echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" > .env.local && \
+# Create .env.local with HARDCODED correct URL (workaround for ARG issue)
+RUN echo "NEXT_PUBLIC_SUPABASE_URL=https://api.zona-gol.com" > .env.local && \
     echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local && \
-    cat .env.local
+    echo "Created .env.local:" && cat .env.local
 
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=https://api.zona-gol.com
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 # Build the application
