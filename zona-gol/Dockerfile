@@ -31,15 +31,16 @@ COPY . .
 ARG CACHEBUST=1
 
 # Set environment variables for build
-# These are placeholder values for build time - real values are provided at runtime
-# The build needs these to be non-empty for Next.js static generation
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# Debug: Print and verify the URL value
-RUN echo "DEBUG: NEXT_PUBLIC_SUPABASE_URL is: $NEXT_PUBLIC_SUPABASE_URL"
-RUN if [ "$NEXT_PUBLIC_SUPABASE_URL" != "https://api.zona-gol.com" ]; then echo "ERROR: Wrong URL detected: $NEXT_PUBLIC_SUPABASE_URL" && exit 1; fi
-RUN test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_ANON_KEY" && exit 1)
+# Remove any .env files that might have been copied and create fresh ones
+RUN rm -f .env .env.local .env.production .env.development 2>/dev/null || true
+
+# Create .env.local with the correct values from build args
+RUN echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" > .env.local && \
+    echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local && \
+    cat .env.local
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
