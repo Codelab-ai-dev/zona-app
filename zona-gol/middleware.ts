@@ -131,9 +131,14 @@ export async function middleware(request: NextRequest) {
 
   // Handle auth callback tokens (recovery, email verification, etc.)
   // If token and type params are present, redirect to auth callback
+  // BUT skip if already on reset-password (to avoid redirect loop)
   const token = searchParams.get('token')
   const type = searchParams.get('type')
   if (token && type && (type === 'recovery' || type === 'email' || type === 'signup')) {
+    // Don't redirect if already on reset-password page (callback redirects here with token)
+    if (pathname === '/reset-password') {
+      return NextResponse.next()
+    }
     const callbackUrl = new URL('/api/auth/callback', request.url)
     // Pass all search params to the callback
     searchParams.forEach((value, key) => {
