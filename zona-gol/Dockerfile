@@ -27,6 +27,9 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Cache buster to force rebuild
+ARG CACHEBUST=1
+
 # Set environment variables for build
 # These are placeholder values for build time - real values are provided at runtime
 # The build needs these to be non-empty for Next.js static generation

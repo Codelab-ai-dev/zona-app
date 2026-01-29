@@ -84,7 +84,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: true
+          pull: true
           build-args: |
+            CACHEBUST=${{ github.run_id }}
             NEXT_PUBLIC_SUPABASE_URL=https://api.zona-gol.com
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
