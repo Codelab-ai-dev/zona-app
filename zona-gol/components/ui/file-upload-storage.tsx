@@ -82,6 +82,7 @@ export function FileUploadStorage({
       const response = await fetch('/api/storage/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       })
 
       const result = await response.json()

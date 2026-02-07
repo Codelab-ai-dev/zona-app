@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,19 +20,11 @@ class QRScannerScreen extends StatefulWidget {
   State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
-class _QRScannerScreenState extends State<QRScannerScreen>
-    with TickerProviderStateMixin {
+class _QRScannerScreenState extends State<QRScannerScreen> {
   MobileScannerController? controller;
   bool isScanning = true;
   bool isFlashOn = false;
   String? lastScannedCode;
-
-  late AnimationController _scanLineController;
-  late AnimationController _pulseController;
-  late AnimationController _cornerController;
-  late Animation<double> _scanLineAnimation;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _cornerAnimation;
 
   // Stadium Nights color palette
   static const Color _primaryDark = Color(0xFF0A0A0A);
@@ -45,52 +36,10 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   void initState() {
     super.initState();
     controller = MobileScannerController();
-
-    // Scan line animation (moves up and down)
-    _scanLineController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _scanLineAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _scanLineController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Pulse animation for corners
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Corner entrance animation
-    _cornerController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    )..forward();
-
-    _cornerAnimation = CurvedAnimation(
-      parent: _cornerController,
-      curve: Curves.elasticOut,
-    );
   }
 
   @override
   void dispose() {
-    _scanLineController.dispose();
-    _pulseController.dispose();
-    _cornerController.dispose();
     controller?.dispose();
     super.dispose();
   }
@@ -290,118 +239,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final scanAreaSize = screenSize.width * 0.7;
-
     return Scaffold(
       backgroundColor: _primaryDark,
       body: Stack(
         children: [
-          // Camera view
+          // Camera view - full screen without overlay
           Positioned.fill(
             child: MobileScanner(
               controller: controller,
               onDetect: _onDetect,
-            ),
-          ),
-
-          // Dark overlay with cutout
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _ScannerOverlayPainter(
-                scanAreaSize: scanAreaSize,
-                overlayColor: _primaryDark.withOpacity(0.85),
-              ),
-            ),
-          ),
-
-          // Scan frame and animations
-          Center(
-            child: SizedBox(
-              width: scanAreaSize,
-              height: scanAreaSize,
-              child: Stack(
-                children: [
-                  // Animated scan line
-                  if (isScanning)
-                    AnimatedBuilder(
-                      animation: _scanLineAnimation,
-                      builder: (context, child) {
-                        return Positioned(
-                          top: _scanLineAnimation.value * (scanAreaSize - 4),
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 3,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  _neonGreen.withOpacity(0),
-                                  _neonGreen,
-                                  _neonGreen.withOpacity(0),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _neonGreen.withOpacity(0.8),
-                                  blurRadius: 12,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                  // Animated corners
-                  AnimatedBuilder(
-                    animation: Listenable.merge([_cornerAnimation, _pulseAnimation]),
-                    builder: (context, child) {
-                      return Stack(
-                        children: [
-                          // Top-left corner
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            child: _buildCorner(
-                              rotation: 0,
-                              scale: _cornerAnimation.value * _pulseAnimation.value,
-                            ),
-                          ),
-                          // Top-right corner
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: _buildCorner(
-                              rotation: 90,
-                              scale: _cornerAnimation.value * _pulseAnimation.value,
-                            ),
-                          ),
-                          // Bottom-right corner
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: _buildCorner(
-                              rotation: 180,
-                              scale: _cornerAnimation.value * _pulseAnimation.value,
-                            ),
-                          ),
-                          // Bottom-left corner
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            child: _buildCorner(
-                              rotation: 270,
-                              scale: _cornerAnimation.value * _pulseAnimation.value,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
             ),
           ),
 
@@ -578,25 +424,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     );
   }
 
-  Widget _buildCorner({required double rotation, required double scale}) {
-    return Transform.rotate(
-      angle: rotation * (math.pi / 180),
-      child: Transform.scale(
-        scale: scale,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: _neonGreen, width: 4),
-              left: BorderSide(color: _neonGreen, width: 4),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildControlButton(
     IconData icon,
     VoidCallback onPressed, {
@@ -621,43 +448,5 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         ),
       ),
     );
-  }
-}
-
-// Custom painter for the scanner overlay
-class _ScannerOverlayPainter extends CustomPainter {
-  final double scanAreaSize;
-  final Color overlayColor;
-
-  _ScannerOverlayPainter({
-    required this.scanAreaSize,
-    required this.overlayColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = overlayColor
-      ..style = PaintingStyle.fill;
-
-    final scanRect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2),
-      width: scanAreaSize,
-      height: scanAreaSize,
-    );
-
-    // Create path with cutout
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(16)))
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_ScannerOverlayPainter oldDelegate) {
-    return oldDelegate.scanAreaSize != scanAreaSize ||
-           oldDelegate.overlayColor != overlayColor;
   }
 }

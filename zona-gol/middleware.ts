@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
 const API_ROUTES = [
   '/api/auth',
   '/api/upload',
+  '/api/storage',
   '/api/cron',
 ]
 

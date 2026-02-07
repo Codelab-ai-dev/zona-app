@@ -3,13 +3,37 @@
  * Wrapper around Supabase Storage for the storage abstraction layer
  */
 
+import { createClient } from '@supabase/supabase-js'
 import { createClientSupabaseClient } from '@/lib/supabase/client'
 import type { StorageProvider, BucketName, UploadOptions, UploadResult, StorageFile } from './types'
 
 export class SupabaseStorageProvider implements StorageProvider {
   name = 'supabase' as const
+  private adminClient: ReturnType<typeof createClient> | null = null
 
   private getSupabase() {
+    // On server-side, use service role key to bypass RLS policies
+    if (typeof window === 'undefined') {
+      if (!this.adminClient) {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+          console.warn('[SupabaseStorageProvider] Missing service role key, falling back to anon client')
+          return createClientSupabaseClient()
+        }
+
+        this.adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        })
+      }
+      return this.adminClient
+    }
+
+    // On client-side, use the regular client
     return createClientSupabaseClient()
   }
 

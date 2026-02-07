@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { storageService } from '@/lib/storage/storage-service'
 import type { BucketName } from '@/lib/storage/types'
+import { verifyStorageAuth } from '../auth'
+
+export const dynamic = 'force-dynamic'
 
 // Bucket configurations
 const BUCKET_CONFIG: Record<string, { maxSize: number; allowedTypes: string[]; requiresLeagueId?: boolean }> = {
@@ -14,10 +16,8 @@ const BUCKET_CONFIG: Record<string, { maxSize: number; allowedTypes: string[]; r
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const auth = await verifyStorageAuth()
+    if (!auth) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }

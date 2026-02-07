@@ -4,7 +4,7 @@ import 'app_config.dart';
 class SupabaseConfig {
   // 🔒 SECURITY: Default values for DEVELOPMENT ONLY
   // In production, these MUST be overridden via --dart-define flags
-  static const String _defaultSupabaseUrl = 'https://srv1190257.hstgr.cloud';
+  static const String _defaultSupabaseUrl = 'https://api.zona-gol.com';
   static const String _defaultSupabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY1Mzg4OTkyLCJleHAiOjIwODA3NDg5OTJ9.o4ltxPTWM3ij5MrUvpZF86FuQK1qXwTRugmJzO0OoNY';
 
