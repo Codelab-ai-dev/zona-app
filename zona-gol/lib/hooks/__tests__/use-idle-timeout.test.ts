@@ -41,7 +41,8 @@ describe('Idle Timeout Logic', () => {
   });
 
   it('should not warn or logout when recently active', () => {
-    const now = Date.now();
+    // Usar el mismo timestamp para evitar diferencias de timing
+    const now = lastActivity;
     const state = checkIdleState(now);
 
     expect(state.shouldLogout).toBe(false);
