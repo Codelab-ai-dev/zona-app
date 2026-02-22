@@ -1,11 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './use-auth'
 import { useSupabase } from '../providers/supabase-provider'
 import { toast } from 'sonner'
-import { authConfig } from '../config/auth-config'
 
 interface UseIdleTimeoutOptions {
   timeout?: number // Timeout en milisegundos (por defecto 20 minutos)
@@ -35,6 +34,12 @@ export function useIdleTimeout({
 
   // Intervalo de chequeo
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Flag para evitar llamadas concurrentes a refreshToken
+  const isRefreshingRef = useRef<boolean>(false)
+
+  // Flag para saber si el hook está montado
+  const isMountedRef = useRef<boolean>(true)
 
   const handleLogout = useCallback(async () => {
     console.log('🔴 Sesión cerrada por inactividad')
@@ -81,7 +86,12 @@ export function useIdleTimeout({
   }, [promptBeforeIdle])
 
   // Función para refrescar el token de Supabase mientras el usuario esté activo
+  // Protegida contra llamadas concurrentes
   const refreshTokenIfNeeded = useCallback(async () => {
+    // Evitar llamadas concurrentes
+    if (isRefreshingRef.current) return
+    if (!isMountedRef.current) return
+
     const now = Date.now()
     const timeSinceLastRefresh = now - lastTokenRefreshRef.current
     const timeSinceLastActivity = now - lastActivityRef.current
@@ -90,19 +100,24 @@ export function useIdleTimeout({
     // 1. Ha pasado suficiente tiempo desde el último refresh
     // 2. El usuario ha tenido actividad reciente (no está inactivo)
     if (timeSinceLastRefresh >= tokenRefreshInterval && timeSinceLastActivity < timeout) {
+      isRefreshingRef.current = true
       try {
-        console.log('[Auth] Refreshing session token proactively...')
         const { error } = await supabase.auth.refreshSession()
+
+        if (!isMountedRef.current) return // Componente desmontado durante la operación
 
         if (error) {
           console.warn('[Auth] Token refresh failed:', error.message)
-          // No hacer logout aquí, el SupabaseProvider se encargará si es un error crítico
         } else {
-          console.log('[Auth] Session token refreshed successfully')
-          lastTokenRefreshRef.current = now
+          lastTokenRefreshRef.current = Date.now()
         }
       } catch (error) {
-        console.warn('[Auth] Token refresh error:', error)
+        // Solo log si el componente sigue montado
+        if (isMountedRef.current) {
+          console.warn('[Auth] Token refresh error:', error)
+        }
+      } finally {
+        isRefreshingRef.current = false
       }
     }
   }, [supabase, tokenRefreshInterval, timeout])
@@ -119,8 +134,16 @@ export function useIdleTimeout({
   }, [])
 
   useEffect(() => {
+    // Marcar como montado
+    isMountedRef.current = true
+
+    // Limpiar intervalo anterior si existe (protección contra re-renders)
+    if (checkIntervalRef.current) {
+      clearInterval(checkIntervalRef.current)
+      checkIntervalRef.current = null
+    }
+
     if (!isAuthenticated) {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current)
       return
     }
 
@@ -128,43 +151,41 @@ export function useIdleTimeout({
     lastActivityRef.current = Date.now()
     warningShownRef.current = false
 
-    // Eventos que indican actividad
-    const events = [
-      'mousedown',
-      'mousemove',
-      'keydown',
-      'scroll',
-      'touchstart',
-      'click',
-    ]
+    // Eventos que indican actividad (reducidos para menor overhead)
+    const events = ['mousedown', 'keydown', 'touchstart', 'click'] as const
 
-    // Throttling básico para no actualizar en cada pixel de movimiento de mouse
+    // Throttling para no procesar cada evento
     let throttleTimer: NodeJS.Timeout | null = null
+    let isThrottled = false
 
     const handleActivity = () => {
-      if (!throttleTimer) {
-        updateActivity()
-        throttleTimer = setTimeout(() => {
-          throttleTimer = null
-        }, 1000) // Solo actualizar máximo 1 vez por segundo
-      }
+      if (isThrottled) return
+      isThrottled = true
+      updateActivity()
+      throttleTimer = setTimeout(() => {
+        isThrottled = false
+      }, 2000) // Throttle a 2 segundos para reducir carga
     }
 
-    // Agregar listeners
+    // Agregar listeners con passive para mejor rendimiento
     events.forEach((event) => {
-      window.addEventListener(event, handleActivity)
+      window.addEventListener(event, handleActivity, { passive: true })
     })
 
-    // Iniciar intervalo de chequeo
-    // Chequeamos cada 5 segundos
+    // Iniciar intervalo de chequeo cada 10 segundos (reducido de 5s)
     checkIntervalRef.current = setInterval(() => {
+      if (!isMountedRef.current) return
+
       const now = Date.now()
       const timeSinceLastActivity = now - lastActivityRef.current
       const timeUntilTimeout = timeout - timeSinceLastActivity
 
       // Caso 1: Se acabó el tiempo
       if (timeUntilTimeout <= 0) {
-        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current)
+        if (checkIntervalRef.current) {
+          clearInterval(checkIntervalRef.current)
+          checkIntervalRef.current = null
+        }
         handleLogout()
         return
       }
@@ -175,19 +196,21 @@ export function useIdleTimeout({
       }
 
       // Caso 3: Usuario activo - refrescar token si es necesario
-      // Esto mantiene el token de Supabase válido mientras el usuario trabaja
+      // No usar await para no bloquear el intervalo
       refreshTokenIfNeeded()
-
-    }, 5000)
+    }, 10000) // 10 segundos en lugar de 5
 
     // Cleanup
     return () => {
+      isMountedRef.current = false
+
       events.forEach((event) => {
         window.removeEventListener(event, handleActivity)
       })
 
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current)
+        checkIntervalRef.current = null
       }
 
       if (throttleTimer) {

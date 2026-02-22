@@ -58,6 +58,8 @@ export function useActiveTournament(leagueId: string | undefined) {
       return data
     },
     enabled: !!leagueId,
+    staleTime: 5 * 60 * 1000, // 5 minutos - torneo activo cambia poco
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 

@@ -102,6 +102,8 @@ export function useMatchesByTeam(
       return (data as MatchWithTeams[]) || []
     },
     enabled: !!teamId,
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 5 * 60 * 1000, // 5 minutos en cache
   })
 }
 

@@ -9,6 +9,43 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AgentService } from './core/agent.service';
 import { AgentRequest } from '@/lib/types/agent.types';
 
+// =====================================================
+// RATE LIMITING (en memoria - simple pero efectivo)
+// =====================================================
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minuto
+const RATE_LIMIT_MAX_REQUESTS = 30; // máximo 30 requests por minuto por IP
+
+// Mapa de IP -> { count, resetTime }
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Limpiar entradas viejas cada 5 minutos para evitar memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of rateLimitMap.entries()) {
+    if (now > data.resetTime) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const existing = rateLimitMap.get(ip);
+
+  if (!existing || now > existing.resetTime) {
+    // Nueva ventana
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (existing.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0, resetIn: existing.resetTime - now };
+  }
+
+  existing.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - existing.count, resetIn: existing.resetTime - now };
+}
+
 /**
  * POST /api/agent
  *
@@ -48,6 +85,25 @@ import { AgentRequest } from '@/lib/types/agent.types';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+
+    const rateLimit = checkRateLimit(ip);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter: Math.ceil(rateLimit.resetIn / 1000) },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
+            'X-RateLimit-Remaining': '0',
+          }
+        }
+      );
+    }
+
     // Parsear body
     const body = await request.json();
 

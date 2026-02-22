@@ -67,6 +67,8 @@ export function useTeamsByOwner(userId: string | undefined) {
       return data || []
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 
@@ -95,6 +97,8 @@ export function useTeamById(teamId: string | undefined) {
       return data as TeamWithRelations
     },
     enabled: !!teamId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 

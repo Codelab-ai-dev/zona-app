@@ -42,6 +42,8 @@ export function usePlayersByTeam(teamId: string | undefined) {
       return data || []
     },
     enabled: !!teamId,
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 
@@ -132,6 +134,8 @@ export function useSuspendedPlayers(teamId: string | undefined) {
       return new Set(data?.map((s) => s.player_id) || [])
     },
     enabled: !!teamId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 
@@ -156,6 +160,8 @@ export function usePlayerById(playerId: string | undefined) {
       return data
     },
     enabled: !!playerId,
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
   })
 }
 

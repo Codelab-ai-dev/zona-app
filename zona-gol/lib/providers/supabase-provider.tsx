@@ -38,11 +38,57 @@ function isNetworkError(error: Error | unknown): boolean {
 
   return (
     errorMessage?.includes('ETIMEDOUT') ||
+    errorMessage?.includes('ECONNRESET') ||
+    errorMessage?.includes('ECONNREFUSED') ||
     errorMessage?.includes('fetch failed') ||
     errorMessage?.includes('network') ||
     errorMessage?.includes('Failed to fetch') ||
-    errorMessage?.includes('NetworkError')
+    errorMessage?.includes('NetworkError') ||
+    errorMessage?.includes('ConnectTimeoutError')
   )
+}
+
+// Rate limiter para errores de red - evita ciclos infinitos de logs
+const networkErrorState = {
+  lastError: 0,
+  errorCount: 0,
+  isInCooldown: false,
+}
+
+function shouldSkipNetworkRequest(): boolean {
+  const now = Date.now()
+  const COOLDOWN_MS = 30000 // 30 segundos de cooldown después de múltiples errores
+  const MAX_ERRORS_BEFORE_COOLDOWN = 3
+
+  // Si estamos en cooldown, verificar si ya pasó
+  if (networkErrorState.isInCooldown) {
+    if (now - networkErrorState.lastError > COOLDOWN_MS) {
+      networkErrorState.isInCooldown = false
+      networkErrorState.errorCount = 0
+      return false
+    }
+    return true // Aún en cooldown
+  }
+
+  return false
+}
+
+function recordNetworkError(): void {
+  const now = Date.now()
+  const RESET_WINDOW_MS = 60000 // Reset contador después de 1 minuto sin errores
+
+  // Reset si ha pasado suficiente tiempo desde el último error
+  if (now - networkErrorState.lastError > RESET_WINDOW_MS) {
+    networkErrorState.errorCount = 0
+  }
+
+  networkErrorState.lastError = now
+  networkErrorState.errorCount++
+
+  if (networkErrorState.errorCount >= 3) {
+    networkErrorState.isInCooldown = true
+    console.warn('[Auth] Network errors detected, entering cooldown mode for 30s')
+  }
 }
 
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
@@ -123,47 +169,53 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          // Get user profile with retry logic for network issues
-          let retries = 3
-          let profile = null
-          let profileError = null
+          // Skip profile fetch if we're in network cooldown
+          if (shouldSkipNetworkRequest()) {
+            console.log('[Auth] Skipping profile fetch - in network cooldown')
+          } else {
+            // Get user profile with limited retry (solo 1 retry para evitar ciclos)
+            let retries = 1
+            let profile = null
+            let profileError = null
 
-          while (retries > 0 && !profile) {
-            const result = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
+            while (retries >= 0 && !profile) {
+              const result = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
 
-            if (result.data) {
-              profile = result.data
-              profileError = null
-            } else if (result.error) {
-              profileError = result.error
+              if (result.data) {
+                profile = result.data
+                profileError = null
+              } else if (result.error) {
+                profileError = result.error
 
-              // Check if it's an auth error (refresh token expired during profile fetch)
-              if (isRefreshTokenError(result.error)) {
-                await handleForceLogout('refresh_token_invalid_on_profile_fetch')
-                return
-              }
-
-              // Only retry on network errors
-              if (isNetworkError(result.error)) {
-                retries--
-                if (retries > 0) {
-                  console.warn(`Profile fetch failed, retrying... (${retries} attempts left)`)
-                  await new Promise(r => setTimeout(r, 1000)) // Wait 1 second before retry
+                // Check if it's an auth error (refresh token expired during profile fetch)
+                if (isRefreshTokenError(result.error)) {
+                  await handleForceLogout('refresh_token_invalid_on_profile_fetch')
+                  return
                 }
-              } else {
-                break // Don't retry on non-network errors
+
+                // On network errors, record and maybe retry once
+                if (isNetworkError(result.error)) {
+                  recordNetworkError()
+                  retries--
+                  if (retries >= 0) {
+                    await new Promise(r => setTimeout(r, 2000)) // 2 segundos entre reintentos
+                  }
+                } else {
+                  break // Don't retry on non-network errors
+                }
               }
             }
-          }
 
-          if (profile && !profileError) {
-            setProfile(profile)
-          } else {
-            console.warn('No profile found for user:', session.user.id, profileError?.message)
+            if (profile && !profileError) {
+              setProfile(profile)
+            } else if (profileError) {
+              // Solo log una vez, no repetir
+              console.warn('[Auth] Profile fetch failed:', profileError.message)
+            }
           }
         }
 
@@ -236,38 +288,28 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             setSession(session)
             setUser(session?.user ?? null)
 
-            if (session?.user) {
-              // Get user profile with retry for network issues
-              let retries = 2
-              let profile = null
+            if (session?.user && !shouldSkipNetworkRequest()) {
+              // Get user profile - sin retry excesivo para evitar ciclos
+              const result = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single()
 
-              while (retries > 0 && !profile) {
-                const result = await supabase
-                  .from('users')
-                  .select('*')
-                  .eq('id', session.user.id)
-                  .single()
-
-                if (result.data) {
-                  profile = result.data
-                  setProfile(profile)
-                } else if (result.error) {
-                  // Check for refresh token errors
-                  if (isRefreshTokenError(result.error)) {
-                    await handleForceLogout('refresh_token_invalid_on_sign_in_profile')
-                    return
-                  }
-
-                  // Retry on network errors
-                  if (isNetworkError(result.error)) {
-                    retries--
-                    if (retries > 0) {
-                      await new Promise(r => setTimeout(r, 1000))
-                    }
-                  } else {
-                    break
-                  }
+              if (result.data) {
+                setProfile(result.data)
+              } else if (result.error) {
+                // Check for refresh token errors
+                if (isRefreshTokenError(result.error)) {
+                  await handleForceLogout('refresh_token_invalid_on_sign_in_profile')
+                  return
                 }
+
+                // Record network error for rate limiting
+                if (isNetworkError(result.error)) {
+                  recordNetworkError()
+                }
+                console.warn('[Auth] Profile fetch on sign in failed:', result.error.message)
               }
             }
 
@@ -289,11 +331,21 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    // Setup global error handler for uncaught auth errors
+    // Setup global error handler for uncaught auth errors (con rate limiting)
+    let lastGlobalErrorTime = 0
+    const GLOBAL_ERROR_COOLDOWN = 10000 // 10 segundos entre manejos de errores globales
+
     const handleGlobalAuthError = (event: PromiseRejectionEvent) => {
+      const now = Date.now()
+      // Rate limit: solo procesar 1 error global cada 10 segundos
+      if (now - lastGlobalErrorTime < GLOBAL_ERROR_COOLDOWN) {
+        return
+      }
+
       const error = event.reason
       if (isRefreshTokenError(error)) {
-        console.error('[Auth] Global refresh token error caught:', error)
+        lastGlobalErrorTime = now
+        console.error('[Auth] Global refresh token error caught')
         handleForceLogout('global_refresh_token_error')
         event.preventDefault()
       }

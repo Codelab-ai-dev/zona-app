@@ -4,6 +4,27 @@ import { useLeagueStore } from '../stores/league-store'
 import { useAuthStore } from '../stores/auth-store'
 import { Database } from '../supabase/database.types'
 
+// Timeout para queries - evita que se queden colgadas indefinidamente
+const QUERY_TIMEOUT_MS = 15000 // 15 segundos
+
+// Helper para envolver promesas con timeout
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage = 'Query timeout'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    )
+  ])
+}
+
+// Helper para Promise.all con timeout global
+async function promiseAllWithTimeout<T extends readonly unknown[]>(
+  promises: [...{ [K in keyof T]: Promise<T[K]> }],
+  ms: number = QUERY_TIMEOUT_MS
+): Promise<T> {
+  return withTimeout(Promise.all(promises) as Promise<T>, ms, 'Parallel queries timeout')
+}
+
 // Obtener URL y Key de Supabase con fallback
 const getSupabaseConfig = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://api.zona-gol.com'
@@ -336,29 +357,11 @@ export const leagueActions = {
 
       updateLeague(league)
 
-      // Forzar actualización del store solo con ligas activas para el directorio público
-      setTimeout(async () => {
-        try {
-          const { data: activeLeagues } = await supabase
-            .from('leagues')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-
-          if (activeLeagues) {
-            const { setLeagues } = useLeagueStore.getState()
-            setLeagues(activeLeagues)
-            // console.log('🔄 Store actualizado con ligas activas:', activeLeagues?.length)
-
-            // Trigger a refresh event for the public directory
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('league-status-updated'))
-            }
-          }
-        } catch (error) {
-          // console.warn('⚠️ Error refrescando store:', error)
-        }
-      }, 100)
+      // Actualización del store de forma síncrona (sin setTimeout que causa problemas)
+      // El store ya se actualiza arriba con updateLeague, solo disparamos el evento
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('league-status-updated'))
+      }
 
       return league
     } catch (error) {
@@ -1095,8 +1098,8 @@ export const serverLeagueActions = {
       }
     })
 
-    // Calculate standings from finished matches only
-    matches.filter(m => m.status === 'finished').forEach(match => {
+    // Calculate standings from finished regular phase matches only (exclude playoffs)
+    matches.filter(m => m.status === 'finished' && m.phase !== 'playoffs').forEach(match => {
       if (match.home_score !== null && match.away_score !== null) {
         const homeId = match.home_team_id
         const awayId = match.away_team_id
@@ -1144,7 +1147,7 @@ export const serverLeagueActions = {
     const supabase = getServerSupabaseClient()
 
     try {
-      // Get all matches for this tournament
+      // Get all regular phase matches for this tournament (exclude playoffs)
       const { data: matches } = await supabase
         .from('matches')
         .select(`
@@ -1154,11 +1157,13 @@ export const serverLeagueActions = {
           home_score,
           away_score,
           status,
+          phase,
           home_team:teams!matches_home_team_id_fkey(id, name, slug, logo),
           away_team:teams!matches_away_team_id_fkey(id, name, slug, logo)
         `)
         .eq('tournament_id', tournamentId)
         .eq('status', 'finished')
+        .neq('phase', 'playoffs')
 
       // Get all teams in this tournament
       const { data: teams } = await supabase

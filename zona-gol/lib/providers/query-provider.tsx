@@ -8,6 +8,21 @@ interface QueryProviderProps {
   children: ReactNode
 }
 
+// Helper para detectar errores de red que no deberían reintentarse agresivamente
+function isNetworkError(error: unknown): boolean {
+  if (!error) return false
+  const message = error instanceof Error ? error.message : String(error)
+  return (
+    message.includes('ETIMEDOUT') ||
+    message.includes('ECONNRESET') ||
+    message.includes('ECONNREFUSED') ||
+    message.includes('fetch failed') ||
+    message.includes('Failed to fetch') ||
+    message.includes('NetworkError') ||
+    message.includes('ConnectTimeoutError')
+  )
+}
+
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(
     () =>
@@ -22,14 +37,24 @@ export function QueryProvider({ children }: QueryProviderProps) {
             refetchOnWindowFocus: false,
             // No recargar al reconectar
             refetchOnReconnect: false,
-            // Reintentar 2 veces en caso de error
-            retry: 2,
-            // Delay exponencial entre reintentos
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            // Retry inteligente: no reintentar en errores de red (evita ciclos)
+            retry: (failureCount, error) => {
+              // No reintentar errores de red - el servidor está caído
+              if (isNetworkError(error)) {
+                return false
+              }
+              // Para otros errores, máximo 1 reintento
+              return failureCount < 1
+            },
+            // Delay más largo para evitar bombardear el servidor
+            retryDelay: () => 5000, // 5 segundos fijo
           },
           mutations: {
-            // Reintentar mutaciones 1 vez
-            retry: 1,
+            // No reintentar mutaciones en errores de red
+            retry: (failureCount, error) => {
+              if (isNetworkError(error)) return false
+              return failureCount < 1
+            },
           },
         },
       })
