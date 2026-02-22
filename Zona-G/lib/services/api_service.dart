@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import '../models/player.dart';
 import '../config/supabase_config.dart';
 
@@ -81,10 +82,17 @@ class ApiService {
     }
   }
 
-  // Get player by ID
-  static Future<Player?> getPlayer(String playerId) async {
+  // Get player by ID, with optional fallback to name search
+  static Future<Player?> getPlayer(String playerId, {String? playerName, int? jerseyNumber, String? teamId}) async {
     try {
-      print('🔍 Buscando jugador con ID: $playerId');
+      // Validate UUID format before querying
+      final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+      if (!uuidRegex.hasMatch(playerId)) {
+        if (playerName != null && playerName.isNotEmpty) {
+          return getPlayerByName(playerName, jerseyNumber: jerseyNumber, teamId: teamId);
+        }
+        return null;
+      }
 
       final response = await SupabaseConfig.client
           .from('players')
@@ -92,52 +100,185 @@ class ApiService {
           .eq('id', playerId)
           .single();
 
-      print('✅ Jugador encontrado: ${response['name']}');
-      print('🖼️ URL de foto: ${response['photo'] ?? 'Sin foto'}');
-
-      final player = Player.fromJson(response);
-
-      // Si no hay foto directa, intentar generar URL desde storage
-      if (player.photo == null || player.photo!.isEmpty) {
-        print('⚠️ No hay foto directa, intentando obtener desde storage...');
-        try {
-          final photoUrl = _getPlayerPhotoUrl(playerId);
-          if (photoUrl != null) {
-            print('✅ URL de foto desde storage: $photoUrl');
-            // Crear una copia del player con la foto actualizada
-            response['photo'] = photoUrl;
-            return Player.fromJson(response);
-          } else {
-            print('🔍 Listando archivos disponibles para debug...');
-            await listPlayerFiles(playerId);
-          }
-        } catch (e) {
-          print('❌ Error obteniendo foto desde storage: $e');
-        }
-      }
-
-      return player;
+      return Player.fromJson(response);
     } catch (e) {
-      print('❌ Error fetching player: $e');
-      print('🔍 Player ID buscado: $playerId');
 
-      // Try to search by approximate match or different format
-      try {
-        print('🔄 Intentando búsqueda alternativa...');
-        final allPlayers = await SupabaseConfig.client
-            .from('players')
-            .select();
-
-        print('📊 Total jugadores en BD: ${allPlayers.length}');
-        if (allPlayers.isNotEmpty) {
-          print('🎯 Primer jugador ejemplo: ID=${allPlayers[0]['id']}, Name=${allPlayers[0]['name']}');
-        }
-      } catch (e2) {
-        print('❌ Error en búsqueda alternativa: $e2');
+      // Fallback to name search
+      if (playerName != null && playerName.isNotEmpty) {
+        return getPlayerByName(playerName, jerseyNumber: jerseyNumber, teamId: teamId);
       }
-
       return null;
     }
+  }
+
+  // Search player by name (single optimized query)
+  static Future<Player?> getPlayerByName(String name, {int? jerseyNumber, String? teamId}) async {
+    try {
+      // Normalize and extract search words
+      final normalizedName = _normalizeNameForSearch(name);
+      final searchWords = normalizedName.split(' ').where((w) => w.length >= 3).toList();
+
+      if (searchWords.isEmpty) return null;
+
+      // Single query strategy: combine jersey number + name pattern
+      final longestWord = searchWords.reduce((a, b) => a.length >= b.length ? a : b);
+
+      List<dynamic> response;
+
+      // If we have jersey number, prioritize that (most selective)
+      if (jerseyNumber != null && jerseyNumber > 0) {
+        response = await SupabaseConfig.client
+            .from('players')
+            .select()
+            .eq('jersey_number', jerseyNumber)
+            .ilike('name', '%$longestWord%')
+            .limit(5);
+
+        // If found with jersey + name, return immediately
+        if (response.isNotEmpty) {
+          return Player.fromJson(response.first);
+        }
+
+        // Fallback: just jersey number
+        response = await SupabaseConfig.client
+            .from('players')
+            .select()
+            .eq('jersey_number', jerseyNumber)
+            .limit(10);
+
+        if (response.isNotEmpty) {
+          final match = _findBestMatch(response, normalizedName, jerseyNumber);
+          if (match != null) return match;
+        }
+      }
+
+      // Fallback: search by name only
+      response = await SupabaseConfig.client
+          .from('players')
+          .select()
+          .ilike('name', '%$longestWord%')
+          .limit(10);
+
+      return response.isNotEmpty ? _findBestMatch(response, normalizedName, jerseyNumber) : null;
+    } catch (e) {
+      debugPrint('❌ Error buscando por nombre: $e');
+      return null;
+    }
+  }
+
+  // Find best match from candidates (fast, no DB calls)
+  static Player? _findBestMatch(List<dynamic> candidates, String normalizedName, int? jerseyNumber) {
+    if (candidates.isEmpty) return null;
+    if (candidates.length == 1) return Player.fromJson(candidates.first);
+
+    Player? bestMatch;
+    double bestScore = 0;
+
+    for (var playerData in candidates) {
+      final playerName = _normalizeNameForSearch(playerData['name']?.toString() ?? '');
+      double score = _calculateNameSimilarity(normalizedName, playerName);
+
+      if (jerseyNumber != null && playerData['jersey_number'] == jerseyNumber) {
+        score += 0.3;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = Player.fromJson(playerData);
+      }
+    }
+
+    return bestMatch;
+  }
+
+  // Normalize name for comparison (remove accents, lowercase, extra spaces)
+  static String _normalizeNameForSearch(String name) {
+    // Convert to lowercase
+    var normalized = name.toLowerCase();
+
+    // Replace common accent variations
+    const accents = {
+      'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a',
+      'é': 'e', 'è': 'e', 'ë': 'e', 'ê': 'e',
+      'í': 'i', 'ì': 'i', 'ï': 'i', 'î': 'i',
+      'ó': 'o', 'ò': 'o', 'ö': 'o', 'ô': 'o',
+      'ú': 'u', 'ù': 'u', 'ü': 'u', 'û': 'u',
+      'ñ': 'n', 'ç': 'c',
+    };
+
+    for (var entry in accents.entries) {
+      normalized = normalized.replaceAll(entry.key, entry.value);
+    }
+
+    // Remove extra spaces and trim
+    normalized = normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    return normalized;
+  }
+
+  // Calculate similarity between two names (0.0 to 1.0)
+  static double _calculateNameSimilarity(String name1, String name2) {
+    if (name1.isEmpty || name2.isEmpty) return 0;
+
+    // Split into words
+    final words1 = name1.split(' ').where((w) => w.isNotEmpty).toList();
+    final words2 = name2.split(' ').where((w) => w.isNotEmpty).toList();
+
+    if (words1.isEmpty || words2.isEmpty) return 0;
+
+    // Count matching words (with some tolerance for typos)
+    int matchingWords = 0;
+    for (var word1 in words1) {
+      for (var word2 in words2) {
+        if (_areWordsSimilar(word1, word2)) {
+          matchingWords++;
+          break;
+        }
+      }
+    }
+
+    // Score based on proportion of matching words
+    final maxWords = words1.length > words2.length ? words1.length : words2.length;
+    return matchingWords / maxWords;
+  }
+
+  // Check if two words are similar (allowing for minor typos)
+  static bool _areWordsSimilar(String word1, String word2) {
+    if (word1 == word2) return true;
+
+    // Allow 1 character difference for words >= 4 characters
+    if (word1.length >= 4 && word2.length >= 4) {
+      final distance = _levenshteinDistance(word1, word2);
+      return distance <= 1;
+    }
+
+    // For shorter words, require exact match
+    return false;
+  }
+
+  // Calculate Levenshtein distance between two strings
+  static int _levenshteinDistance(String s1, String s2) {
+    if (s1 == s2) return 0;
+    if (s1.isEmpty) return s2.length;
+    if (s2.isEmpty) return s1.length;
+
+    List<int> v0 = List<int>.generate(s2.length + 1, (i) => i);
+    List<int> v1 = List<int>.filled(s2.length + 1, 0);
+
+    for (int i = 0; i < s1.length; i++) {
+      v1[0] = i + 1;
+
+      for (int j = 0; j < s2.length; j++) {
+        int cost = s1[i] == s2[j] ? 0 : 1;
+        v1[j + 1] = [v1[j] + 1, v0[j + 1] + 1, v0[j] + cost].reduce((a, b) => a < b ? a : b);
+      }
+
+      final temp = v0;
+      v0 = v1;
+      v1 = temp;
+    }
+
+    return v0[s2.length];
   }
 
   // Upload photo for player

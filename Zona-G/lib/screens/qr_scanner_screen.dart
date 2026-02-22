@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,12 +58,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   void _handleQRCode(String qrData) {
+    final stopwatch = Stopwatch()..start();
+    debugPrint('📷 Cámara QR: ${qrData.length} chars');
+    debugPrint('📷 Raw: ${qrData.substring(0, qrData.length > 80 ? 80 : qrData.length)}...');
+
     setState(() {
       isScanning = false;
     });
 
     // Parse QR code
     final QRPlayerData? playerData = QRService.parseQRCode(qrData);
+    debugPrint('📷 Parse: ${stopwatch.elapsedMilliseconds}ms - $playerData');
 
     if (playerData != null) {
       HapticFeedback.heavyImpact();

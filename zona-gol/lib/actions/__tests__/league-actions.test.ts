@@ -570,8 +570,8 @@ describe('league-actions', () => {
       expect(mockLeagueStore.updateLeague).toHaveBeenCalledWith(mockLeague)
     })
 
-    it('refreshes active leagues after update', async () => {
-      const mockLeague = { id: 'league-1', is_active: true }
+    it('updates store with new league data after update', async () => {
+      const mockLeague = { id: 'league-1', is_active: true, name: 'Updated League' }
 
       mockSupabaseClient.from.mockReturnValue({
         update: vi.fn().mockReturnValue({
@@ -584,22 +584,13 @@ describe('league-actions', () => {
             }),
           }),
         }),
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: [mockLeague],
-              error: null,
-            }),
-          }),
-        }),
       })
 
-      await leagueActions.updateLeague('league-1', { name: 'Test' })
+      const result = await leagueActions.updateLeague('league-1', { name: 'Updated League' })
 
-      // Fast-forward timer to trigger the setTimeout
-      await vi.runAllTimersAsync()
-
-      expect(mockLeagueStore.setLeagues).toHaveBeenCalled()
+      expect(result).toEqual(mockLeague)
+      expect(mockLeagueStore.updateLeague).toHaveBeenCalledWith(mockLeague)
+      expect(mockLeagueStore.setLoading).toHaveBeenCalledWith(false)
     })
 
     it('handles update error', async () => {

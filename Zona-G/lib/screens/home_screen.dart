@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/tournament.dart';
 import '../widgets/stadium_background.dart';
 import 'qr_scanner_screen.dart';
+import 'qr_gun_attendance_screen.dart';
 import 'player_list_screen.dart';
 import 'matches_list_screen.dart';
 import 'finished_matches_screen.dart';
@@ -387,7 +388,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Expanded(
                       child: _buildQuickActionButton(
                         icon: Icons.qr_code_scanner,
-                        label: 'Escanear QR',
+                        label: 'Camara QR',
                         color: const Color(0xFF00FF7F),
                         onTap: () => _navigateTo(const QRScannerScreen()),
                       ),
@@ -402,6 +403,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                _buildQuickActionButton(
+                  icon: Icons.barcode_reader,
+                  label: 'Pistola QR',
+                  color: const Color(0xFFFFD700),
+                  onTap: () => _navigateTo(const QRGunAttendanceScreen()),
                 ),
               ],
             ),

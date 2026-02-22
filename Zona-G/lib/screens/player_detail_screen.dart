@@ -11,15 +11,22 @@ import '../services/attendance_service.dart';
 import '../models/attendance.dart';
 import '../widgets/stadium_background.dart';
 import 'qr_scanner_screen.dart';
+import 'qr_gun_attendance_screen.dart';
+
+enum ScanSource { camera, gun }
 
 class PlayerDetailScreen extends StatefulWidget {
   final QRPlayerData qrData;
   final String? matchId;
+  final ScanSource scanSource;
+  final Future<Player?>? preloadedPlayer;
 
   const PlayerDetailScreen({
     super.key,
     required this.qrData,
     this.matchId,
+    this.scanSource = ScanSource.camera,
+    this.preloadedPlayer,
   });
 
   @override
@@ -68,24 +75,43 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
   }
 
   Future<void> _loadPlayerData() async {
+    // Mostrar datos del QR inmediatamente mientras carga
     setState(() {
-      isLoading = true;
+      isLoading = false;
+      player = Player(
+        id: widget.qrData.playerId,
+        name: widget.qrData.playerName,
+        teamId: widget.qrData.teamId,
+        jerseyNumber: widget.qrData.jerseyNumber,
+        position: '',
+        isActive: true,
+        createdAt: DateTime.now(),
+      );
     });
+    _animController.forward();
 
-    final playerData = await ApiService.getPlayer(widget.qrData.playerId);
+    Player? playerData;
 
-    if (mounted) {
+    // Cargar datos completos en background
+    if (widget.preloadedPlayer != null) {
+      playerData = await widget.preloadedPlayer;
+    } else {
+      playerData = await ApiService.getPlayer(
+        widget.qrData.playerId,
+        playerName: widget.qrData.playerName,
+        jerseyNumber: widget.qrData.jerseyNumber,
+        teamId: widget.qrData.teamId,
+      );
+    }
+
+    // Actualizar con datos completos (foto, posición, etc.)
+    if (mounted && playerData != null) {
       setState(() {
         player = playerData;
-        isLoading = false;
       });
-      _animController.forward();
-
-      if (playerData != null) {
-        _checkAttendanceToday();
-        _loadCurrentStats();
-        _checkSuspensionStatus();
-      }
+      _checkAttendanceToday();
+      _loadCurrentStats();
+      _checkSuspensionStatus();
     }
   }
 
@@ -1289,11 +1315,13 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
           child: GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
+              final Widget nextScreen = widget.scanSource == ScanSource.gun
+                  ? QRGunAttendanceScreen(matchId: widget.matchId)
+                  : QRScannerScreen(matchId: widget.matchId);
               Navigator.pushReplacement(
                 context,
                 PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      QRScannerScreen(matchId: widget.matchId),
+                  pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
                   transitionsBuilder:
                       (context, animation, secondaryAnimation, child) {
                     return FadeTransition(opacity: animation, child: child);
@@ -1313,7 +1341,11 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.qr_code_scanner, color: _primaryDark, size: 20),
+                  Icon(
+                    widget.scanSource == ScanSource.gun ? Icons.barcode_reader : Icons.qr_code_scanner,
+                    color: _primaryDark,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Escanear Otro',
