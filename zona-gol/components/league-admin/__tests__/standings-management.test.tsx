@@ -106,6 +106,10 @@ vi.mock('@/lib/queries', () => ({
   useInvalidateTeamStats: vi.fn(() => ({
     invalidateByTournament: mockInvalidateByTournament,
   })),
+  useLeagueById: vi.fn(() => ({
+    data: { id: 'league-123', name: 'Test League', logo: null },
+    isLoading: false,
+  })),
 }))
 
 // Mock toast
