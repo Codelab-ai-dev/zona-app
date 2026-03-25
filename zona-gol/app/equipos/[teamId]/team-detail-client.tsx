@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock, Loader2, IdCard, Printer, Home } from "lucide-react"
+import { ArrowLeft, Users, Trophy, AlertTriangle, Target, Clock, Loader2, IdCard, Printer, Home, FileText } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useQRGenerator } from "@/lib/hooks/use-qr-generator"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -91,6 +91,7 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
     qrData: string
   } | null>(null)
   const [printingAll, setPrintingAll] = useState(false)
+  const [printingRoster, setPrintingRoster] = useState(false)
   const [isLeagueAdmin, setIsLeagueAdmin] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithStats | null>(null)
   const [playerModalOpen, setPlayerModalOpen] = useState(false)
@@ -439,6 +440,202 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
     }
   }
 
+  const handlePrintRoster = async () => {
+    if (playersWithStats.length === 0 && coachingStaff.length === 0) {
+      toast.error('No hay jugadores ni cuerpo técnico para imprimir')
+      return
+    }
+
+    setPrintingRoster(true)
+    try {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+      const teamLogoHTML = team?.logo
+        ? `<img src="${team.logo}" alt="Logo ${team.name}" style="width:40px;height:40px;object-fit:contain;" crossorigin="anonymous" />`
+        : ''
+
+      const playersRows = playersWithStats.map((player, index) => `
+        <tr>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">${index + 1}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${player.photo
+                ? `<img src="${player.photo}" alt="${player.name}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0;" crossorigin="anonymous" />`
+                : `<div style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:#64748b;border:1px solid #e2e8f0;">${getPlayerInitials(player.name)}</div>`
+              }
+              <span style="font-size:13px;font-weight:500;color:#1e293b;">${player.name}</span>
+            </div>
+          </td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:13px;font-weight:bold;color:#0066cc;">${player.jersey_number}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">${player.position}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#1e293b;">${player.total_games}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#16a34a;font-weight:600;">${player.total_goals}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#2563eb;font-weight:600;">${player.total_assists}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#eab308;">${player.total_yellow_cards}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#dc2626;">${player.total_red_cards}</td>
+        </tr>
+      `).join('')
+
+      const staffRows = coachingStaff.map((staff, index) => `
+        <tr>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">${index + 1}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${staff.photo
+                ? `<img src="${staff.photo}" alt="${staff.name}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0;" crossorigin="anonymous" />`
+                : `<div style="width:32px;height:32px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:#7c3aed;border:1px solid #e2e8f0;">${getPlayerInitials(staff.name)}</div>`
+              }
+              <span style="font-size:13px;font-weight:500;color:#1e293b;">${staff.name}</span>
+            </div>
+          </td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#7c3aed;font-weight:600;">${staff.role}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">${staff.cedula || '-'}</td>
+        </tr>
+      `).join('')
+
+      const printHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Plantilla - ${team?.name}</title>
+            <style>
+              @page { size: A4; margin: 15mm; }
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { font-family: Arial, sans-serif; background: white; color: #1e293b; padding: 20px; }
+              .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #0066cc; }
+              .header-info h1 { font-size: 22px; color: #0066cc; margin: 0; }
+              .header-info p { font-size: 12px; color: #64748b; margin-top: 2px; }
+              .section { margin-bottom: 24px; }
+              .section-title { font-size: 15px; font-weight: bold; color: #1e293b; margin-bottom: 10px; padding: 6px 12px; background: #f1f5f9; border-left: 4px solid #0066cc; border-radius: 0 4px 4px 0; }
+              .section-title.staff { border-left-color: #9333ea; }
+              table { width: 100%; border-collapse: collapse; }
+              th { padding: 8px; text-align: center; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; background: #f8fafc; }
+              th:nth-child(2) { text-align: left; }
+              .summary { display: flex; gap: 16px; margin-top: 4px; font-size: 11px; color: #64748b; }
+              .summary span { font-weight: 600; color: #1e293b; }
+              .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 10px; color: #94a3b8; }
+              @media print {
+                body { padding: 0; }
+                .section { break-inside: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              ${teamLogoHTML}
+              <div class="header-info">
+                <h1>${team?.name}</h1>
+                <p>Plantilla de equipo - ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+
+            ${playersWithStats.length > 0 ? `
+              <div class="section">
+                <div class="section-title">Jugadores (${playersWithStats.length})</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:30px;">#</th>
+                      <th style="text-align:left;">Jugador</th>
+                      <th style="width:50px;">No.</th>
+                      <th style="width:80px;">Posición</th>
+                      <th style="width:40px;">PJ</th>
+                      <th style="width:40px;">G</th>
+                      <th style="width:40px;">A</th>
+                      <th style="width:40px;">TA</th>
+                      <th style="width:40px;">TR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${playersRows}
+                  </tbody>
+                </table>
+                <div class="summary">
+                  Total goles: <span>${playersWithStats.reduce((sum, p) => sum + p.total_goals, 0)}</span> &nbsp;|&nbsp;
+                  Total asistencias: <span>${playersWithStats.reduce((sum, p) => sum + p.total_assists, 0)}</span> &nbsp;|&nbsp;
+                  Total TA: <span>${playersWithStats.reduce((sum, p) => sum + p.total_yellow_cards, 0)}</span> &nbsp;|&nbsp;
+                  Total TR: <span>${playersWithStats.reduce((sum, p) => sum + p.total_red_cards, 0)}</span>
+                </div>
+              </div>
+            ` : ''}
+
+            ${coachingStaff.length > 0 ? `
+              <div class="section">
+                <div class="section-title staff">Cuerpo Técnico (${coachingStaff.length})</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:30px;">#</th>
+                      <th style="text-align:left;">Nombre</th>
+                      <th style="width:120px;">Rol</th>
+                      <th style="width:120px;">Cédula</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${staffRows}
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+
+            <div class="footer">
+              Zona Gol - Documento generado el ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </div>
+          </body>
+        </html>
+      `
+
+      if (isMobile) {
+        const iframe = document.createElement('iframe')
+        iframe.style.position = 'fixed'
+        iframe.style.right = '0'
+        iframe.style.bottom = '0'
+        iframe.style.width = '0'
+        iframe.style.height = '0'
+        iframe.style.border = 'none'
+        document.body.appendChild(iframe)
+
+        const iframeDoc = iframe.contentWindow?.document
+        if (!iframeDoc) {
+          document.body.removeChild(iframe)
+          throw new Error('No se pudo crear contenido de impresión')
+        }
+
+        iframeDoc.open()
+        iframeDoc.write(printHTML)
+        iframeDoc.close()
+
+        await new Promise(resolve => setTimeout(resolve, 500))
+        iframe.contentWindow?.focus()
+        iframe.contentWindow?.print()
+
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          setPrintingRoster(false)
+        }, 1500)
+      } else {
+        const printWindow = window.open('', '_blank')
+        if (!printWindow) {
+          throw new Error('No se pudo abrir ventana de impresión. Por favor permite ventanas emergentes.')
+        }
+
+        printWindow.document.write(printHTML)
+        printWindow.document.close()
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print()
+            printWindow.close()
+            setPrintingRoster(false)
+          }, 300)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error imprimiendo plantilla:', error)
+      toast.error(`Error imprimiendo plantilla: ${error.message || 'Error desconocido'}`)
+      setPrintingRoster(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <div className="flex-1 container mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6">
@@ -606,15 +803,26 @@ export function TeamDetailClient({ initialData }: TeamDetailClientProps) {
               <span className="text-xs text-gray-500">({playersWithStats.length})</span>
             </div>
             {isLeagueAdmin && playersWithStats.length > 0 && (
-              <Button
-                onClick={handlePrintAllCredentials}
-                disabled={printingAll}
-                size="sm"
-                className="bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 text-xs"
-              >
-                <Printer className="w-3 h-3 mr-1" />
-                {printingAll ? 'Generando...' : 'Imprimir Credenciales'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handlePrintRoster}
+                  disabled={printingRoster}
+                  size="sm"
+                  className="bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 text-xs"
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  {printingRoster ? 'Generando...' : 'Imprimir Plantilla'}
+                </Button>
+                <Button
+                  onClick={handlePrintAllCredentials}
+                  disabled={printingAll}
+                  size="sm"
+                  className="bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 text-xs"
+                >
+                  <Printer className="w-3 h-3 mr-1" />
+                  {printingAll ? 'Generando...' : 'Imprimir Credenciales'}
+                </Button>
+              </div>
             )}
           </div>
 

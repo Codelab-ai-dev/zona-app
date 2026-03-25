@@ -16,6 +16,7 @@ class LeagueMapper {
       isActive: model.isActive,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
+      features: model.features,
     );
   }
 
@@ -31,6 +32,7 @@ class LeagueMapper {
       isActive: entity.isActive,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      features: entity.features,
     );
   }
 

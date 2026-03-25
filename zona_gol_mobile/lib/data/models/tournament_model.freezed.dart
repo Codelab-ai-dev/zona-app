@@ -49,7 +49,22 @@ mixin _$TournamentModel {
   @JsonKey(name: 'rounds_per_season')
   int get roundsPerSeason => throw _privateConstructorUsedError;
   @JsonKey(name: 'has_third_place_match')
-  bool get hasThirdPlaceMatch => throw _privateConstructorUsedError;
+  bool get hasThirdPlaceMatch =>
+      throw _privateConstructorUsedError; // Age Validation
+  @JsonKey(name: 'age_validation_enabled')
+  bool get ageValidationEnabled => throw _privateConstructorUsedError;
+  @JsonKey(name: 'min_age')
+  int? get minAge => throw _privateConstructorUsedError;
+  @JsonKey(name: 'max_age')
+  int? get maxAge => throw _privateConstructorUsedError;
+  @JsonKey(name: 'age_reference_date')
+  DateTime? get ageReferenceDate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'age_exception_count')
+  int get ageExceptionCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'age_exception_min_age')
+  int? get ageExceptionMinAge => throw _privateConstructorUsedError;
+  @JsonKey(name: 'age_exception_max_age')
+  int? get ageExceptionMaxAge => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -78,7 +93,14 @@ abstract class $TournamentModelCopyWith<$Res> {
       @JsonKey(name: 'number_of_groups') int? numberOfGroups,
       @JsonKey(name: 'teams_advancing_per_group') int teamsAdvancingPerGroup,
       @JsonKey(name: 'rounds_per_season') int roundsPerSeason,
-      @JsonKey(name: 'has_third_place_match') bool hasThirdPlaceMatch});
+      @JsonKey(name: 'has_third_place_match') bool hasThirdPlaceMatch,
+      @JsonKey(name: 'age_validation_enabled') bool ageValidationEnabled,
+      @JsonKey(name: 'min_age') int? minAge,
+      @JsonKey(name: 'max_age') int? maxAge,
+      @JsonKey(name: 'age_reference_date') DateTime? ageReferenceDate,
+      @JsonKey(name: 'age_exception_count') int ageExceptionCount,
+      @JsonKey(name: 'age_exception_min_age') int? ageExceptionMinAge,
+      @JsonKey(name: 'age_exception_max_age') int? ageExceptionMaxAge});
 }
 
 /// @nodoc
@@ -109,6 +131,13 @@ class _$TournamentModelCopyWithImpl<$Res, $Val extends TournamentModel>
     Object? teamsAdvancingPerGroup = null,
     Object? roundsPerSeason = null,
     Object? hasThirdPlaceMatch = null,
+    Object? ageValidationEnabled = null,
+    Object? minAge = freezed,
+    Object? maxAge = freezed,
+    Object? ageReferenceDate = freezed,
+    Object? ageExceptionCount = null,
+    Object? ageExceptionMinAge = freezed,
+    Object? ageExceptionMaxAge = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -171,6 +200,34 @@ class _$TournamentModelCopyWithImpl<$Res, $Val extends TournamentModel>
           ? _value.hasThirdPlaceMatch
           : hasThirdPlaceMatch // ignore: cast_nullable_to_non_nullable
               as bool,
+      ageValidationEnabled: null == ageValidationEnabled
+          ? _value.ageValidationEnabled
+          : ageValidationEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
+      minAge: freezed == minAge
+          ? _value.minAge
+          : minAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      maxAge: freezed == maxAge
+          ? _value.maxAge
+          : maxAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ageReferenceDate: freezed == ageReferenceDate
+          ? _value.ageReferenceDate
+          : ageReferenceDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      ageExceptionCount: null == ageExceptionCount
+          ? _value.ageExceptionCount
+          : ageExceptionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      ageExceptionMinAge: freezed == ageExceptionMinAge
+          ? _value.ageExceptionMinAge
+          : ageExceptionMinAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ageExceptionMaxAge: freezed == ageExceptionMaxAge
+          ? _value.ageExceptionMaxAge
+          : ageExceptionMaxAge // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -198,7 +255,14 @@ abstract class _$$TournamentModelImplCopyWith<$Res>
       @JsonKey(name: 'number_of_groups') int? numberOfGroups,
       @JsonKey(name: 'teams_advancing_per_group') int teamsAdvancingPerGroup,
       @JsonKey(name: 'rounds_per_season') int roundsPerSeason,
-      @JsonKey(name: 'has_third_place_match') bool hasThirdPlaceMatch});
+      @JsonKey(name: 'has_third_place_match') bool hasThirdPlaceMatch,
+      @JsonKey(name: 'age_validation_enabled') bool ageValidationEnabled,
+      @JsonKey(name: 'min_age') int? minAge,
+      @JsonKey(name: 'max_age') int? maxAge,
+      @JsonKey(name: 'age_reference_date') DateTime? ageReferenceDate,
+      @JsonKey(name: 'age_exception_count') int ageExceptionCount,
+      @JsonKey(name: 'age_exception_min_age') int? ageExceptionMinAge,
+      @JsonKey(name: 'age_exception_max_age') int? ageExceptionMaxAge});
 }
 
 /// @nodoc
@@ -227,6 +291,13 @@ class __$$TournamentModelImplCopyWithImpl<$Res>
     Object? teamsAdvancingPerGroup = null,
     Object? roundsPerSeason = null,
     Object? hasThirdPlaceMatch = null,
+    Object? ageValidationEnabled = null,
+    Object? minAge = freezed,
+    Object? maxAge = freezed,
+    Object? ageReferenceDate = freezed,
+    Object? ageExceptionCount = null,
+    Object? ageExceptionMinAge = freezed,
+    Object? ageExceptionMaxAge = freezed,
   }) {
     return _then(_$TournamentModelImpl(
       id: null == id
@@ -289,6 +360,34 @@ class __$$TournamentModelImplCopyWithImpl<$Res>
           ? _value.hasThirdPlaceMatch
           : hasThirdPlaceMatch // ignore: cast_nullable_to_non_nullable
               as bool,
+      ageValidationEnabled: null == ageValidationEnabled
+          ? _value.ageValidationEnabled
+          : ageValidationEnabled // ignore: cast_nullable_to_non_nullable
+              as bool,
+      minAge: freezed == minAge
+          ? _value.minAge
+          : minAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      maxAge: freezed == maxAge
+          ? _value.maxAge
+          : maxAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ageReferenceDate: freezed == ageReferenceDate
+          ? _value.ageReferenceDate
+          : ageReferenceDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      ageExceptionCount: null == ageExceptionCount
+          ? _value.ageExceptionCount
+          : ageExceptionCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      ageExceptionMinAge: freezed == ageExceptionMinAge
+          ? _value.ageExceptionMinAge
+          : ageExceptionMinAge // ignore: cast_nullable_to_non_nullable
+              as int?,
+      ageExceptionMaxAge: freezed == ageExceptionMaxAge
+          ? _value.ageExceptionMaxAge
+          : ageExceptionMaxAge // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -312,7 +411,15 @@ class _$TournamentModelImpl extends _TournamentModel {
       @JsonKey(name: 'teams_advancing_per_group')
       this.teamsAdvancingPerGroup = 2,
       @JsonKey(name: 'rounds_per_season') this.roundsPerSeason = 1,
-      @JsonKey(name: 'has_third_place_match') this.hasThirdPlaceMatch = false})
+      @JsonKey(name: 'has_third_place_match') this.hasThirdPlaceMatch = false,
+      @JsonKey(name: 'age_validation_enabled')
+      this.ageValidationEnabled = false,
+      @JsonKey(name: 'min_age') this.minAge,
+      @JsonKey(name: 'max_age') this.maxAge,
+      @JsonKey(name: 'age_reference_date') this.ageReferenceDate,
+      @JsonKey(name: 'age_exception_count') this.ageExceptionCount = 0,
+      @JsonKey(name: 'age_exception_min_age') this.ageExceptionMinAge,
+      @JsonKey(name: 'age_exception_max_age') this.ageExceptionMaxAge})
       : super._();
 
   factory _$TournamentModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -363,10 +470,32 @@ class _$TournamentModelImpl extends _TournamentModel {
   @override
   @JsonKey(name: 'has_third_place_match')
   final bool hasThirdPlaceMatch;
+// Age Validation
+  @override
+  @JsonKey(name: 'age_validation_enabled')
+  final bool ageValidationEnabled;
+  @override
+  @JsonKey(name: 'min_age')
+  final int? minAge;
+  @override
+  @JsonKey(name: 'max_age')
+  final int? maxAge;
+  @override
+  @JsonKey(name: 'age_reference_date')
+  final DateTime? ageReferenceDate;
+  @override
+  @JsonKey(name: 'age_exception_count')
+  final int ageExceptionCount;
+  @override
+  @JsonKey(name: 'age_exception_min_age')
+  final int? ageExceptionMinAge;
+  @override
+  @JsonKey(name: 'age_exception_max_age')
+  final int? ageExceptionMaxAge;
 
   @override
   String toString() {
-    return 'TournamentModel(id: $id, name: $name, leagueId: $leagueId, startDate: $startDate, endDate: $endDate, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, maxPlayers: $maxPlayers, maxCoachingStaff: $maxCoachingStaff, tournamentFormat: $tournamentFormat, numberOfGroups: $numberOfGroups, teamsAdvancingPerGroup: $teamsAdvancingPerGroup, roundsPerSeason: $roundsPerSeason, hasThirdPlaceMatch: $hasThirdPlaceMatch)';
+    return 'TournamentModel(id: $id, name: $name, leagueId: $leagueId, startDate: $startDate, endDate: $endDate, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, maxPlayers: $maxPlayers, maxCoachingStaff: $maxCoachingStaff, tournamentFormat: $tournamentFormat, numberOfGroups: $numberOfGroups, teamsAdvancingPerGroup: $teamsAdvancingPerGroup, roundsPerSeason: $roundsPerSeason, hasThirdPlaceMatch: $hasThirdPlaceMatch, ageValidationEnabled: $ageValidationEnabled, minAge: $minAge, maxAge: $maxAge, ageReferenceDate: $ageReferenceDate, ageExceptionCount: $ageExceptionCount, ageExceptionMinAge: $ageExceptionMinAge, ageExceptionMaxAge: $ageExceptionMaxAge)';
   }
 
   @override
@@ -400,28 +529,48 @@ class _$TournamentModelImpl extends _TournamentModel {
             (identical(other.roundsPerSeason, roundsPerSeason) ||
                 other.roundsPerSeason == roundsPerSeason) &&
             (identical(other.hasThirdPlaceMatch, hasThirdPlaceMatch) ||
-                other.hasThirdPlaceMatch == hasThirdPlaceMatch));
+                other.hasThirdPlaceMatch == hasThirdPlaceMatch) &&
+            (identical(other.ageValidationEnabled, ageValidationEnabled) ||
+                other.ageValidationEnabled == ageValidationEnabled) &&
+            (identical(other.minAge, minAge) || other.minAge == minAge) &&
+            (identical(other.maxAge, maxAge) || other.maxAge == maxAge) &&
+            (identical(other.ageReferenceDate, ageReferenceDate) ||
+                other.ageReferenceDate == ageReferenceDate) &&
+            (identical(other.ageExceptionCount, ageExceptionCount) ||
+                other.ageExceptionCount == ageExceptionCount) &&
+            (identical(other.ageExceptionMinAge, ageExceptionMinAge) ||
+                other.ageExceptionMinAge == ageExceptionMinAge) &&
+            (identical(other.ageExceptionMaxAge, ageExceptionMaxAge) ||
+                other.ageExceptionMaxAge == ageExceptionMaxAge));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      name,
-      leagueId,
-      startDate,
-      endDate,
-      isActive,
-      createdAt,
-      updatedAt,
-      maxPlayers,
-      maxCoachingStaff,
-      tournamentFormat,
-      numberOfGroups,
-      teamsAdvancingPerGroup,
-      roundsPerSeason,
-      hasThirdPlaceMatch);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        name,
+        leagueId,
+        startDate,
+        endDate,
+        isActive,
+        createdAt,
+        updatedAt,
+        maxPlayers,
+        maxCoachingStaff,
+        tournamentFormat,
+        numberOfGroups,
+        teamsAdvancingPerGroup,
+        roundsPerSeason,
+        hasThirdPlaceMatch,
+        ageValidationEnabled,
+        minAge,
+        maxAge,
+        ageReferenceDate,
+        ageExceptionCount,
+        ageExceptionMinAge,
+        ageExceptionMaxAge
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -455,8 +604,15 @@ abstract class _TournamentModel extends TournamentModel {
       @JsonKey(name: 'teams_advancing_per_group')
       final int teamsAdvancingPerGroup,
       @JsonKey(name: 'rounds_per_season') final int roundsPerSeason,
-      @JsonKey(name: 'has_third_place_match')
-      final bool hasThirdPlaceMatch}) = _$TournamentModelImpl;
+      @JsonKey(name: 'has_third_place_match') final bool hasThirdPlaceMatch,
+      @JsonKey(name: 'age_validation_enabled') final bool ageValidationEnabled,
+      @JsonKey(name: 'min_age') final int? minAge,
+      @JsonKey(name: 'max_age') final int? maxAge,
+      @JsonKey(name: 'age_reference_date') final DateTime? ageReferenceDate,
+      @JsonKey(name: 'age_exception_count') final int ageExceptionCount,
+      @JsonKey(name: 'age_exception_min_age') final int? ageExceptionMinAge,
+      @JsonKey(name: 'age_exception_max_age')
+      final int? ageExceptionMaxAge}) = _$TournamentModelImpl;
   const _TournamentModel._() : super._();
 
   factory _TournamentModel.fromJson(Map<String, dynamic> json) =
@@ -505,6 +661,27 @@ abstract class _TournamentModel extends TournamentModel {
   @override
   @JsonKey(name: 'has_third_place_match')
   bool get hasThirdPlaceMatch;
+  @override // Age Validation
+  @JsonKey(name: 'age_validation_enabled')
+  bool get ageValidationEnabled;
+  @override
+  @JsonKey(name: 'min_age')
+  int? get minAge;
+  @override
+  @JsonKey(name: 'max_age')
+  int? get maxAge;
+  @override
+  @JsonKey(name: 'age_reference_date')
+  DateTime? get ageReferenceDate;
+  @override
+  @JsonKey(name: 'age_exception_count')
+  int get ageExceptionCount;
+  @override
+  @JsonKey(name: 'age_exception_min_age')
+  int? get ageExceptionMinAge;
+  @override
+  @JsonKey(name: 'age_exception_max_age')
+  int? get ageExceptionMaxAge;
   @override
   @JsonKey(ignore: true)
   _$$TournamentModelImplCopyWith<_$TournamentModelImpl> get copyWith =>

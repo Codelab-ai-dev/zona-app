@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Clock, MapPin, Users, Trophy, Loader2, Edit, Save, X, RefreshCw, Trash, Settings, AlertTriangle, Shield, Eye, EyeOff, Send } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, Trophy, Loader2, Edit, Save, X, RefreshCw, Trash, Settings, AlertTriangle, Shield, Eye, EyeOff, Send, ImageDown } from "lucide-react"
 import Image from "next/image"
 import { useTeamsByLeague, useTournamentsByLeague, useMatchesByTournament, useInvalidateMatches } from "@/lib/queries"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
@@ -16,6 +16,7 @@ import { Database } from "@/lib/supabase/database.types"
 import { analyzeTeamActivity, generateRoundRobinSchedule, getNextMatchDate, CalendarAdjustmentResult } from "@/lib/utils/calendar-adjuster"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { generateMatchScheduleEmbedding, sendJornadaNotification, generateMatchResultEmbedding, generateStandingsEmbedding, sendMatchResultNotification } from "@/lib/utils/generate-embeddings"
+import { MatchPosterGenerator } from "./match-poster-generator"
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
@@ -109,6 +110,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
   const [adjusting, setAdjusting] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false)
 
   // Score editing state
   const [isScoreDialogOpen, setIsScoreDialogOpen] = useState(false)
@@ -1293,6 +1295,14 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           >
             <Settings className="w-4 h-4 mr-2" />
             Ajustar Calendario
+          </Button>
+          <Button
+            onClick={() => setIsPosterDialogOpen(true)}
+            disabled={loading || !selectedTournamentId || matches.filter(m => m.status === 'scheduled').length === 0}
+            className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+          >
+            <ImageDown className="w-4 h-4 mr-2" />
+            Generar Imagen
           </Button>
           <Button
             onClick={() => setIsDeleteDialogOpen(true)}
@@ -2492,6 +2502,14 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      <MatchPosterGenerator
+        open={isPosterDialogOpen}
+        onOpenChange={setIsPosterDialogOpen}
+        matches={matches}
+        leagueId={leagueId}
+        tournamentName={tournaments.find(t => t.id === selectedTournamentId)?.name || 'Torneo'}
+      />
     </div>
   )
 }

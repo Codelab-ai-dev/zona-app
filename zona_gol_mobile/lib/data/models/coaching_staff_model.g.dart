@@ -11,12 +11,13 @@ _$CoachingStaffModelImpl _$$CoachingStaffModelImplFromJson(
     _$CoachingStaffModelImpl(
       id: json['id'] as String,
       teamId: json['team_id'] as String,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
+      name: json['name'] as String,
       role: json['role'] as String,
-      photoUrl: json['photo_url'] as String?,
-      email: json['email'] as String?,
-      phoneNumber: json['phone_number'] as String?,
+      photo: json['photo'] as String?,
+      birthDate: json['birth_date'] == null
+          ? null
+          : DateTime.parse(json['birth_date'] as String),
+      cedula: json['cedula'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       createdAt: json['created_at'] == null
           ? null
@@ -31,12 +32,11 @@ Map<String, dynamic> _$$CoachingStaffModelImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'team_id': instance.teamId,
-      'first_name': instance.firstName,
-      'last_name': instance.lastName,
+      'name': instance.name,
       'role': instance.role,
-      'photo_url': instance.photoUrl,
-      'email': instance.email,
-      'phone_number': instance.phoneNumber,
+      'photo': instance.photo,
+      'birth_date': instance.birthDate?.toIso8601String(),
+      'cedula': instance.cedula,
       'is_active': instance.isActive,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),

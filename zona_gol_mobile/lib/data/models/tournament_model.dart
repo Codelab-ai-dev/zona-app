@@ -27,6 +27,14 @@ class TournamentModel with _$TournamentModel {
     @JsonKey(name: 'teams_advancing_per_group') @Default(2) int teamsAdvancingPerGroup,
     @JsonKey(name: 'rounds_per_season') @Default(1) int roundsPerSeason,
     @JsonKey(name: 'has_third_place_match') @Default(false) bool hasThirdPlaceMatch,
+    // Age Validation
+    @JsonKey(name: 'age_validation_enabled') @Default(false) bool ageValidationEnabled,
+    @JsonKey(name: 'min_age') int? minAge,
+    @JsonKey(name: 'max_age') int? maxAge,
+    @JsonKey(name: 'age_reference_date') DateTime? ageReferenceDate,
+    @JsonKey(name: 'age_exception_count') @Default(0) int ageExceptionCount,
+    @JsonKey(name: 'age_exception_min_age') int? ageExceptionMinAge,
+    @JsonKey(name: 'age_exception_max_age') int? ageExceptionMaxAge,
   }) = _TournamentModel;
 
   factory TournamentModel.fromJson(Map<String, dynamic> json) =>

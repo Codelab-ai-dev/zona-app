@@ -17,6 +17,7 @@ class LeagueModel with _$LeagueModel {
     @JsonKey(name: 'is_active') @Default(true) bool isActive,
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
+    Map<String, dynamic>? features,
   }) = _LeagueModel;
 
   factory LeagueModel.fromJson(Map<String, dynamic> json) =>

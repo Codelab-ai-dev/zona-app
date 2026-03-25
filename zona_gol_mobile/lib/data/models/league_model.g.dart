@@ -21,6 +21,7 @@ _$LeagueModelImpl _$$LeagueModelImplFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updated_at'] == null
           ? null
           : DateTime.parse(json['updated_at'] as String),
+      features: json['features'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$$LeagueModelImplToJson(_$LeagueModelImpl instance) =>
@@ -34,4 +35,5 @@ Map<String, dynamic> _$$LeagueModelImplToJson(_$LeagueModelImpl instance) =>
       'is_active': instance.isActive,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
+      'features': instance.features,
     };

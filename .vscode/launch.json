@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Zona-G",
+            "cwd": "Zona-G",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Zona-G (profile mode)",
+            "cwd": "Zona-G",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Zona-G (release mode)",
+            "cwd": "Zona-G",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "zona_gol_mobile",
+            "cwd": "zona_gol_mobile",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "zona_gol_mobile (profile mode)",
+            "cwd": "zona_gol_mobile",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "zona_gol_mobile (release mode)",
+            "cwd": "zona_gol_mobile",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

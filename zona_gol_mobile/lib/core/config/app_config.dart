@@ -7,7 +7,7 @@ class AppConfig {
   // Supabase Configuration
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://srv1190257.hstgr.cloud',
+    defaultValue: 'https://api.zona-gol.com',
   );
 
   static const String supabaseAnonKey = String.fromEnvironment(

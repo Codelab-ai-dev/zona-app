@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/team_entity.dart';
+import '../../../domain/entities/team_standing_entity.dart';
 
 /// Team States
-/// Represents different states of team data loading
 abstract class TeamState extends Equatable {
   const TeamState();
 
@@ -21,7 +21,6 @@ class TeamLoading extends TeamState {
 }
 
 /// Teams Loaded State (List of Teams)
-/// Used when loading teams by league or tournament
 class TeamsLoaded extends TeamState {
   final List<TeamEntity> teams;
 
@@ -32,7 +31,6 @@ class TeamsLoaded extends TeamState {
 }
 
 /// Single Team Loaded State
-/// Used when loading a specific team by ID
 class TeamDetailLoaded extends TeamState {
   final TeamEntity team;
 
@@ -50,4 +48,66 @@ class TeamError extends TeamState {
 
   @override
   List<Object?> get props => [message];
+}
+
+/// Standings Loaded State
+class StandingsLoaded extends TeamState {
+  final List<TeamStandingEntity> standings;
+  final String? tournamentId;
+
+  const StandingsLoaded(this.standings, {this.tournamentId});
+
+  @override
+  List<Object?> get props => [standings, tournamentId];
+}
+
+/// Team Created State
+class TeamCreated extends TeamState {
+  final TeamEntity team;
+
+  const TeamCreated(this.team);
+
+  @override
+  List<Object?> get props => [team];
+}
+
+/// Team Created With Owner State (includes credentials)
+class TeamCreatedWithOwner extends TeamState {
+  final TeamEntity team;
+  final String ownerEmail;
+  final String ownerPassword;
+
+  const TeamCreatedWithOwner({
+    required this.team,
+    required this.ownerEmail,
+    required this.ownerPassword,
+  });
+
+  @override
+  List<Object?> get props => [team, ownerEmail, ownerPassword];
+}
+
+/// Team Updated State
+class TeamUpdated extends TeamState {
+  final TeamEntity team;
+
+  const TeamUpdated(this.team);
+
+  @override
+  List<Object?> get props => [team];
+}
+
+/// Team Deleted State
+class TeamDeleted extends TeamState {
+  final String teamId;
+
+  const TeamDeleted(this.teamId);
+
+  @override
+  List<Object?> get props => [teamId];
+}
+
+/// Standings Updated State
+class StandingsUpdated extends TeamState {
+  const StandingsUpdated();
 }

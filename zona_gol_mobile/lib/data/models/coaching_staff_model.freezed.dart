@@ -23,17 +23,12 @@ mixin _$CoachingStaffModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'team_id')
   String get teamId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'first_name')
-  String get firstName => throw _privateConstructorUsedError;
-  @JsonKey(name: 'last_name')
-  String get lastName => throw _privateConstructorUsedError;
-  String get role =>
-      throw _privateConstructorUsedError; // 'head_coach', 'assistant_coach', 'trainer', 'physiotherapist', etc.
-  @JsonKey(name: 'photo_url')
-  String? get photoUrl => throw _privateConstructorUsedError;
-  String? get email => throw _privateConstructorUsedError;
-  @JsonKey(name: 'phone_number')
-  String? get phoneNumber => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get role => throw _privateConstructorUsedError;
+  String? get photo => throw _privateConstructorUsedError;
+  @JsonKey(name: 'birth_date')
+  DateTime? get birthDate => throw _privateConstructorUsedError;
+  String? get cedula => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_active')
   bool get isActive => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
@@ -56,12 +51,11 @@ abstract class $CoachingStaffModelCopyWith<$Res> {
   $Res call(
       {String id,
       @JsonKey(name: 'team_id') String teamId,
-      @JsonKey(name: 'first_name') String firstName,
-      @JsonKey(name: 'last_name') String lastName,
+      String name,
       String role,
-      @JsonKey(name: 'photo_url') String? photoUrl,
-      String? email,
-      @JsonKey(name: 'phone_number') String? phoneNumber,
+      String? photo,
+      @JsonKey(name: 'birth_date') DateTime? birthDate,
+      String? cedula,
       @JsonKey(name: 'is_active') bool isActive,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
@@ -82,12 +76,11 @@ class _$CoachingStaffModelCopyWithImpl<$Res, $Val extends CoachingStaffModel>
   $Res call({
     Object? id = null,
     Object? teamId = null,
-    Object? firstName = null,
-    Object? lastName = null,
+    Object? name = null,
     Object? role = null,
-    Object? photoUrl = freezed,
-    Object? email = freezed,
-    Object? phoneNumber = freezed,
+    Object? photo = freezed,
+    Object? birthDate = freezed,
+    Object? cedula = freezed,
     Object? isActive = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -101,29 +94,25 @@ class _$CoachingStaffModelCopyWithImpl<$Res, $Val extends CoachingStaffModel>
           ? _value.teamId
           : teamId // ignore: cast_nullable_to_non_nullable
               as String,
-      firstName: null == firstName
-          ? _value.firstName
-          : firstName // ignore: cast_nullable_to_non_nullable
-              as String,
-      lastName: null == lastName
-          ? _value.lastName
-          : lastName // ignore: cast_nullable_to_non_nullable
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
               as String,
-      photoUrl: freezed == photoUrl
-          ? _value.photoUrl
-          : photoUrl // ignore: cast_nullable_to_non_nullable
+      photo: freezed == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String?,
-      email: freezed == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String?,
-      phoneNumber: freezed == phoneNumber
-          ? _value.phoneNumber
-          : phoneNumber // ignore: cast_nullable_to_non_nullable
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      cedula: freezed == cedula
+          ? _value.cedula
+          : cedula // ignore: cast_nullable_to_non_nullable
               as String?,
       isActive: null == isActive
           ? _value.isActive
@@ -152,12 +141,11 @@ abstract class _$$CoachingStaffModelImplCopyWith<$Res>
   $Res call(
       {String id,
       @JsonKey(name: 'team_id') String teamId,
-      @JsonKey(name: 'first_name') String firstName,
-      @JsonKey(name: 'last_name') String lastName,
+      String name,
       String role,
-      @JsonKey(name: 'photo_url') String? photoUrl,
-      String? email,
-      @JsonKey(name: 'phone_number') String? phoneNumber,
+      String? photo,
+      @JsonKey(name: 'birth_date') DateTime? birthDate,
+      String? cedula,
       @JsonKey(name: 'is_active') bool isActive,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
@@ -176,12 +164,11 @@ class __$$CoachingStaffModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? teamId = null,
-    Object? firstName = null,
-    Object? lastName = null,
+    Object? name = null,
     Object? role = null,
-    Object? photoUrl = freezed,
-    Object? email = freezed,
-    Object? phoneNumber = freezed,
+    Object? photo = freezed,
+    Object? birthDate = freezed,
+    Object? cedula = freezed,
     Object? isActive = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -195,29 +182,25 @@ class __$$CoachingStaffModelImplCopyWithImpl<$Res>
           ? _value.teamId
           : teamId // ignore: cast_nullable_to_non_nullable
               as String,
-      firstName: null == firstName
-          ? _value.firstName
-          : firstName // ignore: cast_nullable_to_non_nullable
-              as String,
-      lastName: null == lastName
-          ? _value.lastName
-          : lastName // ignore: cast_nullable_to_non_nullable
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       role: null == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
               as String,
-      photoUrl: freezed == photoUrl
-          ? _value.photoUrl
-          : photoUrl // ignore: cast_nullable_to_non_nullable
+      photo: freezed == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String?,
-      email: freezed == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String?,
-      phoneNumber: freezed == phoneNumber
-          ? _value.phoneNumber
-          : phoneNumber // ignore: cast_nullable_to_non_nullable
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      cedula: freezed == cedula
+          ? _value.cedula
+          : cedula // ignore: cast_nullable_to_non_nullable
               as String?,
       isActive: null == isActive
           ? _value.isActive
@@ -237,20 +220,18 @@ class __$$CoachingStaffModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$CoachingStaffModelImpl extends _CoachingStaffModel {
+class _$CoachingStaffModelImpl implements _CoachingStaffModel {
   const _$CoachingStaffModelImpl(
       {required this.id,
       @JsonKey(name: 'team_id') required this.teamId,
-      @JsonKey(name: 'first_name') required this.firstName,
-      @JsonKey(name: 'last_name') required this.lastName,
+      required this.name,
       required this.role,
-      @JsonKey(name: 'photo_url') this.photoUrl,
-      this.email,
-      @JsonKey(name: 'phone_number') this.phoneNumber,
+      this.photo,
+      @JsonKey(name: 'birth_date') this.birthDate,
+      this.cedula,
       @JsonKey(name: 'is_active') this.isActive = true,
       @JsonKey(name: 'created_at') this.createdAt,
-      @JsonKey(name: 'updated_at') this.updatedAt})
-      : super._();
+      @JsonKey(name: 'updated_at') this.updatedAt});
 
   factory _$CoachingStaffModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$CoachingStaffModelImplFromJson(json);
@@ -261,22 +242,16 @@ class _$CoachingStaffModelImpl extends _CoachingStaffModel {
   @JsonKey(name: 'team_id')
   final String teamId;
   @override
-  @JsonKey(name: 'first_name')
-  final String firstName;
-  @override
-  @JsonKey(name: 'last_name')
-  final String lastName;
+  final String name;
   @override
   final String role;
-// 'head_coach', 'assistant_coach', 'trainer', 'physiotherapist', etc.
   @override
-  @JsonKey(name: 'photo_url')
-  final String? photoUrl;
+  final String? photo;
   @override
-  final String? email;
+  @JsonKey(name: 'birth_date')
+  final DateTime? birthDate;
   @override
-  @JsonKey(name: 'phone_number')
-  final String? phoneNumber;
+  final String? cedula;
   @override
   @JsonKey(name: 'is_active')
   final bool isActive;
@@ -289,7 +264,7 @@ class _$CoachingStaffModelImpl extends _CoachingStaffModel {
 
   @override
   String toString() {
-    return 'CoachingStaffModel(id: $id, teamId: $teamId, firstName: $firstName, lastName: $lastName, role: $role, photoUrl: $photoUrl, email: $email, phoneNumber: $phoneNumber, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'CoachingStaffModel(id: $id, teamId: $teamId, name: $name, role: $role, photo: $photo, birthDate: $birthDate, cedula: $cedula, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -299,16 +274,12 @@ class _$CoachingStaffModelImpl extends _CoachingStaffModel {
             other is _$CoachingStaffModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.teamId, teamId) || other.teamId == teamId) &&
-            (identical(other.firstName, firstName) ||
-                other.firstName == firstName) &&
-            (identical(other.lastName, lastName) ||
-                other.lastName == lastName) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.role, role) || other.role == role) &&
-            (identical(other.photoUrl, photoUrl) ||
-                other.photoUrl == photoUrl) &&
-            (identical(other.email, email) || other.email == email) &&
-            (identical(other.phoneNumber, phoneNumber) ||
-                other.phoneNumber == phoneNumber) &&
+            (identical(other.photo, photo) || other.photo == photo) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
+            (identical(other.cedula, cedula) || other.cedula == cedula) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
             (identical(other.createdAt, createdAt) ||
@@ -319,8 +290,8 @@ class _$CoachingStaffModelImpl extends _CoachingStaffModel {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, teamId, firstName, lastName,
-      role, photoUrl, email, phoneNumber, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, teamId, name, role, photo,
+      birthDate, cedula, isActive, createdAt, updatedAt);
 
   @JsonKey(ignore: true)
   @override
@@ -337,21 +308,19 @@ class _$CoachingStaffModelImpl extends _CoachingStaffModel {
   }
 }
 
-abstract class _CoachingStaffModel extends CoachingStaffModel {
+abstract class _CoachingStaffModel implements CoachingStaffModel {
   const factory _CoachingStaffModel(
           {required final String id,
           @JsonKey(name: 'team_id') required final String teamId,
-          @JsonKey(name: 'first_name') required final String firstName,
-          @JsonKey(name: 'last_name') required final String lastName,
+          required final String name,
           required final String role,
-          @JsonKey(name: 'photo_url') final String? photoUrl,
-          final String? email,
-          @JsonKey(name: 'phone_number') final String? phoneNumber,
+          final String? photo,
+          @JsonKey(name: 'birth_date') final DateTime? birthDate,
+          final String? cedula,
           @JsonKey(name: 'is_active') final bool isActive,
           @JsonKey(name: 'created_at') final DateTime? createdAt,
           @JsonKey(name: 'updated_at') final DateTime? updatedAt}) =
       _$CoachingStaffModelImpl;
-  const _CoachingStaffModel._() : super._();
 
   factory _CoachingStaffModel.fromJson(Map<String, dynamic> json) =
       _$CoachingStaffModelImpl.fromJson;
@@ -362,21 +331,16 @@ abstract class _CoachingStaffModel extends CoachingStaffModel {
   @JsonKey(name: 'team_id')
   String get teamId;
   @override
-  @JsonKey(name: 'first_name')
-  String get firstName;
-  @override
-  @JsonKey(name: 'last_name')
-  String get lastName;
+  String get name;
   @override
   String get role;
-  @override // 'head_coach', 'assistant_coach', 'trainer', 'physiotherapist', etc.
-  @JsonKey(name: 'photo_url')
-  String? get photoUrl;
   @override
-  String? get email;
+  String? get photo;
   @override
-  @JsonKey(name: 'phone_number')
-  String? get phoneNumber;
+  @JsonKey(name: 'birth_date')
+  DateTime? get birthDate;
+  @override
+  String? get cedula;
   @override
   @JsonKey(name: 'is_active')
   bool get isActive;

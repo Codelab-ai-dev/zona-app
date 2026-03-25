@@ -33,6 +33,7 @@ mixin _$LeagueModel {
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'updated_at')
   DateTime? get updatedAt => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get features => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -55,7 +56,8 @@ abstract class $LeagueModelCopyWith<$Res> {
       @JsonKey(name: 'admin_id') String adminId,
       @JsonKey(name: 'is_active') bool isActive,
       @JsonKey(name: 'created_at') DateTime? createdAt,
-      @JsonKey(name: 'updated_at') DateTime? updatedAt});
+      @JsonKey(name: 'updated_at') DateTime? updatedAt,
+      Map<String, dynamic>? features});
 }
 
 /// @nodoc
@@ -80,6 +82,7 @@ class _$LeagueModelCopyWithImpl<$Res, $Val extends LeagueModel>
     Object? isActive = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
+    Object? features = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -118,6 +121,10 @@ class _$LeagueModelCopyWithImpl<$Res, $Val extends LeagueModel>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      features: freezed == features
+          ? _value.features
+          : features // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ) as $Val);
   }
 }
@@ -139,7 +146,8 @@ abstract class _$$LeagueModelImplCopyWith<$Res>
       @JsonKey(name: 'admin_id') String adminId,
       @JsonKey(name: 'is_active') bool isActive,
       @JsonKey(name: 'created_at') DateTime? createdAt,
-      @JsonKey(name: 'updated_at') DateTime? updatedAt});
+      @JsonKey(name: 'updated_at') DateTime? updatedAt,
+      Map<String, dynamic>? features});
 }
 
 /// @nodoc
@@ -162,6 +170,7 @@ class __$$LeagueModelImplCopyWithImpl<$Res>
     Object? isActive = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
+    Object? features = freezed,
   }) {
     return _then(_$LeagueModelImpl(
       id: null == id
@@ -200,6 +209,10 @@ class __$$LeagueModelImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      features: freezed == features
+          ? _value._features
+          : features // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }
@@ -216,8 +229,10 @@ class _$LeagueModelImpl extends _LeagueModel {
       @JsonKey(name: 'admin_id') required this.adminId,
       @JsonKey(name: 'is_active') this.isActive = true,
       @JsonKey(name: 'created_at') this.createdAt,
-      @JsonKey(name: 'updated_at') this.updatedAt})
-      : super._();
+      @JsonKey(name: 'updated_at') this.updatedAt,
+      final Map<String, dynamic>? features})
+      : _features = features,
+        super._();
 
   factory _$LeagueModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$LeagueModelImplFromJson(json);
@@ -244,10 +259,19 @@ class _$LeagueModelImpl extends _LeagueModel {
   @override
   @JsonKey(name: 'updated_at')
   final DateTime? updatedAt;
+  final Map<String, dynamic>? _features;
+  @override
+  Map<String, dynamic>? get features {
+    final value = _features;
+    if (value == null) return null;
+    if (_features is EqualUnmodifiableMapView) return _features;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
 
   @override
   String toString() {
-    return 'LeagueModel(id: $id, name: $name, slug: $slug, description: $description, logo: $logo, adminId: $adminId, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'LeagueModel(id: $id, name: $name, slug: $slug, description: $description, logo: $logo, adminId: $adminId, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, features: $features)';
   }
 
   @override
@@ -267,13 +291,24 @@ class _$LeagueModelImpl extends _LeagueModel {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            const DeepCollectionEquality().equals(other._features, _features));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, slug, description,
-      logo, adminId, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      slug,
+      description,
+      logo,
+      adminId,
+      isActive,
+      createdAt,
+      updatedAt,
+      const DeepCollectionEquality().hash(_features));
 
   @JsonKey(ignore: true)
   @override
@@ -291,16 +326,16 @@ class _$LeagueModelImpl extends _LeagueModel {
 
 abstract class _LeagueModel extends LeagueModel {
   const factory _LeagueModel(
-          {required final String id,
-          required final String name,
-          required final String slug,
-          required final String description,
-          final String? logo,
-          @JsonKey(name: 'admin_id') required final String adminId,
-          @JsonKey(name: 'is_active') final bool isActive,
-          @JsonKey(name: 'created_at') final DateTime? createdAt,
-          @JsonKey(name: 'updated_at') final DateTime? updatedAt}) =
-      _$LeagueModelImpl;
+      {required final String id,
+      required final String name,
+      required final String slug,
+      required final String description,
+      final String? logo,
+      @JsonKey(name: 'admin_id') required final String adminId,
+      @JsonKey(name: 'is_active') final bool isActive,
+      @JsonKey(name: 'created_at') final DateTime? createdAt,
+      @JsonKey(name: 'updated_at') final DateTime? updatedAt,
+      final Map<String, dynamic>? features}) = _$LeagueModelImpl;
   const _LeagueModel._() : super._();
 
   factory _LeagueModel.fromJson(Map<String, dynamic> json) =
@@ -328,6 +363,8 @@ abstract class _LeagueModel extends LeagueModel {
   @override
   @JsonKey(name: 'updated_at')
   DateTime? get updatedAt;
+  @override
+  Map<String, dynamic>? get features;
   @override
   @JsonKey(ignore: true)
   _$$LeagueModelImplCopyWith<_$LeagueModelImpl> get copyWith =>

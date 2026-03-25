@@ -30,11 +30,12 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Trophy, Loader2, Edit, AlertTriangle, X, Save } from "lucide-react"
+import { Trophy, Loader2, Edit, AlertTriangle, X, Save, ImageDown } from "lucide-react"
 import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { generateStandingsEmbedding } from "@/lib/utils/generate-embeddings"
 import { useTournamentsByLeague, useTeamStatsByTournament, useInvalidateTeamStats } from "@/lib/queries"
+import { StandingsPosterGenerator } from "./standings-poster-generator"
 
 interface StandingsManagementProps {
   leagueId: string
@@ -107,6 +108,7 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
 
   const loading = tournamentsLoading || standingsLoading
   const [saving, setSaving] = useState(false)
+  const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<TeamStanding | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -225,13 +227,26 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
       <div className="rounded-xl bg-slate-800/50 border border-white/10">
         {/* Header */}
         <div className="p-3 md:p-4 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
-            <h2 className="text-sm md:text-base font-semibold text-white">Tabla de Posiciones</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
+                <h2 className="text-sm md:text-base font-semibold text-white">Tabla de Posiciones</h2>
+              </div>
+              <p className="text-[10px] md:text-xs text-gray-500">
+                Gestiona la tabla de posiciones y aplica sanciones
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsPosterDialogOpen(true)}
+              disabled={loading || standings.length === 0}
+              size="sm"
+              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+            >
+              <ImageDown className="w-4 h-4 mr-2" />
+              Generar Imagen
+            </Button>
           </div>
-          <p className="text-[10px] md:text-xs text-gray-500">
-            Gestiona la tabla de posiciones y aplica sanciones
-          </p>
         </div>
 
         <div className="p-3 md:p-4">
@@ -527,6 +542,14 @@ export function StandingsManagement({ leagueId }: StandingsManagementProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <StandingsPosterGenerator
+        open={isPosterDialogOpen}
+        onOpenChange={setIsPosterDialogOpen}
+        standings={standings}
+        leagueId={leagueId}
+        tournamentName={tournaments.find(t => t.id === selectedTournament)?.name || 'Torneo'}
+      />
     </div>
   )
 }

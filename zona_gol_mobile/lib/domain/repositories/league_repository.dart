@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../core/errors/failures.dart';
 import '../entities/league_entity.dart';
+import '../entities/league_stats_entity.dart';
 
 /// League Repository
 /// Defines the contract for league data operations
@@ -91,4 +92,9 @@ abstract class LeagueRepository {
     String slug, {
     String? excludeLeagueId,
   });
+
+  /// Get league statistics
+  ///
+  /// Returns aggregated statistics for the specified league
+  Future<Either<Failure, LeagueStatsEntity>> getLeagueStats(String leagueId);
 }

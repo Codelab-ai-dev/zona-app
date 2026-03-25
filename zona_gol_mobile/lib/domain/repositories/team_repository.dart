@@ -1,6 +1,8 @@
 import 'package:dartz/dartz.dart';
 import '../../core/errors/failures.dart';
 import '../entities/team_entity.dart';
+import '../entities/team_standing_entity.dart';
+import '../usecases/create_team_owner_usecase.dart';
 
 /// Team Repository
 /// Defines the contract for team data operations
@@ -98,4 +100,36 @@ abstract class TeamRepository {
 
   /// Remove team from tournament
   Future<Either<Failure, TeamEntity>> removeFromTournament(String teamId);
+
+  /// Get team standings by tournament ID
+  Future<Either<Failure, List<TeamStandingEntity>>> getStandingsByTournament(
+    String tournamentId,
+  );
+
+  /// Get team standings by league ID
+  Future<Either<Failure, List<TeamStandingEntity>>> getStandingsByLeague(
+    String leagueId,
+  );
+
+  /// Create a team owner account via Edge Function
+  Future<Either<Failure, CreateTeamOwnerResult>> createTeamOwner({
+    required String email,
+    required String name,
+    required String leagueId,
+  });
+
+  /// Update team standings (upsert to team_stats)
+  Future<Either<Failure, void>> updateStandings({
+    required String teamId,
+    required String tournamentId,
+    required String leagueId,
+    int? matchesPlayed,
+    int? matchesWon,
+    int? matchesDrawn,
+    int? matchesLost,
+    int? goalsFor,
+    int? goalsAgainst,
+    int? pointsAdjustment,
+    String? adjustmentReason,
+  });
 }

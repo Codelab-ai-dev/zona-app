@@ -23,22 +23,19 @@ mixin _$PlayerModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'team_id')
   String get teamId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'first_name')
-  String get firstName => throw _privateConstructorUsedError;
-  @JsonKey(name: 'last_name')
-  String get lastName => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'jersey_number')
   int? get jerseyNumber => throw _privateConstructorUsedError;
-  @JsonKey(name: 'photo_url')
-  String? get photoUrl => throw _privateConstructorUsedError;
-  @JsonKey(name: 'date_of_birth')
-  DateTime? get dateOfBirth => throw _privateConstructorUsedError;
+  String? get photo => throw _privateConstructorUsedError;
+  @JsonKey(name: 'birth_date')
+  DateTime? get birthDate => throw _privateConstructorUsedError;
   String? get position => throw _privateConstructorUsedError;
-  String? get email => throw _privateConstructorUsedError;
-  @JsonKey(name: 'phone_number')
-  String? get phoneNumber => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_active')
   bool get isActive => throw _privateConstructorUsedError;
+  @JsonKey(name: 'id_document_url')
+  String? get idDocumentUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'id_verified')
+  bool get idVerified => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'updated_at')
@@ -59,15 +56,14 @@ abstract class $PlayerModelCopyWith<$Res> {
   $Res call(
       {String id,
       @JsonKey(name: 'team_id') String teamId,
-      @JsonKey(name: 'first_name') String firstName,
-      @JsonKey(name: 'last_name') String lastName,
+      String name,
       @JsonKey(name: 'jersey_number') int? jerseyNumber,
-      @JsonKey(name: 'photo_url') String? photoUrl,
-      @JsonKey(name: 'date_of_birth') DateTime? dateOfBirth,
+      String? photo,
+      @JsonKey(name: 'birth_date') DateTime? birthDate,
       String? position,
-      String? email,
-      @JsonKey(name: 'phone_number') String? phoneNumber,
       @JsonKey(name: 'is_active') bool isActive,
+      @JsonKey(name: 'id_document_url') String? idDocumentUrl,
+      @JsonKey(name: 'id_verified') bool idVerified,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
 }
@@ -87,15 +83,14 @@ class _$PlayerModelCopyWithImpl<$Res, $Val extends PlayerModel>
   $Res call({
     Object? id = null,
     Object? teamId = null,
-    Object? firstName = null,
-    Object? lastName = null,
+    Object? name = null,
     Object? jerseyNumber = freezed,
-    Object? photoUrl = freezed,
-    Object? dateOfBirth = freezed,
+    Object? photo = freezed,
+    Object? birthDate = freezed,
     Object? position = freezed,
-    Object? email = freezed,
-    Object? phoneNumber = freezed,
     Object? isActive = null,
+    Object? idDocumentUrl = freezed,
+    Object? idVerified = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -108,41 +103,37 @@ class _$PlayerModelCopyWithImpl<$Res, $Val extends PlayerModel>
           ? _value.teamId
           : teamId // ignore: cast_nullable_to_non_nullable
               as String,
-      firstName: null == firstName
-          ? _value.firstName
-          : firstName // ignore: cast_nullable_to_non_nullable
-              as String,
-      lastName: null == lastName
-          ? _value.lastName
-          : lastName // ignore: cast_nullable_to_non_nullable
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       jerseyNumber: freezed == jerseyNumber
           ? _value.jerseyNumber
           : jerseyNumber // ignore: cast_nullable_to_non_nullable
               as int?,
-      photoUrl: freezed == photoUrl
-          ? _value.photoUrl
-          : photoUrl // ignore: cast_nullable_to_non_nullable
+      photo: freezed == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String?,
-      dateOfBirth: freezed == dateOfBirth
-          ? _value.dateOfBirth
-          : dateOfBirth // ignore: cast_nullable_to_non_nullable
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       position: freezed == position
           ? _value.position
           : position // ignore: cast_nullable_to_non_nullable
               as String?,
-      email: freezed == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String?,
-      phoneNumber: freezed == phoneNumber
-          ? _value.phoneNumber
-          : phoneNumber // ignore: cast_nullable_to_non_nullable
-              as String?,
       isActive: null == isActive
           ? _value.isActive
           : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      idDocumentUrl: freezed == idDocumentUrl
+          ? _value.idDocumentUrl
+          : idDocumentUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      idVerified: null == idVerified
+          ? _value.idVerified
+          : idVerified // ignore: cast_nullable_to_non_nullable
               as bool,
       createdAt: freezed == createdAt
           ? _value.createdAt
@@ -167,15 +158,14 @@ abstract class _$$PlayerModelImplCopyWith<$Res>
   $Res call(
       {String id,
       @JsonKey(name: 'team_id') String teamId,
-      @JsonKey(name: 'first_name') String firstName,
-      @JsonKey(name: 'last_name') String lastName,
+      String name,
       @JsonKey(name: 'jersey_number') int? jerseyNumber,
-      @JsonKey(name: 'photo_url') String? photoUrl,
-      @JsonKey(name: 'date_of_birth') DateTime? dateOfBirth,
+      String? photo,
+      @JsonKey(name: 'birth_date') DateTime? birthDate,
       String? position,
-      String? email,
-      @JsonKey(name: 'phone_number') String? phoneNumber,
       @JsonKey(name: 'is_active') bool isActive,
+      @JsonKey(name: 'id_document_url') String? idDocumentUrl,
+      @JsonKey(name: 'id_verified') bool idVerified,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
 }
@@ -193,15 +183,14 @@ class __$$PlayerModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? teamId = null,
-    Object? firstName = null,
-    Object? lastName = null,
+    Object? name = null,
     Object? jerseyNumber = freezed,
-    Object? photoUrl = freezed,
-    Object? dateOfBirth = freezed,
+    Object? photo = freezed,
+    Object? birthDate = freezed,
     Object? position = freezed,
-    Object? email = freezed,
-    Object? phoneNumber = freezed,
     Object? isActive = null,
+    Object? idDocumentUrl = freezed,
+    Object? idVerified = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -214,41 +203,37 @@ class __$$PlayerModelImplCopyWithImpl<$Res>
           ? _value.teamId
           : teamId // ignore: cast_nullable_to_non_nullable
               as String,
-      firstName: null == firstName
-          ? _value.firstName
-          : firstName // ignore: cast_nullable_to_non_nullable
-              as String,
-      lastName: null == lastName
-          ? _value.lastName
-          : lastName // ignore: cast_nullable_to_non_nullable
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
               as String,
       jerseyNumber: freezed == jerseyNumber
           ? _value.jerseyNumber
           : jerseyNumber // ignore: cast_nullable_to_non_nullable
               as int?,
-      photoUrl: freezed == photoUrl
-          ? _value.photoUrl
-          : photoUrl // ignore: cast_nullable_to_non_nullable
+      photo: freezed == photo
+          ? _value.photo
+          : photo // ignore: cast_nullable_to_non_nullable
               as String?,
-      dateOfBirth: freezed == dateOfBirth
-          ? _value.dateOfBirth
-          : dateOfBirth // ignore: cast_nullable_to_non_nullable
+      birthDate: freezed == birthDate
+          ? _value.birthDate
+          : birthDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       position: freezed == position
           ? _value.position
           : position // ignore: cast_nullable_to_non_nullable
               as String?,
-      email: freezed == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String?,
-      phoneNumber: freezed == phoneNumber
-          ? _value.phoneNumber
-          : phoneNumber // ignore: cast_nullable_to_non_nullable
-              as String?,
       isActive: null == isActive
           ? _value.isActive
           : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      idDocumentUrl: freezed == idDocumentUrl
+          ? _value.idDocumentUrl
+          : idDocumentUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      idVerified: null == idVerified
+          ? _value.idVerified
+          : idVerified // ignore: cast_nullable_to_non_nullable
               as bool,
       createdAt: freezed == createdAt
           ? _value.createdAt
@@ -268,15 +253,14 @@ class _$PlayerModelImpl extends _PlayerModel {
   const _$PlayerModelImpl(
       {required this.id,
       @JsonKey(name: 'team_id') required this.teamId,
-      @JsonKey(name: 'first_name') required this.firstName,
-      @JsonKey(name: 'last_name') required this.lastName,
+      required this.name,
       @JsonKey(name: 'jersey_number') this.jerseyNumber,
-      @JsonKey(name: 'photo_url') this.photoUrl,
-      @JsonKey(name: 'date_of_birth') this.dateOfBirth,
+      this.photo,
+      @JsonKey(name: 'birth_date') this.birthDate,
       this.position,
-      this.email,
-      @JsonKey(name: 'phone_number') this.phoneNumber,
       @JsonKey(name: 'is_active') this.isActive = true,
+      @JsonKey(name: 'id_document_url') this.idDocumentUrl,
+      @JsonKey(name: 'id_verified') this.idVerified = false,
       @JsonKey(name: 'created_at') this.createdAt,
       @JsonKey(name: 'updated_at') this.updatedAt})
       : super._();
@@ -290,30 +274,26 @@ class _$PlayerModelImpl extends _PlayerModel {
   @JsonKey(name: 'team_id')
   final String teamId;
   @override
-  @JsonKey(name: 'first_name')
-  final String firstName;
-  @override
-  @JsonKey(name: 'last_name')
-  final String lastName;
+  final String name;
   @override
   @JsonKey(name: 'jersey_number')
   final int? jerseyNumber;
   @override
-  @JsonKey(name: 'photo_url')
-  final String? photoUrl;
+  final String? photo;
   @override
-  @JsonKey(name: 'date_of_birth')
-  final DateTime? dateOfBirth;
+  @JsonKey(name: 'birth_date')
+  final DateTime? birthDate;
   @override
   final String? position;
   @override
-  final String? email;
-  @override
-  @JsonKey(name: 'phone_number')
-  final String? phoneNumber;
-  @override
   @JsonKey(name: 'is_active')
   final bool isActive;
+  @override
+  @JsonKey(name: 'id_document_url')
+  final String? idDocumentUrl;
+  @override
+  @JsonKey(name: 'id_verified')
+  final bool idVerified;
   @override
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
@@ -323,7 +303,7 @@ class _$PlayerModelImpl extends _PlayerModel {
 
   @override
   String toString() {
-    return 'PlayerModel(id: $id, teamId: $teamId, firstName: $firstName, lastName: $lastName, jerseyNumber: $jerseyNumber, photoUrl: $photoUrl, dateOfBirth: $dateOfBirth, position: $position, email: $email, phoneNumber: $phoneNumber, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PlayerModel(id: $id, teamId: $teamId, name: $name, jerseyNumber: $jerseyNumber, photo: $photo, birthDate: $birthDate, position: $position, isActive: $isActive, idDocumentUrl: $idDocumentUrl, idVerified: $idVerified, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -333,23 +313,20 @@ class _$PlayerModelImpl extends _PlayerModel {
             other is _$PlayerModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.teamId, teamId) || other.teamId == teamId) &&
-            (identical(other.firstName, firstName) ||
-                other.firstName == firstName) &&
-            (identical(other.lastName, lastName) ||
-                other.lastName == lastName) &&
+            (identical(other.name, name) || other.name == name) &&
             (identical(other.jerseyNumber, jerseyNumber) ||
                 other.jerseyNumber == jerseyNumber) &&
-            (identical(other.photoUrl, photoUrl) ||
-                other.photoUrl == photoUrl) &&
-            (identical(other.dateOfBirth, dateOfBirth) ||
-                other.dateOfBirth == dateOfBirth) &&
+            (identical(other.photo, photo) || other.photo == photo) &&
+            (identical(other.birthDate, birthDate) ||
+                other.birthDate == birthDate) &&
             (identical(other.position, position) ||
                 other.position == position) &&
-            (identical(other.email, email) || other.email == email) &&
-            (identical(other.phoneNumber, phoneNumber) ||
-                other.phoneNumber == phoneNumber) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
+            (identical(other.idDocumentUrl, idDocumentUrl) ||
+                other.idDocumentUrl == idDocumentUrl) &&
+            (identical(other.idVerified, idVerified) ||
+                other.idVerified == idVerified) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -362,15 +339,14 @@ class _$PlayerModelImpl extends _PlayerModel {
       runtimeType,
       id,
       teamId,
-      firstName,
-      lastName,
+      name,
       jerseyNumber,
-      photoUrl,
-      dateOfBirth,
+      photo,
+      birthDate,
       position,
-      email,
-      phoneNumber,
       isActive,
+      idDocumentUrl,
+      idVerified,
       createdAt,
       updatedAt);
 
@@ -392,15 +368,14 @@ abstract class _PlayerModel extends PlayerModel {
   const factory _PlayerModel(
           {required final String id,
           @JsonKey(name: 'team_id') required final String teamId,
-          @JsonKey(name: 'first_name') required final String firstName,
-          @JsonKey(name: 'last_name') required final String lastName,
+          required final String name,
           @JsonKey(name: 'jersey_number') final int? jerseyNumber,
-          @JsonKey(name: 'photo_url') final String? photoUrl,
-          @JsonKey(name: 'date_of_birth') final DateTime? dateOfBirth,
+          final String? photo,
+          @JsonKey(name: 'birth_date') final DateTime? birthDate,
           final String? position,
-          final String? email,
-          @JsonKey(name: 'phone_number') final String? phoneNumber,
           @JsonKey(name: 'is_active') final bool isActive,
+          @JsonKey(name: 'id_document_url') final String? idDocumentUrl,
+          @JsonKey(name: 'id_verified') final bool idVerified,
           @JsonKey(name: 'created_at') final DateTime? createdAt,
           @JsonKey(name: 'updated_at') final DateTime? updatedAt}) =
       _$PlayerModelImpl;
@@ -415,30 +390,26 @@ abstract class _PlayerModel extends PlayerModel {
   @JsonKey(name: 'team_id')
   String get teamId;
   @override
-  @JsonKey(name: 'first_name')
-  String get firstName;
-  @override
-  @JsonKey(name: 'last_name')
-  String get lastName;
+  String get name;
   @override
   @JsonKey(name: 'jersey_number')
   int? get jerseyNumber;
   @override
-  @JsonKey(name: 'photo_url')
-  String? get photoUrl;
+  String? get photo;
   @override
-  @JsonKey(name: 'date_of_birth')
-  DateTime? get dateOfBirth;
+  @JsonKey(name: 'birth_date')
+  DateTime? get birthDate;
   @override
   String? get position;
   @override
-  String? get email;
-  @override
-  @JsonKey(name: 'phone_number')
-  String? get phoneNumber;
-  @override
   @JsonKey(name: 'is_active')
   bool get isActive;
+  @override
+  @JsonKey(name: 'id_document_url')
+  String? get idDocumentUrl;
+  @override
+  @JsonKey(name: 'id_verified')
+  bool get idVerified;
   @override
   @JsonKey(name: 'created_at')
   DateTime? get createdAt;

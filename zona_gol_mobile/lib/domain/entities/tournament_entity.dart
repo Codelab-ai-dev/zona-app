@@ -28,6 +28,15 @@ class TournamentEntity extends Equatable {
   final int roundsPerSeason; // For league format (1-4)
   final bool hasThirdPlaceMatch; // For knockout
 
+  // Age Validation
+  final bool ageValidationEnabled;
+  final int? minAge;
+  final int? maxAge;
+  final DateTime? ageReferenceDate;
+  final int ageExceptionCount;
+  final int? ageExceptionMinAge;
+  final int? ageExceptionMaxAge;
+
   const TournamentEntity({
     required this.id,
     required this.name,
@@ -44,7 +53,17 @@ class TournamentEntity extends Equatable {
     this.teamsAdvancingPerGroup = 2,
     this.roundsPerSeason = 1,
     this.hasThirdPlaceMatch = false,
+    this.ageValidationEnabled = false,
+    this.minAge,
+    this.maxAge,
+    this.ageReferenceDate,
+    this.ageExceptionCount = 0,
+    this.ageExceptionMinAge,
+    this.ageExceptionMaxAge,
   });
+
+  /// Check if age validation is configured
+  bool get hasAgeValidation => ageValidationEnabled;
 
   @override
   List<Object?> get props => [
@@ -63,6 +82,13 @@ class TournamentEntity extends Equatable {
         teamsAdvancingPerGroup,
         roundsPerSeason,
         hasThirdPlaceMatch,
+        ageValidationEnabled,
+        minAge,
+        maxAge,
+        ageReferenceDate,
+        ageExceptionCount,
+        ageExceptionMinAge,
+        ageExceptionMaxAge,
       ];
 
   /// Check if the tournament belongs to a specific league
@@ -146,6 +172,13 @@ class TournamentEntity extends Equatable {
     int? teamsAdvancingPerGroup,
     int? roundsPerSeason,
     bool? hasThirdPlaceMatch,
+    bool? ageValidationEnabled,
+    int? minAge,
+    int? maxAge,
+    DateTime? ageReferenceDate,
+    int? ageExceptionCount,
+    int? ageExceptionMinAge,
+    int? ageExceptionMaxAge,
   }) {
     return TournamentEntity(
       id: id ?? this.id,
@@ -164,6 +197,13 @@ class TournamentEntity extends Equatable {
           teamsAdvancingPerGroup ?? this.teamsAdvancingPerGroup,
       roundsPerSeason: roundsPerSeason ?? this.roundsPerSeason,
       hasThirdPlaceMatch: hasThirdPlaceMatch ?? this.hasThirdPlaceMatch,
+      ageValidationEnabled: ageValidationEnabled ?? this.ageValidationEnabled,
+      minAge: minAge ?? this.minAge,
+      maxAge: maxAge ?? this.maxAge,
+      ageReferenceDate: ageReferenceDate ?? this.ageReferenceDate,
+      ageExceptionCount: ageExceptionCount ?? this.ageExceptionCount,
+      ageExceptionMinAge: ageExceptionMinAge ?? this.ageExceptionMinAge,
+      ageExceptionMaxAge: ageExceptionMaxAge ?? this.ageExceptionMaxAge,
     );
   }
 }

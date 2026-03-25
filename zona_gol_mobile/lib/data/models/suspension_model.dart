@@ -10,15 +10,14 @@ class SuspensionModel with _$SuspensionModel {
   const factory SuspensionModel({
     required String id,
     @JsonKey(name: 'player_id') required String playerId,
-    @JsonKey(name: 'tournament_id') required String tournamentId,
-    @JsonKey(name: 'match_id') String? matchId,
-    required String reason, // 'accumulation', 'red_card', 'disciplinary'
-    @JsonKey(name: 'yellow_card_count') @Default(0) int yellowCardCount,
-    @JsonKey(name: 'matches_suspended') @Default(1) int matchesSuspended,
+    @JsonKey(name: 'team_id') required String teamId,
+    @JsonKey(name: 'league_id') required String leagueId,
+    @JsonKey(name: 'tournament_id') String? tournamentId,
+    @JsonKey(name: 'suspension_type') required String suspensionType,
+    String? reason,
+    @JsonKey(name: 'matches_to_serve') @Default(1) int matchesToServe,
     @JsonKey(name: 'matches_served') @Default(0) int matchesServed,
-    @JsonKey(name: 'is_active') @Default(true) bool isActive,
-    @JsonKey(name: 'suspended_at') required DateTime suspendedAt,
-    @JsonKey(name: 'expires_at') DateTime? expiresAt,
+    @Default('active') String status, // active, completed, cancelled
     String? notes,
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
@@ -27,88 +26,42 @@ class SuspensionModel with _$SuspensionModel {
   factory SuspensionModel.fromJson(Map<String, dynamic> json) =>
       _$SuspensionModelFromJson(json);
 
-  // Helper methods - Reason
-  bool get isAccumulationSuspension => reason == 'accumulation';
-  bool get isRedCardSuspension => reason == 'red_card';
-  bool get isDisciplinarySuspension => reason == 'disciplinary';
+  // Status helpers
+  bool get isActive => status == 'active' && matchesRemaining > 0;
+  bool get isCompleted => status == 'completed' || matchesServed >= matchesToServe;
+  bool get isCancelled => status == 'cancelled';
 
-  String get reasonDisplay {
-    switch (reason) {
-      case 'accumulation':
-        return 'Acumulación de tarjetas';
-      case 'red_card':
-        return 'Tarjeta roja';
-      case 'disciplinary':
-        return 'Disciplinaria';
-      default:
-        return reason;
-    }
-  }
-
-  // Suspension status
+  // Progress
   int get matchesRemaining {
-    final remaining = matchesSuspended - matchesServed;
+    final remaining = matchesToServe - matchesServed;
     return remaining > 0 ? remaining : 0;
   }
 
-  bool get isCompleted => matchesServed >= matchesSuspended;
-
-  bool get isExpired {
-    if (expiresAt == null) return false;
-    return DateTime.now().isAfter(expiresAt!);
-  }
-
-  bool get canPlay => !isActive || isCompleted || isExpired;
-
   String get statusDisplay {
-    if (!isActive) return 'Inactiva';
-    if (isCompleted) return 'Cumplida';
-    if (isExpired) return 'Expirada';
-    return 'Activa';
-  }
-
-  String get suspensionSummary {
-    if (isCompleted) {
-      return 'Suspensión cumplida ($matchesSuspended partidos)';
+    switch (status) {
+      case 'active':
+        return 'Activa';
+      case 'completed':
+        return 'Completada';
+      case 'cancelled':
+        return 'Cancelada';
+      default:
+        return status;
     }
+  }
 
-    final remaining = matchesRemaining;
-    if (remaining == 1) {
-      return '1 partido de suspensión restante';
+  String get suspensionTypeDisplay {
+    switch (suspensionType) {
+      case 'red_card':
+        return 'Tarjeta Roja';
+      case 'yellow_accumulation':
+        return 'Acumulaci\u00f3n Amarillas';
+      case 'disciplinary_committee':
+        return 'Comit\u00e9 Disciplinario';
+      case 'other':
+        return 'Otro';
+      default:
+        return suspensionType;
     }
-    return '$remaining partidos de suspensión restantes';
-  }
-
-  // Display helpers
-  String get fullDescription {
-    final buffer = StringBuffer();
-    buffer.write(reasonDisplay);
-
-    if (yellowCardCount > 0) {
-      buffer.write(' ($yellowCardCount amarillas)');
-    }
-
-    buffer.write(' - ');
-    buffer.write(suspensionSummary);
-
-    return buffer.toString();
-  }
-
-  double get progressPercentage {
-    if (matchesSuspended == 0) return 100.0;
-    return (matchesServed / matchesSuspended) * 100;
-  }
-
-  // Time helpers
-  bool get isSuspendedToday {
-    final now = DateTime.now();
-    return suspendedAt.year == now.year &&
-        suspendedAt.month == now.month &&
-        suspendedAt.day == now.day;
-  }
-
-  String get suspendedAtDisplay {
-    final date = suspendedAt;
-    return '${date.day}/${date.month}/${date.year}';
   }
 }

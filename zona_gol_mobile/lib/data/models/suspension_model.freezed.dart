@@ -23,24 +23,21 @@ mixin _$SuspensionModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'player_id')
   String get playerId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'team_id')
+  String get teamId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'league_id')
+  String get leagueId => throw _privateConstructorUsedError;
   @JsonKey(name: 'tournament_id')
-  String get tournamentId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'match_id')
-  String? get matchId => throw _privateConstructorUsedError;
-  String get reason =>
-      throw _privateConstructorUsedError; // 'accumulation', 'red_card', 'disciplinary'
-  @JsonKey(name: 'yellow_card_count')
-  int get yellowCardCount => throw _privateConstructorUsedError;
-  @JsonKey(name: 'matches_suspended')
-  int get matchesSuspended => throw _privateConstructorUsedError;
+  String? get tournamentId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'suspension_type')
+  String get suspensionType => throw _privateConstructorUsedError;
+  String? get reason => throw _privateConstructorUsedError;
+  @JsonKey(name: 'matches_to_serve')
+  int get matchesToServe => throw _privateConstructorUsedError;
   @JsonKey(name: 'matches_served')
   int get matchesServed => throw _privateConstructorUsedError;
-  @JsonKey(name: 'is_active')
-  bool get isActive => throw _privateConstructorUsedError;
-  @JsonKey(name: 'suspended_at')
-  DateTime get suspendedAt => throw _privateConstructorUsedError;
-  @JsonKey(name: 'expires_at')
-  DateTime? get expiresAt => throw _privateConstructorUsedError;
+  String get status =>
+      throw _privateConstructorUsedError; // active, completed, cancelled
   String? get notes => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime? get createdAt => throw _privateConstructorUsedError;
@@ -62,15 +59,14 @@ abstract class $SuspensionModelCopyWith<$Res> {
   $Res call(
       {String id,
       @JsonKey(name: 'player_id') String playerId,
-      @JsonKey(name: 'tournament_id') String tournamentId,
-      @JsonKey(name: 'match_id') String? matchId,
-      String reason,
-      @JsonKey(name: 'yellow_card_count') int yellowCardCount,
-      @JsonKey(name: 'matches_suspended') int matchesSuspended,
+      @JsonKey(name: 'team_id') String teamId,
+      @JsonKey(name: 'league_id') String leagueId,
+      @JsonKey(name: 'tournament_id') String? tournamentId,
+      @JsonKey(name: 'suspension_type') String suspensionType,
+      String? reason,
+      @JsonKey(name: 'matches_to_serve') int matchesToServe,
       @JsonKey(name: 'matches_served') int matchesServed,
-      @JsonKey(name: 'is_active') bool isActive,
-      @JsonKey(name: 'suspended_at') DateTime suspendedAt,
-      @JsonKey(name: 'expires_at') DateTime? expiresAt,
+      String status,
       String? notes,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
@@ -91,15 +87,14 @@ class _$SuspensionModelCopyWithImpl<$Res, $Val extends SuspensionModel>
   $Res call({
     Object? id = null,
     Object? playerId = null,
-    Object? tournamentId = null,
-    Object? matchId = freezed,
-    Object? reason = null,
-    Object? yellowCardCount = null,
-    Object? matchesSuspended = null,
+    Object? teamId = null,
+    Object? leagueId = null,
+    Object? tournamentId = freezed,
+    Object? suspensionType = null,
+    Object? reason = freezed,
+    Object? matchesToServe = null,
     Object? matchesServed = null,
-    Object? isActive = null,
-    Object? suspendedAt = null,
-    Object? expiresAt = freezed,
+    Object? status = null,
     Object? notes = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -113,42 +108,38 @@ class _$SuspensionModelCopyWithImpl<$Res, $Val extends SuspensionModel>
           ? _value.playerId
           : playerId // ignore: cast_nullable_to_non_nullable
               as String,
-      tournamentId: null == tournamentId
+      teamId: null == teamId
+          ? _value.teamId
+          : teamId // ignore: cast_nullable_to_non_nullable
+              as String,
+      leagueId: null == leagueId
+          ? _value.leagueId
+          : leagueId // ignore: cast_nullable_to_non_nullable
+              as String,
+      tournamentId: freezed == tournamentId
           ? _value.tournamentId
           : tournamentId // ignore: cast_nullable_to_non_nullable
-              as String,
-      matchId: freezed == matchId
-          ? _value.matchId
-          : matchId // ignore: cast_nullable_to_non_nullable
               as String?,
-      reason: null == reason
+      suspensionType: null == suspensionType
+          ? _value.suspensionType
+          : suspensionType // ignore: cast_nullable_to_non_nullable
+              as String,
+      reason: freezed == reason
           ? _value.reason
           : reason // ignore: cast_nullable_to_non_nullable
-              as String,
-      yellowCardCount: null == yellowCardCount
-          ? _value.yellowCardCount
-          : yellowCardCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      matchesSuspended: null == matchesSuspended
-          ? _value.matchesSuspended
-          : matchesSuspended // ignore: cast_nullable_to_non_nullable
+              as String?,
+      matchesToServe: null == matchesToServe
+          ? _value.matchesToServe
+          : matchesToServe // ignore: cast_nullable_to_non_nullable
               as int,
       matchesServed: null == matchesServed
           ? _value.matchesServed
           : matchesServed // ignore: cast_nullable_to_non_nullable
               as int,
-      isActive: null == isActive
-          ? _value.isActive
-          : isActive // ignore: cast_nullable_to_non_nullable
-              as bool,
-      suspendedAt: null == suspendedAt
-          ? _value.suspendedAt
-          : suspendedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      expiresAt: freezed == expiresAt
-          ? _value.expiresAt
-          : expiresAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
       notes: freezed == notes
           ? _value.notes
           : notes // ignore: cast_nullable_to_non_nullable
@@ -176,15 +167,14 @@ abstract class _$$SuspensionModelImplCopyWith<$Res>
   $Res call(
       {String id,
       @JsonKey(name: 'player_id') String playerId,
-      @JsonKey(name: 'tournament_id') String tournamentId,
-      @JsonKey(name: 'match_id') String? matchId,
-      String reason,
-      @JsonKey(name: 'yellow_card_count') int yellowCardCount,
-      @JsonKey(name: 'matches_suspended') int matchesSuspended,
+      @JsonKey(name: 'team_id') String teamId,
+      @JsonKey(name: 'league_id') String leagueId,
+      @JsonKey(name: 'tournament_id') String? tournamentId,
+      @JsonKey(name: 'suspension_type') String suspensionType,
+      String? reason,
+      @JsonKey(name: 'matches_to_serve') int matchesToServe,
       @JsonKey(name: 'matches_served') int matchesServed,
-      @JsonKey(name: 'is_active') bool isActive,
-      @JsonKey(name: 'suspended_at') DateTime suspendedAt,
-      @JsonKey(name: 'expires_at') DateTime? expiresAt,
+      String status,
       String? notes,
       @JsonKey(name: 'created_at') DateTime? createdAt,
       @JsonKey(name: 'updated_at') DateTime? updatedAt});
@@ -203,15 +193,14 @@ class __$$SuspensionModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? playerId = null,
-    Object? tournamentId = null,
-    Object? matchId = freezed,
-    Object? reason = null,
-    Object? yellowCardCount = null,
-    Object? matchesSuspended = null,
+    Object? teamId = null,
+    Object? leagueId = null,
+    Object? tournamentId = freezed,
+    Object? suspensionType = null,
+    Object? reason = freezed,
+    Object? matchesToServe = null,
     Object? matchesServed = null,
-    Object? isActive = null,
-    Object? suspendedAt = null,
-    Object? expiresAt = freezed,
+    Object? status = null,
     Object? notes = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -225,42 +214,38 @@ class __$$SuspensionModelImplCopyWithImpl<$Res>
           ? _value.playerId
           : playerId // ignore: cast_nullable_to_non_nullable
               as String,
-      tournamentId: null == tournamentId
+      teamId: null == teamId
+          ? _value.teamId
+          : teamId // ignore: cast_nullable_to_non_nullable
+              as String,
+      leagueId: null == leagueId
+          ? _value.leagueId
+          : leagueId // ignore: cast_nullable_to_non_nullable
+              as String,
+      tournamentId: freezed == tournamentId
           ? _value.tournamentId
           : tournamentId // ignore: cast_nullable_to_non_nullable
-              as String,
-      matchId: freezed == matchId
-          ? _value.matchId
-          : matchId // ignore: cast_nullable_to_non_nullable
               as String?,
-      reason: null == reason
+      suspensionType: null == suspensionType
+          ? _value.suspensionType
+          : suspensionType // ignore: cast_nullable_to_non_nullable
+              as String,
+      reason: freezed == reason
           ? _value.reason
           : reason // ignore: cast_nullable_to_non_nullable
-              as String,
-      yellowCardCount: null == yellowCardCount
-          ? _value.yellowCardCount
-          : yellowCardCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      matchesSuspended: null == matchesSuspended
-          ? _value.matchesSuspended
-          : matchesSuspended // ignore: cast_nullable_to_non_nullable
+              as String?,
+      matchesToServe: null == matchesToServe
+          ? _value.matchesToServe
+          : matchesToServe // ignore: cast_nullable_to_non_nullable
               as int,
       matchesServed: null == matchesServed
           ? _value.matchesServed
           : matchesServed // ignore: cast_nullable_to_non_nullable
               as int,
-      isActive: null == isActive
-          ? _value.isActive
-          : isActive // ignore: cast_nullable_to_non_nullable
-              as bool,
-      suspendedAt: null == suspendedAt
-          ? _value.suspendedAt
-          : suspendedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      expiresAt: freezed == expiresAt
-          ? _value.expiresAt
-          : expiresAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
       notes: freezed == notes
           ? _value.notes
           : notes // ignore: cast_nullable_to_non_nullable
@@ -283,15 +268,14 @@ class _$SuspensionModelImpl extends _SuspensionModel {
   const _$SuspensionModelImpl(
       {required this.id,
       @JsonKey(name: 'player_id') required this.playerId,
-      @JsonKey(name: 'tournament_id') required this.tournamentId,
-      @JsonKey(name: 'match_id') this.matchId,
-      required this.reason,
-      @JsonKey(name: 'yellow_card_count') this.yellowCardCount = 0,
-      @JsonKey(name: 'matches_suspended') this.matchesSuspended = 1,
+      @JsonKey(name: 'team_id') required this.teamId,
+      @JsonKey(name: 'league_id') required this.leagueId,
+      @JsonKey(name: 'tournament_id') this.tournamentId,
+      @JsonKey(name: 'suspension_type') required this.suspensionType,
+      this.reason,
+      @JsonKey(name: 'matches_to_serve') this.matchesToServe = 1,
       @JsonKey(name: 'matches_served') this.matchesServed = 0,
-      @JsonKey(name: 'is_active') this.isActive = true,
-      @JsonKey(name: 'suspended_at') required this.suspendedAt,
-      @JsonKey(name: 'expires_at') this.expiresAt,
+      this.status = 'active',
       this.notes,
       @JsonKey(name: 'created_at') this.createdAt,
       @JsonKey(name: 'updated_at') this.updatedAt})
@@ -306,32 +290,29 @@ class _$SuspensionModelImpl extends _SuspensionModel {
   @JsonKey(name: 'player_id')
   final String playerId;
   @override
+  @JsonKey(name: 'team_id')
+  final String teamId;
+  @override
+  @JsonKey(name: 'league_id')
+  final String leagueId;
+  @override
   @JsonKey(name: 'tournament_id')
-  final String tournamentId;
+  final String? tournamentId;
   @override
-  @JsonKey(name: 'match_id')
-  final String? matchId;
+  @JsonKey(name: 'suspension_type')
+  final String suspensionType;
   @override
-  final String reason;
-// 'accumulation', 'red_card', 'disciplinary'
+  final String? reason;
   @override
-  @JsonKey(name: 'yellow_card_count')
-  final int yellowCardCount;
-  @override
-  @JsonKey(name: 'matches_suspended')
-  final int matchesSuspended;
+  @JsonKey(name: 'matches_to_serve')
+  final int matchesToServe;
   @override
   @JsonKey(name: 'matches_served')
   final int matchesServed;
   @override
-  @JsonKey(name: 'is_active')
-  final bool isActive;
-  @override
-  @JsonKey(name: 'suspended_at')
-  final DateTime suspendedAt;
-  @override
-  @JsonKey(name: 'expires_at')
-  final DateTime? expiresAt;
+  @JsonKey()
+  final String status;
+// active, completed, cancelled
   @override
   final String? notes;
   @override
@@ -343,7 +324,7 @@ class _$SuspensionModelImpl extends _SuspensionModel {
 
   @override
   String toString() {
-    return 'SuspensionModel(id: $id, playerId: $playerId, tournamentId: $tournamentId, matchId: $matchId, reason: $reason, yellowCardCount: $yellowCardCount, matchesSuspended: $matchesSuspended, matchesServed: $matchesServed, isActive: $isActive, suspendedAt: $suspendedAt, expiresAt: $expiresAt, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SuspensionModel(id: $id, playerId: $playerId, teamId: $teamId, leagueId: $leagueId, tournamentId: $tournamentId, suspensionType: $suspensionType, reason: $reason, matchesToServe: $matchesToServe, matchesServed: $matchesServed, status: $status, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -354,22 +335,19 @@ class _$SuspensionModelImpl extends _SuspensionModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.playerId, playerId) ||
                 other.playerId == playerId) &&
+            (identical(other.teamId, teamId) || other.teamId == teamId) &&
+            (identical(other.leagueId, leagueId) ||
+                other.leagueId == leagueId) &&
             (identical(other.tournamentId, tournamentId) ||
                 other.tournamentId == tournamentId) &&
-            (identical(other.matchId, matchId) || other.matchId == matchId) &&
+            (identical(other.suspensionType, suspensionType) ||
+                other.suspensionType == suspensionType) &&
             (identical(other.reason, reason) || other.reason == reason) &&
-            (identical(other.yellowCardCount, yellowCardCount) ||
-                other.yellowCardCount == yellowCardCount) &&
-            (identical(other.matchesSuspended, matchesSuspended) ||
-                other.matchesSuspended == matchesSuspended) &&
+            (identical(other.matchesToServe, matchesToServe) ||
+                other.matchesToServe == matchesToServe) &&
             (identical(other.matchesServed, matchesServed) ||
                 other.matchesServed == matchesServed) &&
-            (identical(other.isActive, isActive) ||
-                other.isActive == isActive) &&
-            (identical(other.suspendedAt, suspendedAt) ||
-                other.suspendedAt == suspendedAt) &&
-            (identical(other.expiresAt, expiresAt) ||
-                other.expiresAt == expiresAt) &&
+            (identical(other.status, status) || other.status == status) &&
             (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -383,15 +361,14 @@ class _$SuspensionModelImpl extends _SuspensionModel {
       runtimeType,
       id,
       playerId,
+      teamId,
+      leagueId,
       tournamentId,
-      matchId,
+      suspensionType,
       reason,
-      yellowCardCount,
-      matchesSuspended,
+      matchesToServe,
       matchesServed,
-      isActive,
-      suspendedAt,
-      expiresAt,
+      status,
       notes,
       createdAt,
       updatedAt);
@@ -413,21 +390,20 @@ class _$SuspensionModelImpl extends _SuspensionModel {
 
 abstract class _SuspensionModel extends SuspensionModel {
   const factory _SuspensionModel(
-          {required final String id,
-          @JsonKey(name: 'player_id') required final String playerId,
-          @JsonKey(name: 'tournament_id') required final String tournamentId,
-          @JsonKey(name: 'match_id') final String? matchId,
-          required final String reason,
-          @JsonKey(name: 'yellow_card_count') final int yellowCardCount,
-          @JsonKey(name: 'matches_suspended') final int matchesSuspended,
-          @JsonKey(name: 'matches_served') final int matchesServed,
-          @JsonKey(name: 'is_active') final bool isActive,
-          @JsonKey(name: 'suspended_at') required final DateTime suspendedAt,
-          @JsonKey(name: 'expires_at') final DateTime? expiresAt,
-          final String? notes,
-          @JsonKey(name: 'created_at') final DateTime? createdAt,
-          @JsonKey(name: 'updated_at') final DateTime? updatedAt}) =
-      _$SuspensionModelImpl;
+      {required final String id,
+      @JsonKey(name: 'player_id') required final String playerId,
+      @JsonKey(name: 'team_id') required final String teamId,
+      @JsonKey(name: 'league_id') required final String leagueId,
+      @JsonKey(name: 'tournament_id') final String? tournamentId,
+      @JsonKey(name: 'suspension_type') required final String suspensionType,
+      final String? reason,
+      @JsonKey(name: 'matches_to_serve') final int matchesToServe,
+      @JsonKey(name: 'matches_served') final int matchesServed,
+      final String status,
+      final String? notes,
+      @JsonKey(name: 'created_at') final DateTime? createdAt,
+      @JsonKey(name: 'updated_at')
+      final DateTime? updatedAt}) = _$SuspensionModelImpl;
   const _SuspensionModel._() : super._();
 
   factory _SuspensionModel.fromJson(Map<String, dynamic> json) =
@@ -439,32 +415,28 @@ abstract class _SuspensionModel extends SuspensionModel {
   @JsonKey(name: 'player_id')
   String get playerId;
   @override
+  @JsonKey(name: 'team_id')
+  String get teamId;
+  @override
+  @JsonKey(name: 'league_id')
+  String get leagueId;
+  @override
   @JsonKey(name: 'tournament_id')
-  String get tournamentId;
+  String? get tournamentId;
   @override
-  @JsonKey(name: 'match_id')
-  String? get matchId;
+  @JsonKey(name: 'suspension_type')
+  String get suspensionType;
   @override
-  String get reason;
-  @override // 'accumulation', 'red_card', 'disciplinary'
-  @JsonKey(name: 'yellow_card_count')
-  int get yellowCardCount;
+  String? get reason;
   @override
-  @JsonKey(name: 'matches_suspended')
-  int get matchesSuspended;
+  @JsonKey(name: 'matches_to_serve')
+  int get matchesToServe;
   @override
   @JsonKey(name: 'matches_served')
   int get matchesServed;
   @override
-  @JsonKey(name: 'is_active')
-  bool get isActive;
-  @override
-  @JsonKey(name: 'suspended_at')
-  DateTime get suspendedAt;
-  @override
-  @JsonKey(name: 'expires_at')
-  DateTime? get expiresAt;
-  @override
+  String get status;
+  @override // active, completed, cancelled
   String? get notes;
   @override
   @JsonKey(name: 'created_at')

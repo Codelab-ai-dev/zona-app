@@ -22,6 +22,7 @@ import '../../bloc/team/team_state.dart';
 import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
+import '../player/player_list_screen.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
@@ -869,64 +870,200 @@ class _TournamentCard extends StatelessWidget {
 }
 
 /// Teams Tab - Stadium Nights
-class _TeamsTab extends StatelessWidget {
+class _TeamsTab extends StatefulWidget {
   final LeagueEntity league;
 
   const _TeamsTab({required this.league});
 
   @override
+  State<_TeamsTab> createState() => _TeamsTabState();
+}
+
+class _TeamsTabState extends State<_TeamsTab> {
+  TournamentEntity? _selectedTournament;
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       color: _StadiumNights.backgroundDark,
-      child: BlocProvider(
-        create: (context) =>
-            sl<TeamBloc>()..add(LoadTeamsByLeagueEvent(leagueId: league.id)),
-        child: BlocBuilder<TeamBloc, TeamState>(
-          builder: (context, state) {
-            if (state is TeamLoading) {
-              return _buildLoadingState();
-            }
-
-            if (state is TeamError) {
-              return _buildErrorState(context, state.message, () {
-                context.read<TeamBloc>().add(
-                      LoadTeamsByLeagueEvent(leagueId: league.id),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => sl<TournamentBloc>()
+              ..add(LoadTournamentsByLeagueEvent(leagueId: widget.league.id)),
+          ),
+          BlocProvider(
+            create: (context) => sl<TeamBloc>(),
+          ),
+        ],
+        child: Column(
+          children: [
+            // Tournament Selector
+            BlocBuilder<TournamentBloc, TournamentState>(
+              builder: (context, state) {
+                if (state is TournamentsLoaded && state.tournaments.isNotEmpty) {
+                  return _buildTournamentSelector(context, state.tournaments);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            // Teams List
+            Expanded(
+              child: BlocBuilder<TeamBloc, TeamState>(
+                builder: (context, state) {
+                  if (_selectedTournament == null) {
+                    return _buildEmptyState(
+                      icon: Icons.sports_soccer,
+                      title: 'SELECCIONA UN TORNEO',
+                      subtitle: 'Elige un torneo para ver sus equipos',
                     );
-              });
-            }
+                  }
 
-            if (state is TeamsLoaded) {
-              if (state.teams.isEmpty) {
-                return _buildEmptyState(
-                  icon: Icons.groups,
-                  title: 'SIN EQUIPOS',
-                  subtitle: 'Aún no hay equipos en esta liga',
-                );
-              }
+                  if (state is TeamLoading) {
+                    return _buildLoadingState();
+                  }
 
-              return RefreshIndicator(
-                onRefresh: () async {
-                  context.read<TeamBloc>().add(
-                        LoadTeamsByLeagueEvent(leagueId: league.id),
+                  if (state is TeamError) {
+                    return _buildErrorState(context, state.message, () {
+                      context.read<TeamBloc>().add(
+                            LoadTeamsByTournamentEvent(
+                              tournamentId: _selectedTournament!.id,
+                            ),
+                          );
+                    });
+                  }
+
+                  if (state is TeamsLoaded) {
+                    if (state.teams.isEmpty) {
+                      return _buildEmptyState(
+                        icon: Icons.groups,
+                        title: 'SIN EQUIPOS',
+                        subtitle: 'Este torneo aún no tiene equipos',
                       );
-                },
-                color: _StadiumNights.gold,
-                backgroundColor: _StadiumNights.cardDark,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: state.teams.length,
-                  itemBuilder: (context, index) {
-                    return _TeamCard(
-                      team: state.teams[index],
-                      index: index,
-                    );
-                  },
-                ),
-              );
-            }
+                    }
 
-            return _buildLoadingState();
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        context.read<TeamBloc>().add(
+                              LoadTeamsByTournamentEvent(
+                                tournamentId: _selectedTournament!.id,
+                              ),
+                            );
+                      },
+                      color: _StadiumNights.gold,
+                      backgroundColor: _StadiumNights.cardDark,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(20),
+                        itemCount: state.teams.length,
+                        itemBuilder: (context, index) {
+                          return _TeamCard(
+                            team: state.teams[index],
+                            index: index,
+                            onTap: () => _navigateToPlayers(
+                              context,
+                              state.teams[index],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+
+                  return _buildEmptyState(
+                    icon: Icons.sports_soccer,
+                    title: 'SELECCIONA UN TORNEO',
+                    subtitle: 'Elige un torneo para ver sus equipos',
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTournamentSelector(
+      BuildContext context, List<TournamentEntity> tournaments) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: _StadiumNights.cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _StadiumNights.gold.withOpacity(0.3),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<TournamentEntity>(
+          value: _selectedTournament,
+          isExpanded: true,
+          hint: Text(
+            'Seleccionar torneo',
+            style: GoogleFonts.outfit(
+              color: _StadiumNights.textMuted,
+              fontSize: 14,
+            ),
+          ),
+          dropdownColor: _StadiumNights.cardDark,
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: _StadiumNights.gold,
+          ),
+          items: tournaments.map((tournament) {
+            return DropdownMenuItem<TournamentEntity>(
+              value: tournament,
+              child: Row(
+                children: [
+                  Icon(
+                    tournament.isCurrentlyActive
+                        ? Icons.play_circle
+                        : Icons.emoji_events_outlined,
+                    size: 18,
+                    color: tournament.isCurrentlyActive
+                        ? _StadiumNights.neonGreen
+                        : _StadiumNights.gold,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      tournament.name,
+                      style: GoogleFonts.outfit(
+                        color: _StadiumNights.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (tournament) {
+            if (tournament != null) {
+              setState(() {
+                _selectedTournament = tournament;
+              });
+              context.read<TeamBloc>().add(
+                    LoadTeamsByTournamentEvent(tournamentId: tournament.id),
+                  );
+            }
           },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToPlayers(BuildContext context, TeamEntity team) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlayerListScreen(
+          teamId: team.id,
+          teamName: team.name,
+          canEdit: true,
         ),
       ),
     );
@@ -937,10 +1074,12 @@ class _TeamsTab extends StatelessWidget {
 class _TeamCard extends StatelessWidget {
   final TeamEntity team;
   final int index;
+  final VoidCallback? onTap;
 
   const _TeamCard({
     required this.team,
     required this.index,
+    this.onTap,
   });
 
   @override
@@ -955,7 +1094,9 @@ class _TeamCard extends StatelessWidget {
           child: Opacity(opacity: value, child: child),
         );
       },
-      child: Container(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
@@ -1075,6 +1216,7 @@ class _TeamCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

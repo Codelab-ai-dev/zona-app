@@ -14,6 +14,7 @@ class LeagueEntity extends Equatable {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final Map<String, dynamic>? features;
 
   const LeagueEntity({
     required this.id,
@@ -25,7 +26,13 @@ class LeagueEntity extends Equatable {
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
+    this.features,
   });
+
+  /// Check if a feature is enabled for this league
+  bool hasFeature(String name) {
+    return features?[name] == true;
+  }
 
   @override
   List<Object?> get props => [
@@ -38,6 +45,7 @@ class LeagueEntity extends Equatable {
         isActive,
         createdAt,
         updatedAt,
+        features,
       ];
 
   /// Creates a copy of this league with the given fields replaced
@@ -51,6 +59,7 @@ class LeagueEntity extends Equatable {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Map<String, dynamic>? features,
   }) {
     return LeagueEntity(
       id: id ?? this.id,
@@ -62,6 +71,7 @@ class LeagueEntity extends Equatable {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      features: features ?? this.features,
     );
   }
 

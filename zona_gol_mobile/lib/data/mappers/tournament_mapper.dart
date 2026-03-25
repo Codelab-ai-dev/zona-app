@@ -22,6 +22,13 @@ class TournamentMapper {
       teamsAdvancingPerGroup: model.teamsAdvancingPerGroup,
       roundsPerSeason: model.roundsPerSeason,
       hasThirdPlaceMatch: model.hasThirdPlaceMatch,
+      ageValidationEnabled: model.ageValidationEnabled,
+      minAge: model.minAge,
+      maxAge: model.maxAge,
+      ageReferenceDate: model.ageReferenceDate,
+      ageExceptionCount: model.ageExceptionCount,
+      ageExceptionMinAge: model.ageExceptionMinAge,
+      ageExceptionMaxAge: model.ageExceptionMaxAge,
     );
   }
 
@@ -43,6 +50,13 @@ class TournamentMapper {
       teamsAdvancingPerGroup: entity.teamsAdvancingPerGroup,
       roundsPerSeason: entity.roundsPerSeason,
       hasThirdPlaceMatch: entity.hasThirdPlaceMatch,
+      ageValidationEnabled: entity.ageValidationEnabled,
+      minAge: entity.minAge,
+      maxAge: entity.maxAge,
+      ageReferenceDate: entity.ageReferenceDate,
+      ageExceptionCount: entity.ageExceptionCount,
+      ageExceptionMinAge: entity.ageExceptionMinAge,
+      ageExceptionMaxAge: entity.ageExceptionMaxAge,
     );
   }
 

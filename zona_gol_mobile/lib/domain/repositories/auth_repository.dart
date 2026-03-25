@@ -46,4 +46,9 @@ abstract class AuthRepository {
     String? name,
     String? avatarUrl,
   });
+
+  /// Change password for current user
+  Future<Either<Failure, void>> changePassword({
+    required String newPassword,
+  });
 }

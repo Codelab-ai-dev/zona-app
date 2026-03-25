@@ -281,6 +281,28 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String newPassword,
+  }) async {
+    try {
+      final isConnected = await networkInfo.isConnected;
+      if (!isConnected) {
+        return Left(NetworkFailure('No hay conexión a internet'));
+      }
+
+      await supabaseService.client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      return const Right(null);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(_mapAuthException(e)));
+    } catch (e) {
+      return Left(AuthFailure('Error al cambiar contraseña: ${e.toString()}'));
+    }
+  }
+
   // Helper methods
 
   /// Cache user data and session

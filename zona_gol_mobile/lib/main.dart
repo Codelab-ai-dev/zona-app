@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'core/config/app_config.dart';
 import 'core/config/theme.dart';
 import 'core/di/injection.dart';
@@ -10,6 +11,8 @@ import 'data/datasources/local/hive_service.dart';
 import 'presentation/bloc/auth/auth_bloc.dart';
 import 'presentation/bloc/auth/auth_event.dart';
 import 'presentation/bloc/auth/auth_state.dart';
+import 'presentation/bloc/connectivity/connectivity_cubit.dart';
+import 'presentation/widgets/connectivity/offline_banner.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/dashboard/super_admin_dashboard.dart';
 import 'presentation/screens/dashboard/league_admin_dashboard.dart';
@@ -28,6 +31,9 @@ void main() async {
 
   // Print app configuration
   AppConfig.printConfig();
+
+  // Initialize date formatting for Spanish locale
+  await initializeDateFormatting('es', null);
 
   // Initialize services
   await _initializeServices();
@@ -75,8 +81,11 @@ class ZonaGolApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<AuthBloc>(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => sl<AuthBloc>()),
+        BlocProvider(create: (_) => sl<ConnectivityCubit>()),
+      ],
       child: MaterialApp(
         title: 'Zona Gol',
         debugShowCheckedModeBanner: false,
@@ -187,17 +196,24 @@ class HomeScreen extends StatelessWidget {
             final user = state.user;
 
             // Route to appropriate dashboard based on role
+            Widget dashboard;
             switch (user.role) {
               case 'super_admin':
-                return SuperAdminDashboard(user: user);
+                dashboard = SuperAdminDashboard(user: user);
+                break;
               case 'league_admin':
-                return LeagueAdminDashboard(user: user);
+                dashboard = LeagueAdminDashboard(user: user);
+                break;
               case 'team_owner':
-                return TeamOwnerDashboard(user: user);
+                dashboard = TeamOwnerDashboard(user: user);
+                break;
               case 'public':
               default:
-                return PublicDashboard(user: user);
+                dashboard = PublicDashboard(user: user);
+                break;
             }
+
+            return OfflineBanner(child: dashboard);
           }
 
           // Loading state

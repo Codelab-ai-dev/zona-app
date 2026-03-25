@@ -29,6 +29,15 @@ _$TournamentModelImpl _$$TournamentModelImplFromJson(
           (json['teams_advancing_per_group'] as num?)?.toInt() ?? 2,
       roundsPerSeason: (json['rounds_per_season'] as num?)?.toInt() ?? 1,
       hasThirdPlaceMatch: json['has_third_place_match'] as bool? ?? false,
+      ageValidationEnabled: json['age_validation_enabled'] as bool? ?? false,
+      minAge: (json['min_age'] as num?)?.toInt(),
+      maxAge: (json['max_age'] as num?)?.toInt(),
+      ageReferenceDate: json['age_reference_date'] == null
+          ? null
+          : DateTime.parse(json['age_reference_date'] as String),
+      ageExceptionCount: (json['age_exception_count'] as num?)?.toInt() ?? 0,
+      ageExceptionMinAge: (json['age_exception_min_age'] as num?)?.toInt(),
+      ageExceptionMaxAge: (json['age_exception_max_age'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$TournamentModelImplToJson(
@@ -49,4 +58,11 @@ Map<String, dynamic> _$$TournamentModelImplToJson(
       'teams_advancing_per_group': instance.teamsAdvancingPerGroup,
       'rounds_per_season': instance.roundsPerSeason,
       'has_third_place_match': instance.hasThirdPlaceMatch,
+      'age_validation_enabled': instance.ageValidationEnabled,
+      'min_age': instance.minAge,
+      'max_age': instance.maxAge,
+      'age_reference_date': instance.ageReferenceDate?.toIso8601String(),
+      'age_exception_count': instance.ageExceptionCount,
+      'age_exception_min_age': instance.ageExceptionMinAge,
+      'age_exception_max_age': instance.ageExceptionMaxAge,
     };
