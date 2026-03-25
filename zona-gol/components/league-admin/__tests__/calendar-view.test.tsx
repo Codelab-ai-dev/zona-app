@@ -114,6 +114,10 @@ vi.mock('@/lib/queries', () => ({
   useInvalidateMatches: vi.fn(() => ({
     invalidateByTournament: mockInvalidateByTournament,
   })),
+  useLeagueById: vi.fn(() => ({
+    data: { id: 'league-123', name: 'Test League', logo: null },
+    isLoading: false,
+  })),
 }))
 
 // Mock Supabase client
