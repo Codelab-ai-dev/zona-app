@@ -105,6 +105,7 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
   const [editingMatches, setEditingMatches] = useState<EditingMatch[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [selectedRound, setSelectedRound] = useState<number | 'all'>('all')
+  const [selectedTeam, setSelectedTeam] = useState<string | 'all'>('all')
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
   const [adjustmentAnalysis, setAdjustmentAnalysis] = useState<CalendarAdjustmentResult | null>(null)
   const [adjusting, setAdjusting] = useState(false)
@@ -685,11 +686,12 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
     try {
       const supabase = createClientSupabaseClient()
 
-      // Obtener TODOS los equipos de la liga (activos e inactivos)
+      // Obtener equipos del torneo seleccionado
       const { data: allTeamsData, error: teamsError } = await supabase
         .from('teams')
         .select('*')
         .eq('league_id', leagueId)
+        .eq('tournament_id', selectedTournamentId)
 
       if (teamsError) throw new Error(teamsError.message)
 
@@ -1222,11 +1224,24 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
     return rounds as number[]
   }
 
+  const getAvailableTeams = (matches: CalendarMatch[]) => {
+    const teamMap = new Map<string, CalendarTeam>()
+    matches.forEach(match => {
+      if (match.homeTeam?.id) teamMap.set(match.homeTeam.id, match.homeTeam)
+      if (match.awayTeam?.id) teamMap.set(match.awayTeam.id, match.awayTeam)
+    })
+    return Array.from(teamMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }
+
   const getFilteredMatches = (matches: CalendarMatch[]) => {
-    if (selectedRound === 'all') return matches
-    // When filtering by round, only show regular season matches for that round
-    // Playoff matches will be shown separately regardless of round filter
-    return matches.filter(match => match.round === selectedRound && match.phase === 'regular')
+    let filtered = matches
+    if (selectedRound !== 'all') {
+      filtered = filtered.filter(match => match.round === selectedRound && match.phase === 'regular')
+    }
+    if (selectedTeam !== 'all') {
+      filtered = filtered.filter(match => match.homeTeam?.id === selectedTeam || match.awayTeam?.id === selectedTeam)
+    }
+    return filtered
   }
 
   const getStatusBadge = (status: string) => {
@@ -1392,34 +1407,62 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h3 className="text-sm font-medium text-white">Filtrar por Jornada</h3>
-              <p className="text-xs text-gray-500">Selecciona una jornada específica</p>
+              <h3 className="text-sm font-medium text-white">Filtrar partidos</h3>
+              <p className="text-xs text-gray-500">Filtra por jornada o equipo</p>
             </div>
-            <div className="w-full sm:w-48">
-              <Select
-                value={selectedRound === 'all' ? 'all' : selectedRound.toString()}
-                onValueChange={(value) => setSelectedRound(value === 'all' ? 'all' : parseInt(value))}
-              >
-                <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-sm">
-                  <SelectValue placeholder="Selecciona" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10">
-                  <SelectItem value="all" className="text-white hover:bg-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                      Todas
-                    </div>
-                  </SelectItem>
-                  {getAvailableRounds(matches).map(round => (
-                    <SelectItem key={round} value={round.toString()} className="text-white hover:bg-slate-800">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="w-full sm:w-48">
+                <Select
+                  value={selectedRound === 'all' ? 'all' : selectedRound.toString()}
+                  onValueChange={(value) => setSelectedRound(value === 'all' ? 'all' : parseInt(value))}
+                >
+                  <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-sm">
+                    <SelectValue placeholder="Jornada" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectItem value="all" className="text-white hover:bg-slate-800">
                       <div className="flex items-center gap-2">
-                        <Trophy className="w-3.5 h-3.5 text-yellow-400" />
-                        Jornada {round}
+                        <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                        Todas las jornadas
                       </div>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {getAvailableRounds(matches).map(round => (
+                      <SelectItem key={round} value={round.toString()} className="text-white hover:bg-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+                          Jornada {round}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:w-52">
+                <Select
+                  value={selectedTeam}
+                  onValueChange={(value) => setSelectedTeam(value)}
+                >
+                  <SelectTrigger className="h-9 bg-slate-700/50 border-white/10 text-white text-sm">
+                    <SelectValue placeholder="Equipo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectItem value="all" className="text-white hover:bg-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 text-blue-400" />
+                        Todos los equipos
+                      </div>
+                    </SelectItem>
+                    {getAvailableTeams(matches).map(team => (
+                      <SelectItem key={team.id} value={team.id} className="text-white hover:bg-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-3.5 h-3.5 text-green-400" />
+                          {team.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
@@ -1431,18 +1474,24 @@ export function CalendarView({ leagueId }: CalendarViewProps) {
         </div>
       )}
 
-      {getFilteredMatches(matches).length === 0 && matches.length > 0 && selectedRound !== 'all' && (
+      {getFilteredMatches(matches).length === 0 && matches.length > 0 && (selectedRound !== 'all' || selectedTeam !== 'all') && (
         <div className="rounded-xl bg-slate-800/50 border border-white/10 p-6 text-center">
           <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-500" />
-          <h3 className="text-sm font-medium text-white mb-1">No hay partidos en esta jornada</h3>
-          <p className="text-xs text-gray-500 mb-4">La jornada {selectedRound} no tiene partidos programados</p>
+          <h3 className="text-sm font-medium text-white mb-1">No hay partidos con estos filtros</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            {selectedRound !== 'all' && selectedTeam !== 'all'
+              ? `No hay partidos en la jornada ${selectedRound} para el equipo seleccionado`
+              : selectedRound !== 'all'
+                ? `La jornada ${selectedRound} no tiene partidos programados`
+                : 'El equipo seleccionado no tiene partidos programados'}
+          </p>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSelectedRound('all')}
+            onClick={() => { setSelectedRound('all'); setSelectedTeam('all') }}
             className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white text-xs"
           >
-            Ver todas las jornadas
+            Limpiar filtros
           </Button>
         </div>
       )}

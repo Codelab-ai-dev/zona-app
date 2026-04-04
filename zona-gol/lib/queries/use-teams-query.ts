@@ -30,8 +30,8 @@ export function useTeamsByLeague(leagueId: string | undefined) {
       const { data, error } = await supabase
         .from("teams")
         .select(`
-          id, name, slug, logo, owner_id, league_id, tournament_id, is_active, created_at,
-          owner:users!teams_owner_id_fkey(id, name, email),
+          id, name, slug, logo, description, owner_id, league_id, tournament_id, is_active, created_at, updated_at,
+          owner:users!teams_owner_id_fkey(id, name, email, phone),
           tournament:tournaments(id, name)
         `)
         .eq("league_id", leagueId)
@@ -214,7 +214,7 @@ export function useUpdateTeam() {
         .eq("id", teamId)
         .select(`
           *,
-          owner:users!teams_owner_id_fkey(id, name, email),
+          owner:users!teams_owner_id_fkey(id, name, email, phone),
           tournament:tournaments(id, name)
         `)
         .single()
@@ -226,7 +226,10 @@ export function useUpdateTeam() {
       // Actualizar caché
       queryClient.setQueryData(queryKeys.teams.detail(data.id), data)
       if (data.league_id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.teams.byLeague(data.league_id) })
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.teams.byLeague(data.league_id),
+          refetchType: 'all',
+        })
       }
     },
   })

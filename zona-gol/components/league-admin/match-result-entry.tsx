@@ -107,6 +107,11 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [saving, setSaving] = useState(false)
 
+  // Filter states
+  const [filterTournament, setFilterTournament] = useState<string | 'all'>('all')
+  const [filterRound, setFilterRound] = useState<number | 'all'>('all')
+  const [filterTeam, setFilterTeam] = useState<string | 'all'>('all')
+
   const [homeScore, setHomeScore] = useState<number>(0)
   const [awayScore, setAwayScore] = useState<number>(0)
 
@@ -121,6 +126,45 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
 
   const [observations, setObservations] = useState("")
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+
+  // Filter helpers
+  const availableTournaments = useMemo(() => {
+    const map = new Map<string, string>()
+    matches.forEach(m => {
+      if (m.tournament_id && m.tournaments?.name) {
+        map.set(m.tournament_id, m.tournaments.name)
+      }
+    })
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [matches])
+
+  const availableRounds = useMemo(() => {
+    let filtered = matches
+    if (filterTournament !== 'all') filtered = filtered.filter(m => m.tournament_id === filterTournament)
+    const rounds = Array.from(new Set(filtered.map(m => m.round).filter((r): r is number => r !== null))).sort((a, b) => a - b)
+    return rounds
+  }, [matches, filterTournament])
+
+  const availableTeams = useMemo(() => {
+    let filtered = matches
+    if (filterTournament !== 'all') filtered = filtered.filter(m => m.tournament_id === filterTournament)
+    const map = new Map<string, { id: string; name: string; logo?: string | null }>()
+    filtered.forEach(m => {
+      if (m.home_teams?.id) map.set(m.home_teams.id, m.home_teams)
+      if (m.away_teams?.id) map.set(m.away_teams.id, m.away_teams)
+    })
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [matches, filterTournament])
+
+  const filteredMatches = useMemo(() => {
+    let filtered = matches
+    if (filterTournament !== 'all') filtered = filtered.filter(m => m.tournament_id === filterTournament)
+    if (filterRound !== 'all') filtered = filtered.filter(m => m.round === filterRound)
+    if (filterTeam !== 'all') filtered = filtered.filter(m => m.home_teams?.id === filterTeam || m.away_teams?.id === filterTeam)
+    return filtered
+  }, [matches, filterTournament, filterRound, filterTeam])
+
+  const hasActiveFilters = filterTournament !== 'all' || filterRound !== 'all' || filterTeam !== 'all'
 
   const loadMatchPlayers = async (match: Match) => {
     try {
@@ -491,15 +535,118 @@ export function MatchResultEntry({ leagueId }: MatchResultEntryProps) {
               </div>
             </div>
 
+            {/* Filtros */}
+            {matches.length > 0 && (
+              <div className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-white">Filtrar partidos</h3>
+                    {hasActiveFilters && (
+                      <button
+                        onClick={() => { setFilterTournament('all'); setFilterRound('all'); setFilterTeam('all') }}
+                        className="text-[10px] text-gray-500 hover:text-white transition-colors"
+                      >
+                        Limpiar filtros
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableTournaments.length > 1 && (
+                      <Select value={filterTournament} onValueChange={(v) => { setFilterTournament(v); setFilterRound('all'); setFilterTeam('all') }}>
+                        <SelectTrigger className="h-8 w-auto min-w-[140px] bg-slate-700/50 border-white/10 text-white text-xs px-3">
+                          <SelectValue placeholder="Torneo" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-white/10">
+                          <SelectItem value="all" className="text-white hover:bg-slate-800 text-xs">
+                            <div className="flex items-center gap-2">
+                              <Trophy className="w-3 h-3 text-blue-400" />
+                              Todos los torneos
+                            </div>
+                          </SelectItem>
+                          {availableTournaments.map(t => (
+                            <SelectItem key={t.id} value={t.id} className="text-white hover:bg-slate-800 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Trophy className="w-3 h-3 text-yellow-400" />
+                                {t.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Select
+                      value={filterRound === 'all' ? 'all' : filterRound.toString()}
+                      onValueChange={(v) => setFilterRound(v === 'all' ? 'all' : parseInt(v))}
+                    >
+                      <SelectTrigger className="h-8 w-auto min-w-[140px] bg-slate-700/50 border-white/10 text-white text-xs px-3">
+                        <SelectValue placeholder="Jornada" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10">
+                        <SelectItem value="all" className="text-white hover:bg-slate-800 text-xs">
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="w-3 h-3 text-blue-400" />
+                            Todas las jornadas
+                          </div>
+                        </SelectItem>
+                        {availableRounds.map(round => (
+                          <SelectItem key={round} value={round.toString()} className="text-white hover:bg-slate-800 text-xs">
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="w-3 h-3 text-yellow-400" />
+                              Jornada {round}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterTeam} onValueChange={(v) => setFilterTeam(v)}>
+                      <SelectTrigger className="h-8 w-auto min-w-[140px] bg-slate-700/50 border-white/10 text-white text-xs px-3">
+                        <SelectValue placeholder="Equipo" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-white/10">
+                        <SelectItem value="all" className="text-white hover:bg-slate-800 text-xs">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-3 h-3 text-blue-400" />
+                            Todos los equipos
+                          </div>
+                        </SelectItem>
+                        {availableTeams.map(team => (
+                          <SelectItem key={team.id} value={team.id} className="text-white hover:bg-slate-800 text-xs">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-3 h-3 text-green-400" />
+                              {team.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {matches.length === 0 ? (
               <div className="rounded-xl bg-slate-800/50 border border-white/10 p-6 text-center">
                 <AlertCircle className="w-10 h-10 mx-auto mb-3 text-gray-500" />
                 <h3 className="text-sm font-medium text-white mb-1">No hay partidos disponibles</h3>
                 <p className="text-xs text-gray-500">No hay partidos programados o en progreso</p>
               </div>
+            ) : filteredMatches.length === 0 && hasActiveFilters ? (
+              <div className="rounded-xl bg-slate-800/50 border border-white/10 p-6 text-center">
+                <AlertCircle className="w-10 h-10 mx-auto mb-3 text-gray-500" />
+                <h3 className="text-sm font-medium text-white mb-1">No hay partidos con estos filtros</h3>
+                <p className="text-xs text-gray-500 mb-4">Prueba con otros filtros o limpia los actuales</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setFilterTournament('all'); setFilterRound('all'); setFilterTeam('all') }}
+                  className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white text-xs"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
             ) : (
               <div className="space-y-2">
-                {matches.map((match) => (
+                {filteredMatches.map((match) => (
                   <div
                     key={match.id}
                     className="rounded-xl bg-slate-800/50 border border-white/10 p-3 md:p-4 hover:bg-slate-700/50 transition-all cursor-pointer"

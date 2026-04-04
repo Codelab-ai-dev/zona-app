@@ -443,20 +443,32 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
   const activeTournaments = tournaments.filter(t => t.is_active)
   const activeTeams = teams.filter(t => t.is_active)
 
+  // Filter teams by selected tournament
+  const tournamentTeams = selectedTournament
+    ? activeTeams.filter(t => t.tournament_id === selectedTournament.id)
+    : activeTeams
+
+  // Filter teams for manual mode by manual tournament
+  const manualTournamentTeams = manualTournamentId
+    ? activeTeams.filter(t => t.tournament_id === manualTournamentId)
+    : activeTeams
+
   // Filter teams based on tournament format and selected groups
   const getFilteredTeams = (): Team[] => {
     if (!selectedTournament) return activeTeams
 
-    // For group_knockout, filter by selected groups
+    // First filter by tournament
+    const teamsInTournament = tournamentTeams
+
+    // For group_knockout, further filter by selected groups
     if (selectedTournament.tournament_format === 'group_knockout') {
       if (selectedGroups.length === 0) return []
-      return activeTeams.filter(team =>
+      return teamsInTournament.filter(team =>
         team.group_name && selectedGroups.includes(team.group_name)
       )
     }
 
-    // For other formats, return all active teams
-    return activeTeams
+    return teamsInTournament
   }
 
   // Generate round-robin fixtures
@@ -1007,7 +1019,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
 
           // Check if champion team has fixed schedule preference
           if (config.championFixedSchedule && config.championPreferredTime) {
-            const championTeamId = activeTeams[0]?.id
+            const championTeamId = filteredTeams[0]?.id
 
             if (match.home.id === championTeamId || match.away.id === championTeamId) {
               if (availableTimes.includes(config.championPreferredTime)) {
@@ -1345,7 +1357,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                           {Array.from({ length: selectedTournament.number_of_groups }, (_, i) => {
                             const groupLetter = String.fromCharCode(65 + i)
                             const isSelected = selectedGroups.includes(groupLetter)
-                            const groupTeams = activeTeams.filter(t => t.group_name === groupLetter)
+                            const groupTeams = tournamentTeams.filter(t => t.group_name === groupLetter)
 
                             return (
                               <Button
@@ -1667,16 +1679,16 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                   ) : (
                     <li className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-blue-300" />
-                      <span><strong className="font-medium">Equipos:</strong> {activeTeams.length} participantes</span>
+                      <span><strong className="font-medium">Equipos:</strong> {tournamentTeams.length} participantes</span>
                     </li>
                   )}
                   <li className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-blue-300" />
-                    <span><strong className="font-medium">Jornadas:</strong> {config.doubleRound ? activeTeams.length * 2 - 2 : activeTeams.length - 1}</span>
+                    <span><strong className="font-medium">Jornadas:</strong> {config.doubleRound ? tournamentTeams.length * 2 - 2 : tournamentTeams.length - 1}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-4 h-4 flex items-center justify-center text-blue-300 font-bold">Σ</span>
-                    <span><strong className="font-medium">Partidos total:</strong> {config.doubleRound ? activeTeams.length * (activeTeams.length - 1) : activeTeams.length * (activeTeams.length - 1) / 2}</span>
+                    <span><strong className="font-medium">Partidos total:</strong> {config.doubleRound ? tournamentTeams.length * (tournamentTeams.length - 1) : tournamentTeams.length * (tournamentTeams.length - 1) / 2}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-blue-300" />
@@ -1732,9 +1744,10 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                             }
                             const availableTimes = generateAvailableTimeSlots()
                             const totalSlots = availableMatchDays * availableTimes.length * config.fieldsAvailable
+                            const teamCount = getFilteredTeams().length
                             const totalMatches = config.doubleRound
-                              ? (selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) * ((selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) - 1)
-                              : (selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) * ((selectedTournament?.tournament_format === 'group_knockout' ? getFilteredTeams().length : activeTeams.length) - 1) / 2
+                              ? teamCount * (teamCount - 1)
+                              : teamCount * (teamCount - 1) / 2
                             const percentageUsed = totalMatches > 0 ? Math.round((totalMatches / totalSlots) * 100) : 0
                             return `${totalSlots} espacios (${percentageUsed}% usado)`
                           })()}
@@ -1987,7 +2000,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                             <SelectValue placeholder="Seleccionar" />
                                           </SelectTrigger>
                                           <SelectContent className="bg-slate-900 border-white/10">
-                                            {activeTeams.map(team => (
+                                            {manualTournamentTeams.map(team => (
                                               <SelectItem key={team.id} value={team.id} className="text-white text-xs">
                                                 {team.name}
                                               </SelectItem>
@@ -2009,7 +2022,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                             <SelectValue placeholder="Seleccionar" />
                                           </SelectTrigger>
                                           <SelectContent className="bg-slate-900 border-white/10">
-                                            {activeTeams.map(team => (
+                                            {manualTournamentTeams.map(team => (
                                               <SelectItem key={team.id} value={team.id} className="text-white text-xs">
                                                 {team.name}
                                               </SelectItem>
@@ -2243,7 +2256,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                         <SelectValue placeholder="Seleccionar" />
                                       </SelectTrigger>
                                       <SelectContent className="bg-slate-900 border-white/10">
-                                        {activeTeams.map(team => (
+                                        {manualTournamentTeams.map(team => (
                                           <SelectItem key={team.id} value={team.id} className="text-white text-xs">
                                             {team.name}
                                           </SelectItem>
@@ -2265,7 +2278,7 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                                         <SelectValue placeholder="Seleccionar" />
                                       </SelectTrigger>
                                       <SelectContent className="bg-slate-900 border-white/10">
-                                        {activeTeams.map(team => (
+                                        {manualTournamentTeams.map(team => (
                                           <SelectItem key={team.id} value={team.id} className="text-white text-xs">
                                             {team.name}
                                           </SelectItem>
@@ -2400,8 +2413,8 @@ export function FixtureGenerator({ leagueId }: FixtureGeneratorProps) {
                             const fixtures: GeneratedMatch[] = []
                             manualRounds.forEach(round => {
                               round.matches.forEach(match => {
-                                const homeTeam = activeTeams.find(t => t.id === match.homeTeamId)
-                                const awayTeam = activeTeams.find(t => t.id === match.awayTeamId)
+                                const homeTeam = manualTournamentTeams.find(t => t.id === match.homeTeamId)
+                                const awayTeam = manualTournamentTeams.find(t => t.id === match.awayTeamId)
                                 if (homeTeam && awayTeam && match.date && match.time) {
                                   fixtures.push({
                                     round: round.round,

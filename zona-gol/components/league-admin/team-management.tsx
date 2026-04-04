@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useTeamsByLeague, useTournamentsByLeague, useUpdateTeam, useDeleteTeam, queryKeys } from "@/lib/queries"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 import { useTeams } from "@/lib/hooks/use-teams"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Database } from "@/lib/supabase/database.types"
@@ -286,14 +287,53 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
           description: formData.description || null,
           tournament_id: formData.tournamentId === "none" ? null : formData.tournamentId,
           logo: formData.logo || null,
+          updated_at: new Date().toISOString(),
         }
       })
+
+      // Actualizar info del propietario en la tabla users
+      if (editingTeam.owner_id && (formData.ownerName || formData.ownerPhone || formData.ownerEmail)) {
+        const supabase = createClientSupabaseClient()
+        const ownerUpdates: Record<string, string> = {}
+        if (formData.ownerName) ownerUpdates.name = formData.ownerName
+        if (formData.ownerPhone) ownerUpdates.phone = formData.ownerPhone
+        if (formData.ownerEmail) ownerUpdates.email = formData.ownerEmail
+
+        const { error: ownerError } = await supabase
+          .from('users')
+          .update(ownerUpdates)
+          .eq('id', editingTeam.owner_id)
+
+        if (ownerError) {
+          console.error('Error actualizando propietario:', ownerError)
+          toast.error('El equipo se actualizó pero hubo un error al actualizar el propietario')
+        }
+
+        // Actualizar email en Supabase Auth para que el login funcione con el nuevo email
+        const originalEmail = (editingTeam as any).owner?.email
+        if (formData.ownerEmail && formData.ownerEmail !== originalEmail) {
+          try {
+            const res = await fetch('/api/auth/update-user', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: editingTeam.owner_id, email: formData.ownerEmail }),
+            })
+            const resData = await res.json()
+            if (!res.ok) {
+              console.error('Error actualizando auth:', resData)
+              toast.error(`Error al actualizar credenciales: ${resData.error || 'Error desconocido'}`)
+            }
+          } catch (fetchError) {
+            console.error('Error en fetch auth:', fetchError)
+            toast.error('Error de conexión al actualizar credenciales de acceso')
+          }
+        }
+      }
 
       setFormData({ name: "", slug: "", description: "", logo: "", tournamentId: "none", ownerName: "", ownerEmail: "", ownerPhone: "" })
       setIsEditDialogOpen(false)
       setEditingTeam(null)
       toast.success('Equipo actualizado exitosamente')
-      console.log('✅ Equipo actualizado exitosamente')
       // TanStack Query invalida el caché automáticamente
     } catch (error: any) {
       console.error('❌ Error actualizando equipo:', error)
@@ -828,7 +868,7 @@ export function TeamManagement({ leagueId }: TeamManagementProps) {
                   />
                 </div>
                 <p className="text-[10px] text-gray-500 bg-slate-800/30 p-2 rounded">
-                  Los cambios solo actualizarán el nombre y teléfono.
+                  Los cambios actualizarán nombre, teléfono y email del propietario.
                 </p>
               </div>
             </div>
