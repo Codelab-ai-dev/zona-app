@@ -108,19 +108,19 @@ func (h *Handler) listAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := 50
-	offset := 0
-
-	records, err := h.svc.ListAttendance(r.Context(), matchID, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	if records == nil {
-		records = []AttendanceRecord{}
+	records, err := h.svc.ListAttendance(r.Context(), matchID, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
 	}
-	httpx.JSON(w, http.StatusOK, records)
+
+	httpx.List(w, records, page)
 }
 
 // streamAttendance handles GET /matches/{matchID}/attendance/stream (SSE).

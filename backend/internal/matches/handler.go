@@ -51,8 +51,14 @@ func (h *Handler) listMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	// Parse optional filters
-	filters := ListMatchesFilter{Limit: 200}
+	filters := ListMatchesFilter{Limit: page.Limit, Offset: page.Offset}
 
 	matches, err := h.svc.ListMatches(r.Context(), tournamentID, filters)
 	if err != nil {
@@ -60,7 +66,7 @@ func (h *Handler) listMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, matches)
+	httpx.List(w, matches, page)
 }
 
 func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +92,13 @@ func (h *Handler) listTeamMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filters := ListMatchesFilter{Limit: 50}
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	filters := ListMatchesFilter{Limit: page.Limit, Offset: page.Offset}
 
 	matches, err := h.svc.ListTeamMatches(r.Context(), teamID, filters)
 	if err != nil {
@@ -94,11 +106,17 @@ func (h *Handler) listTeamMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, matches)
+	httpx.List(w, matches, page)
 }
 
 func (h *Handler) listUpcoming(w http.ResponseWriter, r *http.Request) {
 	tournamentID, err := httpx.UUIDParam(r, "tournamentID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -110,11 +128,17 @@ func (h *Handler) listUpcoming(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, matches)
+	httpx.List(w, matches, page)
 }
 
 func (h *Handler) listPending(w http.ResponseWriter, r *http.Request) {
 	leagueID, err := httpx.UUIDParam(r, "leagueID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -126,7 +150,7 @@ func (h *Handler) listPending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, matches)
+	httpx.List(w, matches, page)
 }
 
 func (h *Handler) findDuplicates(w http.ResponseWriter, r *http.Request) {
@@ -143,10 +167,7 @@ func (h *Handler) findDuplicates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"duplicates_found": len(duplicates),
-		"duplicates":       duplicates,
-	})
+	httpx.JSON(w, http.StatusOK, duplicates)
 }
 
 func (h *Handler) createMatch(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +272,7 @@ func (h *Handler) deleteMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 func (h *Handler) postResult(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +294,7 @@ func (h *Handler) postResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 func (h *Handler) createRefereeReport(w http.ResponseWriter, r *http.Request) {
@@ -318,7 +339,7 @@ func (h *Handler) publishMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 func (h *Handler) publishRound(w http.ResponseWriter, r *http.Request) {
@@ -349,7 +370,7 @@ func (h *Handler) publishRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	httpx.NoContent(w)
 }
 
 func (h *Handler) generatePlayoffs(w http.ResponseWriter, r *http.Request) {

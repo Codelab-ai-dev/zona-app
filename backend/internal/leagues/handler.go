@@ -2,7 +2,6 @@ package leagues
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
@@ -41,37 +40,37 @@ func (h *Handler) Routes(r chi.Router) {
 
 // listActiveLeagues handles GET /leagues (public, paginated).
 func (h *Handler) listActiveLeagues(w http.ResponseWriter, r *http.Request) {
-	limit := parseLimitParam(r, 50)
-	offset := parseOffsetParam(r, 0)
-
-	leagues, total, err := h.svc.ListActiveLeagues(r.Context(), limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, LeaguesListResponse{
-		ListResponse: ListResponse{Total: total, Limit: limit},
-		Data:         leagues,
-	})
+	leagues, total, err := h.svc.ListActiveLeagues(r.Context(), page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	httpx.List(w, leagues, page.WithTotal(total))
 }
 
 // listAllLeagues handles GET /leagues/admin (super admin only, paginated).
 func (h *Handler) listAllLeagues(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
-	limit := parseLimitParam(r, 50)
-	offset := parseOffsetParam(r, 0)
-
-	leagues, total, err := h.svc.ListAllLeagues(r.Context(), caller, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, LeaguesListResponse{
-		ListResponse: ListResponse{Total: total, Limit: limit},
-		Data:         leagues,
-	})
+	leagues, total, err := h.svc.ListAllLeagues(r.Context(), caller, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	httpx.List(w, leagues, page.WithTotal(total))
 }
 
 // getLeague handles GET /leagues/{leagueID}.
@@ -226,20 +225,20 @@ func (h *Handler) listTournamentsByLeague(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	limit := parseLimitParam(r, 50)
-	offset := parseOffsetParam(r, 0)
-
-	caller, _ := auth.FromContext(r.Context())
-	tournaments, total, err := h.svc.ListTournamentsByLeague(r.Context(), caller, leagueID, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, TournamentsListResponse{
-		ListResponse: ListResponse{Total: total, Limit: limit},
-		Data:         tournaments,
-	})
+	caller, _ := auth.FromContext(r.Context())
+	tournaments, total, err := h.svc.ListTournamentsByLeague(r.Context(), caller, leagueID, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	httpx.List(w, tournaments, page.WithTotal(total))
 }
 
 // createTournament handles POST /tournaments.
@@ -283,24 +282,4 @@ func (h *Handler) updateTournament(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, tournament)
-}
-
-// parseLimitParam parses the "limit" query parameter, capped at 100.
-func parseLimitParam(r *http.Request, defaultVal int) int {
-	if s := r.URL.Query().Get("limit"); s != "" {
-		if v, err := strconv.Atoi(s); err == nil && v > 0 && v <= 100 {
-			return v
-		}
-	}
-	return defaultVal
-}
-
-// parseOffsetParam parses the "offset" query parameter.
-func parseOffsetParam(r *http.Request, defaultVal int) int {
-	if s := r.URL.Query().Get("offset"); s != "" {
-		if v, err := strconv.Atoi(s); err == nil && v >= 0 {
-			return v
-		}
-	}
-	return defaultVal
 }

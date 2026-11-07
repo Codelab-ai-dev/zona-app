@@ -37,7 +37,20 @@ type Config struct {
 	Notifications NotificationsConfig
 	Mux           MuxConfig
 	OpenAI        OpenAIConfig
+	Agent         AgentConfig
 }
+
+// AgentConfig configures the AI league assistant (OpenAI-compatible LLM,
+// Groq by default) and its WhatsApp webhook.
+type AgentConfig struct {
+	LLMBaseURL         string
+	LLMAPIKey          string
+	LLMModel           string
+	KapsoWebhookSecret string
+}
+
+// Enabled reports whether the assistant can answer.
+func (c AgentConfig) Enabled() bool { return c.LLMAPIKey != "" && c.LLMModel != "" }
 
 // StorageConfig configures the S3-compatible object store (Wasabi/R2/S3).
 type StorageConfig struct {
@@ -125,6 +138,12 @@ func Load() (Config, error) {
 			TokenID:       os.Getenv("MUX_TOKEN_ID"),
 			TokenSecret:   os.Getenv("MUX_TOKEN_SECRET"),
 			WebhookSecret: os.Getenv("MUX_WEBHOOK_SECRET"),
+		},
+		Agent: AgentConfig{
+			LLMBaseURL:         getEnv("LLM_API_BASE_URL", "https://api.groq.com/openai/v1"),
+			LLMAPIKey:          os.Getenv("LLM_API_KEY"),
+			LLMModel:           os.Getenv("LLM_MODEL"),
+			KapsoWebhookSecret: os.Getenv("KAPSO_WEBHOOK_SECRET"),
 		},
 		OpenAI: OpenAIConfig{
 			BaseURL:        getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),

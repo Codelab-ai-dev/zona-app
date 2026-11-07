@@ -50,8 +50,68 @@ func TestHandlerListRecordings(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
-	if resp["total"] != float64(1) {
-		t.Errorf("expected total 1, got %v", resp["total"])
+	data, ok := resp["data"].([]interface{})
+	if !ok || len(data) != 1 {
+		t.Errorf("expected data array with 1 item, got %v", resp["data"])
+	}
+	page, ok := resp["page"].(map[string]interface{})
+	if !ok {
+		t.Errorf("expected page object, got %v", resp["page"])
+		return
+	}
+	if page["total"] != float64(1) {
+		t.Errorf("expected total 1, got %v", page["total"])
+	}
+}
+
+func TestHandlerListRecordings_InvalidLimit(t *testing.T) {
+	handler, repo, _, _ := newTestHandler()
+
+	repo.ListRecordingsFunc = func(ctx context.Context, opts *ListRecordingsOpts) ([]*Recording, int64, error) {
+		return []*Recording{}, 0, nil
+	}
+
+	r := chi.NewRouter()
+	handler.Routes(r)
+
+	req := httptest.NewRequest("GET", "/play/videos?limit=abc", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("expected status 422, got %d", w.Code)
+	}
+}
+
+func TestHandlerListRecordings_EmptyList(t *testing.T) {
+	handler, repo, _, _ := newTestHandler()
+
+	repo.ListRecordingsFunc = func(ctx context.Context, opts *ListRecordingsOpts) ([]*Recording, int64, error) {
+		return []*Recording{}, 0, nil
+	}
+
+	r := chi.NewRouter()
+	handler.Routes(r)
+
+	req := httptest.NewRequest("GET", "/play/videos", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+
+	var resp map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&resp)
+	data, ok := resp["data"].([]interface{})
+	if !ok {
+		t.Errorf("expected data array, got %v", resp["data"])
+		return
+	}
+	if len(data) != 0 {
+		t.Errorf("expected empty data array, got %v", data)
 	}
 }
 
@@ -111,8 +171,11 @@ func TestHandlerCreateRecording_Happy(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
-	if resp["video"] == nil {
-		t.Fatal("expected video in response")
+	if resp["id"] == nil {
+		t.Fatal("expected id in response")
+	}
+	if resp["title"] != "Test Recording" {
+		t.Errorf("expected title 'Test Recording', got %v", resp["title"])
 	}
 }
 
@@ -141,8 +204,11 @@ func TestHandlerGetRecording(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
-	if resp["video"] == nil {
-		t.Fatal("expected video in response")
+	if resp["id"] == nil {
+		t.Fatal("expected id in response")
+	}
+	if resp["title"] != "Test" {
+		t.Errorf("expected title 'Test', got %v", resp["title"])
 	}
 }
 
@@ -239,8 +305,17 @@ func TestHandlerListClips(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
-	if resp["total"] != float64(1) {
-		t.Errorf("expected total 1, got %v", resp["total"])
+	data, ok := resp["data"].([]interface{})
+	if !ok || len(data) != 1 {
+		t.Errorf("expected data array with 1 item, got %v", resp["data"])
+	}
+	page, ok := resp["page"].(map[string]interface{})
+	if !ok {
+		t.Errorf("expected page object, got %v", resp["page"])
+		return
+	}
+	if page["total"] != float64(1) {
+		t.Errorf("expected total 1, got %v", page["total"])
 	}
 }
 
@@ -285,8 +360,17 @@ func TestHandlerListStreams(t *testing.T) {
 
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
-	if resp["total"] != float64(1) {
-		t.Errorf("expected total 1, got %v", resp["total"])
+	data, ok := resp["data"].([]interface{})
+	if !ok || len(data) != 1 {
+		t.Errorf("expected data array with 1 item, got %v", resp["data"])
+	}
+	page, ok := resp["page"].(map[string]interface{})
+	if !ok {
+		t.Errorf("expected page object, got %v", resp["page"])
+		return
+	}
+	if page["total"] != float64(1) {
+		t.Errorf("expected total 1, got %v", page["total"])
 	}
 }
 
@@ -349,8 +433,8 @@ func TestHandlerWebhookMux_AssetReady(t *testing.T) {
 		return w.Code
 	}
 
-	if code := post(signMux("test-secret", body, time.Now())); code != http.StatusOK {
-		t.Fatalf("valid webhook status = %d, want 200", code)
+	if code := post(signMux("test-secret", body, time.Now())); code != http.StatusNoContent {
+		t.Fatalf("valid webhook status = %d, want 204", code)
 	}
 	if gotAsset != "asset-1" || gotPlayback != "pb-1" {
 		t.Fatalf("recording not updated: asset=%q playback=%q", gotAsset, gotPlayback)

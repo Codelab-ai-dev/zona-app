@@ -2,10 +2,14 @@ package directory
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
@@ -408,5 +412,114 @@ func TestDeactivateWhatsAppLink_Happy(t *testing.T) {
 
 	if link.IsActive {
 		t.Error("expected IsActive to be false")
+	}
+}
+
+// HTTP pagination tests
+func TestListUsers_EmptyList(t *testing.T) {
+	repo := &fakeRepository{
+		users:         make(map[uuid.UUID]User),
+		whatsappLinks: make(map[uuid.UUID]WhatsAppLink),
+		phoneNumbers:  make(map[string]bool),
+	}
+	authz := &fakeAuthz{allowManageLeague: true}
+	svc := NewService(repo, authz)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	caller := auth.Principal{UserID: uuid.New(), Role: auth.RoleSuperAdmin}
+	req, err := http.NewRequest("GET", "/users?limit=10&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req = req.WithContext(auth.WithPrincipal(req.Context(), caller))
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[User]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Data == nil {
+		t.Error("data should be empty slice, not nil")
+	}
+	if len(result.Data) != 0 {
+		t.Errorf("expected 0 items, got %d", len(result.Data))
+	}
+	if result.Page.Limit != 10 {
+		t.Errorf("expected limit 10, got %d", result.Page.Limit)
+	}
+}
+
+func TestListUsers_LimitCapped(t *testing.T) {
+	repo := &fakeRepository{
+		users:         make(map[uuid.UUID]User),
+		whatsappLinks: make(map[uuid.UUID]WhatsAppLink),
+		phoneNumbers:  make(map[string]bool),
+	}
+	authz := &fakeAuthz{allowManageLeague: true}
+	svc := NewService(repo, authz)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	caller := auth.Principal{UserID: uuid.New(), Role: auth.RoleSuperAdmin}
+	req, err := http.NewRequest("GET", "/users?limit=200&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req = req.WithContext(auth.WithPrincipal(req.Context(), caller))
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[User]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Page.Limit != 100 {
+		t.Errorf("expected limit capped to 100, got %d", result.Page.Limit)
+	}
+}
+
+func TestListUsers_InvalidLimit(t *testing.T) {
+	repo := &fakeRepository{
+		users:         make(map[uuid.UUID]User),
+		whatsappLinks: make(map[uuid.UUID]WhatsAppLink),
+		phoneNumbers:  make(map[string]bool),
+	}
+	authz := &fakeAuthz{allowManageLeague: true}
+	svc := NewService(repo, authz)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	caller := auth.Principal{UserID: uuid.New(), Role: auth.RoleSuperAdmin}
+	req, err := http.NewRequest("GET", "/users?limit=abc&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req = req.WithContext(auth.WithPrincipal(req.Context(), caller))
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("expected 422, got %d", w.Code)
 	}
 }

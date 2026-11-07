@@ -2,13 +2,18 @@ package matches
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
@@ -978,5 +983,95 @@ func TestPlayoffBracketBuilder(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// listResponseHelper is used to decode list responses in tests
+type listResponseHelper[T any] struct {
+	Data []T        `json:"data"`
+	Page httpx.Page `json:"page"`
+}
+
+// fakeAuthz for testing
+type fakeAuthzMatches struct {
+	allowed bool
+}
+
+func (f *fakeAuthzMatches) CanManageLeague(ctx context.Context, p auth.Principal, leagueID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzMatches) CanManageTournament(ctx context.Context, p auth.Principal, tournamentID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzMatches) CanManageMatch(ctx context.Context, p auth.Principal, matchID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzMatches) CanManageTeam(ctx context.Context, p auth.Principal, teamID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzMatches) CanManagePlayer(ctx context.Context, p auth.Principal, playerID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func newTestRouterMatches(repo Repository, azChecker authz.Checker) chi.Router {
+	r := chi.NewRouter()
+	svc := NewService(repo, azChecker, nil) // no pool needed for handler tests
+	NewHandler(svc).Routes(r)
+	return r
+}
+
+func TestListMatches_EmptyList(t *testing.T) {
+	tournamentID := uuid.New()
+	repo := newFakeRepository()
+	router := newTestRouterMatches(repo, &fakeAuthzMatches{allowed: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/tournaments/"+tournamentID.String()+"/matches", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var got listResponseHelper[Match]
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Data == nil || len(got.Data) != 0 {
+		t.Errorf("expected empty data array, got %+v", got.Data)
+	}
+}
+
+func TestListMatches_InvalidLimit(t *testing.T) {
+	tournamentID := uuid.New()
+	repo := newFakeRepository()
+	router := newTestRouterMatches(repo, &fakeAuthzMatches{allowed: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/tournaments/"+tournamentID.String()+"/matches?limit=abc", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
 	}
 }

@@ -526,6 +526,7 @@ type ListMatchesFilter struct {
 	StartDate *time.Time
 	EndDate   *time.Time
 	Limit     int
+	Offset    int
 }
 
 // Utility functions for enum validation

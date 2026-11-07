@@ -2,14 +2,19 @@ package attendance
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
@@ -340,4 +345,106 @@ func TestHandler_StreamAttendance_OK(t *testing.T) {
 	// This test is skipped because testing SSE streaming requires proper chi routing
 	// and context setup. Integration tests will verify the functionality.
 	t.Skip("SSE streaming requires integration testing with proper chi routing")
+}
+
+// listResponseHelperAttendance is used to decode list responses in tests
+type listResponseHelperAttendance struct {
+	Data []AttendanceRecord `json:"data"`
+	Page httpx.Page         `json:"page"`
+}
+
+// fakeAuthzAttendance for testing
+type fakeAuthzAttendance struct {
+	allowed bool
+}
+
+func (f *fakeAuthzAttendance) CanManageLeague(ctx context.Context, p auth.Principal, leagueID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzAttendance) CanManageTournament(ctx context.Context, p auth.Principal, tournamentID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzAttendance) CanManageMatch(ctx context.Context, p auth.Principal, matchID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzAttendance) CanManageTeam(ctx context.Context, p auth.Principal, teamID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzAttendance) CanManagePlayer(ctx context.Context, p auth.Principal, playerID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func newTestRouterAttendance(repo Repository, azChecker authz.Checker) chi.Router {
+	r := chi.NewRouter()
+	svc := NewService(repo, azChecker)
+	NewHandler(svc, azChecker).Routes(r)
+	return r
+}
+
+func TestListAttendance_Handler_EmptyList(t *testing.T) {
+	matchID := uuid.New()
+	repo := &fakeRepository{
+		qrRecords:     make(map[uuid.UUID][]QRAttendance),
+		facialRecords: make(map[uuid.UUID][]FacialAttendance),
+	}
+	azChecker := &fakeAuthzAttendance{allowed: true}
+	router := newTestRouterAttendance(repo, azChecker)
+
+	principal := auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin, IsActive: true}
+	req := httptest.NewRequest(http.MethodGet, "/matches/"+matchID.String()+"/attendance", nil)
+	req = req.WithContext(auth.WithPrincipal(req.Context(), principal))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var got listResponseHelperAttendance
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Data == nil || len(got.Data) != 0 {
+		t.Errorf("expected empty data array, got %+v", got.Data)
+	}
+}
+
+func TestListAttendance_Handler_InvalidLimit(t *testing.T) {
+	matchID := uuid.New()
+	repo := &fakeRepository{
+		qrRecords:     make(map[uuid.UUID][]QRAttendance),
+		facialRecords: make(map[uuid.UUID][]FacialAttendance),
+	}
+	azChecker := &fakeAuthzAttendance{allowed: true}
+	router := newTestRouterAttendance(repo, azChecker)
+
+	principal := auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin, IsActive: true}
+	req := httptest.NewRequest(http.MethodGet, "/matches/"+matchID.String()+"/attendance?limit=abc", nil)
+	req = req.WithContext(auth.WithPrincipal(req.Context(), principal))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
+	}
 }

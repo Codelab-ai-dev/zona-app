@@ -218,24 +218,6 @@ func (r *UpdateTournamentRequest) Validate() map[string]string {
 	return errs
 }
 
-// ListResponse is the paginated response for list endpoints.
-type ListResponse struct {
-	Total int `json:"total"`
-	Limit int `json:"limit"`
-}
-
-// LeaguesListResponse is the response for GET /leagues.
-type LeaguesListResponse struct {
-	ListResponse
-	Data []League `json:"data"`
-}
-
-// TournamentsListResponse is the response for GET /tournaments.
-type TournamentsListResponse struct {
-	ListResponse
-	Data []Tournament `json:"data"`
-}
-
 // Repository defines the persistence contract for leagues and tournaments.
 type Repository interface {
 	// Leagues

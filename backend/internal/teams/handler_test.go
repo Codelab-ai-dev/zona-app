@@ -569,3 +569,85 @@ func TestCreatePlayer_InvalidInput(t *testing.T) {
 		t.Errorf("expected 422, got %d", w.Code)
 	}
 }
+
+// HTTP pagination tests
+func TestGetTeamsByLeague_EmptyList(t *testing.T) {
+	handler, _, _ := newTestHandler()
+
+	leagueID := uuid.New()
+
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=10&offset=0", leagueID), nil)
+	w := httptest.NewRecorder()
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("leagueID", leagueID.String())
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+	handler.getTeamsByLeague(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[Team]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Data == nil {
+		t.Error("data should be empty slice, not nil")
+	}
+	if len(result.Data) != 0 {
+		t.Errorf("expected 0 items, got %d", len(result.Data))
+	}
+	if result.Page.Limit != 10 {
+		t.Errorf("expected limit 10, got %d", result.Page.Limit)
+	}
+}
+
+func TestGetTeamsByLeague_LimitCapped(t *testing.T) {
+	handler, _, _ := newTestHandler()
+
+	leagueID := uuid.New()
+
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=200&offset=0", leagueID), nil)
+	w := httptest.NewRecorder()
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("leagueID", leagueID.String())
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+	handler.getTeamsByLeague(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[Team]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Page.Limit != 100 {
+		t.Errorf("expected limit capped to 100, got %d", result.Page.Limit)
+	}
+}
+
+func TestGetTeamsByLeague_InvalidLimit(t *testing.T) {
+	handler, _, _ := newTestHandler()
+
+	leagueID := uuid.New()
+
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=abc&offset=0", leagueID), nil)
+	w := httptest.NewRecorder()
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("leagueID", leagueID.String())
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+
+	handler.getTeamsByLeague(w, r)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("expected 422, got %d", w.Code)
+	}
+}

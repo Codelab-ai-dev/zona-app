@@ -3,7 +3,6 @@ package stats
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -56,13 +55,19 @@ func (h *Handler) getStandingsByTournament(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	standings, err := h.svc.GetStandingsByTournament(r.Context(), tournamentID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, standings)
+	httpx.List(w, standings, page)
 }
 
 func (h *Handler) getTopScorersByTournament(w http.ResponseWriter, r *http.Request) {
@@ -72,11 +77,10 @@ func (h *Handler) getTopScorersByTournament(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	limit := 20
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
-			limit = parsed
-		}
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
 	}
 
 	scorers, err := h.svc.GetTopScorersByTournament(r.Context(), tournamentID)
@@ -85,12 +89,7 @@ func (h *Handler) getTopScorersByTournament(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Apply limit on returned results
-	if len(scorers) > limit {
-		scorers = scorers[:limit]
-	}
-
-	httpx.JSON(w, http.StatusOK, scorers)
+	httpx.List(w, scorers, page)
 }
 
 func (h *Handler) getDisciplineByTournament(w http.ResponseWriter, r *http.Request) {
@@ -100,11 +99,10 @@ func (h *Handler) getDisciplineByTournament(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	limit := 20
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
-			limit = parsed
-		}
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
 	}
 
 	discipline, err := h.svc.GetDisciplineByTournament(r.Context(), tournamentID)
@@ -113,12 +111,7 @@ func (h *Handler) getDisciplineByTournament(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Apply limit on returned results
-	if len(discipline) > limit {
-		discipline = discipline[:limit]
-	}
-
-	httpx.JSON(w, http.StatusOK, discipline)
+	httpx.List(w, discipline, page)
 }
 
 func (h *Handler) getPlayerStats(w http.ResponseWriter, r *http.Request) {
@@ -172,7 +165,7 @@ func (h *Handler) updateTeamPointsAdjustment(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	httpx.JSON(w, http.StatusNoContent, nil)
+	httpx.NoContent(w)
 }
 
 func (h *Handler) getSuspensionsByLeague(w http.ResponseWriter, r *http.Request) {
@@ -184,13 +177,19 @@ func (h *Handler) getSuspensionsByLeague(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	suspensions, err := h.svc.GetSuspensionsByLeague(r.Context(), caller, leagueID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, suspensions)
+	httpx.List(w, suspensions, page)
 }
 
 func (h *Handler) getSuspensionsByTeam(w http.ResponseWriter, r *http.Request) {
@@ -208,13 +207,19 @@ func (h *Handler) getSuspensionsByTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	suspensions, err := h.svc.GetSuspensionsByTeam(r.Context(), caller, teamID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, suspensions)
+	httpx.List(w, suspensions, page)
 }
 
 func (h *Handler) createSuspension(w http.ResponseWriter, r *http.Request) {
@@ -351,5 +356,5 @@ func (h *Handler) applySuspensionToMatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httpx.JSON(w, http.StatusNoContent, nil)
+	httpx.NoContent(w)
 }

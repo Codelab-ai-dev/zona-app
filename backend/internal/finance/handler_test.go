@@ -4,12 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
@@ -436,6 +440,100 @@ func TestCrossLeagueIDOR_GetTransaction(t *testing.T) {
 	retrieved, err = svc.GetTransaction(context.Background(), auth.Principal{UserID: userID}, wrongLeague, txnID)
 	if err == nil && retrieved != nil {
 		t.Error("IDOR: should not retrieve transaction with wrong league")
+	}
+}
+
+// listResponseHelperFinance is used to decode list responses in tests
+type listResponseHelperFinance[T any] struct {
+	Data []T        `json:"data"`
+	Page httpx.Page `json:"page"`
+}
+
+// fakeAuthzFinance for testing
+type fakeAuthzFinance struct {
+	allowed bool
+}
+
+func (f *fakeAuthzFinance) CanManageLeague(ctx context.Context, p auth.Principal, leagueID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzFinance) CanManageTournament(ctx context.Context, p auth.Principal, tournamentID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzFinance) CanManageMatch(ctx context.Context, p auth.Principal, matchID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzFinance) CanManageTeam(ctx context.Context, p auth.Principal, teamID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func (f *fakeAuthzFinance) CanManagePlayer(ctx context.Context, p auth.Principal, playerID uuid.UUID) error {
+	if f.allowed {
+		return nil
+	}
+	return httpx.ErrForbidden
+}
+
+func newTestRouterFinance(repo Repository, az authz.Checker) chi.Router {
+	r := chi.NewRouter()
+	svc := NewService(repo, az)
+	NewHandler(svc).Routes(r)
+	return r
+}
+
+func TestListTransactions_Handler_EmptyList(t *testing.T) {
+	leagueID := uuid.New()
+	repo := NewFakeRepository()
+	router := newTestRouterFinance(repo, &fakeAuthzFinance{allowed: true})
+
+	principal := auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin, IsActive: true}
+	req := httptest.NewRequest(http.MethodGet, "/leagues/"+leagueID.String()+"/finance/transactions", nil)
+	req = req.WithContext(auth.WithPrincipal(req.Context(), principal))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var got listResponseHelperFinance[Transaction]
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Data == nil || len(got.Data) != 0 {
+		t.Errorf("expected empty data array, got %+v", got.Data)
+	}
+}
+
+func TestListTransactions_Handler_InvalidLimit(t *testing.T) {
+	leagueID := uuid.New()
+	repo := NewFakeRepository()
+	router := newTestRouterFinance(repo, &fakeAuthzFinance{allowed: true})
+
+	principal := auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin, IsActive: true}
+	req := httptest.NewRequest(http.MethodGet, "/leagues/"+leagueID.String()+"/finance/transactions?limit=abc", nil)
+	req = req.WithContext(auth.WithPrincipal(req.Context(), principal))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
 	}
 }
 

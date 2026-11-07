@@ -3,9 +3,12 @@ package leagues
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
@@ -520,5 +523,105 @@ func TestValidateCreateTournamentRequest_InvalidFormat(t *testing.T) {
 
 	if errs["tournament_format"] == "" {
 		t.Errorf("expected validation error for invalid tournament_format")
+	}
+}
+
+// HTTP pagination tests
+func TestListActiveLeagues_EmptyList(t *testing.T) {
+	repo := &fakeRepository{
+		leagues:     make(map[uuid.UUID]League),
+		tournaments: make(map[uuid.UUID]Tournament),
+	}
+	checker := &fakeChecker{}
+	svc := NewService(repo, checker)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	req, err := http.NewRequest("GET", "/leagues?limit=10&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[League]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Data == nil {
+		t.Error("data should be empty slice, not nil")
+	}
+	if len(result.Data) != 0 {
+		t.Errorf("expected 0 items, got %d", len(result.Data))
+	}
+	if result.Page.Limit != 10 {
+		t.Errorf("expected limit 10, got %d", result.Page.Limit)
+	}
+}
+
+func TestListActiveLeagues_LimitCapped(t *testing.T) {
+	repo := &fakeRepository{
+		leagues:     make(map[uuid.UUID]League),
+		tournaments: make(map[uuid.UUID]Tournament),
+	}
+	checker := &fakeChecker{}
+	svc := NewService(repo, checker)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	req, err := http.NewRequest("GET", "/leagues?limit=200&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var result httpx.ListResponse[League]
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Page.Limit != 100 {
+		t.Errorf("expected limit capped to 100, got %d", result.Page.Limit)
+	}
+}
+
+func TestListActiveLeagues_InvalidLimit(t *testing.T) {
+	repo := &fakeRepository{
+		leagues:     make(map[uuid.UUID]League),
+		tournaments: make(map[uuid.UUID]Tournament),
+	}
+	checker := &fakeChecker{}
+	svc := NewService(repo, checker)
+	handler := NewHandler(svc)
+
+	router := chi.NewRouter()
+	handler.Routes(router)
+
+	req, err := http.NewRequest("GET", "/leagues?limit=abc&offset=0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("expected 422, got %d", w.Code)
 	}
 }

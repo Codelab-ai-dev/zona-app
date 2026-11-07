@@ -187,7 +187,7 @@ func (r *PGRepository) ListMatchesByTournament(ctx context.Context, tournamentID
 	}
 
 	q += ` ORDER BY round, match_date`
-	q += fmt.Sprintf(` LIMIT %d`, filters.Limit)
+	q += fmt.Sprintf(` LIMIT %d OFFSET %d`, filters.Limit, filters.Offset)
 
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
@@ -259,7 +259,7 @@ func (r *PGRepository) ListMatchesByTeam(ctx context.Context, teamID uuid.UUID, 
 	}
 
 	q += ` ORDER BY match_date DESC`
-	q += fmt.Sprintf(` LIMIT %d`, filters.Limit)
+	q += fmt.Sprintf(` LIMIT %d OFFSET %d`, filters.Limit, filters.Offset)
 
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {

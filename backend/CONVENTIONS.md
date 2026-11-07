@@ -114,3 +114,18 @@ chi panics when two routes use different parameter names in the same
 position, so every module uses these exact names: `{leagueID}`,
 `{tournamentID}`, `{teamID}`, `{playerID}`, `{matchID}`, `{userID}`, and
 `{<resource>ID}` for anything else (e.g. `{suspensionID}`). Never `{id}`.
+
+## API contract (all modules)
+
+| Case | Response |
+|---|---|
+| Single resource (GET/POST/PATCH/PUT) | the object itself, `200` (`201` on create) |
+| List | `httpx.List(w, items, page)` → `{"data": [...], "page": {"limit", "offset", "total?"}}`; `data` is never `null` |
+| Delete / action without payload | `httpx.NoContent(w)` → `204` |
+| Error | `httpx.WriteError` → `{"error": {"code", "message", "fields?"}}` |
+
+- Pagination: `httpx.ParsePage(r)` (`?limit=` default 50, max 100; `?offset=`).
+- No wrapper objects such as `{"video": ...}`, `{"success": true}` or
+  `{"data": x}` for single resources.
+- JSON: `snake_case`; timestamps RFC 3339; `date` columns `YYYY-MM-DD`;
+  money as decimal strings; enums as their DB values.

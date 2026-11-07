@@ -78,27 +78,33 @@ func (h *Handler) getTeamsByLeague(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	limit := 100
-	offset := 0
-	teams, err := h.svc.GetTeamsByLeague(r.Context(), leagueID, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, teams)
+	teams, err := h.svc.GetTeamsByLeague(r.Context(), leagueID, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, teams, page)
 }
 
 // getMyTeams returns teams owned by the authenticated user.
 func (h *Handler) getMyTeams(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
-	limit := 100
-	offset := 0
-	teams, err := h.svc.GetMyTeams(r.Context(), caller, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, teams)
+	teams, err := h.svc.GetMyTeams(r.Context(), caller, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, teams, page)
 }
 
 // createTeam creates a new team.
@@ -202,9 +208,12 @@ func (h *Handler) getTeamPlayers(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	limit := 100
-	offset := 0
-	players, err := h.svc.GetTeamPlayers(r.Context(), teamID, limit, offset)
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	players, err := h.svc.GetTeamPlayers(r.Context(), teamID, page.Limit, page.Offset)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -222,7 +231,7 @@ func (h *Handler) getTeamPlayers(w http.ResponseWriter, r *http.Request) {
 			IsActive:     p.IsActive,
 		}
 	}
-	httpx.JSON(w, http.StatusOK, publicPlayers)
+	httpx.List(w, publicPlayers, page)
 }
 
 // createPlayer adds a player to a team.
@@ -314,9 +323,12 @@ func (h *Handler) getTeamCoachingStaff(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	limit := 100
-	offset := 0
-	staff, err := h.svc.GetTeamCoachingStaff(r.Context(), teamID, limit, offset)
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	staff, err := h.svc.GetTeamCoachingStaff(r.Context(), teamID, page.Limit, page.Offset)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -333,7 +345,7 @@ func (h *Handler) getTeamCoachingStaff(w http.ResponseWriter, r *http.Request) {
 			IsActive: s.IsActive,
 		}
 	}
-	httpx.JSON(w, http.StatusOK, publicStaff)
+	httpx.List(w, publicStaff, page)
 }
 
 // createCoachingStaff adds a coaching staff member to a team.
@@ -418,14 +430,17 @@ func (h *Handler) getTeamPlayerRegistrationRequests(w http.ResponseWriter, r *ht
 		httpx.WriteError(w, r, err)
 		return
 	}
-	limit := 100
-	offset := 0
-	reqs, err := h.svc.GetTeamPlayerRegistrationRequests(r.Context(), caller, teamID, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, reqs)
+	reqs, err := h.svc.GetTeamPlayerRegistrationRequests(r.Context(), caller, teamID, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, reqs, page)
 }
 
 // getTournamentPlayerRegistrationRequests returns pending registration requests for a tournament.
@@ -440,14 +455,17 @@ func (h *Handler) getTournamentPlayerRegistrationRequests(w http.ResponseWriter,
 	if status == "" {
 		status = "pending"
 	}
-	limit := 100
-	offset := 0
-	reqs, err := h.svc.GetTournamentPlayerRegistrationRequests(r.Context(), caller, tournamentID, status, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, reqs)
+	reqs, err := h.svc.GetTournamentPlayerRegistrationRequests(r.Context(), caller, tournamentID, status, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, reqs, page)
 }
 
 // requestPlayerRegistration submits a player registration request.
@@ -517,13 +535,11 @@ func (h *Handler) batchUpdatePlayerQRCodes(w http.ResponseWriter, r *http.Reques
 		playerIDs[i] = p.ID
 	}
 
-	count, err := h.svc.BatchUpdatePlayerQRCodes(r.Context(), caller, leagueID, playerIDs)
+	updated, err := h.svc.BatchUpdatePlayerQRCodes(r.Context(), caller, leagueID, playerIDs)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"updated": count,
-	})
+	httpx.JSON(w, http.StatusOK, map[string]int{"updated": updated})
 }

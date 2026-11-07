@@ -1,9 +1,17 @@
-.PHONY: run test vet lint check db-up db-down
+.PHONY: run build test vet lint check routes db-up db-down
 
 DB_CONTAINER ?= zona-pg-dev
 
 run:
 	go run ./cmd/api
+
+# Output goes to bin/ (gitignored); never build into the module root.
+build:
+	go build -trimpath -o bin/api ./cmd/api
+
+# Regenerate api/ROUTES.md from the router.
+routes:
+	UPDATE_ROUTES=1 go test ./cmd/api -run TestRouteManifest
 
 test:
 	go test -race ./...

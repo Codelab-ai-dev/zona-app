@@ -36,30 +36,22 @@ func (h *Handler) Routes(r chi.Router) {
 func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
 
-	var req ListUsersRequest
-	if err := httpx.DecodeJSON(w, r, &req); err != nil {
+	page, err := httpx.ParsePage(r)
+	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	// Set defaults
-	if req.Limit < 1 || req.Limit > 100 {
-		req.Limit = 50
-	}
-	if req.Offset < 0 {
-		req.Offset = 0
-	}
-
+	var req ListUsersRequest
+	req.Limit = page.Limit
+	req.Offset = page.Offset
 	users, err := h.svc.ListUsers(r.Context(), caller, &req)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	if users == nil {
-		users = []User{}
-	}
-	httpx.JSON(w, http.StatusOK, users)
+	httpx.List(w, users, page)
 }
 
 // listLeagueUsers handles GET /leagues/{leagueID}/users.
@@ -72,28 +64,21 @@ func (h *Handler) listLeagueUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	search := r.URL.Query().Get("search")
-	limit := 50
-	offset := 0
-
-	// Parse limit and offset from query params if present
-	if l := r.URL.Query().Get("limit"); l != "" {
-		// Could parse but default is fine
-	}
-	if o := r.URL.Query().Get("offset"); o != "" {
-		// Could parse but default is fine
-	}
-
-	users, err := h.svc.ListLeagueUsers(r.Context(), caller, leagueID, search, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	if users == nil {
-		users = []User{}
+	search := r.URL.Query().Get("search")
+
+	users, err := h.svc.ListLeagueUsers(r.Context(), caller, leagueID, search, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
 	}
-	httpx.JSON(w, http.StatusOK, users)
+
+	httpx.List(w, users, page)
 }
 
 // listWhatsAppLinks handles GET /leagues/{leagueID}/whatsapp-links.
@@ -106,19 +91,19 @@ func (h *Handler) listWhatsAppLinks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := 50
-	offset := 0
-
-	links, err := h.svc.ListWhatsAppLinks(r.Context(), caller, leagueID, limit, offset)
+	page, err := httpx.ParsePage(r)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	if links == nil {
-		links = []WhatsAppLink{}
+	links, err := h.svc.ListWhatsAppLinks(r.Context(), caller, leagueID, page.Limit, page.Offset)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
 	}
-	httpx.JSON(w, http.StatusOK, links)
+
+	httpx.List(w, links, page)
 }
 
 // createWhatsAppLink handles POST /leagues/{leagueID}/whatsapp-links.

@@ -104,12 +104,18 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	httpx.NoContent(w)
 }
 
 // list handles GET /storage/objects?scope=...&scope_id=...
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
+
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
 
 	scopeStr := r.URL.Query().Get("scope")
 	scopeIDStr := r.URL.Query().Get("scope_id")
@@ -120,15 +126,13 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	objects, err := h.svc.List(r.Context(), caller, Scope(scopeStr), scopeID, 100)
+	objects, err := h.svc.List(r.Context(), caller, Scope(scopeStr), scopeID, page.Limit)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"objects": objects,
-	})
+	httpx.List(w, objects, page)
 }
 
 // url handles GET /storage/url?key=...

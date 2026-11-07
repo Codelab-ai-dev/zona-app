@@ -265,7 +265,7 @@ func TestDelete(t *testing.T) {
 			name:           "happy path",
 			principal:      &auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin},
 			key:            validKey,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusNoContent,
 		},
 		{
 			name:           "invalid key format",
@@ -327,7 +327,9 @@ func TestList(t *testing.T) {
 		principal      *auth.Principal
 		scope          string
 		scopeID        string
+		query          string
 		expectedStatus int
+		checkResult    func(t *testing.T, body []byte)
 	}{
 		{
 			name:           "unauthenticated",
@@ -342,6 +344,47 @@ func TestList(t *testing.T) {
 			scope:          "league",
 			scopeID:        leagueID.String(),
 			expectedStatus: http.StatusOK,
+			checkResult: func(t *testing.T, body []byte) {
+				var resp map[string]interface{}
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatal(err)
+				}
+				if _, ok := resp["data"]; !ok {
+					t.Error("expected data field in response")
+				}
+				if _, ok := resp["page"]; !ok {
+					t.Error("expected page field in response")
+				}
+			},
+		},
+		{
+			name:           "empty list",
+			principal:      &auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin},
+			scope:          "league",
+			scopeID:        leagueID.String(),
+			expectedStatus: http.StatusOK,
+			checkResult: func(t *testing.T, body []byte) {
+				var resp map[string]interface{}
+				if err := json.Unmarshal(body, &resp); err != nil {
+					t.Fatal(err)
+				}
+				data, ok := resp["data"].([]interface{})
+				if !ok {
+					t.Errorf("expected data array, got %v", resp["data"])
+					return
+				}
+				if len(data) != 0 {
+					t.Errorf("expected empty data array, got %v", data)
+				}
+			},
+		},
+		{
+			name:           "invalid limit",
+			principal:      &auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin},
+			scope:          "league",
+			scopeID:        leagueID.String(),
+			query:          "?limit=abc&scope=league&scope_id=" + leagueID.String(),
+			expectedStatus: http.StatusUnprocessableEntity,
 		},
 		{
 			name:           "invalid scope",
@@ -372,7 +415,11 @@ func TestList(t *testing.T) {
 			}
 			router := newTestRouter(store, checker, cfg)
 
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/storage/objects?scope=%s&scope_id=%s", tc.scope, tc.scopeID), nil)
+			query := tc.query
+			if query == "" {
+				query = fmt.Sprintf("?scope=%s&scope_id=%s", tc.scope, tc.scopeID)
+			}
+			req := httptest.NewRequest(http.MethodGet, "/storage/objects"+query, nil)
 
 			if tc.principal != nil {
 				req = req.WithContext(auth.WithPrincipal(req.Context(), *tc.principal))
@@ -383,6 +430,10 @@ func TestList(t *testing.T) {
 
 			if w.Code != tc.expectedStatus {
 				t.Errorf("expected status %d, got %d", tc.expectedStatus, w.Code)
+			}
+
+			if tc.checkResult != nil && tc.expectedStatus == http.StatusOK {
+				tc.checkResult(t, w.Body.Bytes())
 			}
 		})
 	}

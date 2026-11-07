@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/accounts"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/agent"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/attendance"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
@@ -67,7 +68,7 @@ func run() error {
 	tokens := auth.NewTokenService(cfg.JWTSecret, cfg.JWTIssuer, cfg.AccessTokenTTL, cfg.SupabaseJWTSecret)
 	authMW := auth.NewMiddleware(tokens, auth.NewPGProfileLoader(pool))
 
-	modules, err := buildModules(cfg, pool)
+	modules, err := buildModules(ctx, cfg, pool)
 	if err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ func run() error {
 // buildModules wires every feature package. Integrations whose settings are
 // missing are not mounted (their routes return 404) and a warning is logged,
 // so the API never runs a half-configured module.
-func buildModules(cfg config.Config, pool *pgxpool.Pool) ([]server.Module, error) {
+func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) ([]server.Module, error) {
 	checker := authz.NewPGChecker(pool)
 	modules := []server.Module{
 		users.NewHandler(users.NewService(users.NewPGRepository(pool))),
@@ -189,6 +190,37 @@ func buildModules(cfg config.Config, pool *pgxpool.Pool) ([]server.Module, error
 		modules = append(modules, knowledge.NewHandler(knowledge.NewService(knowledge.NewPGRepository(pool), embedder, checker)))
 	} else {
 		slog.Warn("module disabled: knowledge (OPENAI_API_KEY not set)")
+	}
+
+	if cfg.Agent.Enabled() {
+		repo := agent.NewPGRepository(pool)
+		deps := agent.Deps{
+			Identities:    repo,
+			Classifier:    agent.NewKeywordClassifier(),
+			Data:          agent.NewPGDataProvider(pool),
+			Knowledge:     repo,
+			LLM:           agent.NewChatClient(agent.LLMConfig{BaseURL: cfg.Agent.LLMBaseURL, APIKey: cfg.Agent.LLMAPIKey, Model: cfg.Agent.LLMModel}),
+			Conversations: repo,
+		}
+		if cfg.OpenAI.Enabled() {
+			deps.Embedder = knowledge.NewOpenAIEmbedder(knowledge.Config{
+				OpenAIBaseURL: cfg.OpenAI.BaseURL, OpenAIAPIKey: cfg.OpenAI.APIKey,
+				EmbeddingModel: cfg.OpenAI.EmbeddingModel, Dimensions: 1536,
+			})
+		}
+		// WhatsApp needs both the Kapso API (replies) and the webhook secret.
+		var sender agent.WhatsAppSender
+		if cfg.Notifications.Enabled() && cfg.Agent.KapsoWebhookSecret != "" {
+			sender = agent.NewKapsoSender(agent.KapsoConfig{
+				BaseURL: cfg.Notifications.KapsoBaseURL, APIKey: cfg.Notifications.KapsoAPIKey,
+				PhoneNumberID: cfg.Notifications.PhoneNumberID,
+			})
+		} else {
+			slog.Warn("agent WhatsApp webhook disabled (KAPSO_* or KAPSO_WEBHOOK_SECRET not set)")
+		}
+		modules = append(modules, agent.NewHandler(ctx, agent.NewService(deps), repo, sender, cfg.Agent.KapsoWebhookSecret))
+	} else {
+		slog.Warn("module disabled: agent (LLM_API_KEY / LLM_MODEL not set)")
 	}
 
 	return modules, nil

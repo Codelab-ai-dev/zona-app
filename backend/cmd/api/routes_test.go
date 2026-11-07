@@ -31,6 +31,7 @@ var anonymousAllowed = map[string]bool{
 	"GET /api/v1/play/streams":            true,
 	"GET /api/v1/play/streams/{streamId}": true,
 	"POST /api/v1/play/webhooks/mux":      true, // HMAC-signed by Mux
+	"POST /api/v1/agent/webhooks/kapso":   true, // HMAC-signed by Kapso (X-Webhook-Signature)
 
 	// leagues: active leagues/tournaments are public (legacy RLS)
 	"GET /api/v1/leagues":                        true,
@@ -65,7 +66,10 @@ var anonymousAllowed = map[string]bool{
 // TestEveryRouteRequiresAuthUnlessAllowlisted mounts every module with all
 // integrations enabled and asserts that anonymous requests are rejected with
 // 401 on any route not explicitly allowlisted above.
-func TestEveryRouteRequiresAuthUnlessAllowlisted(t *testing.T) {
+// newTestAPI mounts every module with all integrations enabled against a
+// pool that never connects, for route-level tests.
+func newTestAPI(t *testing.T) http.Handler {
+	t.Helper()
 	// The pool never connects: rejected requests must not reach the database.
 	poolCfg, err := pgxpool.ParseConfig("postgres://u:p@127.0.0.1:1/none?connect_timeout=1")
 	if err != nil {
@@ -84,8 +88,9 @@ func TestEveryRouteRequiresAuthUnlessAllowlisted(t *testing.T) {
 		Notifications:          config.NotificationsConfig{KapsoBaseURL: "http://kapso.invalid", KapsoAPIKey: "k", PhoneNumberID: "1", PublicSiteURL: "http://site.invalid"},
 		Mux:                    config.MuxConfig{TokenID: "id", TokenSecret: "secret", WebhookSecret: "whsec"},
 		OpenAI:                 config.OpenAIConfig{BaseURL: "http://openai.invalid", APIKey: "k", EmbeddingModel: "m"},
+		Agent:                  config.AgentConfig{LLMBaseURL: "http://llm.invalid", LLMAPIKey: "k", LLMModel: "m", KapsoWebhookSecret: "whsec"},
 	}
-	modules, err := buildModules(cfg, pool)
+	modules, err := buildModules(t.Context(), cfg, pool)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,14 +100,18 @@ func TestEveryRouteRequiresAuthUnlessAllowlisted(t *testing.T) {
 		Health:  http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }),
 		Modules: modules,
 	})
+	return handler
+}
 
+func TestEveryRouteRequiresAuthUnlessAllowlisted(t *testing.T) {
+	handler := newTestAPI(t)
 	routes, ok := handler.(chi.Routes)
 	if !ok {
 		t.Fatal("router does not expose chi.Routes")
 	}
 
 	var checked int
-	err = chi.Walk(routes, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+	err := chi.Walk(routes, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
 		route = strings.ReplaceAll(route, "/*/", "/")
 		key := method + " " + route
 		if anonymousAllowed[key] {

@@ -5,7 +5,9 @@ package notifications
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -19,9 +21,11 @@ func TestPGRepository_AgainstSchema(t *testing.T) {
 	repo := NewPGRepository(pool)
 	ctx := context.Background()
 
+	// Unique per run: the integration database is shared and not reset.
+	phone := fmt.Sprintf("52155%08d", time.Now().UnixNano()%100000000)
 	if _, err := pool.Exec(ctx,
 		`INSERT INTO public.whatsapp_user_links (phone_number, league_id, role) VALUES ($1, $2, 'user')`,
-		"5215512345678", f.LeagueID); err != nil {
+		phone, f.LeagueID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +52,7 @@ func TestPGRepository_AgainstSchema(t *testing.T) {
 	if _, err := repo.GetMatchRecipients(ctx, f.MatchID); err != nil {
 		t.Fatalf("GetMatchRecipients: %v", err)
 	}
-	if ok, err := repo.PhoneNumberExists(ctx, "5215512345678"); err != nil || !ok {
+	if ok, err := repo.PhoneNumberExists(ctx, phone); err != nil || !ok {
 		t.Fatalf("PhoneNumberExists = %v, %v", ok, err)
 	}
 	if _, err := repo.GetMatchData(ctx, uuid.New()); !errors.Is(err, httpx.ErrNotFound) {

@@ -3,7 +3,6 @@ package play
 import (
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -69,31 +68,21 @@ func (h *Handler) Routes(r chi.Router) {
 
 // listRecordings handles GET /play/videos
 func (h *Handler) listRecordings(w http.ResponseWriter, r *http.Request) {
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	leagueID := r.URL.Query().Get("league_id")
 	status := r.URL.Query().Get("status")
 	visibility := r.URL.Query().Get("visibility")
-	limit := r.URL.Query().Get("limit")
-	offset := r.URL.Query().Get("offset")
-
-	limitInt := 20
-	if limit != "" {
-		if l, err := strconv.Atoi(limit); err == nil && l > 0 && l <= 100 {
-			limitInt = l
-		}
-	}
-
-	offsetInt := 0
-	if offset != "" {
-		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-			offsetInt = o
-		}
-	}
 
 	opts := &ListRecordingsOpts{
 		Status:     status,
 		Visibility: visibility,
-		Limit:      limitInt,
-		Offset:     offsetInt,
+		Limit:      page.Limit,
+		Offset:     page.Offset,
 	}
 
 	// Anonymous callers only see public/ready
@@ -118,12 +107,7 @@ func (h *Handler) listRecordings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"videos": recordings,
-		"total":  count,
-		"limit":  limitInt,
-		"offset": offsetInt,
-	})
+	httpx.List(w, recordings, page.WithTotal(int(count)))
 }
 
 // createRecording handles POST /play/videos
@@ -141,7 +125,7 @@ func (h *Handler) createRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusCreated, map[string]interface{}{"video": rec})
+	httpx.JSON(w, http.StatusCreated, rec)
 }
 
 // getRecording handles GET /play/videos/{videoId}
@@ -159,7 +143,7 @@ func (h *Handler) getRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"video": rec})
+	httpx.JSON(w, http.StatusOK, rec)
 }
 
 // updateRecording handles PATCH /play/videos/{videoId}
@@ -184,7 +168,7 @@ func (h *Handler) updateRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"video": rec})
+	httpx.JSON(w, http.StatusOK, rec)
 }
 
 // deleteRecording handles DELETE /play/videos/{videoId}
@@ -203,7 +187,7 @@ func (h *Handler) deleteRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	httpx.NoContent(w)
 }
 
 // refreshRecordingStatus handles POST /play/videos/{videoId}/refresh
@@ -222,7 +206,7 @@ func (h *Handler) refreshRecordingStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"video": rec})
+	httpx.JSON(w, http.StatusOK, rec)
 }
 
 // createDirectUpload handles POST /play/upload
@@ -245,30 +229,20 @@ func (h *Handler) createDirectUpload(w http.ResponseWriter, r *http.Request) {
 
 // listClips handles GET /play/clips
 func (h *Handler) listClips(w http.ResponseWriter, r *http.Request) {
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	recordingID := r.URL.Query().Get("recording_id")
 	matchID := r.URL.Query().Get("match_id")
 	leagueID := r.URL.Query().Get("league_id")
 	teamID := r.URL.Query().Get("team_id")
 	clipType := r.URL.Query().Get("clip_type")
 	featured := r.URL.Query().Get("featured")
-	limit := r.URL.Query().Get("limit")
-	offset := r.URL.Query().Get("offset")
 	sortBy := r.URL.Query().Get("sort_by")
 	sortOrder := r.URL.Query().Get("sort_order")
-
-	limitInt := 20
-	if limit != "" {
-		if l, err := strconv.Atoi(limit); err == nil && l > 0 && l <= 100 {
-			limitInt = l
-		}
-	}
-
-	offsetInt := 0
-	if offset != "" {
-		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-			offsetInt = o
-		}
-	}
 
 	if sortBy == "" {
 		sortBy = "created_at"
@@ -278,8 +252,8 @@ func (h *Handler) listClips(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := &ListClipsOpts{
-		Limit:      limitInt,
-		Offset:     offsetInt,
+		Limit:      page.Limit,
+		Offset:     page.Offset,
 		SortBy:     sortBy,
 		SortOrder:  sortOrder,
 		IsFeatured: featured == "true",
@@ -315,12 +289,7 @@ func (h *Handler) listClips(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"clips":  clips,
-		"total":  count,
-		"limit":  limitInt,
-		"offset": offsetInt,
-	})
+	httpx.List(w, clips, page.WithTotal(int(count)))
 }
 
 // createClip handles POST /play/clips
@@ -338,7 +307,7 @@ func (h *Handler) createClip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusCreated, map[string]interface{}{"clip": clip})
+	httpx.JSON(w, http.StatusCreated, clip)
 }
 
 // getClip handles GET /play/clips/{clipId}
@@ -356,7 +325,7 @@ func (h *Handler) getClip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"clip": clip})
+	httpx.JSON(w, http.StatusOK, clip)
 }
 
 // deleteClip handles DELETE /play/clips/{clipId}
@@ -375,36 +344,26 @@ func (h *Handler) deleteClip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	httpx.NoContent(w)
 }
 
 // listStreams handles GET /play/streams
 func (h *Handler) listStreams(w http.ResponseWriter, r *http.Request) {
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	leagueID := r.URL.Query().Get("league_id")
 	status := r.URL.Query().Get("status")
 	upcoming := r.URL.Query().Get("upcoming")
-	limit := r.URL.Query().Get("limit")
-	offset := r.URL.Query().Get("offset")
-
-	limitInt := 20
-	if limit != "" {
-		if l, err := strconv.Atoi(limit); err == nil && l > 0 && l <= 100 {
-			limitInt = l
-		}
-	}
-
-	offsetInt := 0
-	if offset != "" {
-		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-			offsetInt = o
-		}
-	}
 
 	opts := &ListStreamsOpts{
 		Status:   status,
 		Upcoming: upcoming == "true",
-		Limit:    limitInt,
-		Offset:   offsetInt,
+		Limit:    page.Limit,
+		Offset:   page.Offset,
 	}
 
 	if leagueID != "" {
@@ -419,12 +378,7 @@ func (h *Handler) listStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{
-		"streams": streams,
-		"total":   count,
-		"limit":   limitInt,
-		"offset":  offsetInt,
-	})
+	httpx.List(w, streams, page.WithTotal(int(count)))
 }
 
 // createStream handles POST /play/streams
@@ -442,7 +396,7 @@ func (h *Handler) createStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusCreated, map[string]interface{}{"stream": stream})
+	httpx.JSON(w, http.StatusCreated, stream)
 }
 
 // getStream handles GET /play/streams/{streamId}
@@ -460,7 +414,7 @@ func (h *Handler) getStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"stream": stream})
+	httpx.JSON(w, http.StatusOK, stream)
 }
 
 // updateStream handles PATCH /play/streams/{streamId}
@@ -485,7 +439,7 @@ func (h *Handler) updateStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"stream": stream})
+	httpx.JSON(w, http.StatusOK, stream)
 }
 
 // deleteStream handles DELETE /play/streams/{streamId}
@@ -504,7 +458,7 @@ func (h *Handler) deleteStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	httpx.NoContent(w)
 }
 
 // webhookMux handles POST /play/webhooks/mux
@@ -530,6 +484,5 @@ func (h *Handler) webhookMux(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 200 OK for successful webhook processing
-	httpx.JSON(w, http.StatusOK, map[string]interface{}{"received": true})
+	httpx.NoContent(w)
 }

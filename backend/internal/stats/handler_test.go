@@ -17,6 +17,12 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
+// listResponseHelper is used to decode list responses in tests
+type listResponseHelper[T any] struct {
+	Data []T        `json:"data"`
+	Page httpx.Page `json:"page"`
+}
+
 type fakeAuthz struct {
 	allowed bool
 }
@@ -194,13 +200,13 @@ func TestGetStandingsByTournament(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	var got []Standings
+	var got listResponseHelper[Standings]
 	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(got) != 1 || got[0].TeamName != "FC Local" {
-		t.Errorf("standings = %+v, want FC Local", got)
+	if len(got.Data) != 1 || got.Data[0].TeamName != "FC Local" {
+		t.Errorf("standings = %+v, want FC Local", got.Data)
 	}
 }
 
@@ -318,13 +324,13 @@ func TestGetTopScorersByTournament(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	var got []TopScorersRow
+	var got listResponseHelper[TopScorersRow]
 	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(got) != 1 || got[0].PlayerName != "Ronaldo" {
-		t.Errorf("scorers = %+v, want Ronaldo", got)
+	if len(got.Data) != 1 || got.Data[0].PlayerName != "Ronaldo" {
+		t.Errorf("scorers = %+v, want Ronaldo", got.Data)
 	}
 }
 
@@ -353,13 +359,13 @@ func TestGetDisciplineByTournament(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	var got []DisciplineRow
+	var got listResponseHelper[DisciplineRow]
 	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
 
-	if len(got) != 1 || got[0].PlayerName != "Pepe" {
-		t.Errorf("discipline = %+v, want Pepe", got)
+	if len(got.Data) != 1 || got.Data[0].PlayerName != "Pepe" {
+		t.Errorf("discipline = %+v, want Pepe", got.Data)
 	}
 }
 
@@ -643,5 +649,45 @@ func TestPublicStatsHiddenForInactiveLeague(t *testing.T) {
 	}
 	if _, err := svc.GetTopScorersByTournament(context.Background(), tournamentID); !errors.Is(err, httpx.ErrNotFound) {
 		t.Fatalf("top scorers err = %v, want not found", err)
+	}
+}
+
+func TestGetStandingsByTournament_EmptyList(t *testing.T) {
+	tournamentID := uuid.New()
+	standings := []Standings{}
+
+	repo := fakeRepo{standings: map[uuid.UUID][]Standings{tournamentID: standings}}
+	router := newTestRouter(repo, &fakeAuthz{allowed: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/tournaments/"+tournamentID.String()+"/standings", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var got listResponseHelper[Standings]
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Data == nil || len(got.Data) != 0 {
+		t.Errorf("expected empty data array, got %+v", got.Data)
+	}
+}
+
+func TestGetStandingsByTournament_InvalidLimit(t *testing.T) {
+	tournamentID := uuid.New()
+
+	repo := fakeRepo{standings: map[uuid.UUID][]Standings{tournamentID: []Standings{}}}
+	router := newTestRouter(repo, &fakeAuthz{allowed: true})
+
+	req := httptest.NewRequest(http.MethodGet, "/tournaments/"+tournamentID.String()+"/standings?limit=abc", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
 	}
 }

@@ -2,7 +2,6 @@ package finance
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -100,7 +99,13 @@ func (h *Handler) listTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filters := parseTransactionFilters(r)
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	filters := parseTransactionFilters(r, page)
 
 	txns, err := h.svc.ListTransactions(r.Context(), caller, leagueID, filters)
 	if err != nil {
@@ -108,7 +113,7 @@ func (h *Handler) listTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]any{"data": txns})
+	httpx.List(w, txns, page)
 }
 
 func (h *Handler) listTeamTransactions(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +129,13 @@ func (h *Handler) listTeamTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filters := parseTransactionFilters(r)
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
+	filters := parseTransactionFilters(r, page)
 
 	txns, err := h.svc.ListTeamTransactions(r.Context(), caller, leagueID, teamID, filters)
 	if err != nil {
@@ -132,7 +143,7 @@ func (h *Handler) listTeamTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]any{"data": txns})
+	httpx.List(w, txns, page)
 }
 
 func (h *Handler) getTransaction(w http.ResponseWriter, r *http.Request) {
@@ -330,13 +341,19 @@ func (h *Handler) listTeamBalances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, err := httpx.ParsePage(r)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+
 	balances, err := h.svc.ListTeamBalances(r.Context(), caller, leagueID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]any{"data": balances})
+	httpx.List(w, balances, page)
 }
 
 func (h *Handler) getLeagueSummary(w http.ResponseWriter, r *http.Request) {
@@ -378,10 +395,10 @@ func (h *Handler) generateFinesFromMatch(w http.ResponseWriter, r *http.Request)
 
 // Helper
 
-func parseTransactionFilters(r *http.Request) *ListTransactionsFilters {
+func parseTransactionFilters(r *http.Request, page httpx.Page) *ListTransactionsFilters {
 	filters := &ListTransactionsFilters{
-		Limit:  100,
-		Offset: 0,
+		Limit:  page.Limit,
+		Offset: page.Offset,
 	}
 
 	if status := r.URL.Query().Get("status"); status != "" && status != "all" {
@@ -392,18 +409,6 @@ func parseTransactionFilters(r *http.Request) *ListTransactionsFilters {
 	if txType := r.URL.Query().Get("transaction_type"); txType != "" && txType != "all" {
 		t := TransactionType(txType)
 		filters.TransactionType = &t
-	}
-
-	if limit := r.URL.Query().Get("limit"); limit != "" {
-		if n, err := strconv.Atoi(limit); err == nil && n > 0 && n <= 100 {
-			filters.Limit = n
-		}
-	}
-
-	if offset := r.URL.Query().Get("offset"); offset != "" {
-		if n, err := strconv.Atoi(offset); err == nil && n >= 0 {
-			filters.Offset = n
-		}
 	}
 
 	if dateFrom := r.URL.Query().Get("date_from"); dateFrom != "" {
