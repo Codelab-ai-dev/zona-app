@@ -20,6 +20,17 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | POST | `/api/v1/agent/messages` | token |
 | POST | `/api/v1/agent/webhooks/kapso` | público |
 
+## auth
+
+| Method | Path | Access |
+|---|---|---|
+| POST | `/api/v1/auth/login` | público |
+| POST | `/api/v1/auth/logout` | público |
+| POST | `/api/v1/auth/password/change` | token |
+| POST | `/api/v1/auth/password/forgot` | público |
+| POST | `/api/v1/auth/password/reset` | público |
+| POST | `/api/v1/auth/refresh` | público |
+
 ## coaching-staff
 
 | Method | Path | Access |
@@ -230,4 +241,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 124 routes.
+Total: 130 routes.

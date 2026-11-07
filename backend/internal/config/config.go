@@ -33,12 +33,30 @@ type Config struct {
 	SupabaseURL            string
 	SupabaseServiceRoleKey string
 
+	// AppURL is the public web URL (password-reset links).
+	AppURL string
+	// SMTP delivers password-reset email. Required in production; in
+	// development, mail is logged instead of sent.
+	SMTP SMTPConfig
+
 	Storage       StorageConfig
 	Notifications NotificationsConfig
 	Mux           MuxConfig
 	OpenAI        OpenAIConfig
 	Agent         AgentConfig
 }
+
+// SMTPConfig configures the outgoing mail relay (STARTTLS required).
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
+}
+
+// Enabled reports whether mail can be sent.
+func (c SMTPConfig) Enabled() bool { return c.Host != "" && c.From != "" }
 
 // AgentConfig configures the AI league assistant (OpenAI-compatible LLM,
 // Groq by default) and its WhatsApp webhook.
@@ -116,6 +134,13 @@ func Load() (Config, error) {
 		SupabaseJWTSecret: os.Getenv("SUPABASE_JWT_SECRET"),
 		JWTIssuer:         getEnv("JWT_ISSUER", "zona-api"),
 
+		AppURL: strings.TrimRight(getEnv("APP_URL", "http://localhost:5173"), "/"),
+		SMTP: SMTPConfig{
+			Host:     os.Getenv("SMTP_HOST"),
+			Username: os.Getenv("SMTP_USERNAME"),
+			Password: os.Getenv("SMTP_PASSWORD"),
+			From:     os.Getenv("SMTP_FROM"),
+		},
 		SupabaseURL:            os.Getenv("SUPABASE_URL"),
 		SupabaseServiceRoleKey: os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
 		Storage: StorageConfig{
@@ -159,6 +184,9 @@ func Load() (Config, error) {
 	if cfg.ShutdownTimeout, err = parseDuration("SHUTDOWN_TIMEOUT", 15*time.Second); err != nil {
 		return Config{}, err
 	}
+	if cfg.SMTP.Port, err = parseInt("SMTP_PORT", 587); err != nil {
+		return Config{}, err
+	}
 	if cfg.AccessTokenTTL, err = parseDuration("ACCESS_TOKEN_TTL", 15*time.Minute); err != nil {
 		return Config{}, err
 	}
@@ -185,6 +213,12 @@ func (c Config) validate() error {
 	}
 	if c.Notifications.Enabled() && c.Notifications.PublicSiteURL == "" {
 		errs = append(errs, errors.New("PUBLIC_SITE_URL is required when notifications are enabled"))
+	}
+	if c.IsProduction() && !c.SMTP.Enabled() {
+		errs = append(errs, errors.New("SMTP_HOST and SMTP_FROM are required in production (password reset)"))
+	}
+	if c.IsProduction() && !strings.HasPrefix(c.AppURL, "https://") {
+		errs = append(errs, errors.New("APP_URL must be https:// in production"))
 	}
 	if c.IsProduction() && len(c.AllowedOrigins) == 0 {
 		errs = append(errs, errors.New("CORS_ALLOWED_ORIGINS is required in production"))
@@ -217,6 +251,18 @@ func parseBool(key string, fallback bool) (bool, error) {
 	v, err := strconv.ParseBool(raw)
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", key, err)
+	}
+	return v, nil
+}
+
+func parseInt(key string, fallback int) (int, error) {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback, nil
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", key, err)
 	}
 	return v, nil
 }

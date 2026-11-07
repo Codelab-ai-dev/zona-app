@@ -61,6 +61,14 @@ var anonymousAllowed = map[string]bool{
 	"GET /api/v1/matches/{matchID}":                           true,
 	"GET /api/v1/teams/{teamID}/matches":                      true,
 	"GET /api/v1/leagues/{leagueID}/matches/pending":          true,
+
+	// Session endpoints: anonymous by definition; brute force is limited per
+	// IP+email (login) and per IP (forgot), refresh needs a valid token.
+	"POST /api/v1/auth/login":           true,
+	"POST /api/v1/auth/refresh":         true,
+	"POST /api/v1/auth/logout":          true,
+	"POST /api/v1/auth/password/forgot": true,
+	"POST /api/v1/auth/password/reset":  true,
 }
 
 // TestEveryRouteRequiresAuthUnlessAllowlisted mounts every module with all
@@ -90,11 +98,11 @@ func newTestAPI(t *testing.T) http.Handler {
 		OpenAI:                 config.OpenAIConfig{BaseURL: "http://openai.invalid", APIKey: "k", EmbeddingModel: "m"},
 		Agent:                  config.AgentConfig{LLMBaseURL: "http://llm.invalid", LLMAPIKey: "k", LLMModel: "m", KapsoWebhookSecret: "whsec"},
 	}
-	modules, err := buildModules(t.Context(), cfg, pool)
+	tokens := auth.NewTokenService(strings.Repeat("x", 32), "zona-api", time.Minute, "")
+	modules, err := buildModules(t.Context(), cfg, pool, tokens)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokens := auth.NewTokenService(strings.Repeat("x", 32), "zona-api", time.Minute, "")
 	handler := server.NewRouter(server.Deps{
 		Auth:    auth.NewMiddleware(tokens, auth.NewPGProfileLoader(pool)),
 		Health:  http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }),

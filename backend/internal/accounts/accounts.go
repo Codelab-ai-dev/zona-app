@@ -34,6 +34,9 @@ func (r CreateUserRequest) Validate() map[string]string {
 		errs["password"] = "La contraseña es requerida"
 	} else if len(r.Password) < 10 {
 		errs["password"] = "La contraseña debe tener al menos 10 caracteres"
+	} else if len(r.Password) > 72 {
+		// bcrypt only uses the first 72 bytes; reject instead of truncating.
+		errs["password"] = "La contraseña debe tener como máximo 72 caracteres"
 	}
 
 	if r.Name == "" {

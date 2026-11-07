@@ -28,8 +28,10 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/matches"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/notifications"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/mail"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/play"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/server"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/session"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/stats"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/storage"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/teams"
@@ -68,7 +70,7 @@ func run() error {
 	tokens := auth.NewTokenService(cfg.JWTSecret, cfg.JWTIssuer, cfg.AccessTokenTTL, cfg.SupabaseJWTSecret)
 	authMW := auth.NewMiddleware(tokens, auth.NewPGProfileLoader(pool))
 
-	modules, err := buildModules(ctx, cfg, pool)
+	modules, err := buildModules(ctx, cfg, pool, tokens)
 	if err != nil {
 		return err
 	}
@@ -109,12 +111,31 @@ func run() error {
 	return srv.Shutdown(shutdownCtx)
 }
 
+// buildSession wires login/refresh/logout/password flows.
+func buildSession(cfg config.Config, pool *pgxpool.Pool, tokens *auth.TokenService) server.Module {
+	var mailer mail.Sender = mail.LogSender{}
+	if cfg.SMTP.Enabled() {
+		mailer = mail.NewSMTPSender(mail.SMTPConfig{
+			Host: cfg.SMTP.Host, Port: cfg.SMTP.Port,
+			Username: cfg.SMTP.Username, Password: cfg.SMTP.Password, From: cfg.SMTP.From,
+		})
+	} else {
+		slog.Warn("SMTP not configured: password-reset emails are logged, not sent (development only)")
+	}
+	svc := session.NewService(session.NewPGRepository(pool), tokens, mailer, session.Config{
+		AppURL:        cfg.AppURL,
+		SecureCookies: cfg.IsProduction(),
+	})
+	return session.NewHandler(svc, cfg.IsProduction())
+}
+
 // buildModules wires every feature package. Integrations whose settings are
 // missing are not mounted (their routes return 404) and a warning is logged,
 // so the API never runs a half-configured module.
-func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) ([]server.Module, error) {
+func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, tokens *auth.TokenService) ([]server.Module, error) {
 	checker := authz.NewPGChecker(pool)
 	modules := []server.Module{
+		buildSession(cfg, pool, tokens),
 		users.NewHandler(users.NewService(users.NewPGRepository(pool))),
 		leagues.NewHandler(leagues.NewService(leagues.NewPGRepository(pool), checker)),
 		teams.NewHandler(teams.NewService(teams.NewPGRepository(pool), pool, checker)),
@@ -125,15 +146,17 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool) ([
 		matches.NewHandler(matches.NewService(matches.NewPGRepository(pool), checker, pool)),
 	}
 
+	// Identities live in our own auth.users unless the API still runs
+	// against Supabase (transition period before the cutover).
+	var identity accounts.IdentityProvider = accounts.NewLocalIdentityProvider(pool)
 	if cfg.SupabaseURL != "" {
-		identity := accounts.NewSupabaseIdentityProvider(accounts.Config{
+		slog.Warn("accounts: using Supabase identities (transition mode)")
+		identity = accounts.NewSupabaseIdentityProvider(accounts.Config{
 			SupabaseURL:    cfg.SupabaseURL,
 			ServiceRoleKey: cfg.SupabaseServiceRoleKey,
 		})
-		modules = append(modules, accounts.NewHandler(accounts.NewService(accounts.NewPGRepository(pool), identity, checker)))
-	} else {
-		slog.Warn("module disabled: accounts (SUPABASE_URL not set)")
 	}
+	modules = append(modules, accounts.NewHandler(accounts.NewService(accounts.NewPGRepository(pool), identity, checker)))
 
 	if cfg.Storage.Enabled() {
 		storageCfg := storage.Config{

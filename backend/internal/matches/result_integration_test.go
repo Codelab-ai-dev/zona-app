@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
@@ -79,5 +81,45 @@ func TestPostResultStoresObservationsInRefereeReport(t *testing.T) {
 	}
 	if got != "Partido sin incidentes" {
 		t.Fatalf("observations = %q", got)
+	}
+}
+
+// Regression: once a league had standings, finishing another match failed
+// inside the knowledge trigger (format('%+4s') is not valid PostgreSQL).
+func TestPostResultForSecondMatchOfLeague(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	ctx := context.Background()
+	svc := NewService(NewPGRepository(pool), authz.NewPGChecker(pool), pool)
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+
+	var second uuid.UUID
+	if err := pool.QueryRow(ctx, `
+		INSERT INTO public.matches (tournament_id, home_team_id, away_team_id, match_date, match_time, round, status)
+		VALUES ($1, $2, $3, now(), '20:00', 2, 'scheduled') RETURNING id`,
+		f.TournamentID, f.AwayTeamID, f.HomeTeamID).Scan(&second); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := svc.PostResult(ctx, admin, f.MatchID, PostMatchResultRequest{HomeScore: 1, AwayScore: 0,
+		Goals: []PostGoalRequest{{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 5}}}); err != nil {
+		t.Fatalf("first match: %v", err)
+	}
+	if err := svc.PostResult(ctx, admin, second, PostMatchResultRequest{HomeScore: 0, AwayScore: 3,
+		Goals: []PostGoalRequest{
+			{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 10},
+			{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 20},
+			{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 30},
+		}}); err != nil {
+		t.Fatalf("second match of the league: %v", err)
+	}
+
+	var played int
+	if err := pool.QueryRow(ctx, `SELECT matches_played FROM public.team_stats WHERE team_id = $1 AND tournament_id = $2`,
+		f.HomeTeamID, f.TournamentID).Scan(&played); err != nil {
+		t.Fatal(err)
+	}
+	if played != 2 {
+		t.Errorf("matches_played = %d, want 2", played)
 	}
 }
