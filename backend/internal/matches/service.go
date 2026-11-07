@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -346,6 +347,16 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 		for _, inc := range req.Incidents {
 			if _, err := txRepo.CreateIncident(ctx, matchID, inc); err != nil {
 				return err
+			}
+		}
+
+		if req.Observations != nil {
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO public.match_referee_reports (match_id, general_observations)
+				VALUES ($1, $2)
+				ON CONFLICT (match_id) DO UPDATE SET general_observations = EXCLUDED.general_observations, updated_at = now()`,
+				matchID, strings.TrimSpace(*req.Observations)); err != nil {
+				return fmt.Errorf("save observations: %w", err)
 			}
 		}
 

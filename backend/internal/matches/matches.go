@@ -83,6 +83,12 @@ type Match struct {
 	IsPublished     bool          `json:"is_published"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
+	// Team display data, filled for list and detail responses so clients
+	// don't need one request per team.
+	HomeTeamName string  `json:"home_team_name"`
+	AwayTeamName string  `json:"away_team_name"`
+	HomeTeamLogo *string `json:"home_team_logo,omitempty"`
+	AwayTeamLogo *string `json:"away_team_logo,omitempty"`
 }
 
 // MatchWithRelations includes related data fetched from other tables.
@@ -293,6 +299,9 @@ type PostMatchResultRequest struct {
 	Goals     []PostGoalRequest     `json:"goals,omitempty"`
 	Cards     []PostCardRequest     `json:"cards,omitempty"`
 	Incidents []PostIncidentRequest `json:"incidents,omitempty"`
+	// Observations are the referee's general observations; stored in the
+	// match referee report (legacy behaviour of the result form).
+	Observations *string `json:"observations,omitempty"`
 }
 
 // Validate checks request constraints.

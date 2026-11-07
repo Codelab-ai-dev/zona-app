@@ -56,7 +56,11 @@ func (r *PGRepository) GetMatchByID(ctx context.Context, matchID uuid.UUID) (Mat
 		m.Leg = &l
 	}
 
-	return m, nil
+	one := []Match{m}
+	if err := r.attachTeams(ctx, one); err != nil {
+		return Match{}, err
+	}
+	return one[0], nil
 }
 
 // GetMatchWithRelations retrieves a match with related teams, goals, cards, and incidents.
@@ -218,6 +222,12 @@ func (r *PGRepository) ListMatchesByTournament(ctx context.Context, tournamentID
 		matches = append(matches, m)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate matches: %w", err)
+	}
+	if err := r.attachTeams(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -290,6 +300,12 @@ func (r *PGRepository) ListMatchesByTeam(ctx context.Context, teamID uuid.UUID, 
 		matches = append(matches, m)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate matches: %w", err)
+	}
+	if err := r.attachTeams(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -341,6 +357,12 @@ func (r *PGRepository) ListUpcomingMatches(ctx context.Context, tournamentID uui
 		matches = append(matches, m)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate matches: %w", err)
+	}
+	if err := r.attachTeams(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -392,6 +414,12 @@ func (r *PGRepository) ListPendingMatchesByLeague(ctx context.Context, leagueID 
 		matches = append(matches, m)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate matches: %w", err)
+	}
+	if err := r.attachTeams(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -817,4 +845,42 @@ func (r *PGRepository) TournamentLeagueActive(ctx context.Context, tournamentID 
 		return false, fmt.Errorf("tournament league active: %w", err)
 	}
 	return active, nil
+}
+
+// attachTeams fills team names and logos for matches with one query.
+func (r *PGRepository) attachTeams(ctx context.Context, matches []Match) error {
+	if len(matches) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, 0, 2*len(matches))
+	for _, m := range matches {
+		ids = append(ids, m.HomeTeamID, m.AwayTeamID)
+	}
+	rows, err := r.db.Query(ctx, `SELECT id, name, logo FROM public.teams WHERE id = ANY($1)`, ids)
+	if err != nil {
+		return fmt.Errorf("load match teams: %w", err)
+	}
+	defer rows.Close()
+	type teamRef struct {
+		name string
+		logo *string
+	}
+	teams := make(map[uuid.UUID]teamRef, len(ids))
+	for rows.Next() {
+		var id uuid.UUID
+		var t teamRef
+		if err := rows.Scan(&id, &t.name, &t.logo); err != nil {
+			return fmt.Errorf("scan match team: %w", err)
+		}
+		teams[id] = t
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate match teams: %w", err)
+	}
+	for i := range matches {
+		h, a := teams[matches[i].HomeTeamID], teams[matches[i].AwayTeamID]
+		matches[i].HomeTeamName, matches[i].HomeTeamLogo = h.name, h.logo
+		matches[i].AwayTeamName, matches[i].AwayTeamLogo = a.name, a.logo
+	}
+	return nil
 }

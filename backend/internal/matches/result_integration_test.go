@@ -61,3 +61,23 @@ func TestPostResultIsIdempotent(t *testing.T) {
 		t.Errorf("home_score = %d, want 1", n)
 	}
 }
+
+func TestPostResultStoresObservationsInRefereeReport(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	ctx := context.Background()
+	svc := NewService(NewPGRepository(pool), authz.NewPGChecker(pool), pool)
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+	obs := "  Partido sin incidentes  "
+
+	if err := svc.PostResult(ctx, admin, f.MatchID, PostMatchResultRequest{HomeScore: 1, AwayScore: 0, Observations: &obs}); err != nil {
+		t.Fatalf("PostResult: %v", err)
+	}
+	var got string
+	if err := pool.QueryRow(ctx, `SELECT general_observations FROM public.match_referee_reports WHERE match_id = $1`, f.MatchID).Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got != "Partido sin incidentes" {
+		t.Fatalf("observations = %q", got)
+	}
+}

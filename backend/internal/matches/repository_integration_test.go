@@ -578,3 +578,22 @@ func TestPostResult_Idempotency(t *testing.T) {
 		t.Errorf("status: got %v, want %v", updated.Status, MatchStatusFinished)
 	}
 }
+
+func TestMatchListsIncludeTeamNames(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	repo := NewPGRepository(pool)
+	ctx := context.Background()
+
+	list, err := repo.ListMatchesByTournament(ctx, f.TournamentID, ListMatchesFilter{})
+	if err != nil || len(list) != 1 {
+		t.Fatalf("list = %v, %v", list, err)
+	}
+	if list[0].HomeTeamName != "Local FC" || list[0].AwayTeamName != "Visita FC" {
+		t.Fatalf("names = %q vs %q", list[0].HomeTeamName, list[0].AwayTeamName)
+	}
+	one, err := repo.GetMatchByID(ctx, f.MatchID)
+	if err != nil || one.HomeTeamName != "Local FC" {
+		t.Fatalf("get = %+v, %v", one, err)
+	}
+}
