@@ -302,10 +302,7 @@ export function LoginForm() {
                 {configError && (
                   <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
                     <p className="text-amber-400 text-sm">
-                      Problema de configuración.{' '}
-                      <a href="/debug-login" className="underline hover:text-amber-300 transition-colors">
-                        Ver depuración
-                      </a>
+                      Problema de configuración. Contacta al administrador.
                     </p>
                   </div>
                 )}
