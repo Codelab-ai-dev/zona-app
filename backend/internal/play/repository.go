@@ -56,43 +56,18 @@ func (r *PGRepository) ListRecordings(ctx context.Context, opts *ListRecordingsO
 		opts.Limit = 100
 	}
 
-	var query strings.Builder
-	var args []interface{}
-	argCount := 1
-
-	query.WriteString(`
+	// One WHERE clause feeds both the page and the total so they never drift.
+	where, args := recordingFilters(opts)
+	n := len(args)
+	query := `
 		SELECT id, match_id, league_id, tournament_id, source_type, source_device_id,
 		       video_url, mux_asset_id, mux_playback_id, title, description, thumbnail_url,
 		       duration_seconds, resolution, file_size_bytes, status, processing_progress,
 		       error_message, visibility, is_premium, price_cents, views_count, likes_count,
 		       published_at, uploaded_by, home_score, away_score, created_at, updated_at
-		FROM public.match_recordings
-		WHERE 1=1
-	`)
+		FROM public.match_recordings` + where + fmt.Sprintf(` ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, n+1, n+2)
 
-	if opts.LeagueID != nil {
-		query.WriteString(fmt.Sprintf(` AND league_id = $%d`, argCount))
-		args = append(args, *opts.LeagueID)
-		argCount++
-	}
-
-	if opts.Status != "" {
-		query.WriteString(fmt.Sprintf(` AND status = $%d`, argCount))
-		args = append(args, opts.Status)
-		argCount++
-	}
-
-	if opts.Visibility != "" {
-		query.WriteString(fmt.Sprintf(` AND visibility = $%d`, argCount))
-		args = append(args, opts.Visibility)
-		argCount++
-	}
-
-	query.WriteString(` ORDER BY created_at DESC`)
-	query.WriteString(fmt.Sprintf(` LIMIT $%d OFFSET $%d`, argCount, argCount+1))
-	args = append(args, opts.Limit, opts.Offset)
-
-	rows, err := r.db.Query(ctx, query.String(), args...)
+	rows, err := r.db.Query(ctx, query, append(args, opts.Limit, opts.Offset)...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query recordings: %w", err)
 	}
@@ -114,34 +89,49 @@ func (r *PGRepository) ListRecordings(ctx context.Context, opts *ListRecordingsO
 		recordings = append(recordings, rec)
 	}
 
-	// Count total records
-	countQuery := `SELECT COUNT(*) FROM public.match_recordings WHERE 1=1`
-	countArgs := []interface{}{}
-	countArgCount := 1
-
-	if opts.LeagueID != nil {
-		countQuery += fmt.Sprintf(` AND league_id = $%d`, countArgCount)
-		countArgs = append(countArgs, *opts.LeagueID)
-		countArgCount++
-	}
-	if opts.Status != "" {
-		countQuery += fmt.Sprintf(` AND status = $%d`, countArgCount)
-		countArgs = append(countArgs, opts.Status)
-		countArgCount++
-	}
-	if opts.Visibility != "" {
-		countQuery += fmt.Sprintf(` AND visibility = $%d`, countArgCount)
-		countArgs = append(countArgs, opts.Visibility)
-		countArgCount++
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate recordings: %w", err)
 	}
 
-	var count int64
-	err = r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&count)
-	if err != nil {
+	var total int64
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM public.match_recordings`+where, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count recordings: %w", err)
 	}
+	return recordings, total, nil
+}
 
-	return recordings, count, nil
+// recordingFilters builds a parameterized WHERE clause from the options.
+func recordingFilters(opts *ListRecordingsOpts) (string, []any) {
+	var conds []string
+	var args []any
+	add := func(cond string, v any) {
+		args = append(args, v)
+		conds = append(conds, fmt.Sprintf(cond, len(args)))
+	}
+	if opts.LeagueID != nil {
+		add("league_id = $%d", *opts.LeagueID)
+	}
+	if opts.Status != "" {
+		add("status = $%d", opts.Status)
+	}
+	if opts.Visibility != "" {
+		add("visibility = $%d", opts.Visibility)
+	}
+	if opts.TeamID != nil {
+		add("match_id IN (SELECT id FROM public.matches WHERE home_team_id = $%[1]d OR away_team_id = $%[1]d)", *opts.TeamID)
+	}
+	if q := strings.TrimSpace(opts.Query); q != "" {
+		add(`(title ILIKE $%[1]d ESCAPE '\' OR description ILIKE $%[1]d ESCAPE '\')`, "%"+escapeLike(q)+"%")
+	}
+	if len(conds) == 0 {
+		return "", nil
+	}
+	return " WHERE " + strings.Join(conds, " AND "), args
+}
+
+// escapeLike escapes LIKE wildcards so user text matches literally.
+func escapeLike(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }
 
 // CreateRecording inserts a new recording.

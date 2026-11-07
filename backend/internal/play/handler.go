@@ -74,34 +74,34 @@ func (h *Handler) listRecordings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	leagueID := r.URL.Query().Get("league_id")
-	status := r.URL.Query().Get("status")
-	visibility := r.URL.Query().Get("visibility")
-
+	q := r.URL.Query()
 	opts := &ListRecordingsOpts{
-		Status:     status,
-		Visibility: visibility,
+		Status:     q.Get("status"),
+		Visibility: q.Get("visibility"),
+		Query:      q.Get("q"),
 		Limit:      page.Limit,
 		Offset:     page.Offset,
 	}
-
-	// Anonymous callers only see public/ready
-	if _, ok := auth.FromContext(r.Context()); !ok {
-		if opts.Visibility == "" {
-			opts.Visibility = "public"
-		}
-		if opts.Status == "" {
-			opts.Status = "ready"
-		}
-	}
-
-	if leagueID != "" {
-		if id, err := uuid.Parse(leagueID); err == nil {
-			opts.LeagueID = &id
+	for name, dst := range map[string]**uuid.UUID{"league_id": &opts.LeagueID, "team_id": &opts.TeamID} {
+		if raw := q.Get(name); raw != "" {
+			id, err := uuid.Parse(raw)
+			if err != nil {
+				httpx.WriteError(w, r, httpx.Validation(map[string]string{name: "debe ser un UUID válido"}))
+				return
+			}
+			*dst = &id
 		}
 	}
+	if len([]rune(opts.Query)) > 100 {
+		httpx.WriteError(w, r, httpx.Validation(map[string]string{"q": "máximo 100 caracteres"}))
+		return
+	}
 
-	recordings, count, err := h.svc.ListRecordings(r.Context(), opts)
+	var caller *auth.Principal
+	if p, ok := auth.FromContext(r.Context()); ok {
+		caller = &p
+	}
+	recordings, count, err := h.svc.ListRecordings(r.Context(), caller, opts)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

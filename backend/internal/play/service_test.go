@@ -334,7 +334,7 @@ func TestListRecordings_Happy(t *testing.T) {
 	svc := NewService(repo, provider, authz)
 
 	ctx := context.Background()
-	recs, count, err := svc.ListRecordings(ctx, nil)
+	recs, count, err := svc.ListRecordings(ctx, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -343,5 +343,47 @@ func TestListRecordings_Happy(t *testing.T) {
 	}
 	if len(recs) != 2 {
 		t.Errorf("expected 2 recordings, got %d", len(recs))
+	}
+}
+
+// TestListRecordingsForcesPublicForNonManagers guards the visibility leak where
+// ?visibility=private was honoured for anonymous callers.
+func TestListRecordingsForcesPublicForNonManagers(t *testing.T) {
+	var seen *ListRecordingsOpts
+	repo := &FakeRepository{ListRecordingsFunc: func(_ context.Context, opts *ListRecordingsOpts) ([]*Recording, int64, error) {
+		seen = opts
+		return nil, 0, nil
+	}}
+	league := uuid.New()
+	tests := []struct {
+		name       string
+		caller     *auth.Principal
+		canManage  bool
+		wantForced bool
+	}{
+		{"anonymous", nil, false, true},
+		{"authenticated non-manager", &auth.Principal{UserID: uuid.New(), Role: auth.RoleTeamOwner}, false, true},
+		{"league manager", &auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin}, true, false},
+		{"super admin", &auth.Principal{UserID: uuid.New(), Role: auth.RoleSuperAdmin}, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			authz := &FakeAuthzChecker{}
+			if !tt.canManage {
+				authz.CanManageLeagueFunc = func(context.Context, auth.Principal, uuid.UUID) error { return httpx.ErrForbidden }
+			}
+			svc := NewService(repo, &FakeMuxClient{}, authz)
+			_, _, _ = svc.ListRecordings(context.Background(), tt.caller, &ListRecordingsOpts{LeagueID: &league, Visibility: "private", Status: "processing"})
+			forced := seen.Visibility == "public" && seen.Status == "ready"
+			if forced != tt.wantForced {
+				t.Fatalf("visibility=%s status=%s, forced=%v want %v", seen.Visibility, seen.Status, forced, tt.wantForced)
+			}
+		})
+	}
+}
+
+func TestEscapeLike(t *testing.T) {
+	if got := escapeLike(`50%_off\`); got != `50\%\_off\\` {
+		t.Fatalf("escapeLike = %q", got)
 	}
 }

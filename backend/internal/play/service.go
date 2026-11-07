@@ -44,14 +44,31 @@ func (s *Service) GetRecording(ctx context.Context, id uuid.UUID) (*Recording, e
 }
 
 // ListRecordings lists recordings (public reads allowed).
-func (s *Service) ListRecordings(ctx context.Context, opts *ListRecordingsOpts) ([]*Recording, int64, error) {
+func (s *Service) ListRecordings(ctx context.Context, caller *auth.Principal, opts *ListRecordingsOpts) ([]*Recording, int64, error) {
 	if opts == nil {
 		opts = &ListRecordingsOpts{}
 	}
 	if opts.Limit == 0 || opts.Limit > 100 {
 		opts.Limit = 100
 	}
+	// Only managers of the requested league (or super admins) may list
+	// private or unfinished recordings; everyone else gets public+ready,
+	// whatever filters they sent.
+	if !s.canSeeAllRecordings(ctx, caller, opts.LeagueID) {
+		opts.Visibility = "public"
+		opts.Status = "ready"
+	}
 	return s.repo.ListRecordings(ctx, opts)
+}
+
+func (s *Service) canSeeAllRecordings(ctx context.Context, caller *auth.Principal, leagueID *uuid.UUID) bool {
+	if caller == nil {
+		return false
+	}
+	if caller.IsSuperAdmin() {
+		return true
+	}
+	return leagueID != nil && s.authz.CanManageLeague(ctx, *caller, *leagueID) == nil
 }
 
 // CreateRecording creates a new recording (auth + authz required).

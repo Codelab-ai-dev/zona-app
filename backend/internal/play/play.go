@@ -337,6 +337,8 @@ type Repository interface {
 // ListRecordingsOpts filters recordings list.
 type ListRecordingsOpts struct {
 	LeagueID   *uuid.UUID
+	TeamID     *uuid.UUID // recordings of matches where the team plays
+	Query      string     // free-text search on title/description
 	Status     string
 	Visibility string
 	Limit      int
