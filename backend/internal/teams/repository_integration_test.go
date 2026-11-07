@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
 )
 
@@ -243,7 +244,7 @@ func TestRepository_PlayerRegistrationRequests_Integration(t *testing.T) {
 
 	// Test CreatePlayerRegistrationRequest
 	reqID := uuid.New()
-	birthDate := time.Now().AddDate(-20, 0, 0)
+	birthDate := httpx.NewDate(time.Now().AddDate(-20, 0, 0))
 	registrationReq := PlayerRegistrationRequest{
 		ID:             reqID,
 		TeamID:         f.HomeTeamID,

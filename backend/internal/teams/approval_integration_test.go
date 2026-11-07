@@ -9,6 +9,7 @@ import (
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
 )
 
@@ -24,7 +25,7 @@ func TestRegistrationApprovalCreatesPlayer(t *testing.T) {
 	svc := NewService(NewPGRepository(pool), pool, authz.NewPGChecker(pool))
 	owner := auth.Principal{UserID: f.TeamOwnerID, Role: auth.RoleTeamOwner, IsActive: true}
 	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
-	birth := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	birth := httpx.NewDate(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 
 	req, err := svc.RequestPlayerRegistration(ctx, owner, f.HomeTeamID, f.TournamentID,
 		CreatePlayerRegistrationRequestRequest{PlayerName: "Nuevo", PlayerPosition: "Defensa", JerseyNumber: 4, BirthDate: &birth})

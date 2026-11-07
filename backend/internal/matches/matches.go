@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
 // MatchStatus is the enum type for match statuses.
@@ -450,13 +452,13 @@ func (r PublishRoundRequest) Validate() map[string]string {
 
 // GeneratePlayoffsRequest generates a playoff bracket from standings.
 type GeneratePlayoffsRequest struct {
-	TournamentID    uuid.UUID `json:"tournament_id"`
-	NumTeams        int       `json:"num_teams"` // 4 or 8
-	StartDate       time.Time `json:"start_date"`
-	StartTime       string    `json:"start_time"` // HH:MM
-	FieldNumber     int       `json:"field_number"`
-	ThirdPlaceMatch bool      `json:"third_place_match"`
-	HomeAndAway     bool      `json:"home_and_away"` // Double-leg
+	TournamentID    uuid.UUID  `json:"tournament_id"`
+	NumTeams        int        `json:"num_teams"` // 4 or 8
+	StartDate       httpx.Date `json:"start_date"`
+	StartTime       string     `json:"start_time"` // HH:MM
+	FieldNumber     int        `json:"field_number"`
+	ThirdPlaceMatch bool       `json:"third_place_match"`
+	HomeAndAway     bool       `json:"home_and_away"` // Double-leg
 }
 
 // Validate checks request constraints.

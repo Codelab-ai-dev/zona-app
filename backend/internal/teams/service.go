@@ -445,7 +445,7 @@ func (s *Service) RequestPlayerRegistration(ctx context.Context, caller auth.Pri
 			return PlayerRegistrationRequest{}, fmt.Errorf("count exceptions: %w", err)
 		}
 
-		result := s.validatePlayerAge(*req.BirthDate, tournament, usedExceptions)
+		result := s.validatePlayerAge(req.BirthDate.Time, tournament, usedExceptions)
 		if !result.isValid {
 			errs["birth_date"] = result.reason
 		}

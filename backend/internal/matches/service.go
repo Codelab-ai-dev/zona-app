@@ -476,7 +476,7 @@ func (s *Service) GeneratePlayoffs(ctx context.Context, caller auth.Principal, r
 	}
 
 	// Build playoff bracket
-	bracket := NewPlayoffBracketBuilder(standings[:req.NumTeams], req.NumTeams, req.StartDate, req.StartTime,
+	bracket := NewPlayoffBracketBuilder(standings[:req.NumTeams], req.NumTeams, req.StartDate.Time, req.StartTime,
 		req.FieldNumber, req.ThirdPlaceMatch, req.HomeAndAway)
 	matches := bracket.Generate()
 

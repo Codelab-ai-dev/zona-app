@@ -14,6 +14,15 @@ import (
 
 func intp(n int) *int { return &n }
 
+// asDate converts an optional time to the API date type.
+func asDate(t *time.Time) *httpx.Date {
+	if t == nil {
+		return nil
+	}
+	d := httpx.NewDate(*t)
+	return &d
+}
+
 func date(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
 
 func TestValidatePlayerAge(t *testing.T) {
@@ -133,7 +142,7 @@ func TestRequestPlayerRegistrationRules(t *testing.T) {
 			svc := NewService(repo, nil, checker)
 
 			_, err := svc.RequestPlayerRegistration(context.Background(), owner, teamID, uuid.New(),
-				CreatePlayerRegistrationRequestRequest{PlayerName: "Ana", PlayerPosition: "Delantero", JerseyNumber: 9, BirthDate: tt.birth})
+				CreatePlayerRegistrationRequestRequest{PlayerName: "Ana", PlayerPosition: "Delantero", JerseyNumber: 9, BirthDate: asDate(tt.birth)})
 
 			if tt.wantField == "" {
 				if err != nil {

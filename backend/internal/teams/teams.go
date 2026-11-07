@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
+
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
 )
 
@@ -128,7 +130,7 @@ type Player struct {
 	Position             string      `json:"position"`
 	JerseyNumber         int         `json:"jersey_number"`
 	Photo                *string     `json:"photo,omitempty"`
-	BirthDate            *time.Time  `json:"birth_date,omitempty"`
+	BirthDate            *httpx.Date `json:"birth_date,omitempty"`
 	IsActive             bool        `json:"is_active"`
 	CreatedAt            time.Time   `json:"created_at"`
 	UpdatedAt            time.Time   `json:"updated_at"`
@@ -158,11 +160,11 @@ type PublicPlayer struct {
 
 // CreatePlayerRequest is the payload for creating a player.
 type CreatePlayerRequest struct {
-	Name         string     `json:"name"`
-	Position     string     `json:"position"`
-	JerseyNumber int        `json:"jersey_number"`
-	Photo        *string    `json:"photo,omitempty"`
-	BirthDate    *time.Time `json:"birth_date,omitempty"`
+	Name         string      `json:"name"`
+	Position     string      `json:"position"`
+	JerseyNumber int         `json:"jersey_number"`
+	Photo        *string     `json:"photo,omitempty"`
+	BirthDate    *httpx.Date `json:"birth_date,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -182,11 +184,11 @@ func (r *CreatePlayerRequest) Validate() map[string]string {
 
 // UpdatePlayerRequest is the payload for updating a player.
 type UpdatePlayerRequest struct {
-	Name         *string    `json:"name,omitempty"`
-	Position     *string    `json:"position,omitempty"`
-	JerseyNumber *int       `json:"jersey_number,omitempty"`
-	Photo        *string    `json:"photo,omitempty"`
-	BirthDate    *time.Time `json:"birth_date,omitempty"`
+	Name         *string     `json:"name,omitempty"`
+	Position     *string     `json:"position,omitempty"`
+	JerseyNumber *int        `json:"jersey_number,omitempty"`
+	Photo        *string     `json:"photo,omitempty"`
+	BirthDate    *httpx.Date `json:"birth_date,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -201,16 +203,16 @@ func (r *UpdatePlayerRequest) Validate() map[string]string {
 // CoachingStaff is the internal representation of a row in public.coaching_staff (includes PII).
 // Never expose this in public endpoints.
 type CoachingStaff struct {
-	ID        uuid.UUID  `json:"id"`
-	TeamID    uuid.UUID  `json:"team_id"`
-	Name      string     `json:"name"`
-	Role      string     `json:"role"`
-	Photo     *string    `json:"photo,omitempty"`
-	BirthDate *time.Time `json:"birth_date,omitempty"`
-	Cedula    *string    `json:"cedula,omitempty"`
-	IsActive  bool       `json:"is_active"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID        uuid.UUID   `json:"id"`
+	TeamID    uuid.UUID   `json:"team_id"`
+	Name      string      `json:"name"`
+	Role      string      `json:"role"`
+	Photo     *string     `json:"photo,omitempty"`
+	BirthDate *httpx.Date `json:"birth_date,omitempty"`
+	Cedula    *string     `json:"cedula,omitempty"`
+	IsActive  bool        `json:"is_active"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 // PublicCoachingStaff is the safe representation for anonymous/public endpoints.
@@ -226,11 +228,11 @@ type PublicCoachingStaff struct {
 
 // CreateCoachingStaffRequest is the payload for creating a coaching staff member.
 type CreateCoachingStaffRequest struct {
-	Name      string     `json:"name"`
-	Role      string     `json:"role"`
-	Photo     *string    `json:"photo,omitempty"`
-	BirthDate *time.Time `json:"birth_date,omitempty"`
-	Cedula    *string    `json:"cedula,omitempty"`
+	Name      string      `json:"name"`
+	Role      string      `json:"role"`
+	Photo     *string     `json:"photo,omitempty"`
+	BirthDate *httpx.Date `json:"birth_date,omitempty"`
+	Cedula    *string     `json:"cedula,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -247,11 +249,11 @@ func (r *CreateCoachingStaffRequest) Validate() map[string]string {
 
 // UpdateCoachingStaffRequest is the payload for updating a coaching staff member.
 type UpdateCoachingStaffRequest struct {
-	Name      *string    `json:"name,omitempty"`
-	Role      *string    `json:"role,omitempty"`
-	Photo     *string    `json:"photo,omitempty"`
-	BirthDate *time.Time `json:"birth_date,omitempty"`
-	Cedula    *string    `json:"cedula,omitempty"`
+	Name      *string     `json:"name,omitempty"`
+	Role      *string     `json:"role,omitempty"`
+	Photo     *string     `json:"photo,omitempty"`
+	BirthDate *httpx.Date `json:"birth_date,omitempty"`
+	Cedula    *string     `json:"cedula,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -261,30 +263,30 @@ func (r *UpdateCoachingStaffRequest) Validate() map[string]string {
 
 // PlayerRegistrationRequest is the public representation of a row in public.player_registration_requests.
 type PlayerRegistrationRequest struct {
-	ID             uuid.UUID  `json:"id"`
-	TeamID         uuid.UUID  `json:"team_id"`
-	TournamentID   uuid.UUID  `json:"tournament_id"`
-	PlayerName     string     `json:"player_name"`
-	PlayerPosition string     `json:"player_position"`
-	JerseyNumber   int        `json:"jersey_number"`
-	BirthDate      *time.Time `json:"birth_date,omitempty"`
-	Reason         string     `json:"reason"`
-	Status         string     `json:"status"`
-	RequestedBy    uuid.UUID  `json:"requested_by"`
-	ReviewedBy     *uuid.UUID `json:"reviewed_by,omitempty"`
-	ReviewNotes    *string    `json:"review_notes,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	ReviewedAt     *time.Time `json:"reviewed_at,omitempty"`
+	ID             uuid.UUID   `json:"id"`
+	TeamID         uuid.UUID   `json:"team_id"`
+	TournamentID   uuid.UUID   `json:"tournament_id"`
+	PlayerName     string      `json:"player_name"`
+	PlayerPosition string      `json:"player_position"`
+	JerseyNumber   int         `json:"jersey_number"`
+	BirthDate      *httpx.Date `json:"birth_date,omitempty"`
+	Reason         string      `json:"reason"`
+	Status         string      `json:"status"`
+	RequestedBy    uuid.UUID   `json:"requested_by"`
+	ReviewedBy     *uuid.UUID  `json:"reviewed_by,omitempty"`
+	ReviewNotes    *string     `json:"review_notes,omitempty"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+	ReviewedAt     *time.Time  `json:"reviewed_at,omitempty"`
 }
 
 // CreatePlayerRegistrationRequestRequest is the payload for requesting player registration.
 type CreatePlayerRegistrationRequestRequest struct {
-	PlayerName     string     `json:"player_name"`
-	PlayerPosition string     `json:"player_position"`
-	JerseyNumber   int        `json:"jersey_number"`
-	BirthDate      *time.Time `json:"birth_date,omitempty"`
-	Reason         string     `json:"reason"`
+	PlayerName     string      `json:"player_name"`
+	PlayerPosition string      `json:"player_position"`
+	JerseyNumber   int         `json:"jersey_number"`
+	BirthDate      *httpx.Date `json:"birth_date,omitempty"`
+	Reason         string      `json:"reason"`
 }
 
 // Validate checks the request for errors.
