@@ -13,7 +13,7 @@ import (
 )
 
 // LocalIdentityProvider implements IdentityProvider on the API's own
-// auth.users table (no Supabase). Passwords are stored as bcrypt hashes.
+// auth.users table. Passwords are stored as bcrypt hashes.
 type LocalIdentityProvider struct {
 	db database.Querier
 }

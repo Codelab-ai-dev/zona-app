@@ -2,8 +2,7 @@
 // rotating refresh tokens, logout, password reset and change.
 //
 // Security notes:
-//   - Passwords are bcrypt hashes in auth.users.encrypted_password (the same
-//     format GoTrue uses, so imported Supabase users keep their passwords).
+//   - Passwords are bcrypt hashes in auth.users.encrypted_password.
 //   - Refresh and reset tokens are 32 random bytes; only their SHA-256 is
 //     stored. Refresh tokens rotate on every use; presenting an already
 //     rotated token revokes the whole family (theft detection).

@@ -71,7 +71,7 @@ func (f *fakeAuthz) CanManagePlayer(ctx context.Context, p auth.Principal, playe
 func newTestRouter(store ObjectStore, checker authz.Checker, cfg Config) chi.Router {
 	r := chi.NewRouter()
 	svc := NewService(store, checker, cfg)
-	NewHandler(svc).Routes(r)
+	NewHandler(svc, nil).Routes(r)
 	return r
 }
 

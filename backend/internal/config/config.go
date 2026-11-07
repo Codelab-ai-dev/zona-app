@@ -21,17 +21,9 @@ type Config struct {
 	ShutdownTimeout time.Duration
 
 	// JWTSecret signs and verifies tokens issued by this API.
-	JWTSecret string
-	// SupabaseJWTSecret, when set, lets the API accept existing Supabase
-	// sessions during the migration. Remove once auth is cut over.
-	SupabaseJWTSecret string
-	JWTIssuer         string
-	AccessTokenTTL    time.Duration
-
-	// SupabaseURL and SupabaseServiceRoleKey back the GoTrue admin API used by
-	// the accounts module while identities still live in Supabase.
-	SupabaseURL            string
-	SupabaseServiceRoleKey string
+	JWTSecret      string
+	JWTIssuer      string
+	AccessTokenTTL time.Duration
 
 	// AppURL is the public web URL (password-reset links).
 	AppURL string
@@ -78,10 +70,17 @@ type StorageConfig struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	PublicBaseURL   string
+	// Dir is the local storage root (public/ and private/ inside) used when
+	// no S3 bucket is configured. Empty disables uploads.
+	Dir string
 }
 
-// Enabled reports whether enough settings are present to mount storage.
-func (c StorageConfig) Enabled() bool {
+// Enabled reports whether uploads are available (S3 or local disk).
+func (c StorageConfig) Enabled() bool { return c.S3Enabled() || c.Dir != "" }
+
+// S3Enabled reports whether an S3 bucket is configured. Without it, files
+// are stored on local disk under Dir (a Docker volume).
+func (c StorageConfig) S3Enabled() bool {
 	return c.Bucket != "" && c.AccessKeyID != "" && c.SecretAccessKey != ""
 }
 
@@ -126,13 +125,12 @@ func (c Config) IsProduction() bool { return c.Env == "production" }
 // Load reads configuration from environment variables and validates it.
 func Load() (Config, error) {
 	cfg := Config{
-		Env:               getEnv("APP_ENV", "development"),
-		HTTPAddr:          getEnv("HTTP_ADDR", ":8080"),
-		DatabaseURL:       os.Getenv("DATABASE_URL"),
-		AllowedOrigins:    splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
-		JWTSecret:         os.Getenv("JWT_SECRET"),
-		SupabaseJWTSecret: os.Getenv("SUPABASE_JWT_SECRET"),
-		JWTIssuer:         getEnv("JWT_ISSUER", "zona-api"),
+		Env:            getEnv("APP_ENV", "development"),
+		HTTPAddr:       getEnv("HTTP_ADDR", ":8080"),
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		AllowedOrigins: splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
+		JWTSecret:      os.Getenv("JWT_SECRET"),
+		JWTIssuer:      getEnv("JWT_ISSUER", "zona-api"),
 
 		AppURL: strings.TrimRight(getEnv("APP_URL", "http://localhost:5173"), "/"),
 		SMTP: SMTPConfig{
@@ -141,8 +139,6 @@ func Load() (Config, error) {
 			Password: os.Getenv("SMTP_PASSWORD"),
 			From:     os.Getenv("SMTP_FROM"),
 		},
-		SupabaseURL:            os.Getenv("SUPABASE_URL"),
-		SupabaseServiceRoleKey: os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
 		Storage: StorageConfig{
 			Endpoint:        os.Getenv("S3_ENDPOINT"),
 			Region:          getEnv("S3_REGION", "us-east-1"),
@@ -150,6 +146,7 @@ func Load() (Config, error) {
 			AccessKeyID:     os.Getenv("S3_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("S3_SECRET_ACCESS_KEY"),
 			PublicBaseURL:   os.Getenv("S3_PUBLIC_BASE_URL"),
+			Dir:             os.Getenv("STORAGE_DIR"),
 		},
 		Notifications: NotificationsConfig{
 			KapsoBaseURL:       getEnv("KAPSO_BASE_URL", "https://api.kapso.ai"),
@@ -204,9 +201,6 @@ func (c Config) validate() error {
 	}
 	if len(c.JWTSecret) < 32 {
 		errs = append(errs, errors.New("JWT_SECRET must be at least 32 characters"))
-	}
-	if (c.SupabaseURL == "") != (c.SupabaseServiceRoleKey == "") {
-		errs = append(errs, errors.New("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set together"))
 	}
 	if c.Mux.Enabled() && c.Mux.WebhookSecret == "" {
 		errs = append(errs, errors.New("MUX_WEBHOOK_SECRET is required when Mux is enabled"))

@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"net/http"
+	"path"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,12 +14,14 @@ import (
 
 // Handler translates HTTP to service calls.
 type Handler struct {
-	svc *Service
+	svc   *Service
+	files *FSStore // non-nil when files live on local disk
 }
 
-// NewHandler builds the storage HTTP handler.
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+// NewHandler builds the storage HTTP handler. Pass the FSStore when files
+// are stored locally so signed download links can be served.
+func NewHandler(svc *Service, files *FSStore) *Handler {
+	return &Handler{svc: svc, files: files}
 }
 
 // Routes implements server.Module.
@@ -27,6 +30,10 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Delete("/storage/objects", h.delete)
 	r.With(auth.RequireAuth).Get("/storage/objects", h.list)
 	r.With(auth.RequireAuth).Get("/storage/url", h.url)
+	if h.files != nil {
+		// Anonymous by design: the HMAC signature and expiry authorize it.
+		r.Get("/storage/download", h.download)
+	}
 }
 
 // upload handles POST /storage/objects with multipart/form-data.
@@ -152,4 +159,25 @@ func (h *Handler) url(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, map[string]string{"url": url})
+}
+
+// download serves a private file from a signed, expiring link.
+func (h *Handler) download(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	key := q.Get("key")
+	f, err := h.files.Open(key, q.Get("exp"), q.Get("sig"))
+	if err != nil {
+		httpx.WriteError(w, r, &httpx.Error{Status: http.StatusForbidden, Code: "forbidden", Message: "El enlace no es válido o ya venció"})
+		return
+	}
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
+	w.Header().Set("Content-Disposition", `inline; filename="`+path.Base(key)+`"`)
+	http.ServeContent(w, r, path.Base(key), info.ModTime(), f)
 }

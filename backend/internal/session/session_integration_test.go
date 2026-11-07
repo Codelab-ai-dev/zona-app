@@ -29,29 +29,29 @@ func newService(t *testing.T) (*session.Service, *session.PGRepository) {
 	t.Helper()
 	pool := testdb.Pool(t)
 	repo := session.NewPGRepository(pool)
-	tokens := auth.NewTokenService("integration-secret-integration-secret", "zona-api", time.Minute, "")
+	tokens := auth.NewTokenService("integration-secret-integration-secret", "zona-api", time.Minute)
 	return session.NewService(repo, tokens, nopMailer{}, session.Config{AppURL: "http://localhost"}), repo
 }
 
-// A GoTrue-imported user ($2a$10 hash) logs in with their existing password,
-// and the profile row comes from the handle_new_user trigger.
-func TestImportedSupabaseHashLogsIn(t *testing.T) {
+// A user whose hash has another bcrypt cost ($2a$10) still logs in, and the
+// profile row comes from the handle_new_user trigger.
+func TestLowerCostHashLogsIn(t *testing.T) {
 	pool := testdb.Pool(t)
 	svc, _ := newService(t)
 	ctx := context.Background()
 
-	hash, err := bcrypt.GenerateFromPassword([]byte("clave-de-supabase"), 10) // GoTrue default cost
+	hash, err := bcrypt.GenerateFromPassword([]byte("clave-de-coste-10"), 10)
 	if err != nil {
 		t.Fatal(err)
 	}
-	email := "importado-" + uuid.NewString()[:8] + "@liga.mx"
+	email := "coste10-" + uuid.NewString()[:8] + "@liga.mx"
 	var id uuid.UUID
 	if err := pool.QueryRow(ctx, `INSERT INTO auth.users (email, encrypted_password, aud, role)
 		VALUES ($1, $2, 'authenticated', 'authenticated') RETURNING id`, email, string(hash)).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := svc.Login(ctx, session.LoginRequest{Email: email, Password: "clave-de-supabase"}, "test"); err != nil {
+	if _, err := svc.Login(ctx, session.LoginRequest{Email: email, Password: "clave-de-coste-10"}, "test"); err != nil {
 		t.Fatalf("imported user cannot log in: %v", err)
 	}
 	var lastSignIn *time.Time
@@ -63,7 +63,7 @@ func TestImportedSupabaseHashLogsIn(t *testing.T) {
 	if _, err := pool.Exec(ctx, `UPDATE public.users SET is_active = false WHERE id = $1`, id); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Login(ctx, session.LoginRequest{Email: email, Password: "clave-de-supabase"}, ""); !errors.Is(err, httpx.ErrForbidden) {
+	if _, err := svc.Login(ctx, session.LoginRequest{Email: email, Password: "clave-de-coste-10"}, ""); !errors.Is(err, httpx.ErrForbidden) {
 		t.Fatalf("deactivated profile logged in: %v", err)
 	}
 }

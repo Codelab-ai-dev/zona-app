@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	ownSecret      = "own-secret-own-secret-own-secret-000"
-	supabaseSecret = "supabase-secret-supabase-secret-0000"
+	ownSecret   = "own-secret-own-secret-own-secret-000"
+	otherSecret = "other-secret-other-secret-other-0000"
 )
 
 func signHS(t *testing.T, method jwt.SigningMethod, secret string, claims jwt.MapClaims) string {
@@ -23,7 +23,7 @@ func signHS(t *testing.T, method jwt.SigningMethod, secret string, claims jwt.Ma
 }
 
 func TestTokenService_IssueAndVerify(t *testing.T) {
-	ts := NewTokenService(ownSecret, "zona-api", time.Minute, "")
+	ts := NewTokenService(ownSecret, "zona-api", time.Minute)
 	id := uuid.New()
 
 	raw, _, err := ts.Issue(id, "a@b.com")
@@ -51,27 +51,27 @@ func TestTokenService_Rejects(t *testing.T) {
 	}{
 		{
 			name:  "wrong secret",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS256, "another-secret-another-secret-0000", jwt.MapClaims{"sub": id, "iss": "zona-api", "exp": future}),
 		},
 		{
 			name:  "expired",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS256, ownSecret, jwt.MapClaims{"sub": id, "iss": "zona-api", "exp": past}),
 		},
 		{
 			name:  "missing exp",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS256, ownSecret, jwt.MapClaims{"sub": id, "iss": "zona-api"}),
 		},
 		{
 			name:  "wrong issuer",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS256, ownSecret, jwt.MapClaims{"sub": id, "iss": "evil", "exp": future}),
 		},
 		{
 			name: "algorithm none",
-			ts:   NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:   NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: func() string {
 				s, _ := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{"sub": id, "iss": "zona-api", "exp": future}).SignedString(jwt.UnsafeAllowNoneSignatureType)
 				return s
@@ -79,27 +79,22 @@ func TestTokenService_Rejects(t *testing.T) {
 		},
 		{
 			name:  "HS512 not allowed",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS512, ownSecret, jwt.MapClaims{"sub": id, "iss": "zona-api", "exp": future}),
 		},
 		{
 			name:  "non-uuid subject",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: signHS(t, jwt.SigningMethodHS256, ownSecret, jwt.MapClaims{"sub": "admin", "iss": "zona-api", "exp": future}),
 		},
 		{
-			name:  "supabase token when legacy disabled",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, ""),
-			token: signHS(t, jwt.SigningMethodHS256, supabaseSecret, jwt.MapClaims{"sub": id, "aud": "authenticated", "exp": future}),
-		},
-		{
-			name:  "supabase token with wrong audience",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, supabaseSecret),
-			token: signHS(t, jwt.SigningMethodHS256, supabaseSecret, jwt.MapClaims{"sub": id, "aud": "anon", "exp": future}),
+			name:  "token signed with another secret",
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
+			token: signHS(t, jwt.SigningMethodHS256, otherSecret, jwt.MapClaims{"sub": id, "iss": "zona-api", "exp": future}),
 		},
 		{
 			name:  "garbage",
-			ts:    NewTokenService(ownSecret, "zona-api", time.Minute, supabaseSecret),
+			ts:    NewTokenService(ownSecret, "zona-api", time.Minute),
 			token: "abc.def.ghi",
 		},
 	}
@@ -110,21 +105,5 @@ func TestTokenService_Rejects(t *testing.T) {
 				t.Fatal("expected token to be rejected")
 			}
 		})
-	}
-}
-
-func TestTokenService_AcceptsLegacySupabaseToken(t *testing.T) {
-	ts := NewTokenService(ownSecret, "zona-api", time.Minute, supabaseSecret)
-	id := uuid.New()
-	raw := signHS(t, jwt.SigningMethodHS256, supabaseSecret, jwt.MapClaims{
-		"sub": id.String(), "aud": "authenticated", "role": "authenticated",
-		"exp": time.Now().Add(time.Hour).Unix(),
-	})
-	got, err := ts.Verify(raw)
-	if err != nil {
-		t.Fatalf("Verify: %v", err)
-	}
-	if got != id {
-		t.Errorf("subject = %s, want %s", got, id)
 	}
 }

@@ -25,28 +25,22 @@ type keySpec struct {
 	audience string // empty = not enforced
 }
 
-// TokenService issues API tokens and verifies both API tokens and, during the
-// migration, legacy Supabase tokens. Only HS256 is accepted.
+// TokenService issues and verifies API access tokens. Only HS256 is accepted.
 type TokenService struct {
 	issuer string
 	ttl    time.Duration
 	own    keySpec
-	legacy *keySpec
 	now    func() time.Time
 }
 
-// NewTokenService builds a TokenService. supabaseSecret may be empty.
-func NewTokenService(secret, issuer string, ttl time.Duration, supabaseSecret string) *TokenService {
-	ts := &TokenService{
+// NewTokenService builds a TokenService.
+func NewTokenService(secret, issuer string, ttl time.Duration) *TokenService {
+	return &TokenService{
 		issuer: issuer,
 		ttl:    ttl,
 		own:    keySpec{secret: []byte(secret), issuer: issuer},
 		now:    time.Now,
 	}
-	if supabaseSecret != "" {
-		ts.legacy = &keySpec{secret: []byte(supabaseSecret), audience: "authenticated"}
-	}
-	return ts
 }
 
 // Issue creates a signed access token for userID.
@@ -74,16 +68,11 @@ func (s *TokenService) Issue(userID uuid.UUID, email string) (string, time.Time,
 // Verify validates signature, algorithm, expiry and issuer/audience, and
 // returns the subject user ID.
 func (s *TokenService) Verify(raw string) (uuid.UUID, error) {
-	specs := []keySpec{s.own}
-	if s.legacy != nil {
-		specs = append(specs, *s.legacy)
+	id, err := s.verifyWith(raw, s.own)
+	if err != nil {
+		return uuid.Nil, ErrInvalidToken
 	}
-	for _, spec := range specs {
-		if id, err := s.verifyWith(raw, spec); err == nil {
-			return id, nil
-		}
-	}
-	return uuid.Nil, ErrInvalidToken
+	return id, nil
 }
 
 func (s *TokenService) verifyWith(raw string, spec keySpec) (uuid.UUID, error) {

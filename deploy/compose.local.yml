@@ -1,8 +1,0 @@
-# Local override: serve the web built on the host (make web) instead of
-# building it inside Docker, which is slow on small Docker VMs.
-services:
-  web:
-    build: !reset null
-    image: caddy:2-alpine
-    volumes:
-      - ../web/dist:/srv:ro

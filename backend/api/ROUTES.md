@@ -174,6 +174,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 
 | Method | Path | Access |
 |---|---|---|
+| GET | `/api/v1/storage/download` | público |
 | DELETE | `/api/v1/storage/objects` | token |
 | GET | `/api/v1/storage/objects` | token |
 | POST | `/api/v1/storage/objects` | token |
@@ -241,4 +242,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 130 routes.
+Total: 131 routes.

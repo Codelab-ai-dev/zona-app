@@ -10,7 +10,7 @@ cmd/api/            entrypoint: config, wiring, graceful shutdown
 internal/config     env-based config (only place that reads os.Getenv)
 internal/platform/  cross-cutting infra: database, httpx
 internal/auth       token verification, Principal, RequireAuth/RequireRole
-internal/authz      resource-level authorization (replaces Supabase RLS)
+internal/authz      resource-level authorization
 internal/<module>/  one package per feature (see internal/users as reference)
 migrations/         goose SQL migrations, embedded in the binary
 ```

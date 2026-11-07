@@ -1,5 +1,5 @@
 // Package accounts manages user creation and updates with authorization and
-// identity provider integration (Supabase Auth during migration).
+// identity provider (auth.users).
 package accounts
 
 import (
@@ -114,17 +114,11 @@ type Repository interface {
 	GetByID(ctx context.Context, userID uuid.UUID) (User, error)
 }
 
-// IdentityProvider manages identity in Supabase Auth.
+// IdentityProvider manages login identities (auth.users).
 type IdentityProvider interface {
 	CreateUser(ctx context.Context, email, password string) (uuid.UUID, error)
 	UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
-}
-
-// Config holds Supabase connection details.
-type Config struct {
-	SupabaseURL    string
-	ServiceRoleKey string
 }
 
 // Helper functions

@@ -1,37 +1,46 @@
-# Despliegue de Zona Gol
+# Zona Gol en Docker
 
-Un solo stack para local y para el VPS: **Caddy** (sirve la web y hace de proxy de `/api`, TLS automático en producción) → **API Go** → **Postgres** (pgvector).
+Todo el sistema corre en contenedores:
 
-## Local
-
-```sh
-make up      # crea deploy/.env con secretos aleatorios, compila, arranca y carga la demo
-```
-
-Abre http://localhost:8088. Cuentas de demo (contraseña: `SEED_PASSWORD` en `deploy/.env`):
-
-| Rol | Correo |
+| Servicio | Qué hace |
 | --- | --- |
-| Super admin | superadmin@zonagol.local |
-| Admin de liga | liga@zonagol.local |
-| Dueño de equipo | equipo@zonagol.local |
+| `web` | Caddy: sirve la web (React), las imágenes públicas en `/media` y hace de proxy de `/api` hacia la API. |
+| `api` | API en Go. Aplica las migraciones al arrancar. |
+| `db` | PostgreSQL 16 con pgvector. |
 
-Otros comandos: `make logs` (los correos de recuperación de contraseña aparecen aquí), `make ps`, `make down`, `make reset` (borra la base).
+Los datos viven en volúmenes de Docker: `pgdata` (base de datos), `media_public` (logos y fotos) y `media_private` (documentos de identidad; Caddy no lo monta, solo se descargan con enlaces firmados de la API).
 
-Sin `S3_*`, `KAPSO_*`, `MUX_*` ni `LLM_*` en `deploy/.env`, esos módulos quedan desactivados (subida de archivos, WhatsApp, video y asistente IA).
-
-## Producción (VPS)
-
-1. `make env` y edita `deploy/.env`: `APP_ENV=production`, `APP_URL=https://tu-dominio`, `SITE_ADDRESS=tu-dominio`, `HTTP_BIND=0.0.0.0:80`, `CORS_ALLOWED_ORIGINS=https://tu-dominio`, `SMTP_*` y las integraciones. Borra `SEED_PASSWORD`.
-2. Publica también el 443 (añade `"443:443"` a `web.ports`) y apunta el DNS al VPS.
-3. `docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build`.
-
-## Corte desde Supabase
-
-Con el stack recién creado (base vacía y migrada):
+## Arrancar
 
 ```sh
-SOURCE_DATABASE_URL='postgresql://postgres:…@db.<ref>.supabase.co:5432/postgres' ./deploy/import-from-supabase.sh
+make up                                  # la primera vez crea deploy/.env con secretos aleatorios
+make admin EMAIL=tu@correo.com NAME="Tu nombre"   # crea el super admin (pide la contraseña)
 ```
 
-Copia `auth.users` (con sus hashes bcrypt: nadie cambia de contraseña) y los datos de `public` en una sola transacción. **Antes**, compara el esquema de producción (`pg_dump --schema-only`) con `backend/migrations`: si difieren, la carga falla y no se aplica nada.
+Abre http://localhost:8088 e inicia sesión.
+
+### Datos de demostración (opcional)
+
+```sh
+make seed
+```
+
+Crea una liga con 6 equipos, jugadores y partidos, y tres cuentas (`superadmin@zonagol.local`, `liga@zonagol.local`, `equipo@zonagol.local`) con la contraseña `SEED_PASSWORD` de `deploy/.env`.
+
+## Comandos
+
+| Comando | Para qué |
+| --- | --- |
+| `make up` | Compila y arranca (o actualiza tras cambios en el código). |
+| `make logs` | Logs de la API y de Caddy. Los correos de recuperación de contraseña aparecen aquí mientras no haya SMTP. |
+| `make ps` | Estado de los contenedores. |
+| `make down` | Detiene todo (los datos se conservan). |
+| `make reset` | Detiene todo y **borra** la base de datos y los archivos. |
+
+## Integraciones opcionales
+
+Se activan añadiendo sus variables a `deploy/.env` (lista completa en `backend/.env.example`): `SMTP_*` (correo), `KAPSO_*` (WhatsApp), `MUX_*` (video), `LLM_*` y `OPENAI_API_KEY` (asistente IA). Sin ellas, esas funciones quedan desactivadas y el resto funciona.
+
+## Más adelante: VPS
+
+El mismo stack sirve en producción. En `deploy/.env`: `APP_ENV=production`, `APP_URL=https://tu-dominio`, `SITE_ADDRESS=tu-dominio`, `HTTP_BIND=0.0.0.0:80`, `CORS_ALLOWED_ORIGINS=https://tu-dominio`, `SMTP_*`, y añade `"443:443"` a `web.ports`. Caddy obtiene el certificado TLS solo. Programa copias de seguridad de los volúmenes `pgdata` y `media_*`.

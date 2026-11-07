@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -67,7 +68,7 @@ func run() error {
 		}
 	}
 
-	tokens := auth.NewTokenService(cfg.JWTSecret, cfg.JWTIssuer, cfg.AccessTokenTTL, cfg.SupabaseJWTSecret)
+	tokens := auth.NewTokenService(cfg.JWTSecret, cfg.JWTIssuer, cfg.AccessTokenTTL)
 	authMW := auth.NewMiddleware(tokens, auth.NewPGProfileLoader(pool))
 
 	modules, err := buildModules(ctx, cfg, pool, tokens)
@@ -129,6 +130,42 @@ func buildSession(cfg config.Config, pool *pgxpool.Pool, tokens *auth.TokenServi
 	return session.NewHandler(svc, cfg.IsProduction())
 }
 
+// buildStorage uses the S3 bucket when configured, otherwise local disk:
+// public images under STORAGE_DIR/public (served by Caddy at /media) and
+// private files under STORAGE_DIR/private (signed API download links only).
+func buildStorage(cfg config.Config, checker authz.Checker) (server.Module, error) {
+	storageCfg := storage.Config{
+		MaxImageUploadBytes:   10 << 20,
+		MaxReleaseUploadBytes: 150 << 20,
+		PresignTTL:            15 * time.Minute,
+	}
+	if cfg.Storage.S3Enabled() {
+		storageCfg.Endpoint = cfg.Storage.Endpoint
+		storageCfg.Region = cfg.Storage.Region
+		storageCfg.Bucket = cfg.Storage.Bucket
+		storageCfg.AccessKeyID = cfg.Storage.AccessKeyID
+		storageCfg.SecretAccessKey = cfg.Storage.SecretAccessKey
+		storageCfg.PublicBaseURL = cfg.Storage.PublicBaseURL
+		store, err := storage.NewS3Store(storageCfg)
+		if err != nil {
+			return nil, fmt.Errorf("storage: %w", err)
+		}
+		return storage.NewHandler(storage.NewService(store, checker, storageCfg), nil), nil
+	}
+
+	storageCfg.PublicBaseURL = cfg.AppURL + "/media"
+	files, err := storage.NewFSStore(
+		filepath.Join(cfg.Storage.Dir, "public"),
+		filepath.Join(cfg.Storage.Dir, "private"),
+		cfg.AppURL+"/api/v1/storage/download",
+		storage.DeriveKey(cfg.JWTSecret, "storage-download-v1"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("storage: %w", err)
+	}
+	return storage.NewHandler(storage.NewService(files, checker, storageCfg), files), nil
+}
+
 // buildModules wires every feature package. Integrations whose settings are
 // missing are not mounted (their routes return 404) and a warning is logged,
 // so the API never runs a half-configured module.
@@ -146,37 +183,17 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, to
 		matches.NewHandler(matches.NewService(matches.NewPGRepository(pool), checker, pool)),
 	}
 
-	// Identities live in our own auth.users unless the API still runs
-	// against Supabase (transition period before the cutover).
-	var identity accounts.IdentityProvider = accounts.NewLocalIdentityProvider(pool)
-	if cfg.SupabaseURL != "" {
-		slog.Warn("accounts: using Supabase identities (transition mode)")
-		identity = accounts.NewSupabaseIdentityProvider(accounts.Config{
-			SupabaseURL:    cfg.SupabaseURL,
-			ServiceRoleKey: cfg.SupabaseServiceRoleKey,
-		})
-	}
+	identity := accounts.NewLocalIdentityProvider(pool)
 	modules = append(modules, accounts.NewHandler(accounts.NewService(accounts.NewPGRepository(pool), identity, checker)))
 
 	if cfg.Storage.Enabled() {
-		storageCfg := storage.Config{
-			Endpoint:              cfg.Storage.Endpoint,
-			Region:                cfg.Storage.Region,
-			Bucket:                cfg.Storage.Bucket,
-			AccessKeyID:           cfg.Storage.AccessKeyID,
-			SecretAccessKey:       cfg.Storage.SecretAccessKey,
-			PublicBaseURL:         cfg.Storage.PublicBaseURL,
-			MaxImageUploadBytes:   10 << 20,
-			MaxReleaseUploadBytes: 150 << 20,
-			PresignTTL:            15 * time.Minute,
-		}
-		store, err := storage.NewS3Store(storageCfg)
+		storageMod, err := buildStorage(cfg, checker)
 		if err != nil {
-			return nil, fmt.Errorf("storage: %w", err)
+			return nil, err
 		}
-		modules = append(modules, storage.NewHandler(storage.NewService(store, checker, storageCfg)))
+		modules = append(modules, storageMod)
 	} else {
-		slog.Warn("module disabled: storage (S3_* not set)")
+		slog.Warn("module disabled: storage (set STORAGE_DIR or S3_*)")
 	}
 
 	if cfg.Notifications.Enabled() {

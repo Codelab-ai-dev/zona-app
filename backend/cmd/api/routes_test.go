@@ -69,6 +69,9 @@ var anonymousAllowed = map[string]bool{
 	"POST /api/v1/auth/logout":          true,
 	"POST /api/v1/auth/password/forgot": true,
 	"POST /api/v1/auth/password/reset":  true,
+
+	// Private files: authorized by an HMAC-signed, expiring link.
+	"GET /api/v1/storage/download": true,
 }
 
 // TestEveryRouteRequiresAuthUnlessAllowlisted mounts every module with all
@@ -90,15 +93,15 @@ func newTestAPI(t *testing.T) http.Handler {
 	t.Cleanup(pool.Close)
 
 	cfg := config.Config{
-		SupabaseURL:            "http://supabase.invalid",
-		SupabaseServiceRoleKey: "service-role",
-		Storage:                config.StorageConfig{Region: "us-east-1", Bucket: "b", AccessKeyID: "k", SecretAccessKey: "s", Endpoint: "http://s3.invalid"},
-		Notifications:          config.NotificationsConfig{KapsoBaseURL: "http://kapso.invalid", KapsoAPIKey: "k", PhoneNumberID: "1", PublicSiteURL: "http://site.invalid"},
-		Mux:                    config.MuxConfig{TokenID: "id", TokenSecret: "secret", WebhookSecret: "whsec"},
-		OpenAI:                 config.OpenAIConfig{BaseURL: "http://openai.invalid", APIKey: "k", EmbeddingModel: "m"},
-		Agent:                  config.AgentConfig{LLMBaseURL: "http://llm.invalid", LLMAPIKey: "k", LLMModel: "m", KapsoWebhookSecret: "whsec"},
+		AppURL:        "http://localhost",
+		JWTSecret:     strings.Repeat("x", 32),
+		Storage:       config.StorageConfig{Dir: t.TempDir()},
+		Notifications: config.NotificationsConfig{KapsoBaseURL: "http://kapso.invalid", KapsoAPIKey: "k", PhoneNumberID: "1", PublicSiteURL: "http://site.invalid"},
+		Mux:           config.MuxConfig{TokenID: "id", TokenSecret: "secret", WebhookSecret: "whsec"},
+		OpenAI:        config.OpenAIConfig{BaseURL: "http://openai.invalid", APIKey: "k", EmbeddingModel: "m"},
+		Agent:         config.AgentConfig{LLMBaseURL: "http://llm.invalid", LLMAPIKey: "k", LLMModel: "m", KapsoWebhookSecret: "whsec"},
 	}
-	tokens := auth.NewTokenService(strings.Repeat("x", 32), "zona-api", time.Minute, "")
+	tokens := auth.NewTokenService(strings.Repeat("x", 32), "zona-api", time.Minute)
 	modules, err := buildModules(t.Context(), cfg, pool, tokens)
 	if err != nil {
 		t.Fatal(err)
