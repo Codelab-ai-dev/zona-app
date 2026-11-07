@@ -138,7 +138,7 @@ export function useCreateSuspension() {
     mutationFn: (data: { player_id: string; team_id: string; suspension_type: string; reason: string; matches_to_serve: number; notes?: string }) =>
       api.post<Suspension>('/suspensions', data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.suspensions('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
       toast.success('Suspensión creada correctamente')
     },
     onError: (error: ApiError) => {
@@ -154,7 +154,7 @@ export function useUpdateSuspension(suspensionId: string) {
       api.put<Suspension>(`/suspensions/${suspensionId}`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.suspension(suspensionId) })
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.suspensions('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
       toast.success('Suspensión actualizada correctamente')
     },
     onError: (error: ApiError) => {
@@ -169,7 +169,7 @@ export function useCancelSuspension(suspensionId: string) {
     mutationFn: () => api.post<Suspension>(`/suspensions/${suspensionId}/cancel`, {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.suspension(suspensionId) })
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.suspensions('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
       toast.success('Suspensión cancelada correctamente')
     },
     onError: (error: ApiError) => {
@@ -188,13 +188,13 @@ export function useWhatsAppLinks(leagueId: string | undefined) {
   })
 }
 
-export function useCreateWhatsAppLink() {
+export function useCreateWhatsAppLink(leagueId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: { phone_number: string; role: string; display_name?: string; preferred_language: string }) =>
-      api.post<WhatsAppLink>('/leagues/{leagueId}/whatsapp-links', data),
+      api.post<WhatsAppLink>(`/leagues/${leagueId}/whatsapp-links`, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.whatsappLinks('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
       toast.success('Enlace de WhatsApp creado correctamente')
     },
     onError: (error: ApiError) => {
@@ -213,7 +213,7 @@ export function useUpdateWhatsAppLink(linkId: string) {
     mutationFn: (data: { is_active?: boolean; display_name?: string; preferred_language?: string }) =>
       api.put<WhatsAppLink>(`/whatsapp-links/${linkId}`, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.whatsappLinks('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
       toast.success('Enlace actualizado correctamente')
     },
     onError: (error: ApiError) => {
@@ -227,7 +227,7 @@ export function useDeleteWhatsAppLink(linkId: string) {
   return useMutation({
     mutationFn: () => api.delete<void>(`/whatsapp-links/${linkId}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.whatsappLinks('*') })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
       toast.success('Enlace eliminado correctamente')
     },
     onError: (error: ApiError) => {
@@ -268,12 +268,12 @@ export function useTransactions(leagueId: string | undefined, page: PageParams =
   })
 }
 
-export function useCreateTransaction() {
+export function useCreateTransaction(leagueId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<Transaction>) => api.post<Transaction>('/leagues/{leagueId}/finance/transactions', data),
+    mutationFn: (data: Partial<Transaction>) => api.post<Transaction>(`/leagues/${leagueId}/finance/transactions`, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transactions('*', {}) })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
       toast.success('Transacción creada correctamente')
     },
     onError: (error: ApiError) => {
@@ -289,7 +289,7 @@ export function useRegisterPayment(transactionId: string) {
       api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/pay`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transactions('*', {}) })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
       toast.success('Pago registrado correctamente')
     },
     onError: (error: ApiError) => {
@@ -305,7 +305,7 @@ export function useCancelTransaction(transactionId: string) {
       api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/cancel`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transactions('*', {}) })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
       toast.success('Transacción cancelada correctamente')
     },
     onError: (error: ApiError) => {
@@ -321,7 +321,7 @@ export function useWaiveTransaction(transactionId: string) {
       api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/waive`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transactions('*', {}) })
+      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
       toast.success('Transacción condonada correctamente')
     },
     onError: (error: ApiError) => {

@@ -1,13 +1,22 @@
-import { useAuth } from '@/lib/auth/auth-context'
+import { useMyLeagues } from '@/features/leagues/api'
+import { EmptyState, QueryState } from '@/components/states'
 import { FinancePage } from '../components'
 
 export function FinancePageComponent() {
-  const { profile } = useAuth()
-  const leagueId = profile?.league_id
+  const leagues = useMyLeagues()
 
-  if (!leagueId) {
-    return <p className="text-center py-8">Sin liga asignada</p>
-  }
-
-  return <FinancePage leagueId={leagueId} />
+  return (
+    <QueryState
+      query={leagues}
+      loadingLabel="Cargando ligas…"
+      isEmpty={(res) => (res?.data?.length ?? 0) === 0}
+      empty={<EmptyState title="Sin liga asignada" description="No tienes ligas para administrar" />}
+    >
+      {(res) => {
+        const league = res?.data?.[0]
+        if (!league) return <EmptyState title="Sin liga asignada" />
+        return <FinancePage leagueId={league.id} />
+      }}
+    </QueryState>
+  )
 }

@@ -74,3 +74,36 @@ npx tsc -b && npx eslint . && npx vitest run
 Each page needs tests for: data rendered, empty state, API error, and each
 mutation's success + validation error. No `any`, no `// @ts-ignore`, no
 `eslint-disable`. Never run git commands. Never add dependencies.
+
+## Testing mutations (mandatory pattern)
+
+Reference: `src/features/league-admin/competition/components/whatsapp-form.test.tsx`.
+
+A test whose title says it creates/saves/deletes/publishes something must:
+
+1. drive the UI like a user: `const { user } = renderWithProviders(...)`,
+   `await user.click(...)`, `await user.type(...)` (never call hooks directly);
+2. assert the exact request: `requestsTo(fetchMock, 'POST /path')` returns the
+   parsed bodies sent to that endpoint — assert path params AND body;
+3. assert the visible outcome: toast text, refreshed data, or the field error
+   with `aria-invalid="true"` and the typed value still present.
+
+A test that only checks that a heading renders is not a mutation test. Tests
+that "pass" without exercising behaviour are treated as missing.
+
+`src/test/setup.ts` already polyfills what Radix needs in JSDOM
+(pointer capture, scrollIntoView, ResizeObserver, matchMedia): Select,
+Dialog and DropdownMenu can be driven with `userEvent`. Do not skip tests
+for "JSDOM limitations".
+
+## Inputs are uppercased
+
+The shadcn `Input`/`Textarea` in this project (carried over from the legacy
+app) uppercase typed text, except password/email/url/number/date/time/file
+inputs, fields whose id/name contains "password", and `forceLowercase`.
+Tests must expect the uppercased value in request bodies.
+
+## Error handling note
+
+`ApiError.fields` is always an object (possibly empty): check
+`Object.keys(err.fields).length > 0`, never `if (err.fields)`.

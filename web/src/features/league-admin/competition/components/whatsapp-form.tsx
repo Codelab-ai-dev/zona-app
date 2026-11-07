@@ -25,11 +25,11 @@ import { ApiError } from '@/lib/api/client'
 import { useCreateWhatsAppLink } from '../api'
 
 interface WhatsAppFormProps {
-  leagueId?: string
+  leagueId: string
   onClose: () => void
 }
 
-export function WhatsAppForm({ onClose }: WhatsAppFormProps) {
+export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
   const [formData, setFormData] = useState({
     phone_number: '',
     role: 'team_owner',
@@ -38,7 +38,7 @@ export function WhatsAppForm({ onClose }: WhatsAppFormProps) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const create = useCreateWhatsAppLink()
+  const create = useCreateWhatsAppLink(leagueId)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +49,8 @@ export function WhatsAppForm({ onClose }: WhatsAppFormProps) {
       onClose()
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.fields) {
+        // ApiError.fields is always an object; only use it when it has entries.
+        if (Object.keys(err.fields).length > 0) {
           setErrors(err.fields)
         } else if (err.status === 409) {
           setErrors({ phone_number: 'Este número ya está registrado' })
