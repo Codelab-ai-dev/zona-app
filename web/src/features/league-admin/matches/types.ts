@@ -82,11 +82,13 @@ export interface Match {
   is_published: boolean
   created_at: string
   updated_at: string
+  home_team_name: string
+  away_team_name: string
+  home_team_logo?: string
+  away_team_logo?: string
 }
 
 export interface MatchWithRelations extends Match {
-  home_team?: Team
-  away_team?: Team
   goals?: Goal[]
   cards?: Card[]
   incidents?: Incident[]
@@ -116,11 +118,13 @@ export interface PostMatchResultRequest {
   away_score: number
   goals?: PostGoalRequest[]
   cards?: PostCardRequest[]
+  observations?: string
   incidents?: PostIncidentRequest[]
 }
 
 export interface PostGoalRequest {
   player_id: string
+  team_id: string
   minute: number
   goal_type: GoalType
   assist_player_id?: string
@@ -129,6 +133,7 @@ export interface PostGoalRequest {
 
 export interface PostCardRequest {
   player_id: string
+  team_id: string
   card_type: CardType
   minute: number
   reason?: string

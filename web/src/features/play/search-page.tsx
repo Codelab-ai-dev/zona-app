@@ -1,5 +1,5 @@
 import { X, Search, Eye, Calendar, Play } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
@@ -77,7 +77,7 @@ export function SearchPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
 
   // Debounce search
-  useMemo(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query)
     }, 300)
@@ -135,9 +135,9 @@ export function SearchPage() {
             title="No hay búsqueda activa"
             description="Escribe en el cuadro de búsqueda para encontrar videos por título o descripción."
             action={
-              <Link to="/play">
-                <Button variant="outline">Ver todos los videos</Button>
-              </Link>
+              <Button variant="outline" asChild>
+                <Link to="/play">Ver todos los videos</Link>
+              </Button>
             }
           />
         </div>

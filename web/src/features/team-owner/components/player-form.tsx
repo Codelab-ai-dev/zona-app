@@ -7,84 +7,48 @@ import { ApiError } from '@/lib/api/client'
 import { AlertCircle, Upload } from 'lucide-react'
 
 import type { CreatePlayerRequest } from '../types'
-import { useUploadFile } from '../api'
+import { toApiDate } from '../utils'
 
-// Local type only used in this component
-type FormDataLocal = {
-  name: string
-  position: string
-  jersey_number: string
-  photo: string
-  birth_date: string
-}
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 interface PlayerFormProps {
   positions: string[]
-  onSubmit: (data: CreatePlayerRequest) => Promise<void>
+  /** `photo` is the optional image the user picked; the caller uploads it once the player exists. */
+  onSubmit: (data: CreatePlayerRequest, photo?: File) => Promise<void>
   isLoading?: boolean
-  initialData?: Partial<FormDataLocal>
-  playerId?: string
 }
 
-export function PlayerForm({ positions, onSubmit, isLoading, initialData, playerId }: PlayerFormProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    position: '',
-    jersey_number: '',
-    photo: '',
-    birth_date: '',
-    ...initialData,
-  })
+export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) {
+  const [formData, setFormData] = useState({ name: '', position: '', jersey_number: '', birth_date: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.photo || null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const uploadFile = useUploadFile()
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const clearPhoto = () => {
+    setPhoto(null)
+    setPhotoPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Client-side validation
-    const maxSize = 10 * 1024 * 1024 // 10 MB
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-
-    if (!validTypes.includes(file.type)) {
-      setUploadError('El tipo de archivo debe ser JPEG, PNG o WebP')
+    if (!PHOTO_TYPES.includes(file.type)) {
+      setPhotoError('El tipo de archivo debe ser JPEG, PNG o WebP')
       return
     }
-
-    if (file.size > maxSize) {
-      setUploadError('El archivo no debe exceder 10 MB')
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError('El archivo no debe exceder 10 MB')
       return
     }
-
-    // Show preview
+    setPhotoError(null)
+    setPhoto(file)
     const reader = new FileReader()
-    reader.onload = (e) => {
-      setPhotoPreview(e.target?.result as string)
-    }
+    reader.onload = (ev) => setPhotoPreview(typeof ev.target?.result === 'string' ? ev.target.result : null)
     reader.readAsDataURL(file)
-
-    // Upload file if we have a playerId (for updates)
-    if (playerId) {
-      setIsUploadingPhoto(true)
-      setUploadError(null)
-      try {
-        const result = await uploadFile.mutateAsync({
-          file,
-          scope: 'player',
-          scopeId: playerId,
-        })
-        setFormData({ ...formData, photo: result.name })
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : 'Error al subir la foto')
-        setPhotoPreview(null)
-      } finally {
-        setIsUploadingPhoto(false)
-      }
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,15 +56,17 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData, player
     setErrors({})
 
     try {
-      await onSubmit({
-        name: formData.name,
-        position: formData.position,
-        jersey_number: parseInt(formData.jersey_number, 10),
-        photo: formData.photo || undefined,
-        birth_date: formData.birth_date || undefined,
-      })
+      await onSubmit(
+        {
+          name: formData.name,
+          position: formData.position,
+          jersey_number: parseInt(formData.jersey_number, 10),
+          birth_date: toApiDate(formData.birth_date),
+        },
+        photo ?? undefined,
+      )
     } catch (error) {
-      if (error instanceof ApiError && error.isValidation) {
+      if (error instanceof ApiError && error.isValidation && Object.keys(error.fields).length > 0) {
         setErrors(error.fields)
       }
     }
@@ -129,7 +95,12 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData, player
       <div>
         <Label htmlFor="position">Posición</Label>
         <Select value={formData.position} onValueChange={(value) => setFormData({ ...formData, position: value })}>
-          <SelectTrigger id="position" disabled={isLoading}>
+          <SelectTrigger
+            id="position"
+            disabled={isLoading}
+            aria-invalid={Boolean(errors.position)}
+            aria-describedby={errors.position ? 'position-error' : undefined}
+          >
             <SelectValue placeholder="Seleccionar posición" />
           </SelectTrigger>
           <SelectContent>
@@ -176,7 +147,14 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData, player
           value={formData.birth_date}
           onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
           disabled={isLoading}
+          aria-invalid={Boolean(errors.birth_date)}
+          aria-describedby={errors.birth_date ? 'birth-date-error' : undefined}
         />
+        {errors.birth_date && (
+          <p id="birth-date-error" className="mt-1 text-sm text-destructive">
+            {errors.birth_date}
+          </p>
+        )}
       </div>
 
       <div>
@@ -191,10 +169,8 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData, player
               />
               <button
                 type="button"
-                onClick={() => {
-                  setPhotoPreview(null)
-                  if (fileInputRef.current) fileInputRef.current.value = ''
-                }}
+                onClick={clearPhoto}
+                aria-label="Quitar foto"
                 className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
               >
                 ×
@@ -207,31 +183,29 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData, player
             id="photo"
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoUpload}
-            disabled={isLoading || isUploadingPhoto}
+            onChange={handlePhotoChange}
+            disabled={isLoading}
             className="hidden"
           />
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || isUploadingPhoto}
+            disabled={isLoading}
             className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            {isUploadingPhoto ? 'Subiendo...' : 'Seleccionar imagen (JPEG, PNG, WebP - máx 10MB)'}
+            Seleccionar imagen (JPEG, PNG, WebP - máx 10MB)
           </button>
 
-          {uploadError && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {photoError && (
+            <div role="alert" className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {uploadError}
+              {photoError}
             </div>
           )}
 
-          {formData.photo && !isUploadingPhoto && (
-            <p className="text-sm text-green-600">✓ Foto cargada</p>
-          )}
+          {photo && <p className="text-sm text-green-600">✓ Foto seleccionada: {photo.name}</p>}
         </div>
       </div>
 

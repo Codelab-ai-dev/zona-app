@@ -1,39 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-
-import { api, ApiError, type PageParams } from '@/lib/api/client'
 import { toast } from 'sonner'
 
-import type {
-  FinanceConfig,
-  League,
-  LeagueSummary,
-  PlayerStats,
-  Standings,
-  Suspension,
-  TeamBalance,
-  Tournament,
-  Transaction,
-  WhatsAppLink,
-} from './types'
+import { leagueKeys } from '@/features/leagues/api'
+import { api, type ApiError } from '@/lib/api/client'
 
-export const competitionKeys = {
-  all: ['competition'] as const,
-  tournaments: (leagueId: string) => [...competitionKeys.all, 'tournaments', leagueId] as const,
-  tournament: (tournamentId: string) => [...competitionKeys.all, 'tournament', tournamentId] as const,
-  standings: (tournamentId: string) => [...competitionKeys.all, 'standings', tournamentId] as const,
-  topScorers: (tournamentId: string) => [...competitionKeys.all, 'topScorers', tournamentId] as const,
-  discipline: (tournamentId: string) => [...competitionKeys.all, 'discipline', tournamentId] as const,
-  suspensions: (leagueId: string) => [...competitionKeys.all, 'suspensions', leagueId] as const,
-  suspension: (suspensionId: string) => [...competitionKeys.all, 'suspension', suspensionId] as const,
-  whatsappLinks: (leagueId: string) => [...competitionKeys.all, 'whatsappLinks', leagueId] as const,
-  financeConfig: (leagueId: string) => [...competitionKeys.all, 'financeConfig', leagueId] as const,
-  transactions: (leagueId: string, page: PageParams) =>
-    [...competitionKeys.all, 'transactions', leagueId, page] as const,
-  transaction: (transactionId: string) => [...competitionKeys.all, 'transaction', transactionId] as const,
-  teamBalance: (leagueId: string, page: PageParams) =>
-    [...competitionKeys.all, 'teamBalance', leagueId, page] as const,
-  leagueSummary: (leagueId: string) => [...competitionKeys.all, 'leagueSummary', leagueId] as const,
-  league: (leagueId: string) => [...competitionKeys.all, 'league', leagueId] as const,
+import { competitionKeys } from './keys'
+import type { PlayerStats, Standings, Suspension, Tournament } from './types'
+
+export * from './admin-api'
+export * from './finance-api'
+export { competitionKeys } from './keys'
+
+const onError = (error: ApiError) => {
+  toast.error(error.message)
 }
 
 // TOURNAMENTS
@@ -46,32 +25,32 @@ export function useTournaments(leagueId: string | undefined) {
   })
 }
 
+export type TournamentInput = Partial<Omit<Tournament, 'id' | 'created_at' | 'updated_at'>>
+
 export function useCreateTournament() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<Tournament>) => api.post<Tournament>('/tournaments', data),
+    mutationFn: (data: TournamentInput) => api.post<Tournament>('/tournaments', data),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournaments(data.league_id) })
+      void queryClient.invalidateQueries({ queryKey: leagueKeys.all })
       toast.success('Torneo creado correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
 export function useUpdateTournament(tournamentId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<Tournament>) => api.patch<Tournament>(`/tournaments/${tournamentId}`, data),
+    mutationFn: (data: TournamentInput) => api.patch<Tournament>(`/tournaments/${tournamentId}`, data),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournament(tournamentId) })
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournaments(data.league_id) })
+      void queryClient.invalidateQueries({ queryKey: leagueKeys.all })
       toast.success('Torneo actualizado correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
@@ -94,13 +73,11 @@ export function useAdjustPoints() {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.standings(tournament_id) })
       toast.success('Puntos ajustados correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
-// TOP SCORERS
+// TOP SCORERS / DISCIPLINE
 
 export function useTopScorers(tournamentId: string | undefined) {
   return useQuery({
@@ -110,8 +87,6 @@ export function useTopScorers(tournamentId: string | undefined) {
     enabled: Boolean(tournamentId),
   })
 }
-
-// DISCIPLINE
 
 export function useDiscipline(tournamentId: string | undefined) {
   return useQuery({
@@ -124,6 +99,8 @@ export function useDiscipline(tournamentId: string | undefined) {
 
 // SUSPENSIONS
 
+const suspensionsKey = [...competitionKeys.all, 'suspensions'] as const
+
 export function useSuspensions(leagueId: string | undefined) {
   return useQuery({
     queryKey: competitionKeys.suspensions(leagueId ?? ''),
@@ -135,15 +112,19 @@ export function useSuspensions(leagueId: string | undefined) {
 export function useCreateSuspension() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { player_id: string; team_id: string; suspension_type: string; reason: string; matches_to_serve: number; notes?: string }) =>
-      api.post<Suspension>('/suspensions', data),
+    mutationFn: (data: {
+      player_id: string
+      team_id: string
+      suspension_type: string
+      reason: string
+      matches_to_serve: number
+      notes?: string
+    }) => api.post<Suspension>('/suspensions', data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
+      void queryClient.invalidateQueries({ queryKey: suspensionsKey })
       toast.success('Suspensión creada correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
@@ -153,13 +134,10 @@ export function useUpdateSuspension(suspensionId: string) {
     mutationFn: (data: { matches_to_serve?: number; notes?: string }) =>
       api.put<Suspension>(`/suspensions/${suspensionId}`, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.suspension(suspensionId) })
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
+      void queryClient.invalidateQueries({ queryKey: suspensionsKey })
       toast.success('Suspensión actualizada correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
@@ -168,223 +146,21 @@ export function useCancelSuspension(suspensionId: string) {
   return useMutation({
     mutationFn: () => api.post<Suspension>(`/suspensions/${suspensionId}/cancel`, {}),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.suspension(suspensionId) })
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'suspensions'] })
+      void queryClient.invalidateQueries({ queryKey: suspensionsKey })
       toast.success('Suspensión cancelada correctamente')
     },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }
 
-// WHATSAPP LINKS
-
-export function useWhatsAppLinks(leagueId: string | undefined) {
-  return useQuery({
-    queryKey: competitionKeys.whatsappLinks(leagueId ?? ''),
-    queryFn: ({ signal }) => api.list<WhatsAppLink>(`/leagues/${leagueId}/whatsapp-links`, { limit: 100 }, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-export function useCreateWhatsAppLink(leagueId: string) {
+export function useCompleteSuspension(suspensionId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { phone_number: string; role: string; display_name?: string; preferred_language: string }) =>
-      api.post<WhatsAppLink>(`/leagues/${leagueId}/whatsapp-links`, data),
+    mutationFn: () => api.post<Suspension>(`/suspensions/${suspensionId}/complete`, {}),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
-      toast.success('Enlace de WhatsApp creado correctamente')
+      void queryClient.invalidateQueries({ queryKey: suspensionsKey })
+      toast.success('Suspensión completada correctamente')
     },
-    onError: (error: ApiError) => {
-      if (error.status === 409) {
-        toast.error('Este número de teléfono ya está registrado')
-      } else {
-        toast.error(error.message)
-      }
-    },
-  })
-}
-
-export function useUpdateWhatsAppLink(linkId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { is_active?: boolean; display_name?: string; preferred_language?: string }) =>
-      api.put<WhatsAppLink>(`/whatsapp-links/${linkId}`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
-      toast.success('Enlace actualizado correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useDeleteWhatsAppLink(linkId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: () => api.delete<void>(`/whatsapp-links/${linkId}`),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'whatsappLinks'] })
-      toast.success('Enlace eliminado correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-// FINANCE
-
-export function useFinanceConfig(leagueId: string | undefined) {
-  return useQuery({
-    queryKey: competitionKeys.financeConfig(leagueId ?? ''),
-    queryFn: ({ signal }) => api.get<FinanceConfig>(`/leagues/${leagueId}/finance/config`, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-export function useUpdateFinanceConfig(leagueId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: Partial<FinanceConfig>) => api.put<FinanceConfig>(`/leagues/${leagueId}/finance/config`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.financeConfig(leagueId) })
-      toast.success('Configuración financiera actualizada correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useTransactions(leagueId: string | undefined, page: PageParams = { limit: 25, offset: 0 }) {
-  return useQuery({
-    queryKey: competitionKeys.transactions(leagueId ?? '', page),
-    queryFn: ({ signal }) => api.list<Transaction>(`/leagues/${leagueId}/finance/transactions`, page, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-export function useCreateTransaction(leagueId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: Partial<Transaction>) => api.post<Transaction>(`/leagues/${leagueId}/finance/transactions`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
-      toast.success('Transacción creada correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useRegisterPayment(transactionId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { amount: string; payment_method: string; payment_reference?: string }) =>
-      api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/pay`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
-      toast.success('Pago registrado correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useCancelTransaction(transactionId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { reason: string }) =>
-      api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/cancel`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
-      toast.success('Transacción cancelada correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useWaiveTransaction(transactionId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { reason: string }) =>
-      api.post<Transaction>(`/leagues/{leagueId}/finance/transactions/${transactionId}/waive`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.transaction(transactionId) })
-      void queryClient.invalidateQueries({ queryKey: [...competitionKeys.all, 'transactions'] })
-      toast.success('Transacción condonada correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useTeamBalances(leagueId: string | undefined, page: PageParams = { limit: 25, offset: 0 }) {
-  return useQuery({
-    queryKey: competitionKeys.teamBalance(leagueId ?? '', page),
-    queryFn: ({ signal }) => api.list<TeamBalance>(`/leagues/${leagueId}/finance/balances`, page, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-export function useLeagueSummary(leagueId: string | undefined) {
-  return useQuery({
-    queryKey: competitionKeys.leagueSummary(leagueId ?? ''),
-    queryFn: ({ signal }) => api.get<LeagueSummary>(`/leagues/${leagueId}/finance/summary`, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-// LEAGUE SETTINGS
-
-export function useLeague(leagueId: string | undefined) {
-  return useQuery({
-    queryKey: competitionKeys.league(leagueId ?? ''),
-    queryFn: ({ signal }) => api.get<League>(`/leagues/${leagueId}`, { signal }),
-    enabled: Boolean(leagueId),
-  })
-}
-
-export function useUpdateLeague(leagueId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: Partial<League>) => api.patch<League>(`/leagues/${leagueId}`, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.league(leagueId) })
-      toast.success('Liga actualizada correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
-  })
-}
-
-export function useUploadLogo(leagueId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('scope', 'league')
-      return api.post<{ url: string }>('/storage/objects', formData)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: competitionKeys.league(leagueId) })
-      toast.success('Logo cargado correctamente')
-    },
-    onError: (error: ApiError) => {
-      toast.error(error.message)
-    },
+    onError,
   })
 }

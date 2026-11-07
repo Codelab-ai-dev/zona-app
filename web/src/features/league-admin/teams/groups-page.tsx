@@ -1,143 +1,62 @@
-import React, { useState, useMemo } from 'react'
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
-
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { EmptyState, QueryState } from '@/components/states'
-import { useMyLeagues } from '@/features/leagues/api'
-import { useTeamsByLeague, useUpdateTeam } from './api'
+import { useState } from 'react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { EmptyState, QueryState } from '@/components/states'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+import { useTeamsByLeague, useUpdateTeam } from './api'
+import { GroupTeamsTable } from './components/group-teams-table'
+import { LeaguePicker } from './components/league-picker'
+import { groupTeams, planAutoDistribute, type Assignment } from './groups-logic'
+import { useSelectedLeague } from './use-selected-league'
+
+const errorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Error desconocido')
+
 export function GroupsPage() {
-  const [selectedLeagueId, setSelectedLeagueId] = useState<string>('')
-  const [updating, setUpdating] = useState(false)
-  const [failedTeams, setFailedTeams] = useState<Record<string, string>>({})
-  const hasSelectedRef = React.useRef(false)
+  const { leaguesQuery, leagueId, setLeagueId } = useSelectedLeague()
+  const teamsQuery = useTeamsByLeague(leagueId)
+  const updateTeam = useUpdateTeam()
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState<Record<string, string>>({})
+  const [groupCount, setGroupCount] = useState(2)
 
-  const leaguesQuery = useMyLeagues()
-  const teamsQuery = useTeamsByLeague(selectedLeagueId)
-  const updateTeamMutation = useUpdateTeam()
+  const teams = teamsQuery.data?.data ?? []
+  const nameOf = (id: string) => teams.find((t) => t.id === id)?.name ?? id
 
-  // Auto-select first league
-  React.useEffect(() => {
-    const firstLeague = leaguesQuery.data?.data?.[0]
-    if (!selectedLeagueId && firstLeague && !hasSelectedRef.current) {
-      hasSelectedRef.current = true
-      setSelectedLeagueId(firstLeague.id)
-    }
-  }, [selectedLeagueId, leaguesQuery.data])
-
-  // Group teams by their assigned group
-  const teamsByGroup = useMemo(() => {
-    const teamsData = teamsQuery.data?.data
-    if (!teamsData) return {}
-
-    const grouped: Record<string, typeof teamsData> = {}
-    const groups = new Set<string>()
-
-    // Collect all groups that exist
-    teamsData.forEach(team => {
-      if (team.group_name) {
-        groups.add(team.group_name)
+  /** One PATCH /teams/{id} per assignment; failures are collected per team. */
+  const applyAssignments = async (assignments: Assignment[]) => {
+    setBusy(true)
+    setFailed({})
+    const errors: Record<string, string> = {}
+    let ok = 0
+    for (const { teamId, group } of assignments) {
+      try {
+        await updateTeam.mutateAsync({ teamId, team: { group_name: group } })
+        ok++
+      } catch (error) {
+        errors[teamId] = errorMessage(error)
       }
-    })
-
-    // Initialize all letter groups A-Z (enough for most cases)
-    for (let i = 0; i < 26; i++) {
-      const letter = String.fromCharCode(65 + i)
-      grouped[letter] = []
     }
+    setFailed(errors)
+    setBusy(false)
+    return { ok, failures: Object.keys(errors).length }
+  }
 
-    // Distribute teams to groups
-    teamsData.forEach(team => {
-      if (team.group_name) {
-        const group = grouped[team.group_name]
-        if (group) {
-          group.push(team)
-        }
-      }
-    })
-
-    return grouped
-  }, [teamsQuery.data])
-
-  const unassignedTeams = useMemo(() => {
-    const teamsData = teamsQuery.data?.data
-    if (!teamsData) return []
-    return teamsData.filter(team => !team.group_name)
-  }, [teamsQuery.data])
-
-  const handleAssignTeam = async (teamId: string, groupName: string) => {
-    try {
-      setUpdating(true)
-      setFailedTeams({})
-
-      await updateTeamMutation.mutateAsync({
-        teamId,
-        team: { group_name: groupName },
-      })
-
-      // Error will be caught by the mutation's onError handler
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error al asignar equipo'
-      setFailedTeams(prev => ({ ...prev, [teamId]: errorMsg }))
-      toast.error(`Error: ${errorMsg}`)
-    } finally {
-      setUpdating(false)
-    }
+  const handleAssign = async (teamId: string, group: string) => {
+    const { ok, failures } = await applyAssignments([{ teamId, group }])
+    if (ok > 0) toast.success(`${nameOf(teamId)} asignado al grupo ${group}`)
+    if (failures > 0) toast.error(`No se pudo asignar ${nameOf(teamId)}`)
   }
 
   const handleAutoDistribute = async () => {
-    if (!unassignedTeams.length) {
-      toast.info('Todos los equipos ya están asignados')
-      return
-    }
-
-    const groups = Object.keys(teamsByGroup).filter(letter => letter.charCodeAt(0) >= 65 && letter.charCodeAt(0) <= 90)
-
-    if (groups.length === 0) {
-      toast.error('No hay grupos disponibles')
-      return
-    }
-
-    try {
-      setUpdating(true)
-      setFailedTeams({})
-      const errors: Record<string, string> = {}
-      let successCount = 0
-
-      // Distribute teams across groups
-      for (let i = 0; i < unassignedTeams.length; i++) {
-        const team = unassignedTeams[i]
-        if (!team) continue
-
-        const groupIndex = i % groups.length
-        const groupName = groups[groupIndex]
-
-        try {
-          await updateTeamMutation.mutateAsync({
-            teamId: team.id,
-            team: { group_name: groupName },
-          })
-          successCount++
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Error desconocido'
-          errors[team.id] = errorMsg
-        }
-      }
-
-      if (Object.keys(errors).length > 0) {
-        setFailedTeams(errors)
-        toast.warning(`${successCount} equipos distribuidos, ${Object.keys(errors).length} fallaron`)
-      } else {
-        toast.success(`${successCount} equipos distribuidos automáticamente`)
-      }
-    } finally {
-      setUpdating(false)
-    }
+    const plan = planAutoDistribute(teams, groupCount)
+    const { ok, failures } = await applyAssignments(plan)
+    if (failures > 0) toast.warning(`${ok} equipos distribuidos, ${failures} fallaron`)
+    else toast.success(`${ok} equipos distribuidos automáticamente`)
   }
 
   return (
@@ -152,165 +71,81 @@ export function GroupsPage() {
         isEmpty={(data) => data.data.length === 0}
         loadingLabel="Cargando ligas…"
         empty={<EmptyState title="No hay ligas" description="No administras ninguna liga" />}
-        children={(leaguesRes) => (
+      >
+        {(leaguesRes) => (
           <div className="space-y-6">
-            {leaguesRes.data.length > 1 && (
-              <div className="space-y-2">
-                <Label htmlFor="league-select">Selecciona una liga</Label>
-                <Select value={selectedLeagueId} onValueChange={setSelectedLeagueId}>
-                  <SelectTrigger id="league-select">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leaguesRes.data.map((league) => (
-                      <SelectItem key={league.id} value={league.id}>
-                        {league.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <LeaguePicker leagues={leaguesRes.data} value={leagueId} onChange={setLeagueId} />
 
             <QueryState
               query={teamsQuery}
               isEmpty={(data) => data.data.length === 0}
               loadingLabel="Cargando equipos…"
               empty={<EmptyState title="No hay equipos" description="Crea equipos primero en la sección de Equipos" />}
-              children={() => (
-                <div className="space-y-6">
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleAutoDistribute}
-                      disabled={updating || unassignedTeams.length === 0}
-                      variant="outline"
-                    >
-                      <RefreshCw className="mr-2 size-4" />
-                      Distribuir automáticamente
-                    </Button>
-                  </div>
-
-                  {updating && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      Procesando...
+            >
+              {(res) => {
+                const unassigned = res.data.filter((t) => !t.group_name)
+                const failedList = Object.entries(failed)
+                return (
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="group-count">Número de grupos</Label>
+                        <Input
+                          id="group-count"
+                          type="number"
+                          min={1}
+                          max={26}
+                          className="w-28"
+                          value={groupCount}
+                          onChange={(e) => setGroupCount(Math.min(26, Math.max(1, Number(e.target.value) || 1)))}
+                        />
+                      </div>
+                      <Button onClick={handleAutoDistribute} disabled={busy || unassigned.length === 0} variant="outline">
+                        <RefreshCw className="mr-2 size-4" aria-hidden="true" />
+                        Distribuir automáticamente
+                      </Button>
                     </div>
-                  )}
 
-                  {unassignedTeams.length > 0 && (
-                    <div className="space-y-4">
-                      <h2 className="text-lg font-semibold">Equipos sin grupo ({unassignedTeams.length})</h2>
-                      <div className="overflow-x-auto rounded-lg border border-border">
-                        <Table>
-                          <TableHeader className="bg-muted/50">
-                            <TableRow>
-                              <TableHead>Equipo</TableHead>
-                              <TableHead>Asignar grupo</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {unassignedTeams.map((team) => (
-                              <TableRow key={team.id} className={failedTeams[team.id] ? 'bg-destructive/10' : ''}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">{team.name}</p>
-                                    <p className="text-sm text-muted-foreground">{team.slug}</p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-2">
-                                    <Select onValueChange={(value) => handleAssignTeam(team.id, value)}>
-                                      <SelectTrigger className="w-32">
-                                        <SelectValue placeholder="Grupo" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {Object.keys(teamsByGroup)
-                                          .filter(letter => letter.charCodeAt(0) >= 65 && letter.charCodeAt(0) <= 90)
-                                          .map((letter) => (
-                                            <SelectItem key={letter} value={letter}>
-                                              Grupo {letter}
-                                            </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  {failedTeams[team.id] && (
-                                    <p className="text-xs text-destructive mt-1">{failedTeams[team.id]}</p>
-                                  )}
-                                </TableCell>
-                              </TableRow>
+                    {busy && <p role="status" className="text-sm text-muted-foreground">Procesando…</p>}
+
+                    {failedList.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                        <AlertDescription>
+                          <p>No se pudo actualizar:</p>
+                          <ul className="list-disc pl-5">
+                            {failedList.map(([id, message]) => (
+                              <li key={id}>
+                                {nameOf(id)}: {message}
+                              </li>
                             ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  )}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
-                  {Object.entries(teamsByGroup).map(([groupLetter, teams]) => {
-                    const shouldShow = groupLetter.charCodeAt(0) >= 65 && groupLetter.charCodeAt(0) <= 90 && teams.length > 0
-                    if (!shouldShow) return null
+                    {unassigned.length > 0 && (
+                      <section className="space-y-3">
+                        <h2 className="text-lg font-semibold">Equipos sin grupo ({unassigned.length})</h2>
+                        <GroupTeamsTable teams={unassigned} failed={failed} disabled={busy} onAssign={handleAssign} />
+                      </section>
+                    )}
 
-                    return (
-                      <div key={groupLetter} className="space-y-3">
-                        <h2 className="text-lg font-semibold">Grupo {groupLetter} ({teams.length})</h2>
-                        <div className="overflow-x-auto rounded-lg border border-border">
-                          <Table>
-                            <TableHeader className="bg-muted/50">
-                              <TableRow>
-                                <TableHead>Equipo</TableHead>
-                                <TableHead>Cambiar grupo</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {teams.map((team) => (
-                                <TableRow key={team.id}>
-                                  <TableCell>
-                                    <div>
-                                      <p className="font-medium">{team.name}</p>
-                                      <p className="text-sm text-muted-foreground">{team.slug}</p>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Select
-                                      value={team.group_name || ''}
-                                      onValueChange={(value) => handleAssignTeam(team.id, value)}
-                                      disabled={updating}
-                                    >
-                                      <SelectTrigger className="w-32">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {Object.keys(teamsByGroup)
-                                          .filter(letter => letter.charCodeAt(0) >= 65 && letter.charCodeAt(0) <= 90)
-                                          .map((letter) => (
-                                            <SelectItem key={letter} value={letter}>
-                                              Grupo {letter}
-                                            </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    )
-                  })}
-
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Asigna todos los equipos a sus grupos correspondientes. Puedes cambiar los grupos en cualquier momento.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            />
+                    {groupTeams(res.data).map(([letter, list]) => (
+                      <section key={letter} className="space-y-3">
+                        <h2 className="text-lg font-semibold">
+                          Grupo {letter} ({list.length})
+                        </h2>
+                        <GroupTeamsTable teams={list} failed={failed} disabled={busy} onAssign={handleAssign} />
+                      </section>
+                    ))}
+                  </div>
+                )
+              }}
+            </QueryState>
           </div>
         )}
-      />
+      </QueryState>
     </div>
   )
 }

@@ -24,7 +24,7 @@ interface CreateUserDialogProps {
 
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
   const createUser = useCreateLeagueAdmin()
-  const leagues = useAdminLeagues({ limit: 1000 })
+  const leagues = useAdminLeagues({ limit: 100 })
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [form, setForm] = useState<Partial<CreateUserRequest> & { confirmPassword?: string }>({
@@ -70,10 +70,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
       setForm({ role: 'league_admin' })
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.isValidation && err.fields) {
+        if (err.isValidation && Object.keys(err.fields).length > 0) {
           setFormErrors(err.fields)
         } else if (err.status === 409) {
-          setFormErrors({ email: 'ya existe' })
+          setFormErrors({ email: 'Este correo ya está registrado' })
         } else {
           toast.error(err.message)
         }
@@ -178,6 +178,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
 
           <div>
             <Label htmlFor="create-league">Liga *</Label>
+            {/* /leagues/admin: super admins must see inactive leagues too */}
             <QueryState
               query={leagues}
               loadingLabel="Cargando ligas…"
@@ -185,7 +186,11 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             >
               {(res) => (
                 <Select value={form.league_id || ''} onValueChange={(v) => setForm((prev) => ({ ...prev, league_id: v }))}>
-                  <SelectTrigger id="create-league">
+                  <SelectTrigger
+                    id="create-league"
+                    aria-invalid={!!formErrors.league_id}
+                    aria-describedby={formErrors.league_id ? 'create-league-error' : undefined}
+                  >
                     <SelectValue placeholder="Seleccionar Liga" />
                   </SelectTrigger>
                   <SelectContent>
@@ -199,7 +204,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               )}
             </QueryState>
             {formErrors.league_id && (
-              <p className="text-xs text-destructive mt-1">{formErrors.league_id}</p>
+              <p id="create-league-error" className="text-xs text-destructive mt-1">{formErrors.league_id}</p>
             )}
           </div>
 

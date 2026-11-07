@@ -1,327 +1,126 @@
-import { screen, waitFor, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
-import { renderWithProviders, mockApi } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
+
 import { QRBatchPage } from './qr-batch-page'
+import { leaguesMine, page, team } from './test-fixtures'
+
+const players = (prefix: string, count: number) =>
+  page(Array.from({ length: count }, (_, i) => ({ id: `${prefix}-${i + 1}`, name: `Jugador ${i + 1}`, team_id: 't' })))
+
+const twoTeams = {
+  'GET /leagues/mine': leaguesMine,
+  'GET /teams': page([team('team-1', 'Los Campeones'), team('team-2', 'Las Águilas')]),
+}
 
 describe('QRBatchPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('displays page title', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [],
-          page: { limit: 100, offset: 0, total: 0 },
-        },
-      },
-    })
-
+  it('shows the empty state when the admin has no leagues', async () => {
+    mockApi({ 'GET /leagues/mine': page([]) })
     renderWithProviders(<QRBatchPage />)
-
-    expect(screen.getByText('Actualización Masiva de QR')).toBeInTheDocument()
+    expect(await screen.findByText('No hay ligas')).toBeInTheDocument()
   })
 
-  it('shows teams for selection', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-            {
-              id: 'team-2',
-              name: 'Las Águilas',
-              slug: 'las-aguilas',
-              league_id: 'league-1',
-              owner_id: 'owner-2',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
-    })
-
+  it('shows the empty state when the league has no teams', async () => {
+    mockApi({ 'GET /leagues/mine': leaguesMine, 'GET /teams': page([]) })
     renderWithProviders(<QRBatchPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-      expect(screen.getByText('Las Águilas')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('No hay equipos')).toBeInTheDocument()
   })
 
-  it('shows select all and clear all buttons', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-    })
+  it('selects and clears every team, keeping the button disabled with no selection', async () => {
+    mockApi(twoTeams)
+    const { user } = renderWithProviders(<QRBatchPage />)
 
-    renderWithProviders(<QRBatchPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Seleccionar todos')).toBeInTheDocument()
-      expect(screen.getByText('Deseleccionar todos')).toBeInTheDocument()
-    })
+    const run = await screen.findByRole('button', { name: /actualizar qr \(0 equipos\)/i })
+    expect(run).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Seleccionar todos' }))
+    expect(screen.getByRole('button', { name: /actualizar qr \(2 equipos\)/i })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Deseleccionar todos' }))
+    expect(screen.getByRole('button', { name: /actualizar qr \(0 equipos\)/i })).toBeDisabled()
   })
 
-  it('allows team selection and shows batch update button', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
+  it('posts the players of the selected teams and shows the updated count', async () => {
+    const fetchMock = mockApi({
+      ...twoTeams,
+      'GET /teams/team-1/players': players('a', 2),
+      'POST /leagues/league-1/players/qr-batch': { body: { updated: 2 } },
     })
+    const { user } = renderWithProviders(<QRBatchPage />)
 
-    renderWithProviders(<QRBatchPage />)
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar Los Campeones' }))
+    await user.click(screen.getByRole('button', { name: /actualizar qr \(1 equipos\)/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-    })
-
-    // Get checkbox for team
-    const checkboxes = screen.getAllByRole('checkbox')
-    const checkbox = checkboxes[0]
-    if (checkbox) {
-      fireEvent.click(checkbox)
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText(/Actualizar QR \(1 equipos\)/)).toBeInTheDocument()
-    })
+    expect(await screen.findByText('Actualización completada exitosamente')).toBeInTheDocument()
+    expect(screen.getByText('Se actualizaron 2 códigos QR')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /leagues/league-1/players/qr-batch')).toEqual([
+      { players: [{ id: 'a-1' }, { id: 'a-2' }] },
+    ])
+    expect(requestsTo(fetchMock, 'GET /teams/team-2/players')).toEqual([])
   })
 
-  it('shows success message after batch update', async () => {
+  it('splits more than 200 players into several POSTs and adds up the counts', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Uno'), team('team-2', 'Dos'), team('team-3', 'Tres')]),
+      'GET /teams/team-1/players': players('a', 99),
+      'GET /teams/team-2/players': players('b', 99),
+      'GET /teams/team-3/players': players('c', 99),
+      'POST /leagues/league-1/players/qr-batch': { body: { updated: 100 } },
+    })
+    const { user } = renderWithProviders(<QRBatchPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Seleccionar todos' }))
+    await user.click(screen.getByRole('button', { name: /actualizar qr/i }))
+
+    expect(await screen.findByText('Se actualizaron 200 códigos QR')).toBeInTheDocument()
+    const bodies = requestsTo(fetchMock, 'POST /leagues/league-1/players/qr-batch') as Array<{ players: unknown[] }>
+    expect(bodies.map((b) => b.players.length)).toEqual([200, 97])
+  })
+
+  it('lists the teams whose roster failed and still updates the others', async () => {
+    const fetchMock = mockApi({
+      ...twoTeams,
+      'GET /teams/team-1/players': players('a', 1),
+      'GET /teams/team-2/players': { status: 500, body: { error: { code: 'internal_error', message: 'Error del servidor' } } },
+      'POST /leagues/league-1/players/qr-batch': { body: { updated: 1 } },
+    })
+    const { user } = renderWithProviders(<QRBatchPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Seleccionar todos' }))
+    await user.click(screen.getByRole('button', { name: /actualizar qr/i }))
+
+    expect(await screen.findByText('Actualización parcial')).toBeInTheDocument()
+    expect(screen.getByText('Las Águilas: Error del servidor')).toBeInTheDocument()
+    expect(screen.getByText('Se actualizaron 1 códigos QR')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /leagues/league-1/players/qr-batch')).toEqual([{ players: [{ id: 'a-1' }] }])
+  })
+
+  it('shows the API error when the batch is rejected', async () => {
     mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams/team-1/players': {
-        body: {
-          data: [
-            {
-              id: 'player-1',
-              name: 'Juan Pérez',
-              team_id: 'team-1',
-              position: 'Portero',
-              jersey_number: 1,
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
+      ...twoTeams,
+      'GET /teams/team-1/players': players('a', 1),
       'POST /leagues/league-1/players/qr-batch': {
-        body: { updated: 1 },
+        status: 403,
+        body: { error: { code: 'forbidden', message: 'No tienes permiso para esta liga' } },
       },
     })
+    const { user } = renderWithProviders(<QRBatchPage />)
 
-    renderWithProviders(<QRBatchPage />)
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar Los Campeones' }))
+    await user.click(screen.getByRole('button', { name: /actualizar qr/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-    })
-
-    // Select team
-    const checkboxes = screen.getAllByRole('checkbox')
-    const checkbox = checkboxes[0]
-    if (checkbox) {
-      fireEvent.click(checkbox)
-    }
-
-    // Click update button
-    const updateButton = screen.getByText(/Actualizar QR/)
-    fireEvent.click(updateButton)
-
-    // Check for success message
-    await waitFor(() => {
-      expect(screen.getByText(/Actualización completada exitosamente/)).toBeInTheDocument()
-    })
+    expect(await screen.findByText('Lote 1: No tienes permiso para esta liga')).toBeInTheDocument()
+    expect(screen.getByText('Se actualizaron 0 códigos QR')).toBeInTheDocument()
   })
 
-  it('shows empty state when no teams exist', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [],
-          page: { limit: 100, offset: 0, total: 0 },
-        },
-      },
-    })
+  it('does not call the batch endpoint when the teams have no players', async () => {
+    const fetchMock = mockApi({ ...twoTeams, 'GET /teams/team-1/players': page([]) })
+    const { user } = renderWithProviders(<QRBatchPage />)
 
-    renderWithProviders(<QRBatchPage />)
+    await user.click(await screen.findByRole('checkbox', { name: 'Seleccionar Los Campeones' }))
+    await user.click(screen.getByRole('button', { name: /actualizar qr/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText('No hay equipos')).toBeInTheDocument()
-    })
-  })
-
-  it('shows error when no leagues found', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [],
-          page: { limit: 100, offset: 0, total: 0 },
-        },
-      },
-    })
-
-    renderWithProviders(<QRBatchPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('No hay ligas')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('No hay jugadores para actualizar')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /leagues/league-1/players/qr-batch')).toEqual([])
   })
 })

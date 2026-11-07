@@ -18,8 +18,8 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
   const tournaments = useTournaments(leagueId)
   const [selectedTournament, setSelectedTournament] = useState<string>('')
   const [viewMode, setViewMode] = useState<ViewMode>('scorers')
-  const scorers = useTopScorers(selectedTournament || undefined)
-  const discipline = useDiscipline(selectedTournament || undefined)
+  const scorers = useTopScorers(viewMode === 'scorers' ? selectedTournament || undefined : undefined)
+  const discipline = useDiscipline(viewMode === 'discipline' ? selectedTournament || undefined : undefined)
 
   // Auto-select first tournament
   if (tournaments.data?.data?.length && !selectedTournament && tournaments.data.data[0]) {
@@ -30,9 +30,9 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
   const title = viewMode === 'scorers' ? 'Goleadores' : 'Disciplina'
 
   return (
-    <section aria-labelledby="title" className="space-y-6">
+    <section aria-labelledby="top-scorers-title" className="space-y-6">
       <header>
-        <h2 id="title" className="text-2xl font-bold">
+        <h2 id="top-scorers-title" className="text-2xl font-bold">
           {title}
         </h2>
         <p className="text-sm text-muted-foreground">Estadísticas de jugadores</p>
@@ -78,6 +78,11 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
           </div>
         </div>
 
+        {!selectedTournament ? (
+          tournaments.isSuccess && (
+            <EmptyState title="Sin torneos" description="Crea un torneo para ver estadísticas" />
+          )
+        ) : (
         <QueryState
           query={query}
           loadingLabel={`Cargando ${title.toLowerCase()}…`}
@@ -138,6 +143,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
             </Card>
           )}
         </QueryState>
+        )}
       </div>
     </section>
   )

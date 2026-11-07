@@ -1,312 +1,91 @@
-import { screen, within } from '@testing-library/react'
-import { userEvent } from '@testing-library/user-event'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { mockApi, renderWithProviders } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
 import { LeagueDirectory } from './league-directory'
+import { apiError, league, league2, page, team, team2, tournament } from './fixtures'
 
-const league1 = {
-  id: 'l1',
-  name: 'Liga Norte',
-  slug: 'liga-norte',
-  description: 'Fútbol 7',
-  logo: null,
-  is_active: true,
-  created_at: '',
-}
-
-const league2 = {
-  id: 'l2',
-  name: 'Liga Sur',
-  slug: 'liga-sur',
-  description: 'Fútbol 11',
-  logo: null,
-  is_active: true,
-  created_at: '',
-}
-
-const tournament = {
-  id: 't1',
-  name: 'Torneo Activo',
-  league_id: 'l1',
-  start_date: '2024-01-01',
-  end_date: '2099-12-31',
-  is_active: true,
-  registration_open: true,
-  tournament_format: 'round_robin',
-  rounds_per_season: 10,
-  has_third_place_match: false,
-  age_validation_enabled: false,
-  id_document_required: false,
-  created_at: '',
-  updated_at: '',
+const baseHandlers = {
+  'GET /leagues': { body: { data: [league, league2], page } },
+  'GET /teams': { body: { data: [team, team2], page } },
+  'GET /leagues/l1/tournaments': { body: { data: [tournament], page } },
+  'GET /leagues/l2/tournaments': { body: { data: [], page } },
 }
 
 describe('LeagueDirectory', () => {
-  it('renders a card per league from GET /leagues', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1, league2],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [{ id: 'team1', name: 'Team A' }, { id: 'team2', name: 'Team B' }],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [tournament], page: { limit: 100, offset: 0 } },
-      },
-      'GET /leagues/l2/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
-
+  it('has one h1 and links each league to its page', async () => {
+    mockApi(baseHandlers)
     renderWithProviders(<LeagueDirectory />)
 
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    expect(await screen.findByText('Liga Sur')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Liga Norte', level: 3 })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    const link = screen.getByRole('link', { name: /ver liga.*liga norte/i })
+    expect(link).toHaveAttribute('href', '/liga/liga-norte')
   })
 
-  it('shows empty state when no leagues', async () => {
-    mockApi({
-      'GET /leagues': { body: { data: [], page: { limit: 100, offset: 0 } } },
-    })
-
+  it('shows team count and running tournament for the current league only', async () => {
+    const fetchMock = mockApi(baseHandlers)
     renderWithProviders(<LeagueDirectory />)
 
-    expect(await screen.findByText('No hay ligas disponibles')).toBeInTheDocument()
+    expect(await screen.findByText('Torneo Apertura')).toBeInTheDocument()
+    expect(screen.getByText('Equipos').previousElementSibling).toHaveTextContent('2')
+    // N+1 guard: 2 leagues, but stats requested only for the visible slide.
+    expect(requestsTo(fetchMock, 'GET /teams')).toHaveLength(1)
+    expect(requestsTo(fetchMock, 'GET /leagues/l1/tournaments')).toHaveLength(1)
+    expect(requestsTo(fetchMock, 'GET /leagues/l2/tournaments')).toHaveLength(0)
+    const teamCall = fetchMock.mock.calls.map(([u]) => String(u)).find((u) => u.includes('/teams'))
+    expect(teamCall).toContain('league_id=l1')
   })
 
-  it('shows error state on API failure with retry', async () => {
-    mockApi({
-      'GET /leagues': { status: 500, body: { error: { code: 'internal_error', message: 'Error del servidor' } } },
-    })
+  it('carousel buttons are keyboard operable and load stats lazily', async () => {
+    const fetchMock = mockApi(baseHandlers)
+    const { user } = renderWithProviders(<LeagueDirectory />)
+    await screen.findByText('Torneo Apertura')
 
-    renderWithProviders(<LeagueDirectory />)
+    const next = screen.getByRole('button', { name: 'Siguiente liga' })
+    next.focus()
+    await user.keyboard('{Enter}')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Error del servidor')
+    await waitFor(() => expect(requestsTo(fetchMock, 'GET /leagues/l2/tournaments')).toHaveLength(1))
+    expect(requestsTo(fetchMock, 'GET /teams')).toHaveLength(2)
+    // Only the visible slide is reachable (hidden ones are inert).
+    const slides = screen.getAllByRole('group', { hidden: true })
+    expect(slides[0]).toHaveAttribute('inert')
+    expect(slides[1]).not.toHaveAttribute('inert')
+    expect(screen.getByRole('button', { name: 'Ir a Liga Sur' })).toHaveAttribute('aria-current', 'true')
+
+    await user.keyboard('{Enter}') // focus is still on "next": wraps to first league
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ir a Liga Norte' })).toHaveAttribute('aria-current', 'true'))
+
+    screen.getByRole('button', { name: 'Liga anterior' }).focus()
+    await user.keyboard(' ')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ir a Liga Sur' })).toHaveAttribute('aria-current', 'true'))
   })
 
-  it('carousel next/previous buttons have accessible names and move active slide', async () => {
-    const user = userEvent.setup()
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1, league2],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [{ id: 'team1', name: 'Team A' }],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-      'GET /leagues/l2/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
-
+  it('does not show a team count when the stats request fails', async () => {
+    mockApi({ ...baseHandlers, 'GET /teams': { status: 500, body: apiError('boom') } })
     renderWithProviders(<LeagueDirectory />)
 
-    // Wait for leagues to load
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-
-    // Find carousel buttons with accessible names
-    const nextBtn = screen.getByRole('button', { name: /siguiente liga/i })
-    const prevBtn = screen.getByRole('button', { name: /anterior liga/i })
-
-    expect(nextBtn).toBeInTheDocument()
-    expect(prevBtn).toBeInTheDocument()
-
-    // Click next to move carousel
-    await user.click(nextBtn)
-
-    // Verify carousel moved (Liga Sur should be visible)
-    expect(await screen.findByText('Liga Sur')).toBeInTheDocument()
-  })
-
-  it('carousel buttons are hidden with only one league', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [{ id: 'team1', name: 'Team A' }],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
-
-    renderWithProviders(<LeagueDirectory />)
-
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-
-    // Carousel buttons should not exist for single league
-    const nextBtn = screen.queryByRole('button', { name: /siguiente liga/i })
-    const prevBtn = screen.queryByRole('button', { name: /anterior liga/i })
-
-    expect(nextBtn).not.toBeInTheDocument()
-    expect(prevBtn).not.toBeInTheDocument()
-  })
-
-  it('shows stats when available', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [{ id: 'team1', name: 'Team A' }, { id: 'team2', name: 'Team B' }],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: {
-          data: [tournament],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-    })
-
-    renderWithProviders(<LeagueDirectory />)
-
-    // Wait for league and stats to load
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    expect(await screen.findByText('Equipos')).toBeInTheDocument()
-    expect(await screen.findByText('Torneo Activo')).toBeInTheDocument()
-  })
-
-  it('omits stats when teams request fails', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        status: 500,
-        body: { error: { code: 'internal_error', message: 'Error' } },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: {
-          data: [tournament],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-    })
-
-    renderWithProviders(<LeagueDirectory />)
-
-    // Wait for league to load and tournament to display
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    expect(await screen.findByText('Torneo Activo')).toBeInTheDocument()
-
-    // Teams count should not be shown since request failed
+    await screen.findByRole('heading', { name: 'Liga Norte', level: 3 })
+    await screen.findByText('Torneo Apertura')
     expect(screen.queryByText('Equipos')).not.toBeInTheDocument()
   })
 
-  it('uses page.total when available', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [{ id: 'team1', name: 'Team A' }],
-          page: { limit: 100, offset: 0, total: 250 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
-
+  it('shows an empty state', async () => {
+    mockApi({ 'GET /leagues': { body: { data: [], page } } })
     renderWithProviders(<LeagueDirectory />)
 
-    // Wait for league and stats to load
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    // Should show total (250) not just the data.length (1)
-    expect(await screen.findByText('250')).toBeInTheDocument()
-    expect(await screen.findByText('Equipos')).toBeInTheDocument()
+    expect(await screen.findByText('No hay ligas disponibles')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Siguiente liga' })).not.toBeInTheDocument()
   })
 
-  it('only shows teams count when data.length < 100 and no page.total', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: Array(50).fill({ id: 'team', name: 'Team' }),
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
+  it('retries GET /leagues from the error state', async () => {
+    const fetchMock = mockApi({ 'GET /leagues': { status: 500, body: apiError('Error interno del servidor') } })
+    const { user } = renderWithProviders(<LeagueDirectory />)
 
-    renderWithProviders(<LeagueDirectory />)
-
-    // Wait for league and stats to load
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    // Should show 50 (data.length < 100 means we got all)
-    expect(await screen.findByText('50')).toBeInTheDocument()
-    expect(await screen.findByText('Equipos')).toBeInTheDocument()
-  })
-
-  it('hides teams count when 100 items returned (potentially truncated)', async () => {
-    mockApi({
-      'GET /leagues': {
-        body: {
-          data: [league1],
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: Array(100).fill({ id: 'team', name: 'Team' }),
-          page: { limit: 100, offset: 0 },
-        },
-      },
-      'GET /leagues/l1/tournaments': {
-        body: { data: [], page: { limit: 100, offset: 0 } },
-      },
-    })
-
-    renderWithProviders(<LeagueDirectory />)
-
-    const card = await screen.findByText('Liga Norte')
-    const cardContainer = card.closest('div[class*="bg-gradient"]') as HTMLElement
-
-    // Should NOT show teams count (data.length === 100 means might be truncated)
-    const equiposText = within(cardContainer).queryByText('Equipos')
-    expect(equiposText).not.toBeInTheDocument()
+    expect(await within(await screen.findByRole('alert')).findByText('Error interno del servidor')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(requestsTo(fetchMock, 'GET /leagues')).toHaveLength(2))
   })
 })

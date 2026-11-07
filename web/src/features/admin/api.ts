@@ -1,10 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type PageParams } from '@/lib/api/client'
-import type { CreateLeagueRequest, CreateUserRequest, League, UpdateLeagueRequest, UpdateUserRequest, User } from './types'
+import type { CreateLeagueRequest, ProductMode, CreateUserRequest, League, UpdateLeagueRequest, UpdateUserRequest, User } from './types'
 
 export const adminKeys = {
   all: ['admin'] as const,
   leagues: ['admin', 'leagues'] as const,
+  leaguesPage: (page: PageParams) => ['admin', 'leagues', 'list', page] as const,
   league: (id: string) => ['admin', 'leagues', id] as const,
   allUsers: ['admin', 'users'] as const,
   users: (page: PageParams) => ['admin', 'users', page] as const,
@@ -13,7 +14,7 @@ export const adminKeys = {
 /** Fetch all leagues (admin view) */
 export function useAdminLeagues(page: PageParams = { limit: 100 }) {
   return useQuery({
-    queryKey: adminKeys.leagues,
+    queryKey: adminKeys.leaguesPage(page),
     queryFn: ({ signal }) => api.list<League>('/leagues/admin', page, { signal }),
     placeholderData: keepPreviousData,
   })
@@ -32,7 +33,15 @@ export function useAdminUsers(page: PageParams = { limit: 100 }) {
 export function useCreateLeague() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: CreateLeagueRequest) => api.post<League>('/leagues', data),
+    // The API has no product mode on creation (unknown JSON fields are
+    // rejected), so a non-default mode is applied right after creating.
+    mutationFn: async ({ product_mode, ...data }: CreateLeagueRequest) => {
+      const league = await api.post<League>('/leagues', data)
+      if (product_mode && product_mode !== league.product_mode) {
+        return api.patch<League>(`/leagues/${league.id}/product-mode`, { product_mode })
+      }
+      return league
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.leagues })
     },
@@ -69,7 +78,7 @@ export function useToggleLeagueStatus() {
 export function useUpdateLeagueProductMode() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { product_mode: string; features?: Record<string, boolean> } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { product_mode: ProductMode; features?: Record<string, boolean> } }) =>
       api.patch<League>(`/leagues/${id}/product-mode`, data),
     onSuccess: (_, { id }) => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.leagues })
@@ -84,7 +93,7 @@ export function useCreateLeagueAdmin() {
   return useMutation({
     mutationFn: (data: CreateUserRequest) => api.post<User>('/admin/users', data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: adminKeys.allUsers })
     },
   })
 }
@@ -105,8 +114,7 @@ export function useUpdateUser() {
 export function useDeactivateUser() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      api.patch<User>(`/admin/users/${id}`, { is_active: false }),
+    mutationFn: (id: string) => api.patch<User>(`/admin/users/${id}`, { is_active: false }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.allUsers })
     },
@@ -115,23 +123,32 @@ export function useDeactivateUser() {
 
 /** Upload storage object (APK) */
 export function useUploadStorage() {
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: FormData) => api.post<{ url: string }>('/storage/objects', data),
+    mutationFn: (data: FormData) => api.post<{ key: string; url?: string }>('/storage/objects', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminStorageKeys.objects })
+    },
   })
 }
 
+/** Mirrors storage.Object in the Go API. */
 export interface StorageObject {
   key: string
-  filename?: string
   size: number
-  modified: string
-  is_public: boolean
+  content_type: string
+  created_at: string
+  etag?: string
+}
+
+export const adminStorageKeys = {
+  objects: ['storage', 'objects'] as const,
 }
 
 /** Get storage objects listing for a scope */
 export function useStorageObjects(scope: string, scopeId: string, page: PageParams = { limit: 100 }) {
   return useQuery({
-    queryKey: ['storage', 'objects', scope, scopeId, page],
+    queryKey: [...adminStorageKeys.objects, scope, scopeId, page],
     queryFn: ({ signal }) =>
       api.list<StorageObject>('/storage/objects', page, { signal, query: { scope, scope_id: scopeId } }),
     enabled: !!scopeId,
@@ -151,7 +168,7 @@ export function useDeleteStorageObject() {
   return useMutation({
     mutationFn: (key: string) => api.delete('/storage/objects', { body: { key } }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['storage', 'objects'] })
+      void queryClient.invalidateQueries({ queryKey: adminStorageKeys.objects })
     },
   })
 }

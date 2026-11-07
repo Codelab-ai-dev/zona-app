@@ -14,20 +14,9 @@ import { AlertCircle, Plus, Calendar } from 'lucide-react'
 import { usePlayerRegistrationRequests, useCreatePlayerRegistrationRequest } from '../api'
 import type { CreatePlayerRegistrationRequestRequest } from '../types'
 import { PlayerRegistrationForm } from '../components/player-registration-form'
+import { PLAYER_POSITIONS } from '../constants'
+import { formatDate } from '../utils'
 import { Badge } from '@/components/ui/badge'
-
-const positions = [
-  'Portero',
-  'Defensa Central',
-  'Lateral Derecho',
-  'Lateral Izquierdo',
-  'Mediocampista Defensivo',
-  'Mediocampista Central',
-  'Mediocampista Ofensivo',
-  'Extremo Derecho',
-  'Extremo Izquierdo',
-  'Delantero',
-]
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendiente',
@@ -55,12 +44,9 @@ export function PlayerRegistrationPage({
 
   const handleCreateRequest = async (data: CreatePlayerRegistrationRequestRequest) => {
     if (!tournamentId) return
-    try {
-      await createRequest.mutateAsync({ teamId, tournamentId, data })
-      setIsDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to create registration request:', error)
-    }
+    // Errors propagate to the form, which maps 422 fields onto its inputs.
+    await createRequest.mutateAsync({ teamId, tournamentId, data })
+    setIsDialogOpen(false)
   }
 
   const getStatusBadge = (status: string) => {
@@ -92,10 +78,9 @@ export function PlayerRegistrationPage({
                 <DialogDescription>Ingresa los detalles del nuevo jugador para registrarlo.</DialogDescription>
               </DialogHeader>
               <PlayerRegistrationForm
-                positions={positions}
+                positions={PLAYER_POSITIONS}
                 onSubmit={handleCreateRequest}
                 isLoading={createRequest.isPending}
-                error={createRequest.error}
               />
             </DialogContent>
           </Dialog>
@@ -119,7 +104,6 @@ export function PlayerRegistrationPage({
           <EmptyState
             title="Sin solicitudes"
             description="No hay solicitudes de registro de jugadores."
-            action={tournamentId ? <Button>Nueva Solicitud</Button> : undefined}
           />
         }
       >
@@ -139,7 +123,7 @@ export function PlayerRegistrationPage({
                       {request.birth_date && (
                         <div className="text-sm">
                           <span className="text-muted-foreground">Fecha de nacimiento:</span>{' '}
-                          {new Date(request.birth_date).toLocaleDateString('es-MX')}
+                          {formatDate(request.birth_date)}
                         </div>
                       )}
                       <div className="text-sm">
@@ -157,7 +141,7 @@ export function PlayerRegistrationPage({
                     {getStatusBadge(request.status)}
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(request.created_at).toLocaleDateString('es-MX')}
+                      {formatDate(request.created_at)}
                     </div>
                   </div>
                 </div>

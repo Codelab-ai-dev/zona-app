@@ -22,7 +22,7 @@ function formatDuration(seconds: number | null | undefined): string {
 
 function VideoCard({ video }: { video: Recording }) {
   const title = video.title
-  const score = video.home_score !== null && video.away_score !== null ? `${video.home_score} - ${video.away_score}` : null
+  const score = video.home_score != null && video.away_score != null ? `${video.home_score} - ${video.away_score}` : null
 
   return (
     <Link
@@ -172,7 +172,7 @@ export function PlayPage() {
                         <div className="space-y-2">
                           <h2 className="text-2xl md:text-3xl font-bold">{featuredVideo.title}</h2>
                         </div>
-                        {(featuredVideo.home_score !== null || featuredVideo.away_score !== null) && (
+                        {(featuredVideo.home_score != null && featuredVideo.away_score != null) && (
                           <div className="text-4xl md:text-5xl font-bold text-primary">
                             {featuredVideo.home_score} - {featuredVideo.away_score}
                           </div>

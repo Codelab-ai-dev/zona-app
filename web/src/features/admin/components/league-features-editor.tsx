@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUpdateLeagueProductMode } from '../api'
-import type { League } from '../types'
+import { FEATURE_KEYS, type FeatureKey, type League } from '../types'
 import { ApiError } from '@/lib/api/client'
 
 const FEATURE_GROUPS = {
@@ -54,26 +54,24 @@ interface LeagueFeaturesEditorProps {
   league: League | null
 }
 
+/** Every known flag with an explicit boolean, so saving always sends the full object. */
+function fullFeatures(features: Record<string, boolean> | undefined): Record<FeatureKey, boolean> {
+  return Object.fromEntries(FEATURE_KEYS.map((key) => [key, features?.[key] ?? false])) as Record<FeatureKey, boolean>
+}
+
+/** Mount with `key={league.id}` so the form state follows the selected league. */
 export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeaturesEditorProps) {
   const updateMode = useUpdateLeagueProductMode()
 
-  const [features, setFeatures] = useState<Record<string, boolean>>(league?.features || {})
+  const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() => fullFeatures(league?.features))
 
-  const handleToggle = (feature: string, enabled: boolean) => {
+  const handleToggle = (feature: FeatureKey, enabled: boolean) => {
     setFeatures((prev) => ({
       ...prev,
       [feature]: enabled,
+      // Turning finance off also turns its sub-features off
+      ...(feature === 'finance' && !enabled ? { finance_auto_fines: false, finance_payments: false } : {}),
     }))
-
-    // If disabling finance, also disable sub-features
-    if (feature === 'finance' && !enabled) {
-      setFeatures((prev) => ({
-        ...prev,
-        finance: false,
-        finance_auto_fines: false,
-        finance_payments: false,
-      }))
-    }
   }
 
   const handleSave = async () => {
@@ -90,11 +88,7 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
       toast.success('Features actualizadas exitosamente')
       onOpenChange(false)
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast.error(err.message)
-      } else {
-        toast.error('Error al actualizar features')
-      }
+      toast.error(err instanceof ApiError ? err.message : 'Error al actualizar features')
     }
   }
 
@@ -114,7 +108,7 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
               <h3 className="text-sm font-medium">{group.label}</h3>
               <div className="space-y-2 pl-4">
                 {group.features.map((feature) => {
-                  const isEnabled = features[feature] ?? false
+                  const isEnabled = features[feature]
                   const isFinanceSubFeature = feature === 'finance_auto_fines' || feature === 'finance_payments'
                   const isDisabled = isFinanceSubFeature && !features.finance
 
@@ -126,8 +120,11 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
                         opacity: isDisabled ? 0.5 : 1,
                       }}
                     >
-                      <Label className="text-sm cursor-pointer flex-1">{FEATURE_LABELS[feature]}</Label>
+                      <Label htmlFor={`feature-${feature}`} className="text-sm cursor-pointer flex-1">
+                        {FEATURE_LABELS[feature]}
+                      </Label>
                       <Switch
+                        id={`feature-${feature}`}
                         checked={isEnabled}
                         onCheckedChange={(checked) => handleToggle(feature, checked)}
                         disabled={isDisabled}

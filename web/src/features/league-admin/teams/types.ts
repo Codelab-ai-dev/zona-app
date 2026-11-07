@@ -107,3 +107,18 @@ export interface ReviewPlayerRegistrationRequest {
   status: 'approved' | 'rejected'
   review_notes?: string
 }
+
+/** Mirrors backend/internal/teams PlayerVerification. */
+export interface PlayerVerification {
+  player_id: string
+  id_verified: boolean
+  id_verified_at?: string
+  id_verified_by?: string
+  id_verification_method?: string
+  document_key?: string
+}
+
+export interface VerifyPlayerRequest {
+  verified: boolean
+  document_key?: string
+}

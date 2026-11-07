@@ -34,8 +34,8 @@ interface TournamentFormProps {
 export function TournamentForm({ leagueId, tournament, onClose }: TournamentFormProps) {
   const [formData, setFormData] = useState({
     name: tournament?.name ?? '',
-    start_date: tournament?.start_date ?? '',
-    end_date: tournament?.end_date ?? '',
+    start_date: tournament?.start_date.slice(0, 10) ?? '',
+    end_date: tournament?.end_date.slice(0, 10) ?? '',
     tournament_format: tournament?.tournament_format ?? 'league',
     rounds_per_season: tournament?.rounds_per_season ?? 1,
     is_active: tournament?.is_active ?? true,
@@ -51,13 +51,13 @@ export function TournamentForm({ leagueId, tournament, onClose }: TournamentForm
 
     try {
       if (tournament) {
-        await update.mutateAsync({ ...formData, league_id: leagueId })
+        await update.mutateAsync(formData)
       } else {
         await create.mutateAsync({ ...formData, league_id: leagueId })
       }
       onClose()
     } catch (err) {
-      if (err instanceof ApiError && err.fields) {
+      if (err instanceof ApiError && Object.keys(err.fields).length > 0) {
         setErrors(err.fields)
       }
     }

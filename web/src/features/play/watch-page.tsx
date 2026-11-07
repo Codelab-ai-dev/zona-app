@@ -50,7 +50,7 @@ export function WatchPage() {
 
                 {/* Score and Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {data.home_score !== null && data.away_score !== null && (
+                  {data.home_score != null && data.away_score != null && (
                     <div className="rounded-lg border p-3 text-center">
                       <p className="text-xs text-muted-foreground">Marcador</p>
                       <p className="text-2xl font-bold text-primary">{data.home_score} - {data.away_score}</p>

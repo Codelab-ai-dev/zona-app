@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Megaphone, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -18,10 +18,12 @@ import { Badge } from '@/components/ui/badge'
 
 import { useWhatsAppLinks, useDeleteWhatsAppLink } from '../api'
 import type { WhatsAppLink } from '../types'
+import { BroadcastDialog } from './broadcast-dialog'
 import { WhatsAppForm } from './whatsapp-form'
 
 export function WhatsAppPage({ leagueId }: { leagueId: string }) {
   const [showForm, setShowForm] = useState(false)
+  const [showBroadcast, setShowBroadcast] = useState(false)
   const links = useWhatsAppLinks(leagueId)
 
   return (
@@ -33,11 +35,19 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
           </h2>
           <p className="text-sm text-muted-foreground">Gestiona los números de teléfono para notificaciones</p>
         </div>
-        <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
-          <Plus className="size-4" />
-          Nuevo Enlace
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowBroadcast(true)} size="sm" variant="outline" className="gap-2">
+            <Megaphone className="size-4" aria-hidden="true" />
+            Enviar jornada
+          </Button>
+          <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
+            <Plus className="size-4" aria-hidden="true" />
+            Nuevo Enlace
+          </Button>
+        </div>
       </header>
+
+      {showBroadcast && <BroadcastDialog leagueId={leagueId} onClose={() => setShowBroadcast(false)} />}
 
       {showForm && <WhatsAppForm leagueId={leagueId} onClose={() => setShowForm(false)} />}
 
@@ -91,8 +101,9 @@ function WhatsAppLinkCard({ link }: { link: WhatsAppLink }) {
               size="sm"
               onClick={() => setShowConfirm(true)}
               disabled={deleteLink.isPending}
+              aria-label={`Eliminar enlace de ${link.display_name || link.phone_number}`}
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-4" aria-hidden="true" />
             </Button>
           </div>
         </CardHeader>

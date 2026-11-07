@@ -53,6 +53,23 @@ export interface CreateUserRequest {
   phone?: string
 }
 
+/** Every league feature flag the super admin can toggle. */
+export const FEATURE_KEYS = [
+  'manual_entry',
+  'public_portal',
+  'statistics',
+  'qr_codes',
+  'facial_recognition',
+  'mobile_app',
+  'realtime_updates',
+  'finance',
+  'finance_auto_fines',
+  'finance_payments',
+  'ai_agent',
+] as const
+
+export type FeatureKey = (typeof FEATURE_KEYS)[number]
+
 export interface UpdateUserRequest {
   name?: string
   email?: string

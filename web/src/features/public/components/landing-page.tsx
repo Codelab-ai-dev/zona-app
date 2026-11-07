@@ -122,7 +122,7 @@ export function LandingPage() {
               ¿Listo para digitalizar tu liga?
             </h2>
             <p className="mt-4 text-base text-slate-400">
-              Únete a cientos de ligas que ya están usando Zona Gol
+              Organiza tu liga con Zona Gol
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
               <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">

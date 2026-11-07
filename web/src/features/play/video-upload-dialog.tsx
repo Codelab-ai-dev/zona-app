@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { Upload, X, CheckCircle, Loader2, AlertCircle } from 'lucide-react'
-import { Link } from 'react-router'
+import { Upload, AlertCircle, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,13 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Progress } from '@/components/ui/progress'
 
 import { useMyLeagues } from '@/features/leagues/api'
 import { useCreateRecording, useRefreshRecording } from './api'
+import { FileField, ProcessingPanel, UploadingPanel } from './upload-panels'
 import type { Recording } from './types'
 
-type UploadStatus = 'idle' | 'preparing' | 'uploading' | 'processing' | 'complete' | 'error'
+type UploadStatus = 'idle' | 'preparing' | 'uploading' | 'processing'
 
 interface VideoUploadDialogProps {
   open: boolean
@@ -86,27 +85,12 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
       setProgress(0)
 
       // 1. Crear recording y obtener URL de upload
-      const { upload, recording } = await new Promise<{
-        upload: { url: string }
-        recording: Recording
-      }>((resolve, reject) => {
-        createRecording.mutate(
-          {
-            title,
-            description: description || undefined,
-            league_id: leagueId,
-            match_id: matchId || undefined,
-            source_type: 'manual',
-          },
-          {
-            onSuccess: (data) => {
-              resolve(data)
-            },
-            onError: (error) => {
-              reject(error)
-            },
-          },
-        )
+      const { upload, recording } = await createRecording.mutateAsync({
+        title,
+        description: description || undefined,
+        league_id: leagueId,
+        match_id: matchId || undefined,
+        source_type: 'manual',
       })
 
       setUploadedRecording(recording)
@@ -126,7 +110,7 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
 
         xhr.onload = () => {
           xhrRef.current = null
-          if (xhr.status === 200) {
+          if (xhr.status >= 200 && xhr.status < 300) {
             setStatus('processing')
             setProgress(100)
             resolve()
@@ -153,7 +137,8 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
       // 3. Trigger refresh to check processing status
       refreshRecording.mutate(recording.id)
     } catch (err) {
-      setStatus('error')
+      // Back to the form (values kept) so the user can retry.
+      setStatus('idle')
       setError(err instanceof Error ? err.message : 'Error desconocido')
     }
   }
@@ -199,37 +184,7 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
         <div className="space-y-4">
           {status === 'idle' && (
             <>
-              {/* File Input */}
-              <div className="space-y-2">
-                <Label htmlFor="video">Video *</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    ref={fileInputRef}
-                    id="video"
-                    type="file"
-                    accept="video/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <label htmlFor="video" className="cursor-pointer block">
-                    {selectedFile ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-500" aria-hidden="true" />
-                        <span className="text-sm">{selectedFile.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" aria-hidden="true" />
-                        <p className="text-sm text-muted-foreground">Click para seleccionar video</p>
-                        <p className="text-xs text-muted-foreground">MP4, MOV, MKV • Máx 5GB</p>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              </div>
+              <FileField inputRef={fileInputRef} file={selectedFile} onChange={handleFileSelect} />
 
               {/* League */}
               <div className="space-y-2">
@@ -265,6 +220,7 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
                 <Input
                   id="match"
                   value={matchId}
+                  forceLowercase
                   onChange={(e) => setMatchId(e.target.value)}
                   placeholder="ID del partido"
                 />
@@ -286,85 +242,39 @@ export function VideoUploadDialog({ open, onOpenChange }: VideoUploadDialogProps
               {error && (
                 <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  <p>{error}</p>
+                  <p role="alert">{error}</p>
                 </div>
               )}
 
               {/* Upload Button */}
               <Button
                 onClick={handleUpload}
-                disabled={!selectedFile || !title || !leagueId || createRecording.isPending}
+                disabled={!selectedFile || !title || !leagueId}
                 className="w-full"
               >
                 <Upload className="w-4 h-4 mr-2" aria-hidden="true" />
-                {createRecording.isPending ? 'Preparando...' : 'Subir Video'}
+                Subir Video
               </Button>
             </>
           )}
 
-          {(status === 'uploading') && (
-            <div className="space-y-4 py-4">
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                <span>Subiendo video...</span>
-              </div>
-              <Progress value={progress} className="w-full" />
-              <p className="text-center text-sm text-muted-foreground">{progress}% completado</p>
-              <Button variant="outline" onClick={handleCancel} className="w-full">
-                <X className="w-4 h-4 mr-2" aria-hidden="true" />
-                Cancelar
-              </Button>
+          {status === 'preparing' && (
+            <div className="flex items-center justify-center gap-2 py-8" role="status">
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+              <span>Preparando…</span>
             </div>
           )}
+
+          {status === 'uploading' && <UploadingPanel progress={progress} onCancel={handleCancel} />}
 
           {status === 'processing' && (
-            <div className="space-y-4 py-8 text-center">
-              <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" aria-hidden="true" />
-              <div>
-                <p className="font-medium">Procesando video</p>
-                <p className="text-sm text-muted-foreground">
-                  Esto puede tomar unos minutos. Puedes cerrar esta ventana.
-                </p>
-              </div>
-              {uploadedRecording && (
-                <div className="text-xs text-muted-foreground">
-                  <p>Viendo progreso...</p>
-                  <Link
-                    to={`/play/watch/${uploadedRecording.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    Ver video
-                  </Link>
-                </div>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetForm()
-                  onOpenChange(false)
-                }}
-                className="w-full"
-              >
-                Cerrar
-              </Button>
-            </div>
-          )}
-
-          {status === 'error' && (
-            <div className="space-y-4 py-8 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto text-destructive" aria-hidden="true" />
-              <div>
-                <p className="font-medium text-destructive">Error</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={resetForm}
-                className="w-full"
-              >
-                Intentar de nuevo
-              </Button>
-            </div>
+            <ProcessingPanel
+              recordingId={uploadedRecording?.id}
+              onClose={() => {
+                resetForm()
+                onOpenChange(false)
+              }}
+            />
           )}
         </div>
       </DialogContent>

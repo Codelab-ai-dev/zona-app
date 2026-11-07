@@ -67,7 +67,7 @@ export function MatchScheduleDialog({ match, open, onOpenChange, onSaved }: Matc
       onSaved()
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.fields) {
+        if (Object.keys(err.fields).length > 0) {
           setErrors(err.fields)
         }
         toast.error(err.message)
@@ -83,7 +83,7 @@ export function MatchScheduleDialog({ match, open, onOpenChange, onSaved }: Matc
         <DialogHeader>
           <DialogTitle>Editar programación</DialogTitle>
           <DialogDescription>
-            {match.home_team?.name ?? 'TBD'} vs {match.away_team?.name ?? 'TBD'}
+            {match.home_team_name} vs {match.away_team_name}
           </DialogDescription>
         </DialogHeader>
 

@@ -9,6 +9,7 @@ import type { Discipline, Match, Standing, Team, TopScorer, Player, CoachingStaf
 /** Query keys for public portal data. */
 export const publicKeys = {
   tournaments: (leagueId: string) => [...leagueKeys.all, leagueId, 'tournaments-public'] as const,
+  tournament: (tournamentId: string) => ['tournament', tournamentId] as const,
   standings: (tournamentId: string) => ['standings', tournamentId] as const,
   matches: (tournamentId: string) => ['matches', tournamentId] as const,
   matchesByTeam: (teamId: string) => ['matches-team', teamId] as const,
@@ -29,6 +30,15 @@ export function useTournamentsByLeague(leagueId: string | undefined) {
     queryFn: ({ signal }) =>
       api.list<Tournament>(`/leagues/${leagueId}/tournaments`, { limit: 100 }, { signal }),
     enabled: Boolean(leagueId),
+  })
+}
+
+/** Get one tournament (public). */
+export function useTournament(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: publicKeys.tournament(tournamentId ?? ''),
+    queryFn: ({ signal }) => api.get<Tournament>(`/tournaments/${tournamentId}`, { signal }),
+    enabled: Boolean(tournamentId),
   })
 }
 
@@ -72,6 +82,7 @@ export function useDiscipline(tournamentId: string | undefined) {
 export function useTeamsByLeague(leagueId: string | undefined) {
   return useQuery({
     queryKey: publicKeys.teams(leagueId),
+    staleTime: 60_000,
     queryFn: ({ signal }) => api.list<Team>('/teams', { limit: 100 }, { signal, query: { league_id: leagueId } }),
     enabled: Boolean(leagueId),
   })

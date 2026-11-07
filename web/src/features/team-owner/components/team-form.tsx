@@ -39,7 +39,7 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
         description: formData.description || undefined,
       })
     } catch (error) {
-      if (error instanceof ApiError && error.isValidation) {
+      if (error instanceof ApiError && error.isValidation && Object.keys(error.fields).length > 0) {
         setErrors(error.fields)
       }
     }

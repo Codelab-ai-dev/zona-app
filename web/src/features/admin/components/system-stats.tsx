@@ -4,8 +4,8 @@ import { useAdminLeagues, useAdminUsers } from '../api'
 
 /** System-wide statistics computed from available list endpoints. */
 export function SystemStats() {
-  const leagues = useAdminLeagues({ limit: 1 })
-  const users = useAdminUsers({ limit: 1 })
+  const leagues = useAdminLeagues({ limit: 100 })
+  const users = useAdminUsers({ limit: 100 })
 
   const statsLoading = leagues.isPending || users.isPending
   const statsError = leagues.isError || users.isError

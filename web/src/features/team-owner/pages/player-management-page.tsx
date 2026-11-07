@@ -19,50 +19,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Trash2 } from 'lucide-react'
+import { IdCard, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { useTeamPlayers, useCreatePlayer, useDeactivatePlayer } from '../api'
-import type { CreatePlayerRequest } from '../types'
+import { useTeam, useTeamPlayers, useCreatePlayer, useDeactivatePlayer, useUpdatePlayer, useUploadFile } from '../api'
+import type { CreatePlayerRequest, Player } from '../types'
+import { PLAYER_POSITIONS } from '../constants'
+import { PlayerCredential } from '../components/player-credential'
 import { PlayerForm } from '../components/player-form'
 import { PlayerRow } from '../components/player-row'
-
-const positions = [
-  'Portero',
-  'Defensa Central',
-  'Lateral Derecho',
-  'Lateral Izquierdo',
-  'Mediocampista Defensivo',
-  'Mediocampista Central',
-  'Mediocampista Ofensivo',
-  'Extremo Derecho',
-  'Extremo Izquierdo',
-  'Delantero',
-]
 
 export function PlayerManagementPage({ teamId }: { teamId: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [deletePlayerId, setDeletePlayerId] = useState<string | null>(null)
+  const [credentialPlayer, setCredentialPlayer] = useState<Player | null>(null)
 
+  const team = useTeam(teamId)
   const players = useTeamPlayers(teamId)
   const createPlayer = useCreatePlayer()
+  const updatePlayer = useUpdatePlayer()
+  const uploadFile = useUploadFile()
   const deactivatePlayer = useDeactivatePlayer()
 
-  const handleCreatePlayer = async (data: CreatePlayerRequest) => {
+  // Errors propagate to the form, which maps 422 fields onto its inputs.
+  const handleCreatePlayer = async (data: CreatePlayerRequest, photo?: File) => {
+    const created = await createPlayer.mutateAsync({ teamId, data })
+    setIsDialogOpen(false)
+    if (!photo) return
+    // The photo is scoped to the player id, so it can only be uploaded after creation.
     try {
-      await createPlayer.mutateAsync({ teamId, data })
-      setIsDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to create player:', error)
-    }
-  }
-
-  const handleDeactivatePlayer = async () => {
-    if (!deletePlayerId) return
-    try {
-      await deactivatePlayer.mutateAsync(deletePlayerId)
-      setDeletePlayerId(null)
-    } catch (error) {
-      console.error('Failed to deactivate player:', error)
+      const uploaded = await uploadFile.mutateAsync({ file: photo, scope: 'player', scopeId: created.id })
+      if (uploaded.url) await updatePlayer.mutateAsync({ playerId: created.id, data: { photo: uploaded.url } })
+    } catch {
+      toast.warning('El jugador se agregó, pero no se pudo guardar su foto')
     }
   }
 
@@ -85,7 +74,11 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
               <DialogTitle>Agregar Jugador</DialogTitle>
               <DialogDescription>Ingresa los detalles del nuevo jugador.</DialogDescription>
             </DialogHeader>
-            <PlayerForm positions={positions} onSubmit={handleCreatePlayer} isLoading={createPlayer.isPending} />
+            <PlayerForm
+              positions={PLAYER_POSITIONS}
+              onSubmit={handleCreatePlayer}
+              isLoading={createPlayer.isPending || uploadFile.isPending || updatePlayer.isPending}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -93,21 +86,32 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
       <QueryState
         query={players}
         isEmpty={(res) => res.data.length === 0}
-        empty={<EmptyState title="Sin jugadores" description="Agrega jugadores a tu equipo." action={<Button>Agregar Jugador</Button>} />}
+        empty={<EmptyState title="Sin jugadores" description="Agrega jugadores a tu equipo." />}
       >
         {(res) => (
           <div className="space-y-4">
             {res.data.map((player) => (
               <div key={player.id} className="flex items-center justify-between rounded-lg border p-4">
                 <PlayerRow player={player} />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeletePlayerId(player.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCredentialPlayer(player)}
+                    aria-label={`Credencial de ${player.name}`}
+                  >
+                    <IdCard className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeletePlayerId(player.id)}
+                    aria-label={`Desactivar a ${player.name}`}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -122,12 +126,23 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeactivatePlayer} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={() => deletePlayerId && deactivatePlayer.mutate(deletePlayerId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Desactivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {credentialPlayer && team.data && (
+        <PlayerCredential
+          open
+          onOpenChange={(open) => !open && setCredentialPlayer(null)}
+          player={credentialPlayer}
+          teamName={team.data.name}
+          teamLogo={team.data.logo}
+          leagueId={team.data.league_id}
+        />
+      )}
     </div>
   )
 }

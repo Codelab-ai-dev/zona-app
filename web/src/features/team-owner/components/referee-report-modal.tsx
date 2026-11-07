@@ -2,7 +2,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { FileText, AlertTriangle, Trophy, Users, Calendar, Loader2 } from 'lucide-react'
+import { FileText, Trophy, Users, Calendar } from 'lucide-react'
+
+import { ErrorState, LoadingState } from '@/components/states'
+import { ApiError } from '@/lib/api/client'
 
 import { useRefereeReport, useMatch } from '../api'
 
@@ -27,10 +30,12 @@ export function RefereeReportModal({ open, onOpenChange, matchId }: RefereeRepor
     })
   }
 
-  const isLoading = match.isLoading || report.isLoading
-  const isError = match.isError || report.isError
+  // A match without a filed report answers 404: that is an empty state, not a failure.
+  const reportMissing = report.error instanceof ApiError && report.error.isNotFound
+  const isLoading = match.isPending || (report.isPending && !reportMissing)
+  const failed = match.isError ? match : report.isError && !reportMissing ? report : null
   const matchData = match.data
-  const reportData = report.data
+  const reportData = reportMissing ? undefined : report.data
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,28 +45,19 @@ export function RefereeReportModal({ open, onOpenChange, matchId }: RefereeRepor
             <FileText className="w-5 h-5" />
             Cédula Arbitral
           </DialogTitle>
-          {matchData && (
-            <DialogDescription>
-              {matchData.home_team?.name} vs {matchData.away_team?.name} - {formatMatchDate(matchData.match_date)}
-            </DialogDescription>
-          )}
+          <DialogDescription>Resultado del partido y observaciones del árbitro.</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mr-3" />
-            <span>Cargando cédula arbitral...</span>
-          </div>
-        ) : isError ? (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6 text-center">
-              <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-red-900 mb-2">Error al cargar</h3>
-              <p className="text-red-800">
-                {match.error?.message || report.error?.message || 'Error desconocido'}
-              </p>
-            </CardContent>
-          </Card>
+          <LoadingState label="Cargando cédula arbitral..." />
+        ) : failed ? (
+          <ErrorState
+            error={failed.error}
+            onRetry={() => {
+              void match.refetch()
+              void report.refetch()
+            }}
+          />
         ) : (
           <div className="space-y-6">
             {/* Match Header */}

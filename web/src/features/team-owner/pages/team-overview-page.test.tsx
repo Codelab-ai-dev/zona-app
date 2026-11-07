@@ -56,9 +56,11 @@ describe('TeamOverviewPage', () => {
     renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
 
     expect(await screen.findByText('Partidos Jugados')).toBeInTheDocument()
-    expect(screen.getByText('10')).toBeInTheDocument()
-    expect(screen.getByText('25')).toBeInTheDocument() // goals_for
-    expect(screen.getByText('23')).toBeInTheDocument() // points
+    const cardValue = (title: string) =>
+      screen.getByText(title).closest('[data-slot="card"]')?.querySelector('.text-3xl')?.textContent
+    expect(cardValue('Partidos Jugados')).toBe('10')
+    expect(cardValue('Goles a Favor')).toBe('25')
+    expect(cardValue('Puntos')).toBe('23')
   })
 
   it('shows empty state when no stats available', async () => {
@@ -68,8 +70,8 @@ describe('TeamOverviewPage', () => {
     })
     renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
 
-    await screen.findByText('Resumen del Equipo')
-    // Stats should not be displayed
+    await screen.findByText('Águilas FC')
+    expect(await screen.findByText('No hay información para mostrar')).toBeInTheDocument()
     expect(screen.queryByText('Partidos Jugados')).not.toBeInTheDocument()
   })
 
@@ -82,6 +84,24 @@ describe('TeamOverviewPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Error interno del servidor')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+
+  it('reloads the team when Reintentar is pressed', async () => {
+    mockApi({
+      'GET /teams/team-123': { status: 500, body: { error: { code: 'internal_error', message: 'Error interno del servidor' } } },
+      'GET /teams/team-123/stats': { body: { data: [], page: { limit: 10, offset: 0 } } },
+    })
+    const { user } = renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
+    await screen.findByRole('alert')
+
+    mockApi({
+      'GET /teams/team-123': { body: mockTeam },
+      'GET /teams/team-123/stats': { body: { data: [], page: { limit: 10, offset: 0 } } },
+    })
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(await screen.findByText('Águilas FC')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('displays all stat cards with correct values', async () => {

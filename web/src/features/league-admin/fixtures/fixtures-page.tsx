@@ -64,6 +64,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
 
           <QueryState
             query={tournaments}
+            isEmpty={(res) => res.data.length === 0}
             empty={
               <EmptyState
                 title="Sin torneos"
@@ -74,6 +75,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
             {(res) => (
               <QueryState
                 query={teams}
+                isEmpty={(res) => res.data.length === 0}
                 empty={
                   <EmptyState
                     title="Sin equipos"

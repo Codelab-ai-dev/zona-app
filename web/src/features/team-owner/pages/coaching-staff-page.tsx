@@ -37,22 +37,9 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
   const deactivateStaff = useDeactivateCoachingStaff()
 
   const handleCreateStaff = async (data: CreateCoachingStaffRequest) => {
-    try {
-      await createStaff.mutateAsync({ teamId, data })
-      setIsDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to create coaching staff:', error)
-    }
-  }
-
-  const handleDeactivateStaff = async () => {
-    if (!deleteStaffId) return
-    try {
-      await deactivateStaff.mutateAsync(deleteStaffId)
-      setDeleteStaffId(null)
-    } catch (error) {
-      console.error('Failed to deactivate coaching staff:', error)
-    }
+    // Errors propagate to the form, which maps 422 fields onto its inputs.
+    await createStaff.mutateAsync({ teamId, data })
+    setIsDialogOpen(false)
   }
 
   return (
@@ -93,9 +80,10 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setDeleteStaffId(member.id)}
+                  aria-label={`Desactivar a ${member.name}`}
                   className="text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             ))}
@@ -111,7 +99,7 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeactivateStaff} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={() => deleteStaffId && deactivateStaff.mutate(deleteStaffId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Desactivar
             </AlertDialogAction>
           </AlertDialogFooter>

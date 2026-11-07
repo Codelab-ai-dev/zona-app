@@ -57,32 +57,41 @@ export function usePlayerRegistrationRequests(
   })
 }
 
-/** Create a new team with an owner account. */
+/** Raised when the team exists but its owner account could not be created. */
+export class OwnerCreationError extends Error {
+  readonly cause: unknown
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : 'No se pudo crear el propietario')
+    this.name = 'OwnerCreationError'
+    this.cause = cause
+  }
+}
+
+/**
+ * Create a team and then its owner account. If the owner fails, the team
+ * already exists: callers retry with `skipTeam` so it is not created twice.
+ */
 export function useCreateTeam() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: { team: CreateTeamRequest; owner: CreateUserRequest }) => {
-      // 1. Create team
-      await api.post('/teams', params.team)
-      // 2. Create owner user
-      await api.post('/admin/users', params.owner)
+    mutationFn: async (params: { team: CreateTeamRequest; owner: CreateUserRequest; skipTeam?: boolean }) => {
+      if (!params.skipTeam) await api.post('/teams', params.team)
+      try {
+        await api.post('/admin/users', params.owner)
+      } catch (error) {
+        queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
+        throw new OwnerCreationError(error)
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...teamsKeys.all, 'list'],
-      })
+      queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
       toast.success('Equipo creado exitosamente')
-    },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : 'Error al crear equipo'
-      toast.error(msg)
-      throw error // re-throw for caller to handle
     },
   })
 }
 
-/** Update a team. */
+/** Update a team. Callers report the outcome (groups issues many PATCHes in a row). */
 export function useUpdateTeam() {
   const queryClient = useQueryClient()
 
@@ -90,18 +99,8 @@ export function useUpdateTeam() {
     mutationFn: async (params: { teamId: string; team: UpdateTeamRequest }) =>
       api.patch<Team>(`/teams/${params.teamId}`, params.team),
     onSuccess: (_, params) => {
-      queryClient.invalidateQueries({
-        queryKey: [...teamsKeys.all, 'list'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: teamsKeys.byId(params.teamId),
-      })
-      toast.success('Equipo actualizado exitosamente')
-    },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : 'Error al actualizar equipo'
-      toast.error(msg)
-      throw error
+      queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
+      queryClient.invalidateQueries({ queryKey: teamsKeys.byId(params.teamId) })
     },
   })
 }
@@ -124,7 +123,6 @@ export function useActivateTeam() {
     onError: (error) => {
       const msg = error instanceof Error ? error.message : 'Error al activar equipo'
       toast.error(msg)
-      throw error
     },
   })
 }
@@ -147,7 +145,6 @@ export function useDeactivateTeam() {
     onError: (error) => {
       const msg = error instanceof Error ? error.message : 'Error al desactivar equipo'
       toast.error(msg)
-      throw error
     },
   })
 }
@@ -171,28 +168,72 @@ export function useReviewPlayerRegistration() {
     onError: (error) => {
       const msg = error instanceof Error ? error.message : 'Error al revisar solicitud'
       toast.error(msg)
-      throw error
     },
   })
 }
 
-/** Batch update QR codes for players in a league. */
+/** Backend limits: max 200 players per qr-batch call, max 100 rows per page. */
+const QR_CHUNK = 200
+const PAGE = 100
+
+export interface QRRunResult {
+  updated: number
+  failures: Array<{ label: string; error: string }>
+}
+
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Error desconocido')
+
+async function fetchTeamPlayerIds(teamId: string): Promise<string[]> {
+  const ids: string[] = []
+  for (let offset = 0; ; offset += PAGE) {
+    const res = await api.list<{ id: string }>(`/teams/${teamId}/players`, { limit: PAGE, offset })
+    ids.push(...res.data.map((p) => p.id))
+    if (res.data.length < PAGE) return ids
+  }
+}
+
+/**
+ * Regenerate QR codes for every player of the given teams: reads each roster
+ * (paginated), then POSTs `{ players: [{ id }] }` in chunks of 200. Failures
+ * are collected per team / per chunk instead of aborting the run.
+ */
 export function useQRBatchUpdate() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (params: { leagueId: string; batch: QRBatchUpdateRequest }) =>
-      api.post<{ updated: number }>(`/leagues/${params.leagueId}/players/qr-batch`, params.batch),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...teamsKeys.all, 'list'],
-      })
-      toast.success('QR actualizado exitosamente')
+    mutationFn: async (params: {
+      leagueId: string
+      teams: Array<{ id: string; name: string }>
+      onProgress?: (percent: number) => void
+    }): Promise<QRRunResult> => {
+      const failures: QRRunResult['failures'] = []
+      const ids: string[] = []
+      for (const [i, team] of params.teams.entries()) {
+        try {
+          ids.push(...(await fetchTeamPlayerIds(team.id)))
+        } catch (error) {
+          failures.push({ label: team.name, error: messageOf(error) })
+        }
+        params.onProgress?.(((i + 1) / params.teams.length) * 50)
+      }
+      let updated = 0
+      const chunks = Math.ceil(ids.length / QR_CHUNK)
+      for (let c = 0; c < chunks; c++) {
+        const players = ids.slice(c * QR_CHUNK, (c + 1) * QR_CHUNK).map((id) => ({ id }))
+        try {
+          const res = await api.post<{ updated: number }>(`/leagues/${params.leagueId}/players/qr-batch`, {
+            players,
+          } satisfies QRBatchUpdateRequest)
+          updated += res.updated
+        } catch (error) {
+          failures.push({ label: `Lote ${c + 1}`, error: messageOf(error) })
+        }
+        params.onProgress?.(50 + ((c + 1) / chunks) * 50)
+      }
+      return { updated, failures }
     },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : 'Error al actualizar QR'
-      toast.error(msg)
-      throw error
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
     },
   })
 }

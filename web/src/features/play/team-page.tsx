@@ -1,6 +1,7 @@
 import { Eye, Calendar, Play, Video } from 'lucide-react'
 import { useParams } from 'react-router'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState, QueryState } from '@/components/states'
 import { Link } from 'react-router'
@@ -21,7 +22,7 @@ function formatDuration(seconds: number | null | undefined): string {
 
 function VideoCard({ video }: { video: Recording }) {
   const title = video.title
-  const score = video.home_score !== null && video.away_score !== null ? `${video.home_score} - ${video.away_score}` : null
+  const score = video.home_score != null && video.away_score != null ? `${video.home_score} - ${video.away_score}` : null
 
   return (
     <Link
@@ -95,11 +96,9 @@ export function TeamPage() {
             title="No hay videos"
             description="Este equipo aún no tiene videos disponibles."
             action={
-              <Link to="/play">
-                <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                  Ver todos los videos
-                </button>
-              </Link>
+              <Button variant="outline" asChild>
+                <Link to="/play">Ver todos los videos</Link>
+              </Button>
             }
           />
         }

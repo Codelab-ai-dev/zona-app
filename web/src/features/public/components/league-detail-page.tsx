@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, Trophy } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
-import { QueryState } from '@/components/states'
+import { EmptyState, QueryState } from '@/components/states'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,24 +10,20 @@ import { initials } from '@/features/leagues/leagues-page'
 import type { Tournament } from '@/features/leagues/types'
 
 import { useTournamentsByLeague } from '../api'
+import { formatDate, tournamentStatus } from '../format'
 
 export function LeagueDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const league = useLeagueBySlug(slug ?? '')
   const tournaments = useTournamentsByLeague(league.data?.id)
 
-  const getTournamentStatus = (startDate: string, endDate: string): string => {
-    const now = new Date()
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-
-    if (now > end) return 'Finalizado'
-    if (now >= start && now <= end) return 'En Curso'
-    return 'Próximamente'
-  }
-
   return (
     <section aria-labelledby="league-title" className="mx-auto w-full max-w-6xl px-4 py-8">
+      {!league.data && (
+        <h1 id="league-title" className="sr-only">
+          Liga
+        </h1>
+      )}
       <QueryState query={league} loadingLabel="Cargando liga…">
         {(leagueData) => (
           <>
@@ -38,7 +34,7 @@ export function LeagueDetailPage() {
                 className="mt-1 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Volver al inicio"
               >
-                <ArrowLeft className="size-5" />
+                <ArrowLeft className="size-5" aria-hidden="true" />
               </Link>
               <div className="flex flex-1 items-start gap-4">
                 <Avatar className="size-16 flex-shrink-0">
@@ -59,6 +55,7 @@ export function LeagueDetailPage() {
               query={tournaments}
               loadingLabel="Cargando torneos…"
               isEmpty={(res) => res.data.length === 0}
+              empty={<EmptyState title="Esta liga aún no tiene torneos" />}
             >
               {(tournamentsRes) => (
                 <div className="space-y-6">
@@ -69,7 +66,6 @@ export function LeagueDetailPage() {
                         <TournamentCard
                           tournament={tournament}
                           leagueSlug={leagueData.slug}
-                          getTournamentStatus={getTournamentStatus}
                         />
                       </li>
                     ))}
@@ -87,13 +83,11 @@ export function LeagueDetailPage() {
 function TournamentCard({
   tournament,
   leagueSlug,
-  getTournamentStatus,
 }: {
   tournament: Tournament
   leagueSlug: string
-  getTournamentStatus: (startDate: string, endDate: string) => string
 }) {
-  const status = getTournamentStatus(tournament.start_date, tournament.end_date)
+  const status = tournamentStatus(tournament.start_date, tournament.end_date)
   const statusColor = status === 'Finalizado' ? 'secondary' : status === 'En Curso' ? 'default' : 'outline'
 
   return (
@@ -107,8 +101,7 @@ function TournamentCard({
             <div className="flex-1 min-w-0">
               <CardTitle className="truncate">{tournament.name}</CardTitle>
               <CardDescription className="text-xs">
-                {new Date(tournament.start_date).toLocaleDateString('es-MX')} -{' '}
-                {new Date(tournament.end_date).toLocaleDateString('es-MX')}
+                {formatDate(tournament.start_date)} - {formatDate(tournament.end_date)}
               </CardDescription>
             </div>
             <Badge variant={statusColor} className="flex-shrink-0 text-xs">

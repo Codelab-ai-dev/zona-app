@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { QueryState, EmptyState } from '@/components/states'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -14,23 +15,17 @@ import {
 import { Trophy, Target, AlertTriangle, Users } from 'lucide-react'
 
 import { useTeamPlayers, useTeamStats } from '../api'
-import type { ListResponse } from '@/lib/api/client'
-import type { Player } from '../types'
 
 export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
   const players = useTeamPlayers(teamId)
   const stats = useTeamStats(teamId)
 
   const playersWithStats = useMemo(() => {
-    if (!players.data || !('data' in players.data)) return []
-    return (players.data as ListResponse<Player>).data
+    return players.data?.data ?? []
   }, [players.data])
 
   const teamTotals = useMemo(() => {
-    if (!stats.data || !('data' in stats.data) || stats.data.data.length === 0) {
-      return { goals: 0, yellowCards: 0, redCards: 0 }
-    }
-    const totalStats = stats.data.data[0]
+    const totalStats = stats.data?.data[0]
     if (!totalStats) {
       return { goals: 0, yellowCards: 0, redCards: 0 }
     }
@@ -56,6 +51,15 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
         <h2 className="text-2xl font-bold">Estadísticas de Jugadores</h2>
         <p className="text-muted-foreground">Rendimiento individual de cada jugador del equipo.</p>
       </div>
+
+      {stats.isError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3 text-sm">
+          <span>No se pudieron cargar las estadísticas del equipo.</span>
+          <Button variant="outline" size="sm" onClick={() => void stats.refetch()}>
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -94,9 +98,9 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Trophy className="w-5 h-5 mr-2" />
-            Estadísticas de Jugadores
+            Plantilla
           </CardTitle>
-          <CardDescription>Rendimiento individual de cada jugador del equipo</CardDescription>
+          <CardDescription>Jugadores registrados en el equipo</CardDescription>
         </CardHeader>
         <CardContent>
           <QueryState

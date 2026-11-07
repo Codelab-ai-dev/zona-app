@@ -21,12 +21,9 @@ export function TeamInfoPage({ teamId }: { teamId: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const handleUpdateTeam = async (data: UpdateTeamRequest) => {
-    try {
-      await updateTeam.mutateAsync({ teamId, data })
-      setIsDialogOpen(false)
-    } catch (error) {
-      console.error('Failed to update team:', error)
-    }
+    // Errors propagate to the form, which maps 422 fields onto its inputs.
+    await updateTeam.mutateAsync({ teamId, data })
+    setIsDialogOpen(false)
   }
 
   return (

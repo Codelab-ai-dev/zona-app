@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useState } from 'react'
+import { Link } from 'react-router'
 import { ChevronLeft, ChevronRight, Users, Calendar, LogIn } from 'lucide-react'
 
 import { QueryState, EmptyState } from '@/components/states'
@@ -7,98 +7,29 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useActiveLeagues } from '@/features/leagues/api'
+import { initials } from '@/features/leagues/leagues-page'
 import type { League } from '@/features/leagues/types'
 
-import type { Tournament } from '@/features/leagues/types'
+import { useTeamsByLeague, useTournamentsByLeague } from '../api'
+import { tournamentStatus } from '../format'
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
+/** Page size used to count teams: the list endpoint returns no total. */
+const TEAMS_LIMIT = 100
 
 export function LeagueDirectory() {
-  const navigate = useNavigate()
   const leagues = useActiveLeagues()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [leagueStats, setLeagueStats] = useState<Record<string, { teamsCount: number | null; activeTournament: Tournament | null }>>({})
 
-  const visibleLeagues = useMemo(() => leagues.data?.data || [], [leagues.data?.data])
-
-  // Fetch stats for each league
-  useEffect(() => {
-    if (!visibleLeagues.length) return
-
-    const fetchStats = async () => {
-      const newStats: typeof leagueStats = {}
-
-      for (const league of visibleLeagues) {
-        try {
-          let teamsCount: number | null = null
-          // Fetch teams count
-          const teamsRes = await fetch(
-            `/api/v1/teams?league_id=${league.id}&limit=100`,
-            { signal: AbortSignal.timeout(5000) }
-          )
-          if (teamsRes.ok) {
-            const teamsData = await teamsRes.json()
-            // Use page.total if available, otherwise only show count if we got less than limit (meaning no truncation)
-            if (teamsData.page?.total !== undefined) {
-              teamsCount = teamsData.page.total
-            } else if (teamsData.data?.length && teamsData.data.length < 100) {
-              teamsCount = teamsData.data.length
-            }
-          }
-
-          // Fetch tournaments to find active one
-          const toursRes = await fetch(
-            `/api/v1/leagues/${league.id}/tournaments?limit=100`,
-            { signal: AbortSignal.timeout(5000) }
-          )
-          let activeTournament: Tournament | null = null
-          if (toursRes.ok) {
-            const toursData = await toursRes.json()
-            const tournaments: Tournament[] = toursData.data || []
-            const now = new Date()
-            activeTournament = tournaments.find((t: Tournament) => {
-              const start = new Date(t.start_date)
-              const end = new Date(t.end_date)
-              return now >= start && now <= end
-            }) || null
-          }
-
-          newStats[league.id] = {
-            teamsCount,
-            activeTournament,
-          }
-        } catch {
-          newStats[league.id] = {
-            teamsCount: null,
-            activeTournament: null,
-          }
-        }
-      }
-
-      setLeagueStats(newStats)
-    }
-
-    fetchStats()
-  }, [visibleLeagues])
+  const visibleLeagues = leagues.data?.data ?? []
+  // The list can shrink after a refetch; never point past its end.
+  const index = Math.min(currentIndex, Math.max(visibleLeagues.length - 1, 0))
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? visibleLeagues.length - 1 : prev - 1))
+    setCurrentIndex(index === 0 ? visibleLeagues.length - 1 : index - 1)
   }
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev === visibleLeagues.length - 1 ? 0 : prev + 1))
-  }
-
-  const handleLeagueClick = (slug: string) => {
-    navigate(`/liga/${slug}`)
+    setCurrentIndex(index === visibleLeagues.length - 1 ? 0 : index + 1)
   }
 
   return (
@@ -178,47 +109,44 @@ export function LeagueDirectory() {
                     description="Las ligas aparecerán aquí cuando estén disponibles"
                   />
                 ) : (
-                  <div className="relative">
-                    {/* Carousel */}
+                  <div className="relative" role="region" aria-roledescription="carousel" aria-label="Ligas disponibles">
                     <div className="relative px-4 sm:px-8 md:px-12">
-                      {/* Cards Container */}
                       <div className="overflow-hidden">
                         <div
-                          className="flex transition-transform duration-500"
-                          style={{
-                            transform: `translateX(-${currentIndex * 100}%)`,
-                          }}
+                          className="flex transition-transform duration-500 motion-reduce:transition-none"
+                          style={{ transform: `translateX(-${index * 100}%)` }}
+                          aria-live="polite"
                         >
-                          {visibleLeagues.map((league) => {
-                            const stats = leagueStats[league.id] || { teamsCount: 0, activeTournament: null }
-                            return (
-                              <div key={league.id} className="w-full flex-shrink-0">
-                                <LeagueCard
-                                  league={league}
-                                  teamsCount={stats.teamsCount}
-                                  activeTournament={stats.activeTournament}
-                                  onNavigate={handleLeagueClick}
-                                />
-                              </div>
-                            )
-                          })}
+                          {visibleLeagues.map((league, idx) => (
+                            <div
+                              key={league.id}
+                              role="group"
+                              aria-roledescription="slide"
+                              aria-label={`${idx + 1} de ${visibleLeagues.length}`}
+                              inert={idx !== index}
+                              className="w-full shrink-0"
+                            >
+                              <LeagueCard league={league} isCurrent={idx === index} />
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Navigation buttons */}
                       {visibleLeagues.length > 1 && (
                         <>
                           <button
+                            type="button"
                             onClick={handlePrevious}
-                            aria-label="Anterior liga"
-                            className="absolute left-0 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800/50 text-white hover:border-emerald-500/50 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            aria-label="Liga anterior"
+                            className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg border border-white/10 bg-slate-800/50 text-white transition-colors hover:border-emerald-500/50 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                           >
                             <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                           </button>
                           <button
+                            type="button"
                             onClick={handleNext}
                             aria-label="Siguiente liga"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-slate-800/50 text-white hover:border-emerald-500/50 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg border border-white/10 bg-slate-800/50 text-white transition-colors hover:border-emerald-500/50 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                           >
                             <ChevronRight className="h-5 w-5" aria-hidden="true" />
                           </button>
@@ -226,16 +154,17 @@ export function LeagueDirectory() {
                       )}
                     </div>
 
-                    {/* Pagination dots */}
                     {visibleLeagues.length > 1 && (
                       <div className="mt-6 flex justify-center gap-2">
-                        {visibleLeagues.map((_, idx) => (
+                        {visibleLeagues.map((league, idx) => (
                           <button
-                            key={idx}
+                            type="button"
+                            key={league.id}
                             onClick={() => setCurrentIndex(idx)}
-                            aria-label={`Ir a liga ${idx + 1}`}
-                            className={`h-2 rounded-full transition-all ${
-                              idx === currentIndex ? 'w-6 bg-emerald-500' : 'w-2 bg-white/20 hover:bg-white/30'
+                            aria-label={`Ir a ${league.name}`}
+                            aria-current={idx === index ? 'true' : undefined}
+                            className={`h-2 rounded-full transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                              idx === index ? 'w-6 bg-emerald-500' : 'w-2 bg-white/30 hover:bg-white/50'
                             }`}
                           />
                         ))}
@@ -259,75 +188,78 @@ export function LeagueDirectory() {
   )
 }
 
-function LeagueCard({
-  league,
-  teamsCount,
-  activeTournament,
-  onNavigate,
-}: {
-  league: League
-  teamsCount: number | null
-  activeTournament: Tournament | null
-  onNavigate: (slug: string) => void
-}) {
+/**
+ * Team count and running tournament are fetched only for the slide in view
+ * (`isCurrent`), so the directory never fires requests for every league.
+ */
+function LeagueCard({ league, isCurrent }: { league: League; isCurrent: boolean }) {
   return (
-    <Card className="border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 mx-auto max-w-md overflow-hidden">
+    <Card className="mx-auto max-w-md overflow-hidden border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
       <CardContent className="p-6">
         <div className="flex flex-col gap-4">
-          {/* Logo and Header */}
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16 flex-shrink-0 border-2 border-emerald-500/30">
+            <Avatar className="h-16 w-16 shrink-0 border-2 border-emerald-500/30">
               {league.logo && <AvatarImage src={league.logo} alt="" />}
-              <AvatarFallback className="bg-emerald-600 text-white font-bold">
+              <AvatarFallback className="bg-emerald-600 font-bold text-white" aria-hidden="true">
                 {initials(league.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-white truncate">{league.name}</h3>
-              {league.description && (
-                <p className="text-xs text-slate-400 line-clamp-1">{league.description}</p>
-              )}
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-lg font-bold text-white">{league.name}</h3>
+              {league.description && <p className="line-clamp-1 text-xs text-slate-400">{league.description}</p>}
             </div>
           </div>
 
-          {/* Stats */}
-          {(teamsCount !== null || activeTournament) && (
-            <div className="space-y-2">
-              {teamsCount !== null && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
-                    <Users className="h-4 w-4 text-blue-400" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">{teamsCount}</p>
-                    <p className="text-xs text-slate-400">Equipos</p>
-                  </div>
-                </div>
-              )}
-              {activeTournament && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
-                    <Calendar className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-white">{activeTournament.name}</p>
-                    <p className="text-xs text-slate-400">En curso</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {isCurrent && <LeagueStats leagueId={league.id} />}
 
-          {/* Button */}
-          <Button
-            onClick={() => onNavigate(league.slug)}
-            className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            Ver Liga
-            <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
+          <Button asChild className="mt-2 w-full bg-emerald-600 text-white hover:bg-emerald-700">
+            <Link to={`/liga/${league.slug}`}>
+              Ver Liga
+              <span className="sr-only">: {league.name}</span>
+              <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
           </Button>
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function LeagueStats({ leagueId }: { leagueId: string }) {
+  const teams = useTeamsByLeague(leagueId)
+  const tournaments = useTournamentsByLeague(leagueId)
+
+  // The teams endpoint returns no total: a full page means "at least that many".
+  const teamsCount = teams.data
+    ? (teams.data.page.total ?? (teams.data.data.length >= TEAMS_LIMIT ? `${TEAMS_LIMIT}+` : teams.data.data.length))
+    : null
+  const running = tournaments.data?.data.find((t) => tournamentStatus(t.start_date, t.end_date) === 'En Curso')
+
+  if (teamsCount === null && !running) return null
+  return (
+    <div className="space-y-2">
+      {teamsCount !== null && (
+        <div className="flex items-center gap-2 text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
+            <Users className="h-4 w-4 text-blue-400" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="font-bold text-white">{teamsCount}</p>
+            <p className="text-xs text-slate-400">Equipos</p>
+          </div>
+        </div>
+      )}
+      {running && (
+        <div className="flex items-center gap-2 text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
+            <Calendar className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-white">{running.name}</p>
+            <p className="text-xs text-slate-400">En curso</p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

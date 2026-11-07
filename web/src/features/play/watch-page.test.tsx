@@ -1,9 +1,26 @@
 import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { Route, Routes } from 'react-router'
+import { describe, expect, it, vi } from 'vitest'
 
-import { mockApi, renderWithProviders } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
 import { WatchPage } from './watch-page'
+
+// The Mux web component needs real media APIs JSDOM lacks: stub it and expose its props.
+vi.mock('@mux/mux-player-react', () => ({
+  default: ({ playbackId, streamType }: { playbackId: string; streamType: string }) => (
+    <div data-testid="mux-player" data-playback-id={playbackId} data-stream-type={streamType} />
+  ),
+}))
+
+function renderWatch() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/play/watch/:videoId" element={<WatchPage />} />
+    </Routes>,
+    { route: '/play/watch/r1' },
+  )
+}
 
 const recording = {
   id: 'r1',
@@ -29,26 +46,41 @@ const recording = {
 
 describe('WatchPage', () => {
   it('renders video player and metadata', async () => {
-    mockApi({
+    const fetchMock = mockApi({
       'GET /play/videos/r1': {
         body: recording,
       },
     })
-    renderWithProviders(<WatchPage />, { route: '/play/watch/r1' })
+    renderWatch()
 
     expect(await screen.findByText('Tigres FC vs Leones United - Final')).toBeInTheDocument()
     expect(screen.getByText('Final de la Liga Premier 2024')).toBeInTheDocument()
     expect(screen.getByText('3 - 2')).toBeInTheDocument()
+    expect(screen.getByTestId('mux-player')).toHaveAttribute('data-playback-id', 'playback-id-123')
+    expect(screen.getByTestId('mux-player')).toHaveAttribute('data-stream-type', 'on-demand')
+    expect(requestsTo(fetchMock, 'GET /play/videos/r1')).toHaveLength(1)
+  })
+
+  it('omits the score box when the API leaves the scores out', async () => {
+    const noScore: Record<string, unknown> = { ...recording }
+    delete noScore.home_score
+    delete noScore.away_score
+    mockApi({ 'GET /play/videos/r1': { body: noScore } })
+    renderWatch()
+
+    expect(await screen.findByText('Tigres FC vs Leones United - Final')).toBeInTheDocument()
+    expect(screen.queryByText('Marcador')).not.toBeInTheDocument()
+    expect(screen.queryByText(/undefined/)).not.toBeInTheDocument()
   })
 
   it('shows error message when video has no playback ID', async () => {
-    const recordingNoPlayback = { ...recording, mux_playback_id: null }
+    const recordingNoPlayback = { ...recording, mux_playback_id: undefined }
     mockApi({
       'GET /play/videos/r1': {
         body: recordingNoPlayback,
       },
     })
-    renderWithProviders(<WatchPage />, { route: '/play/watch/r1' })
+    renderWatch()
 
     expect(await screen.findByText(/aún no está disponible/i)).toBeInTheDocument()
   })
@@ -60,7 +92,7 @@ describe('WatchPage', () => {
         body: { error: { code: 'not_found', message: 'Video no encontrado' } },
       },
     })
-    renderWithProviders(<WatchPage />, { route: '/play/watch/r1' })
+    renderWatch()
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Video no encontrado')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()

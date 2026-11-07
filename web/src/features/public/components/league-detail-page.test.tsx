@@ -1,79 +1,82 @@
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+import { Route, Routes } from 'react-router'
+import { describe, expect, it } from 'vitest'
 
-import { mockApi, renderWithProviders } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
+import { apiError, league, page, tournament } from './fixtures'
 import { LeagueDetailPage } from './league-detail-page'
 
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router')
-  return {
-    ...actual,
-    useParams: () => ({ slug: 'liga-norte' }),
-  }
-})
-
-const league = {
-  id: 'l1',
-  name: 'Liga Norte',
-  slug: 'liga-norte',
-  description: 'Fútbol 7 los domingos',
-  admin_id: 'a1',
-  is_active: true,
-  product_mode: 'full',
-  created_at: '',
-  updated_at: '',
-}
-
-const tournament = {
-  id: 't1',
-  name: 'Torneo Principal',
-  league_id: 'l1',
-  start_date: '2024-01-01',
-  end_date: '2024-06-30',
-  is_active: true,
-  registration_open: true,
-  tournament_format: 'round_robin',
-  rounds_per_season: 10,
-  has_third_place_match: false,
-  age_validation_enabled: false,
-  id_document_required: false,
-  created_at: '',
-  updated_at: '',
+function renderPage() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="liga/:slug" element={<LeagueDetailPage />} />
+    </Routes>,
+    { route: '/liga/liga-norte' },
+  )
 }
 
 describe('LeagueDetailPage', () => {
-  it('displays league details and tournaments', async () => {
+  it('shows the league as the only h1 and tournament cards linking to the tournament', async () => {
     mockApi({
       'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [tournament], page: { limit: 100, offset: 0 } } },
+      'GET /leagues/l1/tournaments': {
+        body: {
+          data: [
+            tournament,
+            { ...tournament, id: 't0', name: 'Torneo Viejo', start_date: '2020-01-01', end_date: '2020-06-30' },
+            { ...tournament, id: 'tf', name: 'Torneo Futuro', start_date: '2090-01-01', end_date: '2090-06-30' },
+          ],
+          page,
+        },
+      },
     })
-    renderWithProviders(<LeagueDetailPage />, { route: '/liga/liga-norte' })
+    renderPage()
 
-    // Wait for the league heading
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: /torneos/i })).toBeInTheDocument()
-    // Check for tournament in card
-    expect(await screen.findByText('Torneo Principal')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Liga Norte' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByText('Fútbol 7 los domingos')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: 'Torneos' })).toBeInTheDocument()
+
+    const current = screen.getByRole('link', { name: /Torneo Apertura/ })
+    expect(current).toHaveAttribute('href', '/liga/liga-norte/torneo/t1')
+    expect(current).toHaveTextContent('En Curso')
+    expect(current).toHaveTextContent('1/1/2024')
+    expect(screen.getByRole('link', { name: /Torneo Viejo/ })).toHaveTextContent('Finalizado')
+    expect(screen.getByRole('link', { name: /Torneo Futuro/ })).toHaveTextContent('Próximamente')
   })
 
-  it('shows empty state when no tournaments', async () => {
+  it('shows an empty state when the league has no tournaments', async () => {
     mockApi({
       'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [], page: { limit: 100, offset: 0 } } },
+      'GET /leagues/l1/tournaments': { body: { data: [], page } },
     })
-    renderWithProviders(<LeagueDetailPage />, { route: '/liga/liga-norte' })
+    renderPage()
 
-    expect(await screen.findByText('Liga Norte')).toBeInTheDocument()
-    expect(await screen.findByText('No hay información para mostrar')).toBeInTheDocument()
+    expect(await screen.findByText('Esta liga aún no tiene torneos')).toBeInTheDocument()
   })
 
-  it('shows error state on API failure', async () => {
-    mockApi({
-      'GET /leagues/slug/liga-norte': { status: 500, body: { error: { code: 'internal_error', message: 'Error del servidor' } } },
+  it('shows a not-found error with a single h1 and retries the league request', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/slug/liga-norte': { status: 404, body: { error: { code: 'not_found', message: 'Liga no encontrada' } } },
     })
-    renderWithProviders(<LeagueDetailPage />, { route: '/liga/liga-norte' })
+    const { user } = renderPage()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Error del servidor')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Liga no encontrada')
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(requestsTo(fetchMock, 'GET /leagues/slug/liga-norte')).toHaveLength(2))
+  })
+
+  it('shows the tournaments error with retry', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/slug/liga-norte': { body: league },
+      'GET /leagues/l1/tournaments': { status: 500, body: apiError('Error de torneos') },
+    })
+    const { user } = renderPage()
+
+    expect(await screen.findByText('Error de torneos')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(requestsTo(fetchMock, 'GET /leagues/l1/tournaments')).toHaveLength(2))
   })
 })

@@ -56,5 +56,12 @@ export const area: Area = {
       label: 'Mi Liga',
       roles: ['league_admin'],
     },
+    { to: '/liga-admin/torneos', label: 'Torneos', roles: ['league_admin'] },
+    { to: '/liga-admin/tabla', label: 'Tabla', roles: ['league_admin'] },
+    { to: '/liga-admin/goleadores', label: 'Goleadores', roles: ['league_admin'] },
+    { to: '/liga-admin/suspensiones', label: 'Suspensiones', roles: ['league_admin'] },
+    { to: '/liga-admin/finanzas', label: 'Finanzas', roles: ['league_admin'] },
+    { to: '/liga-admin/whatsapp', label: 'WhatsApp', roles: ['league_admin'] },
+    { to: '/liga-admin/ajustes', label: 'Ajustes', roles: ['league_admin'] },
   ],
 }

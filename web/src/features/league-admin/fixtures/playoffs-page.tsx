@@ -1,5 +1,5 @@
 import { Clock, Trophy } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,6 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 import { useLeagueTournaments } from '@/features/leagues/api'
 import { QueryState } from '@/components/states'
+import { ApiError } from '@/lib/api/client'
 
 import { useGeneratePlayoffs, useTournamentMatches } from './api'
 import { PlayoffBracket } from './playoff-bracket'
@@ -50,22 +51,46 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
   const playoffMatches = useTournamentMatches(selectedTournamentId, { phase: 'playoffs' })
   const generatePlayoffs = useGeneratePlayoffs()
 
-  const handleGenerate = useCallback(async () => {
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const clearError = (field: string) =>
+    setErrors((prev) => {
+      if (!(field in prev)) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  const errorProps = (field: string) => ({
+    'aria-invalid': Boolean(errors[field]),
+    'aria-describedby': errors[field] ? `${field}-error` : undefined,
+  })
+  const errorText = (field: string) =>
+    errors[field] ? (
+      <p id={`${field}-error`} className="text-xs text-destructive">
+        {errors[field]}
+      </p>
+    ) : null
+
+  const handleGenerate = async () => {
     if (!selectedTournamentId) return
 
     const req: GeneratePlayoffsRequest = {
       tournament_id: selectedTournamentId,
-      num_teams: parseInt(numTeams) as 4 | 8,
+      num_teams: parseInt(numTeams, 10) as 4 | 8,
       start_date: startDate,
       start_time: startTime,
-      field_number: parseInt(fieldNumber),
+      field_number: parseInt(fieldNumber, 10) || 0,
       third_place_match: thirdPlaceMatch,
       home_and_away: homeAndAway,
     }
 
-    await generatePlayoffs.mutateAsync(req)
-    setIsDialogOpen(false)
-  }, [selectedTournamentId, numTeams, startDate, startTime, fieldNumber, thirdPlaceMatch, homeAndAway, generatePlayoffs])
+    try {
+      await generatePlayoffs.mutateAsync(req)
+      setErrors({})
+      setIsDialogOpen(false)
+    } catch (err) {
+      if (err instanceof ApiError && err.isValidation) setErrors(err.fields)
+    }
+  }
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -94,7 +119,7 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
             <div className="space-y-2">
               <Label htmlFor="tournament-select">Torneo</Label>
               <Select value={selectedTournamentId} onValueChange={setSelectedTournamentId}>
-                <SelectTrigger id="tournament-select">
+                <SelectTrigger id="tournament-select" {...errorProps('tournament_id')}>
                   <SelectValue placeholder="Elige un torneo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -105,13 +130,14 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {errorText('tournament_id')}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="num-teams">Equipos</Label>
                 <Select value={numTeams} onValueChange={(v) => setNumTeams(v as '4' | '8')}>
-                  <SelectTrigger id="num-teams">
+                  <SelectTrigger id="num-teams" {...errorProps('num_teams')}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -122,39 +148,54 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="start-date">Inicio</Label>
+                <Label htmlFor="start_date">Inicio</Label>
                 <Input
-                  id="start-date"
+                  id="start_date"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value)
+                    clearError('start_date')
+                  }}
+                  {...errorProps('start_date')}
                 />
+                {errorText('start_date')}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="start-time" className="flex items-center gap-1">
+                <Label htmlFor="start_time" className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
                   Hora
                 </Label>
                 <Input
-                  id="start-time"
+                  id="start_time"
                   type="time"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => {
+                    setStartTime(e.target.value)
+                    clearError('start_time')
+                  }}
+                  {...errorProps('start_time')}
                 />
+                {errorText('start_time')}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="field-number">Cancha</Label>
+                <Label htmlFor="field_number">Cancha</Label>
                 <Input
-                  id="field-number"
+                  id="field_number"
                   type="number"
                   min="1"
                   value={fieldNumber}
-                  onChange={(e) => setFieldNumber(e.target.value)}
+                  onChange={(e) => {
+                    setFieldNumber(e.target.value)
+                    clearError('field_number')
+                  }}
+                  {...errorProps('field_number')}
                 />
+                {errorText('field_number')}
               </div>
             </div>
 

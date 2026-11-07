@@ -1,20 +1,63 @@
-import { useAuth } from '@/lib/auth/auth-context'
+import { useState } from 'react'
+
+import { EmptyState, QueryState } from '@/components/states'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+import { useMyLeagues } from '@/features/leagues/api'
 import { CalendarPage } from './calendar-page'
 
 /**
- * Wrapper that extracts leagueId from auth context and passes it to CalendarPage.
- * For league_admin, profile.league_id is set. If not available, fall back to 'public' routes.
+ * Wrapper that loads user's leagues via useMyLeagues() and lets them select one
+ * for the calendar. If no leagues, show EmptyState.
  */
 export function MatchesLayoutPage() {
-  const { profile } = useAuth()
+  const leagues = useMyLeagues()
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>('')
 
-  if (!profile?.league_id) {
-    return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-        <p>No se encontró una liga asociada a tu cuenta.</p>
-      </div>
-    )
-  }
+  return (
+    <QueryState
+      query={leagues}
+      isEmpty={(res) => res.data.length === 0}
+      empty={
+        <EmptyState
+          title="No administras ninguna liga"
+          description="Contacta a tu supervisor para que te agregue como administrador de liga."
+        />
+      }
+    >
+      {(res) => {
+        // Auto-select first league if not selected
+        const leagueToUse = selectedLeagueId || res.data[0]?.id
+        const leagueSlug = res.data.find((l) => l.id === leagueToUse)?.slug
 
-  return <CalendarPage leagueId={profile.league_id} />
+        return (
+          <>
+            {res.data.length > 1 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-sm">Selecciona una liga</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select value={leagueToUse} onValueChange={setSelectedLeagueId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {res.data.map((league) => (
+                        <SelectItem key={league.id} value={league.id}>
+                          {league.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
+            {leagueToUse && <CalendarPage leagueId={leagueToUse} leagueSlug={leagueSlug} />}
+          </>
+        )
+      }}
+    </QueryState>
+  )
 }

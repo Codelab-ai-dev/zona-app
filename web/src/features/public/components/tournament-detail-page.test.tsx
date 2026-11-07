@@ -1,188 +1,138 @@
-import { screen } from '@testing-library/react'
-import { userEvent } from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { screen, waitFor, within } from '@testing-library/react'
+import { Route, Routes } from 'react-router'
+import { describe, expect, it } from 'vitest'
 
-import { mockApi, renderWithProviders } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
+import {
+  apiError, carded, league, matchFinished, matchScheduled, page, scorer, standingA, standingB, tournament,
+} from './fixtures'
 import { TournamentDetailPage } from './tournament-detail-page'
 
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router')
-  return {
-    ...actual,
-    useParams: () => ({ slug: 'liga-norte', tournamentId: 't1' }),
-  }
-})
-
-const league = {
-  id: 'l1',
-  name: 'Liga Norte',
-  slug: 'liga-norte',
-  description: 'Fútbol 7',
-  admin_id: 'a1',
-  is_active: true,
-  product_mode: 'full',
-  created_at: '',
-  updated_at: '',
+function rowAt(rows: HTMLElement[], i: number): HTMLElement {
+  const row = rows[i]
+  if (!row) throw new Error(`row ${i} missing`)
+  return row
 }
 
-const tournament = {
-  id: 't1',
-  name: 'Torneo Principal',
-  league_id: 'l1',
-  start_date: '2024-01-01',
-  end_date: '2024-06-30',
-  is_active: true,
-  registration_open: true,
-  tournament_format: 'round_robin',
-  rounds_per_season: 10,
-  has_third_place_match: false,
-  age_validation_enabled: false,
-  id_document_required: false,
-  created_at: '',
-  updated_at: '',
+const handlers = {
+  'GET /leagues/slug/liga-norte': { body: league },
+  'GET /tournaments/t1': { body: tournament },
+  'GET /tournaments/t1/standings': { body: { data: [standingA, standingB], page } },
+  'GET /tournaments/t1/matches': { body: { data: [matchFinished, matchScheduled], page } },
+  'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page } },
+  'GET /tournaments/t1/discipline': { body: { data: [carded], page } },
 }
 
-const standing = {
-  team_id: 'team1',
-  team_name: 'Equipo A',
-  position: 1,
-  played: 5,
-  won: 4,
-  drawn: 1,
-  lost: 0,
-  goals_for: 15,
-  goals_against: 5,
-  goal_difference: 10,
-  points: 13,
-}
-
-const match = {
-  id: 'm1',
-  tournament_id: 't1',
-  home_team_id: 'team1',
-  away_team_id: 'team2',
-  home_team: { id: 'team1', name: 'Equipo A', logo: null },
-  away_team: { id: 'team2', name: 'Equipo B', logo: null },
-  home_score: 3,
-  away_score: 1,
-  match_date: '2024-02-01',
-  match_time: '19:00',
-  status: 'finished',
-  round: 5,
-  phase: 'regular',
-  is_published: true,
-  created_at: '',
-  updated_at: '',
-}
-
-const scorer = {
-  player_id: 'p1',
-  player_name: 'Juan Pérez',
-  player_number: 10,
-  team_id: 'team1',
-  team_name: 'Equipo A',
-  goals: 8,
-  assists: 2,
-  matches_played: 5,
-}
-
-const discipline = {
-  player_id: 'p2',
-  player_name: 'Carlos Gómez',
-  player_number: 7,
-  team_id: 'team1',
-  team_name: 'Equipo A',
-  yellow_cards: 2,
-  red_cards: 0,
-  matches_played: 5,
+function renderPage() {
+  return renderWithProviders(
+    <Routes>
+      <Route path="liga/:slug/torneo/:tournamentId" element={<TournamentDetailPage />} />
+    </Routes>,
+    { route: '/liga/liga-norte/torneo/t1' },
+  )
 }
 
 describe('TournamentDetailPage', () => {
-  it('displays tournament standings', async () => {
-    mockApi({
-      'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [tournament], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/standings': { body: { data: [standing], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/matches': { body: { data: [match], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/discipline': { body: { data: [discipline], page: { limit: 100, offset: 0 } } },
-    })
+  it('renders the tournament header with one h1 and a link back to the league', async () => {
+    mockApi(handlers)
+    renderPage()
 
-    renderWithProviders(<TournamentDetailPage />, { route: '/liga/liga-norte/torneo/t1' })
-
-    expect(await screen.findByRole('heading', { name: /torneo principal/i })).toBeInTheDocument()
-    expect(await screen.findByRole('cell', { name: /equipo a/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Torneo Apertura' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByText('1/1/2024 - 31/12/2099')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Liga Norte' })).toHaveAttribute('href', '/liga/liga-norte')
   })
 
-  it('shows matches tab with match data', async () => {
-    const user = userEvent.setup()
-    mockApi({
-      'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [tournament], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/standings': { body: { data: [standing], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/matches': { body: { data: [match], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/discipline': { body: { data: [discipline], page: { limit: 100, offset: 0 } } },
-    })
+  it('maps standings from the real shape: positions, record, goals and adjusted points', async () => {
+    mockApi(handlers)
+    renderPage()
 
-    renderWithProviders(<TournamentDetailPage />, { route: '/liga/liga-norte/torneo/t1' })
+    const table = await screen.findByRole('table', { name: 'Tabla de posiciones' })
+    for (const h of within(table).getAllByRole('columnheader')) expect(h).toHaveAttribute('scope', 'col')
+    const rows = within(table).getAllByRole('row').slice(1)
+    expect(rows).toHaveLength(2)
 
-    const matchesTab = await screen.findByRole('tab', { name: /partidos/i })
-    await user.click(matchesTab)
+    const first = within(rowAt(rows, 0)).getAllByRole('cell').map((c) => c.textContent)
+    expect(first.filter((_, i) => i !== 1)).toEqual(['1', '5', '4', '1', '0', '15', '5', '+10', '13'])
+    expect(first[1]).toContain('Tigres FC')
+    expect(within(rowAt(rows, 0)).getByRole('link', { name: 'Tigres FC' })).toHaveAttribute('href', '/equipos/team1')
 
-    expect(await screen.findByText(/equipo a/i)).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    // 10 on the pitch + (-3) adjustment = 7 shown, adjustment visible with its reason.
+    const second = within(rowAt(rows, 1)).getAllByRole('cell')
+    expect(second[1]).toHaveTextContent('Leones United')
+    expect(second[8]).toHaveTextContent('+3')
+    expect(second[9]).toHaveTextContent('7')
+    expect(second[9]).toHaveTextContent('Ajuste -3')
+    expect(second[9]).toHaveTextContent('Alineación indebida')
   })
 
-  it('shows top scorers tab', async () => {
-    const user = userEvent.setup()
-    mockApi({
-      'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [tournament], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/standings': { body: { data: [standing], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/matches': { body: { data: [match], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/discipline': { body: { data: [discipline], page: { limit: 100, offset: 0 } } },
-    })
+  it('switches tabs with the keyboard/mouse and shows matches with team names and scores', async () => {
+    mockApi(handlers)
+    const { user } = renderPage()
+    await screen.findByRole('table', { name: 'Tabla de posiciones' })
 
-    renderWithProviders(<TournamentDetailPage />, { route: '/liga/liga-norte/torneo/t1' })
+    await user.click(screen.getByRole('tab', { name: 'Partidos' }))
+    // Names come from standings because match payloads carry only team ids.
+    expect(await screen.findByText('Tigres FC 3, Leones United 1. Finalizado. 1/2/2024')).toBeInTheDocument()
+    expect(screen.getByText('Leones United contra Tigres FC. Programado. 8/2/2024')).toBeInTheDocument()
+    expect(screen.getByText('Jornada 5')).toBeInTheDocument()
+    expect(screen.getByText('20:30')).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
 
-    const scorersTab = await screen.findByRole('tab', { name: /goleadores/i })
-    await user.click(scorersTab)
+    await user.click(screen.getByRole('tab', { name: 'Goleadores' }))
+    const scorers = await screen.findByRole('table', { name: 'Tabla de goleadores' })
+    expect(within(rowAt(within(scorers).getAllByRole('row'), 1)).getAllByRole('cell').map((c) => c.textContent)).toEqual([
+      '1', 'Juan Pérez', 'Tigres FC', '7', '2', '5',
+    ])
 
-    expect(await screen.findByText(/juan pérez/i)).toBeInTheDocument()
-    expect(screen.getByText('8')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Disciplina' }))
+    const discipline = await screen.findByRole('table', { name: 'Tabla de disciplina' })
+    expect(within(rowAt(within(discipline).getAllByRole('row'), 1)).getAllByRole('cell').map((c) => c.textContent)).toEqual([
+      'Luis Gómez', 'Leones United', '3', '1', '5',
+    ])
+
+    await user.click(screen.getByRole('tab', { name: 'Tabla' }))
+    expect(await screen.findByRole('table', { name: 'Tabla de posiciones' })).toBeInTheDocument()
   })
 
-  it('shows discipline tab', async () => {
-    const user = userEvent.setup()
-    mockApi({
-      'GET /leagues/slug/liga-norte': { body: league },
-      'GET /leagues/l1/tournaments': { body: { data: [tournament], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/standings': { body: { data: [standing], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/matches': { body: { data: [match], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page: { limit: 100, offset: 0 } } },
-      'GET /tournaments/t1/discipline': { body: { data: [discipline], page: { limit: 100, offset: 0 } } },
-    })
+  it('moves between tabs with arrow keys', async () => {
+    mockApi(handlers)
+    const { user } = renderPage()
+    await screen.findByRole('table', { name: 'Tabla de posiciones' })
 
-    renderWithProviders(<TournamentDetailPage />, { route: '/liga/liga-norte/torneo/t1' })
-
-    const disciplineTab = await screen.findByRole('tab', { name: /disciplina/i })
-    await user.click(disciplineTab)
-
-    expect(await screen.findByText(/carlos gómez/i)).toBeInTheDocument()
+    screen.getByRole('tab', { name: 'Tabla' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Partidos' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('shows error state on API failure', async () => {
+  it('shows empty states per tab', async () => {
     mockApi({
-      'GET /leagues/slug/liga-norte': { status: 500, body: { error: { code: 'internal_error', message: 'Error del servidor' } } },
+      ...handlers,
+      'GET /tournaments/t1/standings': { body: { data: [], page } },
+      'GET /tournaments/t1/matches': { body: { data: [], page } },
     })
+    const { user } = renderPage()
 
-    renderWithProviders(<TournamentDetailPage />, { route: '/liga/liga-norte/torneo/t1' })
+    expect(await screen.findByText('Aún no hay tabla de posiciones')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Partidos' }))
+    expect(await screen.findByText('No hay partidos')).toBeInTheDocument()
+  })
 
-    // The error might be a network error or API error; just check that an alert appears
-    const alert = await screen.findByRole('alert')
-    expect(alert).toBeInTheDocument()
+  it('retries a failed standings request (2 GETs)', async () => {
+    const fetchMock = mockApi({ ...handlers, 'GET /tournaments/t1/standings': { status: 500, body: apiError('Error de tabla') } })
+    const { user } = renderPage()
+
+    expect(await screen.findByText('Error de tabla')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(requestsTo(fetchMock, 'GET /tournaments/t1/standings')).toHaveLength(2))
+  })
+
+  it('keeps a single h1 when the tournament cannot be loaded', async () => {
+    mockApi({ ...handlers, 'GET /tournaments/t1': { status: 404, body: { error: { code: 'not_found', message: 'No existe' } } } })
+    renderPage()
+
+    expect(await screen.findByText('No se pudo cargar el torneo.')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })

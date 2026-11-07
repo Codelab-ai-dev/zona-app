@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2, Target } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ClipboardList, Edit, MoreHorizontal, QrCode, Target, Trash2, Users } from 'lucide-react'
 
 import type { MatchWithRelations } from '../types'
 
@@ -9,10 +10,13 @@ interface MatchCardProps {
   onEdit: () => void
   onResult: () => void
   onDelete: () => void
+  onQr: () => void
+  onAttendance: () => void
+  onReport: () => void
 }
 
 /** Card displaying a match with status and quick actions. */
-export function MatchCard({ match, onEdit, onResult, onDelete }: MatchCardProps) {
+export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendance, onReport }: MatchCardProps) {
   const dateObj = new Date(match.match_date)
   const dateStr = dateObj.toLocaleDateString('es-MX', { weekday: 'short', month: 'short', day: 'numeric' })
   const timeStr = match.match_time || dateObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
@@ -31,7 +35,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete }: MatchCardProps)
       {/* Teams */}
       <div className="flex-1 space-y-1 min-w-0">
         <div className="flex items-center justify-between gap-2 text-sm">
-          <span className="truncate font-medium">{match.home_team?.name ?? 'TBD'}</span>
+          <span className="truncate font-medium">{match.home_team_name}</span>
           <span className="font-mono font-semibold">
             {isFinished ? (
               <>
@@ -41,7 +45,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete }: MatchCardProps)
               <>vs</>
             )}
           </span>
-          <span className="truncate font-medium">{match.away_team?.name ?? 'TBD'}</span>
+          <span className="truncate font-medium">{match.away_team_name}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {match.field_number && <span>Campo {match.field_number}</span>}
@@ -71,6 +75,27 @@ export function MatchCard({ match, onEdit, onResult, onDelete }: MatchCardProps)
             <span className="sr-only">Ingresar resultado</span>
           </Button>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost" aria-label="Más acciones" title="Más acciones">
+              <MoreHorizontal className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onQr}>
+              <QrCode className="size-4" aria-hidden="true" />
+              Código QR
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onAttendance}>
+              <Users className="size-4" aria-hidden="true" />
+              Asistencia
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onReport}>
+              <ClipboardList className="size-4" aria-hidden="true" />
+              Acta arbitral
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button size="sm" variant="ghost" onClick={onDelete} title="Eliminar" className="text-destructive hover:text-destructive">
           <Trash2 className="size-4" aria-hidden="true" />
           <span className="sr-only">Eliminar</span>

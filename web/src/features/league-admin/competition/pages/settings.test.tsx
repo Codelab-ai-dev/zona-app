@@ -1,147 +1,146 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
-import { renderWithProviders, mockApi } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
+
+import { apiError, league, list, mineOne } from '../test-fixtures'
 import { SettingsPageComponent } from './settings'
 
-describe('SettingsPage', () => {
-  const mockLeague = {
-    id: 'league-1',
-    name: 'Mi Liga',
-    slug: 'mi-liga',
-    description: 'Liga de prueba',
-    admin_id: 'admin-1',
-    is_active: true,
-    product_mode: 'full' as const,
-  }
+const getLeague = 'GET /leagues/league-1'
 
-  const mockLeagueSettings = {
-    id: 'league-1',
-    name: 'Mi Liga',
-    slug: 'mi-liga',
-    description: 'Liga de prueba completa',
-    logo: 'https://example.com/logo.png',
-    admin_id: 'admin-1',
-    is_active: true,
-    product_mode: 'full' as const,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01',
-  }
+describe('Settings page', () => {
+  it('shows the league data in the form', async () => {
+    mockApi({ ...mineOne, [getLeague]: { body: league() } })
+    renderWithProviders(<SettingsPageComponent />)
 
-  beforeEach(() => {
-    vi.clearAllMocks()
+    expect(await screen.findByLabelText('Nombre de la Liga')).toHaveValue('Liga Norte')
+    expect(screen.getByLabelText('URL Slug')).toHaveValue('liga-norte')
+    expect(screen.getByLabelText('Descripción')).toHaveValue('Liga de prueba')
   })
 
-  it('shows empty state when no leagues', async () => {
-    mockApi({
-      'GET /leagues/mine': { body: { data: [], page: { total: 0 } }, status: 200 },
-    })
+  it('shows the API error', async () => {
+    mockApi({ ...mineOne, [getLeague]: apiError(500, 'internal', 'Falla al cargar la liga') })
     renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/sin liga asignada/i)).toBeInTheDocument()
-    })
+
+    expect(await screen.findByText('Falla al cargar la liga')).toBeInTheDocument()
   })
 
-  it('renders league settings form', async () => {
-    mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
+  it('saves name, slug (lowercase) and description with PATCH /leagues/{id}', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      [getLeague]: { body: league() },
+      'PATCH /leagues/league-1': { body: league({ name: 'LIGA SUR' }) },
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/configuración de la liga/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    const name = await screen.findByLabelText('Nombre de la Liga')
+    await user.clear(name)
+    await user.type(name, 'Liga Sur')
+    const slug = screen.getByLabelText('URL Slug')
+    await user.clear(slug)
+    await user.type(slug, 'Liga-Sur')
+    await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
+
+    expect(await screen.findByText('Liga actualizada correctamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /leagues/league-1')).toEqual([
+      { name: 'LIGA SUR', slug: 'liga-sur', description: 'Liga de prueba' },
+    ])
+    // league detail and my-leagues are refetched
+    expect(requestsTo(fetchMock, getLeague).length).toBeGreaterThanOrEqual(2)
+    expect(requestsTo(fetchMock, 'GET /leagues/mine').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('updates league settings with success', async () => {
-    const updatedLeague = {
-      ...mockLeagueSettings,
-      name: 'Mi Liga Actualizada',
-    }
+  it('can clear the name field without it being reset to the saved value', async () => {
+    mockApi({ ...mineOne, [getLeague]: { body: league() } })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
 
-    mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
-      'PATCH /leagues/league-1': { body: updatedLeague, status: 200 },
-    })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/configuración de la liga/i)).toBeInTheDocument()
-    })
+    const name = await screen.findByLabelText('Nombre de la Liga')
+    await user.clear(name)
+
+    expect(name).toHaveValue('')
   })
 
-  it('handles settings update validation errors', async () => {
+  it('shows 422 field errors next to the field and keeps the typed value', async () => {
     mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
-      'PATCH /leagues/league-1': {
-        status: 422,
-        body: {
-          error: 'Validation failed',
-          fields: {
-            name: 'El nombre es requerido',
-            slug: 'El slug debe ser único',
-          },
-        },
-      },
+      ...mineOne,
+      [getLeague]: { body: league() },
+      'PATCH /leagues/league-1': apiError(422, 'validation_failed', 'Datos inválidos', { slug: 'ya está en uso' }),
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/configuración de la liga/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    const slug = await screen.findByLabelText('URL Slug')
+    await user.clear(slug)
+    await user.type(slug, 'ocupado')
+    await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
+
+    expect(await screen.findByText('ya está en uso')).toBeInTheDocument()
+    expect(slug).toHaveAttribute('aria-invalid', 'true')
+    expect(slug).toHaveValue('ocupado')
   })
 
-  it('uploads league logo', async () => {
-    const logoUrl = 'https://example.com/new-logo.png'
+  it('shows a non-field API error as an alert and keeps the form', async () => {
     mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
-      'POST /storage/objects': { body: { url: logoUrl }, status: 201 },
+      ...mineOne,
+      [getLeague]: { body: league() },
+      'PATCH /leagues/league-1': apiError(403, 'forbidden', 'No eres administrador de esta liga'),
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/logo de la liga/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    await user.click(await screen.findByRole('button', { name: 'Guardar Cambios' }))
+
+    expect((await screen.findAllByText('No eres administrador de esta liga')).length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Nombre de la Liga')).toHaveValue('Liga Norte')
   })
 
-  it('handles logo upload validation', async () => {
-    mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
-      'POST /storage/objects': {
-        status: 422,
-        body: {
-          error: 'Validation failed',
-          fields: { file: 'El archivo debe ser una imagen válida' },
-        },
-      },
+  it('uploads the logo as multipart (file, scope, scope_id) and saves the returned URL', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      [getLeague]: { body: league() },
+      'POST /storage/objects': { status: 201, body: { key: 'league/league-1/logo.png', url: 'https://cdn.test/logo.png', is_public: true } },
+      'PATCH /leagues/league-1': { body: league({ logo: 'https://cdn.test/logo.png' }) },
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/logo de la liga/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    const file = new File(['png-bytes'], 'logo.png', { type: 'image/png' })
+    await user.upload(await screen.findByLabelText(/cargar logo/i), file)
+
+    expect(await screen.findByText('Liga actualizada correctamente')).toBeInTheDocument()
+    const [form] = requestsTo(fetchMock, 'POST /storage/objects') as FormData[]
+    expect(form).toBeInstanceOf(FormData)
+    expect(form?.get('scope')).toBe('league')
+    expect(form?.get('scope_id')).toBe('league-1')
+    const sent = form?.get('file')
+    expect(sent).toBeInstanceOf(File)
+    expect((sent as File).name).toBe('logo.png')
+    expect(requestsTo(fetchMock, 'PATCH /leagues/league-1')).toEqual([{ logo: 'https://cdn.test/logo.png' }])
   })
 
-  it('handles logo upload with multipart form data', async () => {
-    const logoUrl = 'https://example.com/new-logo.png'
-    mockApi({
-      'GET /leagues/mine': { body: { data: [mockLeague], page: { total: 1 } }, status: 200 },
-      'GET /leagues/league-1': { body: mockLeagueSettings, status: 200 },
-      'POST /storage/objects': { body: { url: logoUrl }, status: 201 },
+  it('shows the upload error and does not touch the league', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      [getLeague]: { body: league() },
+      'POST /storage/objects': apiError(413, 'too_large', 'El archivo es demasiado grande'),
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/cargar logo/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    await user.upload(await screen.findByLabelText(/cargar logo/i), new File(['x'], 'big.png', { type: 'image/png' }))
+
+    expect((await screen.findAllByText('El archivo es demasiado grande')).length).toBeGreaterThan(0)
+    expect(requestsTo(fetchMock, 'PATCH /leagues/league-1')).toEqual([])
   })
 
-  it('handles API error', async () => {
+  it('scopes to the league picked in the selector when there are several', async () => {
     mockApi({
-      'GET /leagues/mine': { status: 500, body: {} },
+      'GET /leagues/mine': list([league(), league({ id: 'league-2', name: 'Liga Sur', slug: 'liga-sur' })]),
+      [getLeague]: { body: league() },
+      'GET /leagues/league-2': { body: league({ id: 'league-2', name: 'Liga Sur', slug: 'liga-sur' }) },
     })
-    renderWithProviders(<SettingsPageComponent />)
-    await waitFor(() => {
-      expect(screen.getByText(/ocurrió un error/i)).toBeInTheDocument()
-    })
+    const { user } = renderWithProviders(<SettingsPageComponent />)
+
+    expect(await screen.findByLabelText('Nombre de la Liga')).toHaveValue('Liga Norte')
+    await user.click(screen.getByLabelText('Liga'))
+    await user.click(await screen.findByRole('option', { name: 'Liga Sur' }))
+
+    expect(await screen.findByDisplayValue('Liga Sur')).toBeInTheDocument()
   })
 })

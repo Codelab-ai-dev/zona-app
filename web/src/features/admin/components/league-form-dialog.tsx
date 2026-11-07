@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCreateLeague, useUpdateLeague } from '../api'
+import { useAdminUsers, useCreateLeague, useUpdateLeague } from '../api'
 import type { League, ProductMode, CreateLeagueRequest, UpdateLeagueRequest } from '../types'
 import { ApiError } from '@/lib/api/client'
 import { toast } from 'sonner'
@@ -21,10 +21,9 @@ interface LeagueFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   league?: League | null
-  admins?: Array<{ id: string; name: string; email: string }>
 }
 
-export function LeagueFormDialog({ open, onOpenChange, league, admins = [] }: LeagueFormDialogProps) {
+export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialogProps) {
   const isEditing = !!league
 
   const [formData, setFormData] = useState<{
@@ -54,6 +53,10 @@ export function LeagueFormDialog({ open, onOpenChange, league, admins = [] }: Le
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Candidates for the league's admin (only needed when creating)
+  const users = useAdminUsers({ limit: 100 })
+  const admins = (users.data?.data ?? []).filter((u) => u.role === 'league_admin' && u.is_active)
+
   const createLeague = useCreateLeague()
   const updateLeague = useUpdateLeague()
 
@@ -69,7 +72,8 @@ export function LeagueFormDialog({ open, onOpenChange, league, admins = [] }: Le
   }
 
   const handleNameChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, name: value, slug: generateSlug(value) }))
+    // The slug follows the name only when creating: renaming must not break public URLs
+    setFormData((prev) => ({ ...prev, name: value, slug: isEditing ? prev.slug : generateSlug(value) }))
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -107,8 +111,10 @@ export function LeagueFormDialog({ open, onOpenChange, league, admins = [] }: Le
       handleOpenChange(false)
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.isValidation && err.fields) {
+        if (err.isValidation && Object.keys(err.fields).length > 0) {
           setErrors(err.fields)
+        } else if (err.status === 409) {
+          setErrors({ slug: 'Esta URL ya está en uso' })
         } else {
           toast.error(err.message)
         }
@@ -164,13 +170,20 @@ export function LeagueFormDialog({ open, onOpenChange, league, admins = [] }: Le
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">Descripción *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Descripción de la liga…"
+              aria-invalid={!!errors.description}
+              aria-describedby={errors.description ? 'description-error' : undefined}
             />
+            {errors.description && (
+              <p id="description-error" className="text-xs text-destructive mt-1">
+                {errors.description}
+              </p>
+            )}
           </div>
 
           {!isEditing && (

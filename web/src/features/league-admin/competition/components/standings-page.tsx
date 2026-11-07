@@ -69,6 +69,11 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
           />
         )}
 
+        {!selectedTournament ? (
+          tournaments.isSuccess && (
+            <EmptyState title="Sin torneos" description="Crea un torneo para ver la tabla" />
+          )
+        ) : (
         <QueryState
           query={standings}
           loadingLabel="Cargando posiciones…"
@@ -124,6 +129,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                               variant="ghost"
                               size="sm"
                               onClick={() => setSelectedStanding(standing)}
+                              aria-label={`Ajustar puntos de ${standing.team_name}`}
                             >
                               Ajustar
                             </Button>
@@ -137,6 +143,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
             </Card>
           )}
         </QueryState>
+        )}
       </div>
     </section>
   )

@@ -49,7 +49,7 @@ export function UsersManagement() {
       </QueryState>
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <EditUserDialog open={editOpen} onOpenChange={setEditOpen} user={editingUser} />
+      <EditUserDialog key={editingUser?.id ?? 'none'} open={editOpen} onOpenChange={setEditOpen} user={editingUser} />
       <DeactivateUserDialog open={!!deactivateConfirm} onOpenChange={() => setDeactivateConfirm(null)} user={deactivateConfirm} />
     </div>
   )

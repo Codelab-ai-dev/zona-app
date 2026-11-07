@@ -3,14 +3,16 @@ import { Calendar, Shield, Trophy } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState, QueryState } from '@/components/states'
 
+import { formatMoney } from '../money'
 import { useTournaments, useStandings, useLeagueSummary } from '../api'
 
 export function HomePage({ leagueId }: { leagueId: string }) {
   const tournaments = useTournaments(leagueId)
-  const standings = useStandings(tournaments.data?.data?.[0]?.id)
   const leagueSummary = useLeagueSummary(leagueId)
 
   const activeTournament = tournaments.data?.data?.find((t) => t.is_active)
+  const shownTournament = activeTournament ?? tournaments.data?.data?.[0]
+  const standings = useStandings(shownTournament?.id)
   const totalTeams = standings.data?.data ? new Set(standings.data.data.map((s) => s.team_id)).size : 0
 
   const stats = [
@@ -110,25 +112,25 @@ export function HomePage({ leagueId }: { leagueId: string }) {
               <div>
                 <p className="text-sm text-muted-foreground">Total Ingresos</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(summary.total_income)}
+                  {formatMoney(summary.total_income)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Cobrado</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(summary.total_collected)}
+                  {formatMoney(summary.total_collected)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pendiente</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(summary.total_pending)}
+                  {formatMoney(summary.total_pending)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Vencido</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(summary.total_overdue)}
+                  {formatMoney(summary.total_overdue)}
                 </p>
               </div>
             </CardContent>
@@ -137,6 +139,11 @@ export function HomePage({ leagueId }: { leagueId: string }) {
       </QueryState>
 
       {/* Standings Preview */}
+      {!shownTournament ? (
+        tournaments.isSuccess && (
+          <EmptyState title="Sin posiciones" description="Crea un torneo y equipo para comenzar" />
+        )
+      ) : (
       <QueryState
         query={standings}
         loadingLabel="Cargando posiciones…"
@@ -165,13 +172,7 @@ export function HomePage({ leagueId }: { leagueId: string }) {
           </Card>
         )}
       </QueryState>
+      )}
     </section>
   )
-}
-
-function formatCurrency(value: string): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-  }).format(parseFloat(value) || 0)
 }

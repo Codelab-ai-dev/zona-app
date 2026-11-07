@@ -1,293 +1,132 @@
-import { screen, waitFor, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
-import { renderWithProviders, mockApi } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
+
 import { GroupsPage } from './groups-page'
+import { leaguesMine, page, team } from './test-fixtures'
+
+type User = ReturnType<typeof renderWithProviders>['user']
+
+async function pickGroup(user: User, teamName: string, letter: string) {
+  await user.click(await screen.findByRole('combobox', { name: `Grupo de ${teamName}` }))
+  await user.click(await screen.findByRole('option', { name: `Grupo ${letter}` }))
+}
 
 describe('GroupsPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  it('shows the empty state when the league has no teams', async () => {
+    mockApi({ 'GET /leagues/mine': leaguesMine, 'GET /teams': page([]) })
+    renderWithProviders(<GroupsPage />)
+    expect(await screen.findByText('No hay equipos')).toBeInTheDocument()
   })
 
-  it('displays page title', async () => {
+  it('shows an error when teams cannot be loaded', async () => {
     mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [],
-          page: { limit: 100, offset: 0, total: 0 },
-        },
-      },
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': { status: 500, body: { error: { code: 'internal_error', message: 'Error del servidor' } } },
     })
-
     renderWithProviders(<GroupsPage />)
-
-    expect(screen.getByText('Gestión de Grupos')).toBeInTheDocument()
+    expect(await screen.findByText('Error del servidor')).toBeInTheDocument()
   })
 
-  it('shows teams and allows group assignment', async () => {
+  it('splits teams into unassigned and per-group sections', async () => {
     mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-            {
-              id: 'team-2',
-              name: 'Las Águilas',
-              slug: 'las-aguilas',
-              league_id: 'league-1',
-              owner_id: 'owner-2',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-              group_name: 'A',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
-      'PATCH /teams/team-1': {
-        body: {
-          id: 'team-1',
-          name: 'Los Campeones',
-          slug: 'los-campeones',
-          league_id: 'league-1',
-          owner_id: 'owner-1',
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-          group_name: 'A',
-        },
-      },
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Los Campeones'), team('team-2', 'Las Águilas', { group_name: 'A' })]),
     })
-
     renderWithProviders(<GroupsPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-    })
-
-    expect(screen.getByText('Equipos sin grupo (1)')).toBeInTheDocument()
+    expect(await screen.findByText('Equipos sin grupo (1)')).toBeInTheDocument()
     expect(screen.getByText('Grupo A (1)')).toBeInTheDocument()
   })
 
-  it('shows success when assigning team to group', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'PATCH /teams/team-1': {
-        body: {
-          id: 'team-1',
-          name: 'Los Campeones',
-          slug: 'los-campeones',
-          league_id: 'league-1',
-          owner_id: 'owner-1',
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-          group_name: 'A',
-        },
-      },
+  it('assigns a team to a group with one PATCH and confirms', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Los Campeones')]),
+      'PATCH /teams/team-1': { body: team('team-1', 'Los Campeones', { group_name: 'B' }) },
     })
+    const { user } = renderWithProviders(<GroupsPage />)
 
-    renderWithProviders(<GroupsPage />)
+    await pickGroup(user, 'Los Campeones', 'B')
 
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-    })
-
-    // Find and click the select dropdown
-    const selects = screen.getAllByText('Grupo')
-    const selectElement = selects[0]
-    if (selectElement) {
-      const selectTrigger = selectElement.closest('button')
-      if (selectTrigger) {
-        fireEvent.click(selectTrigger)
-      }
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText('Grupo A')).toBeInTheDocument()
-    })
-
-    fireEvent.click(screen.getByText('Grupo A'))
-
-    // Check that mutation was called
-    await waitFor(() => {
-      expect(screen.getByText('Grupo A (1)')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('Los Campeones asignado al grupo B')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([{ group_name: 'B' }])
   })
 
-  it('shows error on failed assignment', async () => {
+  it('lists the team and the API message when the assignment fails', async () => {
     mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [
-            {
-              id: 'team-1',
-              name: 'Los Campeones',
-              slug: 'los-campeones',
-              league_id: 'league-1',
-              owner_id: 'owner-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'PATCH /teams/team-1': {
-        status: 422,
-        body: { error: { code: 'validation_error', message: 'Grupo inválido' } },
-      },
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Los Campeones')]),
+      'PATCH /teams/team-1': { status: 422, body: { error: { code: 'validation_error', message: 'Grupo inválido' } } },
     })
+    const { user } = renderWithProviders(<GroupsPage />)
 
-    renderWithProviders(<GroupsPage />)
+    await pickGroup(user, 'Los Campeones', 'A')
 
-    await waitFor(() => {
-      expect(screen.getByText('Los Campeones')).toBeInTheDocument()
-    })
-
-    // Try to select a group
-    const selects = screen.getAllByText('Grupo')
-    const selectElement = selects[0]
-    if (selectElement) {
-      const selectTrigger = selectElement.closest('button')
-      if (selectTrigger) {
-        fireEvent.click(selectTrigger)
-      }
-    }
-
-    await waitFor(() => {
-      expect(screen.getByText('Grupo A')).toBeInTheDocument()
-    })
-
-    fireEvent.click(screen.getByText('Grupo A'))
-
-    // Error should be shown
-    await waitFor(() => {
-      expect(screen.getByText(/Error: /)).toBeInTheDocument()
-    })
+    const alert = await screen.findByRole('alert')
+    expect(within(alert).getByText('Los Campeones: Grupo inválido')).toBeInTheDocument()
   })
 
-  it('shows empty state when no teams exist', async () => {
-    mockApi({
-      'GET /leagues/mine': {
-        body: {
-          data: [
-            {
-              id: 'league-1',
-              name: 'Liga Mayor',
-              slug: 'liga-mayor',
-              admin_id: 'admin-1',
-              is_active: true,
-              created_at: '2024-01-01T00:00:00Z',
-              updated_at: '2024-01-01T00:00:00Z',
-            },
-          ],
-          page: { limit: 100, offset: 0, total: 1 },
-        },
-      },
-      'GET /teams': {
-        body: {
-          data: [],
-          page: { limit: 100, offset: 0, total: 0 },
-        },
-      },
+  it('auto-distributes unassigned teams: one PATCH per team, balanced, deterministic', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([
+        team('team-1', 'Uno', { group_name: 'A' }),
+        team('team-2', 'Dos'),
+        team('team-3', 'Tres'),
+        team('team-4', 'Cuatro'),
+      ]),
+      'PATCH /teams/team-2': { body: {} },
+      'PATCH /teams/team-3': { body: {} },
+      'PATCH /teams/team-4': { body: {} },
     })
+    const { user } = renderWithProviders(<GroupsPage />)
 
-    renderWithProviders(<GroupsPage />)
+    await user.click(await screen.findByRole('button', { name: /distribuir automáticamente/i }))
 
-    await waitFor(() => {
-      expect(screen.getByText('No hay equipos')).toBeInTheDocument()
+    expect(await screen.findByText('3 equipos distribuidos automáticamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-2')).toEqual([{ group_name: 'B' }])
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-3')).toEqual([{ group_name: 'A' }])
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-4')).toEqual([{ group_name: 'B' }])
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([])
+  })
+
+  it('uses the requested number of groups', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Uno'), team('team-2', 'Dos'), team('team-3', 'Tres')]),
+      'PATCH /teams/team-1': { body: {} },
+      'PATCH /teams/team-2': { body: {} },
+      'PATCH /teams/team-3': { body: {} },
     })
+    const { user } = renderWithProviders(<GroupsPage />)
+
+    const count = await screen.findByLabelText('Número de grupos')
+    await user.clear(count)
+    await user.type(count, '3')
+    await user.click(screen.getByRole('button', { name: /distribuir automáticamente/i }))
+
+    await screen.findByText('3 equipos distribuidos automáticamente')
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([{ group_name: 'A' }])
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-2')).toEqual([{ group_name: 'B' }])
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-3')).toEqual([{ group_name: 'C' }])
+  })
+
+  it('reports a partial failure per team during auto-distribution', async () => {
+    const fetchMock = mockApi({
+      'GET /leagues/mine': leaguesMine,
+      'GET /teams': page([team('team-1', 'Uno'), team('team-2', 'Dos')]),
+      'PATCH /teams/team-1': { body: {} },
+      'PATCH /teams/team-2': { status: 422, body: { error: { code: 'validation_error', message: 'Grupo inválido' } } },
+    })
+    const { user } = renderWithProviders(<GroupsPage />)
+
+    await user.click(await screen.findByRole('button', { name: /distribuir automáticamente/i }))
+
+    expect(await screen.findByText('1 equipos distribuidos, 1 fallaron')).toBeInTheDocument()
+    const alert = await screen.findByRole('alert')
+    expect(within(alert).getByText('Dos: Grupo inválido')).toBeInTheDocument()
+    expect(within(alert).queryByText(/Uno/)).not.toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toHaveLength(1)
   })
 })

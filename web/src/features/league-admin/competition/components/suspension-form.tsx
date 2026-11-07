@@ -21,18 +21,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useTeamPlayers, useTeamsByLeague } from '@/features/public/api'
 import { ApiError } from '@/lib/api/client'
 
 import { useCreateSuspension, useUpdateSuspension } from '../api'
 import type { Suspension } from '../types'
 
 interface SuspensionFormProps {
-  leagueId?: string
+  leagueId: string
   suspension?: Suspension
   onClose: () => void
 }
 
-export function SuspensionForm({ suspension, onClose }: SuspensionFormProps) {
+export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionFormProps) {
   const [formData, setFormData] = useState({
     player_id: suspension?.player_id ?? '',
     team_id: suspension?.team_id ?? '',
@@ -43,12 +44,29 @@ export function SuspensionForm({ suspension, onClose }: SuspensionFormProps) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const teams = useTeamsByLeague(suspension ? undefined : leagueId)
+  const players = useTeamPlayers(suspension || !formData.team_id ? undefined : formData.team_id)
   const create = useCreateSuspension()
   const update = useUpdateSuspension(suspension?.id ?? '')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
+
+    if (!suspension) {
+      const missing: Record<string, string> = {}
+      if (!formData.team_id) missing.team_id = 'Selecciona un equipo'
+      if (!formData.player_id) missing.player_id = 'Selecciona un jugador'
+      if (!formData.reason.trim()) missing.reason = 'El motivo es obligatorio'
+      if (Object.keys(missing).length > 0) {
+        setErrors(missing)
+        return
+      }
+    }
+    if (!Number.isInteger(formData.matches_to_serve) || formData.matches_to_serve < 1) {
+      setErrors({ matches_to_serve: 'Debe ser al menos 1' })
+      return
+    }
 
     try {
       if (suspension) {
@@ -61,14 +79,14 @@ export function SuspensionForm({ suspension, onClose }: SuspensionFormProps) {
           player_id: formData.player_id,
           team_id: formData.team_id,
           suspension_type: formData.suspension_type,
-          reason: formData.reason,
+          reason: formData.reason.trim(),
           matches_to_serve: formData.matches_to_serve,
           notes: formData.notes,
         })
       }
       onClose()
     } catch (err) {
-      if (err instanceof ApiError && err.fields) {
+      if (err instanceof ApiError && Object.keys(err.fields).length > 0) {
         setErrors(err.fields)
       }
     }
@@ -103,37 +121,59 @@ export function SuspensionForm({ suspension, onClose }: SuspensionFormProps) {
           {!suspension && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="player_id">ID del Jugador</Label>
-                <Input
-                  id="player_id"
-                  value={formData.player_id}
-                  onChange={(e) => setFormData({ ...formData, player_id: e.target.value })}
-                  placeholder="UUID del jugador"
-                  aria-invalid={!!errors.player_id}
-                  aria-describedby={errors.player_id ? 'player_id-error' : undefined}
+                <Label htmlFor="team_id">Equipo</Label>
+                <Select
+                  value={formData.team_id}
+                  onValueChange={(value) => setFormData({ ...formData, team_id: value, player_id: '' })}
                   disabled={isPending}
-                />
-                {errors.player_id && (
-                  <p id="player_id-error" className="text-xs text-destructive">
-                    {errors.player_id}
+                >
+                  <SelectTrigger
+                    id="team_id"
+                    aria-invalid={!!errors.team_id}
+                    aria-describedby={errors.team_id ? 'team_id-error' : undefined}
+                  >
+                    <SelectValue placeholder="Selecciona un equipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(teams.data?.data ?? []).map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.team_id && (
+                  <p id="team_id-error" className="text-xs text-destructive">
+                    {errors.team_id}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="team_id">ID del Equipo</Label>
-                <Input
-                  id="team_id"
-                  value={formData.team_id}
-                  onChange={(e) => setFormData({ ...formData, team_id: e.target.value })}
-                  placeholder="UUID del equipo"
-                  aria-invalid={!!errors.team_id}
-                  aria-describedby={errors.team_id ? 'team_id-error' : undefined}
-                  disabled={isPending}
-                />
-                {errors.team_id && (
-                  <p id="team_id-error" className="text-xs text-destructive">
-                    {errors.team_id}
+                <Label htmlFor="player_id">Jugador</Label>
+                <Select
+                  value={formData.player_id}
+                  onValueChange={(value) => setFormData({ ...formData, player_id: value })}
+                  disabled={isPending || !formData.team_id}
+                >
+                  <SelectTrigger
+                    id="player_id"
+                    aria-invalid={!!errors.player_id}
+                    aria-describedby={errors.player_id ? 'player_id-error' : undefined}
+                  >
+                    <SelectValue placeholder="Selecciona un jugador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(players.data?.data ?? []).map((player) => (
+                      <SelectItem key={player.id} value={player.id}>
+                        {player.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.player_id && (
+                  <p id="player_id-error" className="text-xs text-destructive">
+                    {errors.player_id}
                   </p>
                 )}
               </div>

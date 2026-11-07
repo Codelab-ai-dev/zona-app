@@ -25,7 +25,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
   const updateUser = useUpdateUser()
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  // Derive form state from user prop directly
+  // Seeded once from the user: the parent mounts this with key={user.id}
   const [form, setForm] = useState<Partial<UpdateUserRequest>>(() => {
     if (user) {
       return {
@@ -43,15 +43,16 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
 
     setFormErrors({})
     try {
-      await updateUser.mutateAsync({ id: user.id, data: form as UpdateUserRequest })
+      const { name, email, phone } = form
+      await updateUser.mutateAsync({ id: user.id, data: { name, email, phone } })
       toast.success('Usuario actualizado exitosamente')
       onOpenChange(false)
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.isValidation && err.fields) {
+        if (err.isValidation && Object.keys(err.fields).length > 0) {
           setFormErrors(err.fields)
         } else if (err.status === 409) {
-          setFormErrors({ email: 'ya existe' })
+          setFormErrors({ email: 'Este correo ya está registrado' })
         } else {
           toast.error(err.message)
         }

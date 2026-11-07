@@ -40,9 +40,13 @@ export function PointsAdjustmentDialog({
     e.preventDefault()
     setErrors({})
 
-    const pointsValue = parseInt(points, 10)
-    if (isNaN(pointsValue)) {
-      setErrors({ points: 'Debe ser un número válido' })
+    if (!/^-?\d+$/.test(points.trim())) {
+      setErrors({ points: 'Debe ser un número entero válido' })
+      return
+    }
+    const pointsValue = Number(points.trim())
+    if (pointsValue === 0) {
+      setErrors({ points: 'El ajuste no puede ser 0' })
       return
     }
 
@@ -56,11 +60,11 @@ export function PointsAdjustmentDialog({
         team_id: standing.team_id,
         tournament_id: tournamentId,
         points_adjustment: pointsValue,
-        adjustment_reason: reason,
+        adjustment_reason: reason.trim(),
       })
       onClose()
     } catch (err) {
-      if (err instanceof ApiError && err.fields) {
+      if (err instanceof ApiError && Object.keys(err.fields).length > 0) {
         setErrors(err.fields)
       } else if (err instanceof Error) {
         setErrors({ points: err.message })

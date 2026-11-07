@@ -38,6 +38,20 @@ describe('ClipsPage', () => {
     expect(titles.length).toBe(2)
   })
 
+  it('links a clip to the video it was cut from, not to its own id', async () => {
+    mockApi({
+      'GET /play/clips': {
+        body: { data: [{ ...clip, recording_id: 'rec-9' }, { ...clip, id: 'c2', title: 'Sin video' }], page: { limit: 24, offset: 0 } },
+      },
+    })
+    renderWithProviders(<ClipsPage />)
+
+    const link = await screen.findByRole('link', { name: /golazo de media cancha/i })
+    expect(link).toHaveAttribute('href', '/play/watch/rec-9')
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.getByText('Sin video')).toBeInTheDocument()
+  })
+
   it('shows empty state when no clips', async () => {
     mockApi({
       'GET /play/clips': {

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 
 import { mockApi, renderWithProviders } from '@/test/render'
@@ -54,6 +54,12 @@ const mockTeamStats = {
   updated_at: '2024-01-01T00:00:00Z',
 }
 
+/** Value shown in the summary card labelled `label`. */
+function cardValue(label: string): string | null {
+  const caption = screen.getByText(label, { selector: 'p' })
+  return within(caption.parentElement as HTMLElement).getAllByText(/^\d+$/)[0]?.textContent ?? null
+}
+
 describe('PlayerStatisticsPage', () => {
   beforeEach(() => {
     mockApi({
@@ -78,14 +84,11 @@ describe('PlayerStatisticsPage', () => {
   it('displays player count and team statistics summary', async () => {
     renderWithProviders(<PlayerStatisticsPage teamId={mockTeamId} />)
 
-    expect(await screen.findByText('2')).toBeInTheDocument() // player count
-    expect(screen.getByText('Jugadores')).toBeInTheDocument()
-    expect(screen.getByText('25')).toBeInTheDocument() // goals_for
-    expect(screen.getByText('Goles Totales')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument() // yellow_cards
-    expect(screen.getByText('Tarjetas Amarillas')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument() // red_cards
-    expect(screen.getByText('Tarjetas Rojas')).toBeInTheDocument()
+    await screen.findByText('Juan Pérez')
+    expect(cardValue('Jugadores')).toBe('2')
+    expect(cardValue('Goles Totales')).toBe('25')
+    expect(cardValue('Tarjetas Amarillas')).toBe('12')
+    expect(cardValue('Tarjetas Rojas')).toBe('1')
   })
 
   it('displays all players in the table', async () => {
@@ -132,7 +135,23 @@ describe('PlayerStatisticsPage', () => {
 
     renderWithProviders(<PlayerStatisticsPage teamId={mockTeamId} />)
 
-    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error interno del servidor')
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+
+  it('shows a retryable alert when only the team stats fail', async () => {
+    mockApi({
+      'GET /teams/team-123/players': { body: { data: mockPlayers, page: { limit: 100, offset: 0 } } },
+      'GET /teams/team-123/stats': {
+        status: 500,
+        body: { error: { code: 'internal_error', message: 'Error interno del servidor' } },
+      },
+    })
+
+    renderWithProviders(<PlayerStatisticsPage teamId={mockTeamId} />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar las estadísticas del equipo.')
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 
   it('displays zero statistics when no team stats available', async () => {
@@ -147,9 +166,11 @@ describe('PlayerStatisticsPage', () => {
 
     renderWithProviders(<PlayerStatisticsPage teamId={mockTeamId} />)
 
-    await screen.findByText('Goles Totales')
-    // Should show 0 when no stats
-    expect(screen.getByText('0')).toBeInTheDocument()
+    await screen.findByText('Juan Pérez')
+    expect(cardValue('Jugadores')).toBe('2')
+    expect(cardValue('Goles Totales')).toBe('0')
+    expect(cardValue('Tarjetas Amarillas')).toBe('0')
+    expect(cardValue('Tarjetas Rojas')).toBe('0')
   })
 
   it('displays statistics note about detailed stats availability', async () => {

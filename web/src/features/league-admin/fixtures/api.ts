@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { api, ApiError } from '@/lib/api/client'
+import { matchKeys } from '@/features/league-admin/matches/api'
 
 import type {
   DuplicateMatchGroup,
@@ -24,9 +25,24 @@ export interface TeamListItem {
 export const fixturesKeys = {
   all: ['fixtures'] as const,
   duplicates: (tournamentId: string) => [...fixturesKeys.all, 'duplicates', tournamentId] as const,
-  matches: (tournamentId: string) => [...fixturesKeys.all, 'matches', tournamentId] as const,
-  playoffMatches: (tournamentId: string) => [...fixturesKeys.matches(tournamentId), 'playoffs'] as const,
+  matches: (tournamentId: string, phase?: string) =>
+    [...fixturesKeys.all, 'matches', tournamentId, phase ?? 'all'] as const,
+  tournamentMatches: (tournamentId: string) => [...fixturesKeys.all, 'matches', tournamentId] as const,
   teams: (leagueId: string) => [...fixturesKeys.all, 'teams', leagueId] as const,
+}
+
+/** Refreshes every matches query of the tournament, here and in the calendar. */
+function invalidateTournamentMatches(queryClient: QueryClient, tournamentId: string) {
+  queryClient.invalidateQueries({ queryKey: fixturesKeys.tournamentMatches(tournamentId) })
+  queryClient.invalidateQueries({ queryKey: matchKeys.byTournament(tournamentId) })
+}
+
+/** Field-level 422s are rendered next to the fields by the caller; everything else is toasted. */
+function showUnlessFieldErrors(fallback: string) {
+  return (error: unknown) => {
+    if (error instanceof ApiError && error.isValidation && Object.keys(error.fields).length > 0) return
+    toast.error(error instanceof ApiError ? error.message : fallback)
+  }
 }
 
 /**
@@ -49,19 +65,17 @@ export function useGenerateFixtures() {
   return useMutation({
     mutationFn: (req: GenerateFixturesRequest) =>
       api.post<GenerateFixturesResponse>(`/tournaments/${req.tournament_id}/fixtures/generate`, {
+        tournament_id: req.tournament_id,
         teams: req.teams,
         is_double_round: req.is_double_round,
         schedule: req.schedule,
       }),
     onSuccess: (data, req) => {
-      // Invalidate tournament matches to refresh the list
-      queryClient.invalidateQueries({ queryKey: fixturesKeys.matches(req.tournament_id) })
+      invalidateTournamentMatches(queryClient, req.tournament_id)
+      queryClient.invalidateQueries({ queryKey: fixturesKeys.duplicates(req.tournament_id) })
       toast.success(`Se generaron ${data.matches.length} partidos en ${data.rounds} jornadas`)
     },
-    onError: (error) => {
-      const message = error instanceof ApiError ? error.message : 'Error al generar fixtures'
-      toast.error(message)
-    },
+    onError: showUnlessFieldErrors('Error al generar fixtures'),
   })
 }
 
@@ -74,22 +88,20 @@ export function useGeneratePlayoffs() {
   return useMutation({
     mutationFn: (req: GeneratePlayoffsRequest) =>
       api.post<Match[]>(`/tournaments/${req.tournament_id}/playoffs/generate`, {
+        tournament_id: req.tournament_id,
         num_teams: req.num_teams,
-        start_date: req.start_date,
+        // The Go API decodes start_date into time.Time (RFC 3339), not a bare date.
+        start_date: `${req.start_date}T00:00:00Z`,
         start_time: req.start_time,
         field_number: req.field_number,
         third_place_match: req.third_place_match,
         home_and_away: req.home_and_away,
       }),
     onSuccess: (data, req) => {
-      // Invalidate tournament matches to refresh the playoff list
-      queryClient.invalidateQueries({ queryKey: fixturesKeys.playoffMatches(req.tournament_id) })
+      invalidateTournamentMatches(queryClient, req.tournament_id)
       toast.success(`Llave generada con ${data.length} partidos`)
     },
-    onError: (error) => {
-      const message = error instanceof ApiError ? error.message : 'Error al generar llave'
-      toast.error(message)
-    },
+    onError: showUnlessFieldErrors('Error al generar llave'),
   })
 }
 
@@ -109,7 +121,7 @@ export function useDuplicateMatches(tournamentId: string) {
  */
 export function useTournamentMatches(tournamentId: string, filters?: { phase?: string }) {
   return useQuery({
-    queryKey: fixturesKeys.matches(tournamentId),
+    queryKey: fixturesKeys.matches(tournamentId, filters?.phase),
     queryFn: ({ signal }) =>
       api.list<Match>(`/tournaments/${tournamentId}/matches`, { limit: 1000 }, { signal, query: filters }),
     enabled: Boolean(tournamentId),
@@ -117,25 +129,18 @@ export function useTournamentMatches(tournamentId: string, filters?: { phase?: s
 }
 
 /**
- * Trigger knowledge base update for a round (optional, non-blocking).
+ * Optional follow-ups after generating fixtures (knowledge base refresh and
+ * WhatsApp notification). Never throws; resolves false if any of them failed.
  */
-export function triggerJornadaEmbedding(leagueId: string, tournamentId: string, round: number) {
-  return api
-    .post(`/knowledge/triggers`, { trigger_type: 'jornada_update', league_id: leagueId, tournament_id: tournamentId, round })
-    .catch((err) => {
-      console.warn('Failed to trigger knowledge embedding:', err)
-      toast.warning('No se pudo actualizar la base de conocimiento')
-    })
-}
-
-/**
- * Send WhatsApp notification after fixture generation (optional, non-blocking).
- */
-export function sendFixtureNotification(leagueId: string) {
-  return api
-    .post(`/notifications/leagues/${leagueId}`, { type: 'fixtures_generated' })
-    .catch((err) => {
-      console.warn('Failed to send notification:', err)
-      toast.warning('No se pudo enviar la notificación')
-    })
+export async function runFixtureFollowUps(leagueId: string, tournamentId: string, round: number): Promise<boolean> {
+  const results = await Promise.allSettled([
+    api.post('/knowledge/triggers', {
+      trigger_type: 'jornada_update',
+      league_id: leagueId,
+      tournament_id: tournamentId,
+      round,
+    }),
+    api.post(`/notifications/leagues/${leagueId}`, { league_id: leagueId, tournament_id: tournamentId, round }),
+  ])
+  return results.every((r) => r.status === 'fulfilled')
 }

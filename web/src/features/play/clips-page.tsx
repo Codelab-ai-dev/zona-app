@@ -1,4 +1,5 @@
 import { Eye, Heart, Play } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -26,13 +27,24 @@ const clipTypeColors = {
   penalty: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/50' },
 } as const
 
+/** A clip has no watch page of its own: link to the video it was cut from. */
+function ClipLink({ recordingId, className, children }: { recordingId?: string; className: string; children: ReactNode }) {
+  return recordingId ? (
+    <Link to={`/play/watch/${recordingId}`} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <div className={className}>{children}</div>
+  )
+}
+
 function ClipCard({ clip }: { clip: Clip }) {
   const colorKey = (clip.clip_type && clip.clip_type in clipTypeColors) ? (clip.clip_type as keyof typeof clipTypeColors) : 'highlight'
   const colors = clipTypeColors[colorKey]
   const typeLabel = clip.clip_type ? (clipTypeLabels[clip.clip_type] ?? 'Clip') : 'Clip'
 
   return (
-    <Link to={`/play/watch/${clip.id}`} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+    <ClipLink recordingId={clip.recording_id} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
       <Card className="overflow-hidden bg-card hover:border-primary/50 transition-all duration-300 h-full">
         <CardContent className="p-0">
           {/* Thumbnail - Vertical aspect ratio for clips */}
@@ -74,7 +86,7 @@ function ClipCard({ clip }: { clip: Clip }) {
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </ClipLink>
   )
 }
 

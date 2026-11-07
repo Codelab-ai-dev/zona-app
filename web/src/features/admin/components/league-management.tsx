@@ -59,8 +59,8 @@ export function LeagueManagement() {
         </Button>
       </div>
 
-      <LeagueFormDialog open={formOpen} onOpenChange={handleFormClose} league={editingLeague} />
-      <LeagueFeaturesEditor open={!!editingFeatures} onOpenChange={(open) => !open && setEditingFeatures(null)} league={editingFeatures} />
+      <LeagueFormDialog key={editingLeague?.id ?? 'new'} open={formOpen} onOpenChange={handleFormClose} league={editingLeague} />
+      <LeagueFeaturesEditor key={editingFeatures?.id ?? 'none'} open={!!editingFeatures} onOpenChange={(open) => !open && setEditingFeatures(null)} league={editingFeatures} />
 
       <QueryState query={leagues} loadingLabel="Cargando ligas…" isEmpty={(res) => res.data.length === 0}>
         {(res) => (

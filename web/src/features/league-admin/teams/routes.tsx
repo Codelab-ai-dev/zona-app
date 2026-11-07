@@ -40,5 +40,8 @@ export const area: Area = {
       label: 'Solicitudes',
       roles: ['league_admin'],
     },
+    { to: '/liga-admin/grupos', label: 'Grupos', roles: ['league_admin'] },
+    { to: '/liga-admin/verificacion', label: 'Verificación', roles: ['league_admin'] },
+    { to: '/liga-admin/qr-batch', label: 'QR por lotes', roles: ['league_admin'] },
   ],
 }

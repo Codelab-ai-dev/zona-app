@@ -1,7 +1,7 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 
-import { mockApi, renderWithProviders } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 import { RefereeReportModal } from './referee-report-modal'
 
 const mockMatchId = 'match-123'
@@ -13,7 +13,7 @@ const mockMatch = {
   away_team_id: 'team-2',
   home_score: 3,
   away_score: 1,
-  match_date: '2024-01-15T18:00:00Z',
+  match_date: '2024-01-15T12:00:00Z',
   match_time: '18:00',
   status: 'finished',
   phase: 'regular',
@@ -48,6 +48,12 @@ const mockRefereeReport = {
   updated_at: '2024-01-15T20:00:00Z',
 }
 
+/** Text that follows the bold label inside the same row. */
+function fieldValue(label: string): string | null {
+  const row = screen.getByText(label).parentElement as HTMLElement
+  return row.textContent?.replace(label, '').trim() ?? null
+}
+
 describe('RefereeReportModal', () => {
   beforeEach(() => {
     mockApi({
@@ -68,19 +74,17 @@ describe('RefereeReportModal', () => {
     expect(await screen.findByText('Águilas FC')).toBeInTheDocument()
     expect(screen.getByText('Tigres FC')).toBeInTheDocument()
     expect(screen.getByText('Resultado Final')).toBeInTheDocument()
-    // Score display
-    const scoreElements = screen.getAllByText('3')
-    expect(scoreElements.length).toBeGreaterThan(0)
+    expect(screen.getByText('3 - 1')).toBeInTheDocument()
   })
 
   it('displays referee information', async () => {
     renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
 
     expect(await screen.findByText('Información del Árbitro')).toBeInTheDocument()
-    expect(screen.getByText(/Árbitro Principal:.*Carlos García/)).toBeInTheDocument()
-    expect(screen.getByText(/Asistente 1:.*Juan López/)).toBeInTheDocument()
-    expect(screen.getByText(/Asistente 2:.*María Rodríguez/)).toBeInTheDocument()
-    expect(screen.getByText(/Cuarto Árbitro:.*Pedro Sánchez/)).toBeInTheDocument()
+    expect(fieldValue('Árbitro Principal:')).toBe('Carlos García')
+    expect(fieldValue('Asistente 1:')).toBe('Juan López')
+    expect(fieldValue('Asistente 2:')).toBe('María Rodríguez')
+    expect(fieldValue('Cuarto Árbitro:')).toBe('Pedro Sánchez')
   })
 
   it('displays general observations', async () => {
@@ -96,8 +100,8 @@ describe('RefereeReportModal', () => {
     renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
 
     expect(await screen.findByText('Condiciones del Partido')).toBeInTheDocument()
-    expect(screen.getByText(/Clima:.*Despejado, 25°C/)).toBeInTheDocument()
-    expect(screen.getByText(/Campo:.*En buen estado/)).toBeInTheDocument()
+    expect(fieldValue('Clima:')).toBe('Despejado, 25°C')
+    expect(fieldValue('Campo:')).toBe('En buen estado')
   })
 
   it('displays match status badge', async () => {
@@ -134,7 +138,30 @@ describe('RefereeReportModal', () => {
 
     renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
 
-    expect(await screen.findByText('Error al cargar')).toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error interno del servidor')
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+
+  it('retries both requests and shows the report once the API recovers', async () => {
+    const failing = mockApi({
+      'GET /matches/match-123': {
+        status: 500,
+        body: { error: { code: 'internal_error', message: 'Error interno del servidor' } },
+      },
+      'GET /matches/match-123/referee-report': { body: mockRefereeReport },
+    })
+    const { user } = renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
+    await screen.findByRole('alert')
+    expect(requestsTo(failing, 'GET /matches/match-123')).toHaveLength(1)
+
+    const recovered = mockApi({
+      'GET /matches/match-123': { body: mockMatch },
+      'GET /matches/match-123/referee-report': { body: mockRefereeReport },
+    })
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    expect(await screen.findByText('Información del Árbitro')).toBeInTheDocument()
+    expect(requestsTo(recovered, 'GET /matches/match-123')).toHaveLength(1)
   })
 
   it('handles partial referee information gracefully', async () => {
@@ -152,18 +179,22 @@ describe('RefereeReportModal', () => {
 
     renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
 
-    expect(await screen.findByText(/Árbitro Principal:.*Carlos García/)).toBeInTheDocument()
-    expect(screen.getByText(/Asistente 1:.*Juan López/)).toBeInTheDocument()
+    await screen.findByText('Información del Árbitro')
+    expect(fieldValue('Árbitro Principal:')).toBe('Carlos García')
+    expect(fieldValue('Asistente 1:')).toBe('Juan López')
     // Missing fields should not display
-    expect(screen.queryByText(/Asistente 2:/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Cuarto Árbitro:/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Asistente 2:')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cuarto Árbitro:')).not.toBeInTheDocument()
+    expect(screen.queryByText('Campo:')).not.toBeInTheDocument()
+    expect(fieldValue('Clima:')).toBe('Despejado, 25°C')
   })
 
   it('formats match date correctly', async () => {
     renderWithProviders(<RefereeReportModal open={true} onOpenChange={() => {}} matchId={mockMatchId} />)
 
     // Should display formatted date - checking for the date in a readable format
-    expect(await screen.findByText(/15 de enero/)).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByText(/lunes, 15 de enero de 2024/)).toBeInTheDocument()
   })
 
   it('displays loading state while fetching', () => {

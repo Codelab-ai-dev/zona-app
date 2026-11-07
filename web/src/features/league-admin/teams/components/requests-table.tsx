@@ -11,7 +11,7 @@ import type { PlayerRegistrationRequest } from '../types'
 interface RequestsTableProps {
   requests: PlayerRegistrationRequest[]
   isPending?: boolean
-  onReview?: (requestId: string, status: 'approved' | 'rejected', notes?: string) => Promise<void>
+  onReview?: (requestId: string, status: 'approved' | 'rejected', notes?: string) => void
 }
 
 export function RequestsTable({ requests, isPending, onReview }: RequestsTableProps) {
@@ -25,19 +25,16 @@ export function RequestsTable({ requests, isPending, onReview }: RequestsTablePr
     setNotes('')
   }
 
-  const handleConfirm = async () => {
+  const close = () => {
+    setSelectedRequest(null)
+    setAction(null)
+    setNotes('')
+  }
+
+  const handleConfirm = () => {
     if (!selectedRequest || !action) return
-    try {
-      await onReview?.(
-        selectedRequest.id,
-        action === 'approve' ? 'approved' : 'rejected',
-        notes || undefined,
-      )
-    } finally {
-      setSelectedRequest(null)
-      setAction(null)
-      setNotes('')
-    }
+    onReview?.(selectedRequest.id, action === 'approve' ? 'approved' : 'rejected', notes || undefined)
+    close()
   }
 
   const getStatusBadge = (status: string) => {
@@ -115,7 +112,7 @@ export function RequestsTable({ requests, isPending, onReview }: RequestsTablePr
         </Table>
       </div>
 
-      <AlertDialog open={selectedRequest !== null && action !== null}>
+      <AlertDialog open={selectedRequest !== null && action !== null} onOpenChange={(open) => !open && close()}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -149,14 +146,7 @@ export function RequestsTable({ requests, isPending, onReview }: RequestsTablePr
           >
             {isPending ? 'Procesando…' : 'Confirmar'}
           </AlertDialogAction>
-          <AlertDialogCancel
-            onClick={() => {
-              setSelectedRequest(null)
-              setAction(null)
-            }}
-          >
-            Cancelar
-          </AlertDialogCancel>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
         </AlertDialogContent>
       </AlertDialog>
     </>

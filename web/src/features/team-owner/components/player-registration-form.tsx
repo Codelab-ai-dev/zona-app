@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,61 +13,74 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { AlertCircle } from 'lucide-react'
 
+import { ApiError } from '@/lib/api/client'
+
 import type { CreatePlayerRegistrationRequestRequest } from '../types'
+import { toApiDate } from '../utils'
 
 interface PlayerRegistrationFormProps {
   positions: string[]
   onSubmit: (data: CreatePlayerRegistrationRequestRequest) => Promise<void>
   isLoading: boolean
-  error?: Error | null
 }
 
-export function PlayerRegistrationForm({
-  positions,
-  onSubmit,
-  isLoading,
-  error,
-}: PlayerRegistrationFormProps) {
+type FormValues = {
+  player_name: string
+  player_position: string
+  jersey_number: number
+  birth_date: string
+  reason: string
+}
+
+const FORM_FIELDS = ['player_name', 'player_position', 'jersey_number', 'birth_date', 'reason']
+
+export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: PlayerRegistrationFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<CreatePlayerRegistrationRequestRequest>({
-    defaultValues: {
-      player_name: '',
-      player_position: '',
-      jersey_number: 1,
-      birth_date: undefined,
-      reason: '',
-    },
+  const [formError, setFormError] = useState<string | null>(null)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    control,
+    setValue,
+  } = useForm<FormValues>({
+    defaultValues: { player_name: '', player_position: '', jersey_number: 1, birth_date: '', reason: '' },
   })
 
-  const position = watch('player_position')
+  const position = useWatch({ control, name: 'player_position' })
 
-  const handleFormSubmit = async (data: CreatePlayerRegistrationRequestRequest) => {
+  const handleFormSubmit = async (values: FormValues) => {
     setFieldErrors({})
+    setFormError(null)
     try {
-      await onSubmit(data)
+      await onSubmit({
+        player_name: values.player_name,
+        player_position: values.player_position,
+        jersey_number: values.jersey_number,
+        birth_date: toApiDate(values.birth_date),
+        reason: values.reason,
+      })
     } catch (err) {
-      if (err instanceof Error && 'fields' in err) {
-        // Handle 422 validation errors
-        const apiError = err as unknown as { fields?: Record<string, string> }
-        if (apiError.fields) {
-          setFieldErrors(apiError.fields)
-        }
-      } else if (err instanceof Error) {
-        console.error(err)
+      if (err instanceof ApiError && err.isValidation) {
+        setFieldErrors(err.fields)
+        // Errors for fields this form does not have (e.g. tournament_id) go in the banner.
+        const extra = Object.entries(err.fields).filter(([key]) => !FORM_FIELDS.includes(key))
+        setFormError(extra.length > 0 ? extra.map(([, msg]) => msg).join('. ') : Object.keys(err.fields).length === 0 ? err.message : null)
       }
     }
   }
 
-  const getFieldError = (field: string): string | undefined => {
-    return fieldErrors[field] || errors[field as keyof typeof errors]?.message
-  }
+  const getFieldError = (field: keyof FormValues): string | undefined => fieldErrors[field] || errors[field]?.message
+
+  // Registered manually: the Select is not a native input.
+  register('player_position', { required: 'La posición es requerida' })
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-      {error && !fieldErrors && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+      {formError && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-red-800">{error.message}</div>
+          <div className="text-sm text-red-800">{formError}</div>
         </div>
       )}
 
@@ -92,8 +105,12 @@ export function PlayerRegistrationForm({
 
       <div className="space-y-2">
         <Label htmlFor="player_position">Posición *</Label>
-        <Select value={position} onValueChange={(value) => setValue('player_position', value)}>
-          <SelectTrigger id="player_position" aria-invalid={!!getFieldError('player_position')}>
+        <Select value={position} onValueChange={(value) => setValue('player_position', value, { shouldValidate: true })}>
+          <SelectTrigger
+            id="player_position"
+            aria-invalid={!!getFieldError('player_position')}
+            aria-describedby={getFieldError('player_position') ? 'player_position-error' : undefined}
+          >
             <SelectValue placeholder="Selecciona una posición" />
           </SelectTrigger>
           <SelectContent>
@@ -119,6 +136,7 @@ export function PlayerRegistrationForm({
           min={1}
           max={99}
           {...register('jersey_number', {
+            valueAsNumber: true,
             required: 'El número de camiseta es requerido',
             min: { value: 1, message: 'El número debe estar entre 1 y 99' },
             max: { value: 99, message: 'El número debe estar entre 1 y 99' },

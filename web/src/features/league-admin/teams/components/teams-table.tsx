@@ -16,35 +16,28 @@ interface TeamsTableProps {
 
 export function TeamsTable({ teams }: TeamsTableProps) {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const [alertTeam, setAlertTeam] = useState<Team | null>(null)
   const [alertAction, setAlertAction] = useState<'activate' | 'deactivate' | null>(null)
 
   const activateMutation = useActivateTeam()
   const deactivateMutation = useDeactivateTeam()
 
-  const handleEdit = (team: Team) => {
-    setSelectedTeam(team)
-    setIsEditOpen(true)
-  }
-
   const handleToggleActive = (team: Team) => {
     setAlertTeam(team)
     setAlertAction(team.is_active ? 'deactivate' : 'activate')
   }
 
-  const handleConfirmAction = async () => {
+  const closeAlert = () => {
+    setAlertTeam(null)
+    setAlertAction(null)
+  }
+
+  // Outcome is reported by the mutation hooks (toast), so fire and forget.
+  const handleConfirmAction = () => {
     if (!alertTeam || !alertAction) return
-    try {
-      if (alertAction === 'activate') {
-        await activateMutation.mutateAsync(alertTeam.id)
-      } else {
-        await deactivateMutation.mutateAsync(alertTeam.id)
-      }
-    } finally {
-      setAlertTeam(null)
-      setAlertAction(null)
-    }
+    if (alertAction === 'activate') activateMutation.mutate(alertTeam.id)
+    else deactivateMutation.mutate(alertTeam.id)
+    closeAlert()
   }
 
   return (
@@ -88,7 +81,7 @@ export function TeamsTable({ teams }: TeamsTableProps) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleEdit(team)}
+                      onClick={() => setSelectedTeam(team)}
                       className="gap-1"
                     >
                       <Edit className="size-4" />
@@ -114,14 +107,14 @@ export function TeamsTable({ teams }: TeamsTableProps) {
 
       {selectedTeam && (
         <EditTeamDialog
+          key={selectedTeam.id}
           team={selectedTeam}
-          open={isEditOpen}
-          onOpenChange={setIsEditOpen}
-          onTeamUpdate={() => setSelectedTeam(null)}
+          open
+          onOpenChange={(open) => !open && setSelectedTeam(null)}
         />
       )}
 
-      <AlertDialog open={alertTeam !== null && alertAction !== null}>
+      <AlertDialog open={alertTeam !== null && alertAction !== null} onOpenChange={(open) => !open && closeAlert()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -139,14 +132,7 @@ export function TeamsTable({ teams }: TeamsTableProps) {
           >
             {activateMutation.isPending || deactivateMutation.isPending ? 'Procesando…' : 'Confirmar'}
           </AlertDialogAction>
-          <AlertDialogCancel
-            onClick={() => {
-              setAlertTeam(null)
-              setAlertAction(null)
-            }}
-          >
-            Cancelar
-          </AlertDialogCancel>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
         </AlertDialogContent>
       </AlertDialog>
     </>

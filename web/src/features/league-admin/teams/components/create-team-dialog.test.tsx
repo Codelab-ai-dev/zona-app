@@ -1,286 +1,183 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
-import { renderWithProviders, mockApi } from '@/test/render'
+import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
+
 import { CreateTeamDialog } from './create-team-dialog'
 
+type User = ReturnType<typeof renderWithProviders>['user']
+
+const created = { status: 201, body: { id: 'team-1' } }
+
+async function fillTeam(user: User, name = 'Los Campeones') {
+  await user.type(screen.getByLabelText('Nombre del equipo'), name)
+  await user.click(screen.getByRole('button', { name: 'Continuar' }))
+}
+
+async function fillOwner(user: User, password = 'SecurePass123!', confirm = password, email = 'juan@example.com') {
+  await user.type(await screen.findByLabelText('Nombre del propietario'), 'Juan Pérez')
+  await user.type(screen.getByLabelText('Email'), email)
+  await user.type(screen.getByLabelText(/^contraseña/i), password)
+  await user.type(screen.getByLabelText('Confirmar contraseña'), confirm)
+}
+
+const submit = (user: User) => user.click(screen.getByRole('button', { name: /crear equipo y propietario|reintentar propietario/i }))
+const setup = (onOpenChange = vi.fn()) =>
+  renderWithProviders(<CreateTeamDialog open onOpenChange={onOpenChange} leagueId="league-1" />)
+
 describe('CreateTeamDialog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('creates team and owner with typed password', async () => {
+  it('creates the team, then the owner with the typed password, and closes', async () => {
     const onOpenChange = vi.fn()
+    const fetchMock = mockApi({ 'POST /teams': created, 'POST /admin/users': created })
+    const { user } = setup(onOpenChange)
 
-    mockApi({
-      'POST /teams': {
-        body: {
-          id: 'team-1',
-          name: 'Los Campeones',
-          slug: 'los-campeones',
-          league_id: 'league-1',
-          owner_id: 'owner-1',
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
+    await fillTeam(user)
+    await fillOwner(user)
+    await user.type(screen.getByLabelText(/teléfono/i), '5512345678')
+    await submit(user)
+
+    expect(await screen.findByText('Equipo creado exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /teams')).toEqual([
+      { name: 'LOS CAMPEONES', slug: 'los-campeones', league_id: 'league-1' },
+    ])
+    expect(requestsTo(fetchMock, 'POST /admin/users')).toEqual([
+      {
+        name: 'JUAN PÉREZ',
+        email: 'juan@example.com',
+        password: 'SecurePass123!',
+        phone: '5512345678',
+        role: 'team_owner',
+        league_id: 'league-1',
       },
-      'POST /admin/users': {
-        status: 201,
-      },
-    })
-
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={onOpenChange} leagueId="league-1" />
-    )
-
-    // Step 1: Fill team info
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-
-    const continueBtn = screen.getByText('Continuar')
-    fireEvent.click(continueBtn)
-
-    await waitFor(() => {
-      expect(screen.getByText('Información del propietario')).toBeInTheDocument()
-    })
-
-    // Step 2: Fill owner info
-    const ownerNameInput = screen.getByPlaceholderText('ej. Juan Pérez')
-    fireEvent.change(ownerNameInput, { target: { value: 'Juan Pérez' } })
-
-    const ownerEmailInput = screen.getByPlaceholderText('propietario@ejemplo.com')
-    fireEvent.change(ownerEmailInput, { target: { value: 'juan@example.com' } })
-
-    const passwordInput = screen.getByPlaceholderText('Ingresa una contraseña')
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } })
-
-    const confirmPasswordInput = screen.getByPlaceholderText('Confirma tu contraseña')
-    fireEvent.change(confirmPasswordInput, { target: { value: 'SecurePass123!' } })
-
-    const createBtn = screen.getByText('Crear equipo y propietario')
-    fireEvent.click(createBtn)
-
-    // Dialog should close after successful creation
-    await waitFor(() => {
-      expect(onOpenChange).toHaveBeenCalledWith(false)
-    })
+    ])
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('shows validation errors for required fields', async () => {
+  it('requires a team name and sends nothing', async () => {
+    const fetchMock = mockApi({})
+    const { user } = setup()
+
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    const name = screen.getByLabelText('Nombre del equipo')
+    expect(screen.getByText('El nombre es requerido')).toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('generates an accent-free slug from the name until the slug is edited by hand', async () => {
     mockApi({})
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    const name = screen.getByLabelText('Nombre del equipo')
+    await user.type(name, 'Las Águilas FC')
+    expect(screen.getByLabelText('Slug')).toHaveValue('las-aguilas-fc')
 
-    const continueBtn = screen.getByText('Continuar')
-    fireEvent.click(continueBtn)
-
-    await waitFor(() => {
-      expect(screen.getByText('El nombre es requerido')).toBeInTheDocument()
-    })
+    await user.clear(screen.getByLabelText('Slug'))
+    await user.type(screen.getByLabelText('Slug'), 'Águilas')
+    await user.type(name, ' B')
+    expect(screen.getByLabelText('Slug')).toHaveValue('águilas')
   })
 
-  it('shows validation errors for email format', async () => {
-    mockApi({})
+  it('blocks a mismatched password: error shown, values kept, no request', async () => {
+    const fetchMock = mockApi({})
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    await fillTeam(user)
+    await fillOwner(user, 'SecurePass123!', 'DifferentPass456!')
+    await submit(user)
 
-    // Go through to owner step
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-    fireEvent.click(screen.getByText('Continuar'))
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
-    })
-
-    // Fill owner with invalid email and try to create
-    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
-      target: { value: 'Juan Pérez' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
-      target: { value: 'invalid-email' },
-    })
-
-    fireEvent.click(screen.getByText('Crear equipo y propietario'))
-
-    await waitFor(() => {
-      expect(screen.getByText('Email inválido')).toBeInTheDocument()
-    })
+    const confirm = screen.getByLabelText('Confirmar contraseña')
+    expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument()
+    expect(confirm).toHaveAttribute('aria-invalid', 'true')
+    expect(confirm).toHaveValue('DifferentPass456!')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('auto-generates slug from name', async () => {
-    mockApi({})
+  it('blocks a password shorter than 10 characters: no request', async () => {
+    const fetchMock = mockApi({})
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    await fillTeam(user)
+    await fillOwner(user, 'short')
+    await submit(user)
 
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones FC' } })
-
-    // The slug should be auto-generated
-    const slugInput = screen.getByPlaceholderText('ej. los-campeones')
-    expect((slugInput as HTMLInputElement).value).toBe('los-campeones-fc')
+    expect(screen.getByText('La contraseña debe tener mínimo 10 caracteres')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^contraseña/i)).toHaveAttribute('aria-invalid', 'true')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('shows password mismatch error', async () => {
-    mockApi({})
+  it('blocks an invalid email: no request', async () => {
+    const fetchMock = mockApi({})
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    await fillTeam(user)
+    await fillOwner(user, 'SecurePass123!', 'SecurePass123!', 'no-es-email')
+    await submit(user)
 
-    // Go through to owner step
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-    fireEvent.click(screen.getByText('Continuar'))
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
-    })
-
-    // Fill owner with mismatched passwords
-    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
-      target: { value: 'Juan Pérez' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
-      target: { value: 'juan@example.com' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
-      target: { value: 'SecurePass123!' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
-      target: { value: 'DifferentPass456!' },
-    })
-
-    fireEvent.click(screen.getByText('Crear equipo y propietario'))
-
-    await waitFor(() => {
-      expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument()
-    })
+    expect(screen.getByText('Email inválido')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('shows password too short error', async () => {
-    mockApi({})
-
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
-
-    // Go through to owner step
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-    fireEvent.click(screen.getByText('Continuar'))
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
-    })
-
-    // Fill owner with short password
-    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
-      target: { value: 'Juan Pérez' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
-      target: { value: 'juan@example.com' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
-      target: { value: 'short' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
-      target: { value: 'short' },
-    })
-
-    fireEvent.click(screen.getByText('Crear equipo y propietario'))
-
-    await waitFor(() => {
-      expect(screen.getByText('La contraseña debe tener mínimo 10 caracteres')).toBeInTheDocument()
-    })
-  })
-
-  it('shows API error after failed creation', async () => {
+  it('shows API field errors on the team step and keeps what was typed', async () => {
     mockApi({
       'POST /teams': {
         status: 422,
-        body: { error: { code: 'validation_error', fields: { name: 'El nombre está duplicado' } } },
+        body: { error: { code: 'validation_error', message: 'Datos inválidos', fields: { slug: 'El slug ya está en uso' } } },
       },
     })
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    await fillTeam(user)
+    await fillOwner(user)
+    await submit(user)
 
-    // Go through to owner step
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-    fireEvent.click(screen.getByText('Continuar'))
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
-    })
-
-    // Fill owner info
-    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
-      target: { value: 'Juan Pérez' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
-      target: { value: 'juan@example.com' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
-      target: { value: 'SecurePass123!' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
-      target: { value: 'SecurePass123!' },
-    })
-
-    fireEvent.click(screen.getByText('Crear equipo y propietario'))
-
-    await waitFor(() => {
-      expect(screen.getByText('El nombre está duplicado')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('El slug ya está en uso')).toBeInTheDocument()
+    const slug = screen.getByLabelText('Slug')
+    expect(slug).toHaveAttribute('aria-invalid', 'true')
+    expect(slug).toHaveValue('los-campeones')
   })
 
-  it('shows 409 conflict error when team already exists', async () => {
-    mockApi({
-      'POST /teams': {
-        status: 409,
-        body: { error: { code: 'conflict', message: 'El equipo ya existe' } },
-      },
+  it('shows the API message on a 409 conflict and does not create the owner', async () => {
+    const fetchMock = mockApi({
+      'POST /teams': { status: 409, body: { error: { code: 'conflict', message: 'El equipo ya existe' } } },
     })
+    const { user } = setup()
 
-    renderWithProviders(
-      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
-    )
+    await fillTeam(user)
+    await fillOwner(user)
+    await submit(user)
 
-    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
-    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
-    fireEvent.click(screen.getByText('Continuar'))
+    expect(await screen.findByText('El equipo ya existe')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /admin/users')).toEqual([])
+    expect(screen.getByLabelText('Email')).toHaveValue('juan@example.com')
+  })
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
+  it('retries only the owner when the team was already created', async () => {
+    let attempt = 0
+    const fetchMock = mockApi({ 'POST /teams': created, 'POST /admin/users': created })
+    const original = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation(async (input, init) => {
+      if (String(input).endsWith('/admin/users') && attempt++ === 0) {
+        return new Response(JSON.stringify({ error: { code: 'conflict', message: 'El email ya está registrado' } }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      return original(input, init)
     })
+    const onOpenChange = vi.fn()
+    const { user } = setup(onOpenChange)
 
-    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
-      target: { value: 'Juan Pérez' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
-      target: { value: 'juan@example.com' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
-      target: { value: 'SecurePass123!' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
-      target: { value: 'SecurePass123!' },
-    })
+    await fillTeam(user)
+    await fillOwner(user)
+    await submit(user)
+    expect(await screen.findByText('El equipo se creó, pero falló el propietario: El email ya está registrado')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Crear equipo y propietario'))
-
-    await waitFor(() => {
-      expect(screen.getByText('El equipo ya existe')).toBeInTheDocument()
-    })
+    await submit(user)
+    expect(await screen.findByText('Equipo creado exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /teams')).toHaveLength(1)
+    expect(requestsTo(fetchMock, 'POST /admin/users')).toHaveLength(2)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

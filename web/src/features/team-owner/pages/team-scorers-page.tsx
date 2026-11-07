@@ -9,10 +9,27 @@ import type { PlayerStats } from '../types'
 export function TeamScorersPage({ teamId }: { teamId: string }) {
   const team = useTeam(teamId)
 
-  const tournamentId = useMemo(() => {
-    return team.data?.tournament_id
-  }, [team.data?.tournament_id])
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Goleadores</h2>
+        <p className="text-muted-foreground">Visualiza los goleadores del torneo y tus jugadores destacados.</p>
+      </div>
 
+      <QueryState query={team} loadingLabel="Cargando equipo…">
+        {(data) =>
+          data.tournament_id ? (
+            <ScorersTables teamId={teamId} tournamentId={data.tournament_id} />
+          ) : (
+            <EmptyState title="Sin torneo" description="Tu equipo aún no está inscrito en un torneo." />
+          )
+        }
+      </QueryState>
+    </div>
+  )
+}
+
+function ScorersTables({ teamId, tournamentId }: { teamId: string; tournamentId: string }) {
   const topScorers = useTopScorers(tournamentId)
 
   // Filter to only show players from this team
@@ -23,11 +40,6 @@ export function TeamScorersPage({ teamId }: { teamId: string }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Goleadores</h2>
-        <p className="text-muted-foreground">Visualiza los goleadores del torneo y tus jugadores destacados.</p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Top 10 Goleadores del Torneo</CardTitle>

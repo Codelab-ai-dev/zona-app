@@ -1,63 +1,44 @@
-import { describe, it, expect } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
-import { renderWithProviders, mockApi } from '@/test/render'
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+
+import { mockApi, renderWithProviders } from '@/test/render'
+
 import { SystemStats } from './components/system-stats'
+import { emptyPage, errorBody, inactiveLeague, juan, league, maria, pageOf } from './test-fixtures'
+
+const card = (title: string) => screen.getByText(title).closest('div')!.parentElement!
 
 describe('SystemStats', () => {
-  it('renders loading state initially', () => {
-    mockApi({
-      'GET /leagues/admin': { status: 200, body: { data: [], page: { limit: 1, offset: 0, total: 0 } } },
-      'GET /users': { status: 200, body: { data: [], page: { limit: 1, offset: 0, total: 0 } } },
-    })
+  it('shows the loading state first', () => {
+    mockApi({ 'GET /leagues/admin': { body: emptyPage }, 'GET /users': { body: emptyPage } })
     renderWithProviders(<SystemStats />)
     expect(screen.getByText('Cargando estadísticas…')).toBeInTheDocument()
   })
 
-  it('renders stats with data', async () => {
+  it('counts active leagues out of the total, league admins and all users', async () => {
     mockApi({
-      'GET /leagues/admin': {
-        status: 200,
-        body: {
-          data: [
-            { id: '1', name: 'Liga A', is_active: true, product_mode: 'full', admin_id: 'admin1', slug: 'liga-a', description: '', created_at: '', updated_at: '' },
-            { id: '2', name: 'Liga B', is_active: false, product_mode: 'web_only', admin_id: 'admin2', slug: 'liga-b', description: '', created_at: '', updated_at: '' },
-          ],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
-      'GET /users': {
-        status: 200,
-        body: {
-          data: [
-            { id: 'admin1', name: 'Admin 1', email: 'admin1@test.com', role: 'league_admin', is_active: true, created_at: '' },
-            { id: 'admin2', name: 'Admin 2', email: 'admin2@test.com', role: 'league_admin', is_active: true, created_at: '' },
-          ],
-          page: { limit: 100, offset: 0, total: 2 },
-        },
-      },
+      'GET /leagues/admin': { body: pageOf([league, inactiveLeague]) },
+      'GET /users': { body: pageOf([juan, maria]) },
     })
-
     renderWithProviders(<SystemStats />)
 
-    await waitFor(() => {
-      expect(screen.getByText('Estadísticas del Sistema')).toBeInTheDocument()
-    })
-
-    expect(screen.getByText('Ligas')).toBeInTheDocument()
-    expect(screen.getByText('Estadísticas del Sistema')).toBeInTheDocument()
-    expect(screen.getByText(/1/)).toBeInTheDocument()
+    expect(await screen.findByText('Estadísticas del Sistema')).toBeInTheDocument()
+    const leagues = card('Ligas')
+    expect(within(leagues).getByText('1')).toBeInTheDocument()
+    expect(within(leagues).getByText('/2')).toBeInTheDocument()
+    const admins = card('Administradores')
+    expect(within(admins).getByText('1')).toBeInTheDocument()
+    expect(within(admins).getByText('/2')).toBeInTheDocument()
+    const users = card('Total de Usuarios')
+    expect(within(users).getByText('2')).toBeInTheDocument()
   })
 
-  it('renders empty state on error', async () => {
+  it('shows the failure message when a request fails', async () => {
     mockApi({
-      'GET /leagues/admin': { status: 500, body: { error: { message: 'Internal server error' } } },
-      'GET /users': { status: 200, body: { data: [], page: { limit: 1, offset: 0, total: 0 } } },
+      'GET /leagues/admin': { status: 500, body: errorBody('internal', 'Internal server error') },
+      'GET /users': { body: emptyPage },
     })
-
     renderWithProviders(<SystemStats />)
-
-    await waitFor(() => {
-      expect(screen.getByText('No se pudieron cargar las estadísticas')).toBeInTheDocument()
-    })
+    expect(await screen.findByText('No se pudieron cargar las estadísticas')).toBeInTheDocument()
   })
 })
