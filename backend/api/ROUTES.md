@@ -48,6 +48,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | GET | `/api/v1/leagues` | público |
 | POST | `/api/v1/leagues` | token |
 | GET | `/api/v1/leagues/admin` | token |
+| GET | `/api/v1/leagues/mine` | token |
 | GET | `/api/v1/leagues/slug/{slug}` | público |
 | GET | `/api/v1/leagues/{leagueID}` | público |
 | PATCH | `/api/v1/leagues/{leagueID}` | token |
@@ -227,4 +228,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 121 routes.
+Total: 122 routes.

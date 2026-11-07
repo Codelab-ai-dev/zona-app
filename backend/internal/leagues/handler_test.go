@@ -64,6 +64,16 @@ func (f *fakeRepository) ListActiveLeagues(ctx context.Context, limit int, offse
 	return active[offset:end], len(active), nil
 }
 
+func (f *fakeRepository) ListLeaguesByAdmin(_ context.Context, adminID uuid.UUID) ([]League, error) {
+	var out []League
+	for _, l := range f.leagues {
+		if l.AdminID == adminID {
+			out = append(out, l)
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeRepository) ListAllLeagues(ctx context.Context, limit int, offset int) ([]League, int, error) {
 	var all []League
 	for _, l := range f.leagues {

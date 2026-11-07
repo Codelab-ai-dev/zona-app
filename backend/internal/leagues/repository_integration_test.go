@@ -336,3 +336,27 @@ func TestPagination_Integration(t *testing.T) {
 		t.Errorf("expected total to be >= results count, got total=%d results=%d", total, len(tournaments))
 	}
 }
+
+func TestListLeaguesByAdmin_Integration(t *testing.T) {
+	pool := testdb.Pool(t)
+	mine := testdb.Seed(t, pool)
+	other := testdb.Seed(t, pool)
+	repo := NewPGRepository(pool)
+	ctx := context.Background()
+
+	if _, err := pool.Exec(ctx, `UPDATE public.leagues SET is_active = false WHERE id = $1`, mine.LeagueID); err != nil {
+		t.Fatal(err)
+	}
+	leagues, err := repo.ListLeaguesByAdmin(ctx, mine.LeagueAdminID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(leagues) != 1 || leagues[0].ID != mine.LeagueID {
+		t.Fatalf("leagues = %+v, want only the admin's (even if inactive)", leagues)
+	}
+	for _, l := range leagues {
+		if l.ID == other.LeagueID {
+			t.Fatal("returned another admin's league")
+		}
+	}
+}

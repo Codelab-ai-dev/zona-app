@@ -288,3 +288,29 @@ func (r *PGRepository) UpdateTournament(ctx context.Context, t *Tournament) erro
 	}
 	return nil
 }
+
+// ListLeaguesByAdmin returns every league (active or not) administered by
+// adminID, oldest first. A league admin manages few leagues, so no paging.
+func (r *PGRepository) ListLeaguesByAdmin(ctx context.Context, adminID uuid.UUID) ([]League, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT id, name, slug, description, logo, admin_id, is_active, product_mode,
+		       features, mode_updated_at, mode_updated_by, created_at, updated_at
+		FROM public.leagues
+		WHERE admin_id = $1
+		ORDER BY created_at
+		LIMIT 100`, adminID)
+	if err != nil {
+		return nil, fmt.Errorf("query leagues by admin: %w", err)
+	}
+	defer rows.Close()
+	var leagues []League
+	for rows.Next() {
+		var l League
+		if err := rows.Scan(&l.ID, &l.Name, &l.Slug, &l.Description, &l.Logo, &l.AdminID, &l.IsActive,
+			&l.ProductMode, &l.Features, &l.ModeUpdatedAt, &l.ModeUpdatedBy, &l.CreatedAt, &l.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan league: %w", err)
+		}
+		leagues = append(leagues, l)
+	}
+	return leagues, rows.Err()
+}

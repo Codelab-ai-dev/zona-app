@@ -35,3 +35,16 @@ export function useLeagueTournaments(leagueId: string | undefined) {
     enabled: Boolean(leagueId),
   })
 }
+
+/**
+ * Leagues the signed-in user administers (GET /leagues/mine). League-admin
+ * screens use this instead of profile.league_id, which may be empty for
+ * admins: ownership lives in leagues.admin_id.
+ */
+export function useMyLeagues() {
+  return useQuery({
+    queryKey: [...leagueKeys.all, 'mine'] as const,
+    queryFn: ({ signal }) => api.list<League>('/leagues/mine', undefined, { signal }),
+    staleTime: 5 * 60_000,
+  })
+}

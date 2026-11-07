@@ -410,3 +410,8 @@ func (s *Service) UpdateTournament(ctx context.Context, caller auth.Principal, t
 func timeNow() time.Time {
 	return time.Now().UTC()
 }
+
+// MyLeagues returns the leagues the caller administers.
+func (s *Service) MyLeagues(ctx context.Context, caller auth.Principal) ([]League, error) {
+	return s.repo.ListLeaguesByAdmin(ctx, caller.UserID)
+}

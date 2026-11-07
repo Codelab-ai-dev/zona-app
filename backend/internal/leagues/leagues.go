@@ -225,6 +225,7 @@ type Repository interface {
 	GetLeagueBySlug(ctx context.Context, slug string) (League, error)
 	ListActiveLeagues(ctx context.Context, limit int, offset int) ([]League, int, error)
 	ListAllLeagues(ctx context.Context, limit int, offset int) ([]League, int, error)
+	ListLeaguesByAdmin(ctx context.Context, adminID uuid.UUID) ([]League, error)
 	CreateLeague(ctx context.Context, l *League) (uuid.UUID, error)
 	UpdateLeague(ctx context.Context, l *League) error
 	UpdateLeagueProductMode(ctx context.Context, leagueID uuid.UUID, productMode string, features json.RawMessage, updatedBy uuid.UUID) error

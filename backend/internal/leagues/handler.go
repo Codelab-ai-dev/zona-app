@@ -24,6 +24,7 @@ func (h *Handler) Routes(r chi.Router) {
 	// League endpoints
 	r.Get("/leagues", h.listActiveLeagues)                           // Public: list active leagues
 	r.With(auth.RequireAuth).Get("/leagues/admin", h.listAllLeagues) // Super admin: list all leagues
+	r.With(auth.RequireAuth).Get("/leagues/mine", h.myLeagues)       // Leagues the caller administers
 	r.Get("/leagues/{leagueID}", h.getLeague)                        // Public: get league by ID
 	r.Get("/leagues/slug/{slug}", h.getLeagueBySlug)                 // Public: get league by slug
 	r.With(auth.RequireRole(auth.RoleLeagueAdmin, auth.RoleSuperAdmin)).Post("/leagues", h.createLeague)
@@ -282,4 +283,15 @@ func (h *Handler) updateTournament(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, tournament)
+}
+
+// myLeagues handles GET /leagues/mine.
+func (h *Handler) myLeagues(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	leagues, err := h.svc.MyLeagues(r.Context(), caller)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, leagues, httpx.Page{Limit: 100}.WithTotal(len(leagues)))
 }
