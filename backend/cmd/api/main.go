@@ -15,16 +15,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/accounts"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/attendance"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/config"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/directory"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/finance"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/health"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/knowledge"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/leagues"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/matches"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/notifications"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/play"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/server"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/stats"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/storage"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/teams"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/users"
 )
 
@@ -108,6 +115,13 @@ func buildModules(cfg config.Config, pool *pgxpool.Pool) ([]server.Module, error
 	checker := authz.NewPGChecker(pool)
 	modules := []server.Module{
 		users.NewHandler(users.NewService(users.NewPGRepository(pool))),
+		leagues.NewHandler(leagues.NewService(leagues.NewPGRepository(pool), checker)),
+		teams.NewHandler(teams.NewService(teams.NewPGRepository(pool), pool, checker)),
+		stats.NewHandler(stats.NewService(stats.NewPGRepository(pool), checker)),
+		finance.NewHandler(finance.NewService(finance.NewPGRepository(pool), checker)),
+		attendance.NewHandler(attendance.NewService(attendance.NewPGRepository(pool), checker), checker),
+		directory.NewHandler(directory.NewService(directory.NewPGRepository(pool), checker)),
+		matches.NewHandler(matches.NewService(matches.NewPGRepository(pool), checker, pool)),
 	}
 
 	if cfg.SupabaseURL != "" {

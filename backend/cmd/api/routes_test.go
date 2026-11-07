@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +20,8 @@ import (
 
 // anonymousAllowed lists every route reachable without a bearer token.
 // Adding a route here is a security decision: it must be reviewed.
+var routeParam = regexp.MustCompile(`\{[A-Za-z]+\}`)
+
 var anonymousAllowed = map[string]bool{
 	"GET /healthz":                        true,
 	"GET /api/v1/play/videos":             true,
@@ -27,6 +31,35 @@ var anonymousAllowed = map[string]bool{
 	"GET /api/v1/play/streams":            true,
 	"GET /api/v1/play/streams/{streamId}": true,
 	"POST /api/v1/play/webhooks/mux":      true, // HMAC-signed by Mux
+
+	// leagues: active leagues/tournaments are public (legacy RLS)
+	"GET /api/v1/leagues":                        true,
+	"GET /api/v1/leagues/{leagueID}":             true,
+	"GET /api/v1/leagues/slug/{slug}":            true,
+	"GET /api/v1/leagues/{leagueID}/tournaments": true,
+	"GET /api/v1/tournaments/{tournamentID}":     true,
+
+	// teams: active teams, players (PublicPlayer DTO, no PII) and staff
+	"GET /api/v1/teams":                         true,
+	"GET /api/v1/teams/{teamID}":                true,
+	"GET /api/v1/teams/{teamID}/players":        true,
+	"GET /api/v1/teams/{teamID}/coaching-staff": true,
+	"GET /api/v1/players/{playerID}":            true,
+	"GET /api/v1/coaching-staff/{staffID}":      true,
+
+	// stats: public tables of active leagues only
+	"GET /api/v1/tournaments/{tournamentID}/standings":   true,
+	"GET /api/v1/tournaments/{tournamentID}/top-scorers": true,
+	"GET /api/v1/tournaments/{tournamentID}/discipline":  true,
+	"GET /api/v1/players/{playerID}/stats":               true,
+	"GET /api/v1/teams/{teamID}/stats":                   true,
+
+	// matches: published matches of active leagues (visibility enforced in service)
+	"GET /api/v1/tournaments/{tournamentID}/matches":          true,
+	"GET /api/v1/tournaments/{tournamentID}/matches/upcoming": true,
+	"GET /api/v1/matches/{matchID}":                           true,
+	"GET /api/v1/teams/{teamID}/matches":                      true,
+	"GET /api/v1/leagues/{leagueID}/matches/pending":          true,
 }
 
 // TestEveryRouteRequiresAuthUnlessAllowlisted mounts every module with all
@@ -76,17 +109,20 @@ func TestEveryRouteRequiresAuthUnlessAllowlisted(t *testing.T) {
 			return nil
 		}
 		checked++
-		path := strings.NewReplacer(
-			"{videoId}", "00000000-0000-0000-0000-000000000001",
-			"{clipId}", "00000000-0000-0000-0000-000000000001",
-			"{streamId}", "00000000-0000-0000-0000-000000000001",
-			"{userID}", "00000000-0000-0000-0000-000000000001",
-			"{leagueID}", "00000000-0000-0000-0000-000000000001",
-			"{matchID}", "00000000-0000-0000-0000-000000000001",
-		).Replace(route)
+		path := routeParam.ReplaceAllStringFunc(route, func(p string) string {
+			if p == "{slug}" {
+				return "liga"
+			}
+			if p == "{round}" {
+				return "1"
+			}
+			return "00000000-0000-0000-0000-000000000001"
+		})
 
 		req := httptest.NewRequest(method, path, strings.NewReader(`{}`))
 		req.Header.Set("Content-Type", "application/json")
+		// A distinct client IP per request keeps the per-IP rate limiter out of the way.
+		req.RemoteAddr = fmt.Sprintf("10.%d.%d.%d:1234", checked/65536, (checked/256)%256, checked%256)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusUnauthorized {

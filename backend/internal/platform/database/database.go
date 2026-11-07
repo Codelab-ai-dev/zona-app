@@ -112,5 +112,12 @@ func WithUserTx(ctx context.Context, pool *pgxpool.Pool, userID uuid.UUID, fn fu
 	})
 }
 
+// IsUniqueViolation reports whether err is a PostgreSQL unique_violation
+// (SQLSTATE 23505), e.g. a duplicate slug or email.
+func IsUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
 // IsNoRows reports whether err means a query returned no rows.
 func IsNoRows(err error) bool { return errors.Is(err, pgx.ErrNoRows) }

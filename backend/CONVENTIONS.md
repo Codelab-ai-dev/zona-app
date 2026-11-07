@@ -81,3 +81,36 @@ interfaces declared by the consumer. Never edit `cmd/api/main.go` or
   invalid input (422), not found (404) and the happy path.
 - Services are tested with fake repositories / fake `authz.Checker`.
 - DB integration tests use the build tag `integration` and `TEST_DATABASE_URL`.
+
+## Lessons from phase 1 (mandatory checklist before reporting "done")
+
+Every item below was a real defect found in review. Check each one.
+
+- [ ] **Integration tests against the real schema** (`//go:build integration`,
+      `testdb.Pool` + `testdb.Seed`) call *every* repository method. Unit tests
+      with fakes do not catch wrong column names, types or CHECK constraints.
+      Run: `TEST_DATABASE_URL=... go test -tags integration ./internal/<pkg>/...`
+- [ ] Enum values in DTO `Validate()` match the DB `CHECK` constraints exactly
+      (grep the table in `migrations/00001_baseline.sql`).
+- [ ] Nullable columns are scanned into pointers or `COALESCE`d; `time`/`date`
+      columns are formatted in SQL (`to_char`) or scanned into `time.Time`.
+- [ ] No identifier from the client reaches SQL: `ORDER BY`/column names come
+      from a whitelist map.
+- [ ] Ownership is derived from the database (load the row, then authorize
+      with `authz.Checker`), never from IDs in the request body. When a request
+      references several resources (league + tournament + match), verify they
+      belong together.
+- [ ] Updates use typed DTOs with pointer fields; status, counters, owner ids
+      and provider ids are never client-writable. No `map[string]any` updates.
+- [ ] No stubs, TODOs or "not yet implemented" paths. If something cannot be
+      done, say so explicitly in the report instead of marking it resolved.
+- [ ] Errors from repositories are returned, never discarded with `_ =`.
+- [ ] `go test -race` passes (fakes used by concurrent code need a mutex).
+- [ ] Test doubles live in `_test.go` files only.
+
+## Route parameter names
+
+chi panics when two routes use different parameter names in the same
+position, so every module uses these exact names: `{leagueID}`,
+`{tournamentID}`, `{teamID}`, `{playerID}`, `{matchID}`, `{userID}`, and
+`{<resource>ID}` for anything else (e.g. `{suspensionID}`). Never `{id}`.
