@@ -52,8 +52,7 @@ describe('ClipsPage', () => {
     expect(await screen.findByText('Aún no hay clips')).toBeInTheDocument()
   })
 
-  // Error state testing is deferred - TanStack Query error handling requires more complex mocking
-  it.skip('shows error state and retry button on API error', async () => {
+  it('shows error state and retry button on API error', async () => {
     mockApi({
       'GET /play/clips': {
         status: 500,

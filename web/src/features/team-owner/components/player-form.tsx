@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApiError } from '@/lib/api/client'
+import { AlertCircle, Upload } from 'lucide-react'
 
 import type { CreatePlayerRequest } from '../types'
+import { useUploadFile } from '../api'
 
 // Local type only used in this component
 type FormDataLocal = {
@@ -21,9 +23,10 @@ interface PlayerFormProps {
   onSubmit: (data: CreatePlayerRequest) => Promise<void>
   isLoading?: boolean
   initialData?: Partial<FormDataLocal>
+  playerId?: string
 }
 
-export function PlayerForm({ positions, onSubmit, isLoading, initialData }: PlayerFormProps) {
+export function PlayerForm({ positions, onSubmit, isLoading, initialData, playerId }: PlayerFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     position: '',
@@ -33,6 +36,56 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData }: Play
     ...initialData,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.photo || null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadFile = useUploadFile()
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Client-side validation
+    const maxSize = 10 * 1024 * 1024 // 10 MB
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+
+    if (!validTypes.includes(file.type)) {
+      setUploadError('El tipo de archivo debe ser JPEG, PNG o WebP')
+      return
+    }
+
+    if (file.size > maxSize) {
+      setUploadError('El archivo no debe exceder 10 MB')
+      return
+    }
+
+    // Show preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setPhotoPreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload file if we have a playerId (for updates)
+    if (playerId) {
+      setIsUploadingPhoto(true)
+      setUploadError(null)
+      try {
+        const result = await uploadFile.mutateAsync({
+          file,
+          scope: 'player',
+          scopeId: playerId,
+        })
+        setFormData({ ...formData, photo: result.name })
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'Error al subir la foto')
+        setPhotoPreview(null)
+      } finally {
+        setIsUploadingPhoto(false)
+      }
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,15 +180,59 @@ export function PlayerForm({ positions, onSubmit, isLoading, initialData }: Play
       </div>
 
       <div>
-        <Label htmlFor="photo">Foto URL</Label>
-        <Input
-          id="photo"
-          type="url"
-          value={formData.photo}
-          onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-          placeholder="https://..."
-          disabled={isLoading}
-        />
+        <Label htmlFor="photo">Foto del Jugador</Label>
+        <div className="mt-2 space-y-3">
+          {photoPreview && (
+            <div className="relative w-full max-w-xs">
+              <img
+                src={photoPreview}
+                alt="Vista previa"
+                className="w-full h-auto rounded-lg border border-gray-200 max-h-64 object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoPreview(null)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            id="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoUpload}
+            disabled={isLoading || isUploadingPhoto}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isUploadingPhoto}
+            className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            {isUploadingPhoto ? 'Subiendo...' : 'Seleccionar imagen (JPEG, PNG, WebP - máx 10MB)'}
+          </button>
+
+          {uploadError && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {uploadError}
+            </div>
+          )}
+
+          {formData.photo && !isUploadingPhoto && (
+            <p className="text-sm text-green-600">✓ Foto cargada</p>
+          )}
+        </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>

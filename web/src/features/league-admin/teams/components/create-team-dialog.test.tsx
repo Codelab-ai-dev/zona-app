@@ -9,7 +9,7 @@ describe('CreateTeamDialog', () => {
     vi.clearAllMocks()
   })
 
-  it('creates team and owner with generated password', async () => {
+  it('creates team and owner with typed password', async () => {
     const onOpenChange = vi.fn()
 
     mockApi({
@@ -52,13 +52,18 @@ describe('CreateTeamDialog', () => {
     const ownerEmailInput = screen.getByPlaceholderText('propietario@ejemplo.com')
     fireEvent.change(ownerEmailInput, { target: { value: 'juan@example.com' } })
 
+    const passwordInput = screen.getByPlaceholderText('Ingresa una contraseña')
+    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } })
+
+    const confirmPasswordInput = screen.getByPlaceholderText('Confirma tu contraseña')
+    fireEvent.change(confirmPasswordInput, { target: { value: 'SecurePass123!' } })
+
     const createBtn = screen.getByText('Crear equipo y propietario')
     fireEvent.click(createBtn)
 
-    // Step 3: Check credentials shown
+    // Dialog should close after successful creation
     await waitFor(() => {
-      expect(screen.getByText('Equipo creado exitosamente')).toBeInTheDocument()
-      expect(screen.getByText('juan@example.com')).toBeInTheDocument()
+      expect(onOpenChange).toHaveBeenCalledWith(false)
     })
   })
 
@@ -121,5 +126,161 @@ describe('CreateTeamDialog', () => {
     // The slug should be auto-generated
     const slugInput = screen.getByPlaceholderText('ej. los-campeones')
     expect((slugInput as HTMLInputElement).value).toBe('los-campeones-fc')
+  })
+
+  it('shows password mismatch error', async () => {
+    mockApi({})
+
+    renderWithProviders(
+      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
+    )
+
+    // Go through to owner step
+    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
+    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
+    fireEvent.click(screen.getByText('Continuar'))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
+    })
+
+    // Fill owner with mismatched passwords
+    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
+      target: { value: 'Juan Pérez' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
+      target: { value: 'juan@example.com' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
+      target: { value: 'SecurePass123!' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
+      target: { value: 'DifferentPass456!' },
+    })
+
+    fireEvent.click(screen.getByText('Crear equipo y propietario'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument()
+    })
+  })
+
+  it('shows password too short error', async () => {
+    mockApi({})
+
+    renderWithProviders(
+      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
+    )
+
+    // Go through to owner step
+    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
+    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
+    fireEvent.click(screen.getByText('Continuar'))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
+    })
+
+    // Fill owner with short password
+    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
+      target: { value: 'Juan Pérez' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
+      target: { value: 'juan@example.com' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
+      target: { value: 'short' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
+      target: { value: 'short' },
+    })
+
+    fireEvent.click(screen.getByText('Crear equipo y propietario'))
+
+    await waitFor(() => {
+      expect(screen.getByText('La contraseña debe tener mínimo 10 caracteres')).toBeInTheDocument()
+    })
+  })
+
+  it('shows API error after failed creation', async () => {
+    mockApi({
+      'POST /teams': {
+        status: 422,
+        body: { error: { code: 'validation_error', fields: { name: 'El nombre está duplicado' } } },
+      },
+    })
+
+    renderWithProviders(
+      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
+    )
+
+    // Go through to owner step
+    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
+    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
+    fireEvent.click(screen.getByText('Continuar'))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
+    })
+
+    // Fill owner info
+    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
+      target: { value: 'Juan Pérez' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
+      target: { value: 'juan@example.com' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
+      target: { value: 'SecurePass123!' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
+      target: { value: 'SecurePass123!' },
+    })
+
+    fireEvent.click(screen.getByText('Crear equipo y propietario'))
+
+    await waitFor(() => {
+      expect(screen.getByText('El nombre está duplicado')).toBeInTheDocument()
+    })
+  })
+
+  it('shows 409 conflict error when team already exists', async () => {
+    mockApi({
+      'POST /teams': {
+        status: 409,
+        body: { error: { code: 'conflict', message: 'El equipo ya existe' } },
+      },
+    })
+
+    renderWithProviders(
+      <CreateTeamDialog open={true} onOpenChange={vi.fn()} leagueId="league-1" />
+    )
+
+    const nameInput = screen.getByPlaceholderText('ej. Los Campeones')
+    fireEvent.change(nameInput, { target: { value: 'Los Campeones' } })
+    fireEvent.click(screen.getByText('Continuar'))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('ej. Juan Pérez')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByPlaceholderText('ej. Juan Pérez'), {
+      target: { value: 'Juan Pérez' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('propietario@ejemplo.com'), {
+      target: { value: 'juan@example.com' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Ingresa una contraseña'), {
+      target: { value: 'SecurePass123!' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Confirma tu contraseña'), {
+      target: { value: 'SecurePass123!' },
+    })
+
+    fireEvent.click(screen.getByText('Crear equipo y propietario'))
+
+    await waitFor(() => {
+      expect(screen.getByText('El equipo ya existe')).toBeInTheDocument()
+    })
   })
 })

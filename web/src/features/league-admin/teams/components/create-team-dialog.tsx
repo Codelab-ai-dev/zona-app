@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Lock } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -19,7 +18,7 @@ export interface CreateTeamDialogProps {
 }
 
 export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDialogProps) {
-  const [step, setStep] = useState<'team' | 'owner' | 'credentials'>('team')
+  const [step, setStep] = useState<'team' | 'owner'>('team')
   const [showPassword, setShowPassword] = useState(false)
   const [teamData, setTeamData] = useState({
     name: '',
@@ -31,8 +30,9 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     name: '',
     email: '',
     phone: '',
+    password: '',
+    confirmPassword: '',
   })
-  const [generatedPassword, setGeneratedPassword] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const createMutation = useCreateTeam()
@@ -44,15 +44,6 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim()
-  }
-
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
-    let pwd = ''
-    for (let i = 0; i < 16; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return pwd
   }
 
   const handleTeamChange = (field: string, value: string) => {
@@ -100,6 +91,16 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerData.email)) {
       newErrors.email = 'Email inválido'
     }
+    if (!ownerData.password) {
+      newErrors.password = 'La contraseña es requerida'
+    } else if (ownerData.password.length < 10) {
+      newErrors.password = 'La contraseña debe tener mínimo 10 caracteres'
+    }
+    if (!ownerData.confirmPassword) {
+      newErrors.confirmPassword = 'La confirmación es requerida'
+    } else if (ownerData.password !== ownerData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden'
+    }
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return false
@@ -116,9 +117,6 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
   const handleCreateTeamWithOwner = async () => {
     if (!validateOwner()) return
 
-    const password = generatePassword()
-    setGeneratedPassword(password)
-
     const team: CreateTeamRequest = {
       name: teamData.name,
       slug: teamData.slug,
@@ -130,7 +128,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     const owner: CreateUserRequest = {
       name: ownerData.name,
       email: ownerData.email,
-      password,
+      password: ownerData.password,
       phone: ownerData.phone || undefined,
       role: 'team_owner',
       league_id: leagueId,
@@ -138,7 +136,8 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
 
     try {
       await createMutation.mutateAsync({ team, owner })
-      setStep('credentials')
+      // Close dialog directly after successful creation
+      handleClose()
     } catch (error) {
       if (error instanceof ApiError && error.fields) {
         setErrors(error.fields)
@@ -147,36 +146,21 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
   }
 
   const handleClose = () => {
-    if (step === 'credentials') {
-      // Reset and close after showing credentials
-      setStep('team')
-      setTeamData({ name: '', slug: '', description: '', logo: '' })
-      setOwnerData({ name: '', email: '', phone: '' })
-      setGeneratedPassword('')
-      setErrors({})
-      onOpenChange(false)
-    } else {
-      onOpenChange(false)
-    }
+    setStep('team')
+    setTeamData({ name: '', slug: '', description: '', logo: '' })
+    setOwnerData({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
+    setErrors({})
+    onOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          {step === 'credentials' ? (
-            <>
-              <DialogTitle>Equipo creado exitosamente</DialogTitle>
-              <DialogDescription>Credenciales del propietario</DialogDescription>
-            </>
-          ) : (
-            <>
-              <DialogTitle>Crear equipo</DialogTitle>
-              <DialogDescription>
-                {step === 'team' ? 'Información del equipo' : 'Información del propietario'}
-              </DialogDescription>
-            </>
-          )}
+          <DialogTitle>Crear equipo</DialogTitle>
+          <DialogDescription>
+            {step === 'team' ? 'Información del equipo' : 'Información del propietario'}
+          </DialogDescription>
         </DialogHeader>
 
         {step === 'team' && (
@@ -260,63 +244,52 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="owner-password">Contraseña (mínimo 10 caracteres)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="owner-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Ingresa una contraseña"
+                  value={ownerData.password}
+                  onChange={(e) => handleOwnerChange('password', e.target.value)}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="px-3"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {errors.password && <p id="password-error" className="text-sm text-destructive">{errors.password}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner-confirm-password">Confirmar contraseña</Label>
+              <Input
+                id="owner-confirm-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Confirma tu contraseña"
+                value={ownerData.confirmPassword}
+                onChange={(e) => handleOwnerChange('confirmPassword', e.target.value)}
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
+              />
+              {errors.confirmPassword && <p id="confirm-password-error" className="text-sm text-destructive">{errors.confirmPassword}</p>}
+            </div>
+
             <Button onClick={handleCreateTeamWithOwner} disabled={createMutation.isPending} className="w-full">
               {createMutation.isPending ? 'Creando…' : 'Crear equipo y propietario'}
             </Button>
 
             <Button variant="outline" onClick={() => setStep('team')} className="w-full">
               Atrás
-            </Button>
-          </div>
-        )}
-
-        {step === 'credentials' && (
-          <div className="space-y-4">
-            <Alert>
-              <Lock className="h-4 w-4" />
-              <AlertDescription>Guarda estas credenciales en un lugar seguro. No se mostrarán de nuevo.</AlertDescription>
-            </Alert>
-
-            <div className="space-y-3 rounded-lg bg-muted p-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p className="font-mono text-sm">{ownerData.email}</p>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Contraseña</p>
-                <div className="flex gap-2">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={generatedPassword}
-                    readOnly
-                    className="flex-1 rounded border border-input bg-background px-2 py-1 font-mono text-sm"
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="px-2"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${ownerData.email}\n${generatedPassword}`)
-                }}
-                className="w-full"
-              >
-                Copiar credenciales
-              </Button>
-            </div>
-
-            <Button onClick={handleClose} className="w-full">
-              Listo
             </Button>
           </div>
         )}

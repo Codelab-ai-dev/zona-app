@@ -1,5 +1,5 @@
 import { Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -9,10 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { QueryState, EmptyState } from '@/components/states'
 
 import { useLeagueTournaments } from '@/features/leagues/api'
-import { useAuth } from '@/lib/auth/auth-context'
-
+import { useTeamsByLeague } from './api'
 import { FixtureWizard } from './fixture-wizard'
 
 interface FixturesPageProps {
@@ -21,22 +21,23 @@ interface FixturesPageProps {
 
 /**
  * Fixtures management page for league admins.
- * Shows button to generate fixtures and lists existing fixtures.
+ * Shows button to generate fixtures and loads teams from the API.
  */
 export function FixturesPage({ leagueId }: FixturesPageProps) {
-  const { profile } = useAuth()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const tournaments = useLeagueTournaments(leagueId)
+  const teams = useTeamsByLeague(leagueId)
 
-  // For now, use tournament data as mock team data (will be replaced with team API)
-  const mockTeams =
-    tournaments.data?.data.slice(0, 1).map((_, i) => ({
-      id: `team-${i}`,
-      name: `Equipo ${i + 1}`,
-    })) ?? []
-
-  if (!profile) return null
+  // Filter active teams from the current tournament (if selected)
+  const getActiveTeams = useMemo(() => {
+    return (tournamentId?: string) => {
+      if (!teams.data?.data) return []
+      return teams.data.data
+        .filter((team) => team.is_active)
+        .filter((team) => !tournamentId || !team.tournament_id || team.tournament_id === tournamentId)
+    }
+  }, [teams.data])
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -53,7 +54,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
       </header>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Generar Fixtures</DialogTitle>
             <DialogDescription>
@@ -61,13 +62,35 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
             </DialogDescription>
           </DialogHeader>
 
-          {tournaments.data?.data && (
-            <FixtureWizard
-              tournaments={tournaments.data.data}
-              teams={mockTeams}
-              onSuccess={() => setIsDialogOpen(false)}
-            />
-          )}
+          <QueryState
+            query={tournaments}
+            empty={
+              <EmptyState
+                title="Sin torneos"
+                description="Crea un torneo antes de generar fixtures."
+              />
+            }
+          >
+            {(res) => (
+              <QueryState
+                query={teams}
+                empty={
+                  <EmptyState
+                    title="Sin equipos"
+                    description="Registra equipos antes de generar fixtures."
+                  />
+                }
+              >
+                {() => (
+                  <FixtureWizard
+                    tournaments={res.data}
+                    getActiveTeams={getActiveTeams}
+                    onSuccess={() => setIsDialogOpen(false)}
+                  />
+                )}
+              </QueryState>
+            )}
+          </QueryState>
         </DialogContent>
       </Dialog>
     </section>

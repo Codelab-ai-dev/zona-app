@@ -320,3 +320,17 @@ export interface ReviewPlayerRegistrationRequestRequest {
   status: 'approved' | 'rejected'
   review_notes?: string
 }
+
+export interface RefereeReport {
+  id: string
+  match_id: string
+  referee_name?: string
+  assistant_referee_1?: string
+  assistant_referee_2?: string
+  fourth_official?: string
+  general_observations?: string
+  weather_conditions?: string
+  field_conditions?: string
+  created_at: string
+  updated_at: string
+}

@@ -17,7 +17,11 @@ export const area: Area = {
       },
       {
         path: '/liga-admin/grupos',
-        lazy: () => import('./verification-page').then((m) => ({ Component: m.VerificationPage })),
+        lazy: () => import('./groups-page').then((m) => ({ Component: m.GroupsPage })),
+      },
+      {
+        path: '/liga-admin/qr-batch',
+        lazy: () => import('./qr-batch-page').then((m) => ({ Component: m.QRBatchPage })),
       },
       {
         path: '/liga-admin/verificacion',

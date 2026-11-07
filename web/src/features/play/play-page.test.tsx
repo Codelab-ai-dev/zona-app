@@ -102,12 +102,15 @@ describe('PlayPage', () => {
     expect(await screen.findByText('Aún no hay videos')).toBeInTheDocument()
   })
 
-  // Error state testing is deferred - TanStack Query error handling requires more complex mocking
-  it.skip('shows error state and retry button on API error', async () => {
+  it('shows error state and retry button on API error', async () => {
     mockApi({
       'GET /play/videos': {
         status: 500,
         body: { error: { code: 'internal_error', message: 'Error interno del servidor' } },
+      },
+      'GET /play/streams': {
+        status: 500,
+        body: { error: { code: 'internal_error', message: 'Error' } },
       },
     })
     renderWithProviders(<PlayPage />)

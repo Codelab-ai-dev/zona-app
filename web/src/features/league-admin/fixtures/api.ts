@@ -11,12 +11,33 @@ import type {
   Match,
 } from './types'
 
+export interface TeamListItem {
+  id: string
+  name: string
+  slug: string
+  league_id: string
+  tournament_id?: string
+  is_active: boolean
+}
+
 /** Query keys for fixtures & playoffs area. */
 export const fixturesKeys = {
   all: ['fixtures'] as const,
   duplicates: (tournamentId: string) => [...fixturesKeys.all, 'duplicates', tournamentId] as const,
   matches: (tournamentId: string) => [...fixturesKeys.all, 'matches', tournamentId] as const,
   playoffMatches: (tournamentId: string) => [...fixturesKeys.matches(tournamentId), 'playoffs'] as const,
+  teams: (leagueId: string) => [...fixturesKeys.all, 'teams', leagueId] as const,
+}
+
+/**
+ * Get teams for a league (filtered by league_id and is_active).
+ */
+export function useTeamsByLeague(leagueId: string) {
+  return useQuery({
+    queryKey: fixturesKeys.teams(leagueId),
+    queryFn: ({ signal }) => api.list<TeamListItem>('/teams', { limit: 100 }, { signal, query: { league_id: leagueId } }),
+    enabled: Boolean(leagueId),
+  })
 }
 
 /**
@@ -30,6 +51,7 @@ export function useGenerateFixtures() {
       api.post<GenerateFixturesResponse>(`/tournaments/${req.tournament_id}/fixtures/generate`, {
         teams: req.teams,
         is_double_round: req.is_double_round,
+        schedule: req.schedule,
       }),
     onSuccess: (data, req) => {
       // Invalidate tournament matches to refresh the list

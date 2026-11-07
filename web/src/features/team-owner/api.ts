@@ -22,6 +22,8 @@ import type {
   UpdateCoachingStaffRequest,
   UpdateTeamRequest,
   CreatePlayerRegistrationRequestRequest,
+  RefereeReport,
+  Tournament,
 } from './types'
 
 /** Query keys follow TanStack Query convention: base, filters, mutations. */
@@ -238,7 +240,7 @@ export function useTeamStats(teamId: string | undefined) {
 /** GET /players/{playerID}/stats - get player stats. */
 export function usePlayerStats(playerId: string | undefined) {
   return useQuery({
-    queryKey: teamOwnerKeys.all,
+    queryKey: teamOwnerKeys.player(playerId ?? ''),
     queryFn: ({ signal }) => api.get<PlayerStats>(`/players/${playerId}/stats`, { signal }),
     enabled: Boolean(playerId),
   })
@@ -294,7 +296,11 @@ export function useCreatePlayerRegistrationRequest() {
       toast.success('Solicitud de registro enviada')
     },
     onError: (error) => {
-      toast.error('Error al enviar solicitud de registro')
+      // Only show toast for non-validation errors
+      const apiError = error as unknown as { status?: number }
+      if (!(error instanceof Error && apiError.status === 422)) {
+        toast.error('Error al enviar solicitud de registro')
+      }
       console.error(error)
     },
   })
@@ -327,4 +333,31 @@ interface StorageObject {
   owner: string
   created_at: string
   updated_at: string
+}
+
+/** GET /matches/{matchID} - fetch single match. */
+export function useMatch(matchId: string | undefined) {
+  return useQuery({
+    queryKey: [...teamOwnerKeys.all, 'match', matchId],
+    queryFn: ({ signal }) => api.get<Match>(`/matches/${matchId}`, { signal }),
+    enabled: Boolean(matchId),
+  })
+}
+
+/** GET /matches/{matchID}/referee-report - fetch referee report. */
+export function useRefereeReport(matchId: string | undefined) {
+  return useQuery({
+    queryKey: [...teamOwnerKeys.all, 'referee-report', matchId],
+    queryFn: ({ signal }) => api.get<RefereeReport>(`/matches/${matchId}/referee-report`, { signal }),
+    enabled: Boolean(matchId),
+  })
+}
+
+/** GET /tournaments/{tournamentID} - fetch tournament. */
+export function useTournament(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: [...teamOwnerKeys.all, 'tournament', tournamentId],
+    queryFn: ({ signal }) => api.get<Tournament>(`/tournaments/${tournamentId}`, { signal }),
+    enabled: Boolean(tournamentId),
+  })
 }

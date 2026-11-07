@@ -47,10 +47,23 @@ export interface DuplicateMatchGroup {
   matches: DuplicateMatch[]
 }
 
+export interface FixtureSchedule {
+  start_date: string
+  end_date?: string
+  match_days: string[]
+  start_time: string
+  end_time?: string
+  fields_available: number
+  half_minutes: number
+  halftime_break_minutes: number
+  break_between_matches: number
+}
+
 export interface GenerateFixturesRequest {
   tournament_id: string
   teams: Array<{ id: string; name: string }>
   is_double_round?: boolean
+  schedule: FixtureSchedule
 }
 
 export interface GenerateFixturesResponse {

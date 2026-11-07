@@ -28,8 +28,7 @@ const recording = {
 }
 
 describe('WatchPage', () => {
-  // Data rendering test is deferred - TanStack Query rendering requires better mocking
-  it.skip('renders video player and metadata', async () => {
+  it('renders video player and metadata', async () => {
     mockApi({
       'GET /play/videos/r1': {
         body: recording,
@@ -42,8 +41,7 @@ describe('WatchPage', () => {
     expect(screen.getByText('3 - 2')).toBeInTheDocument()
   })
 
-  // This test is deferred - TanStack Query rendering with null values requires better mocking
-  it.skip('shows error message when video has no playback ID', async () => {
+  it('shows error message when video has no playback ID', async () => {
     const recordingNoPlayback = { ...recording, mux_playback_id: null }
     mockApi({
       'GET /play/videos/r1': {
@@ -55,8 +53,7 @@ describe('WatchPage', () => {
     expect(await screen.findByText(/aún no está disponible/i)).toBeInTheDocument()
   })
 
-  // Error state testing is deferred - TanStack Query error handling requires more complex mocking
-  it.skip('shows error state and retry button on API error', async () => {
+  it('shows error state and retry button on API error', async () => {
     mockApi({
       'GET /play/videos/r1': {
         status: 404,

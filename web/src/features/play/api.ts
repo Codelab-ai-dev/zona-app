@@ -7,7 +7,8 @@ import type { Clip, DirectUploadResponse, Recording, Stream } from './types'
 
 export const playKeys = {
   recordings: ['play', 'recordings'] as const,
-  recordingsList: (page: PageParams) => [...playKeys.recordings, 'list', page] as const,
+  recordingsList: (page: PageParams, filters?: { q?: string; teamId?: string; leagueId?: string }) =>
+    [...playKeys.recordings, 'list', page, filters] as const,
   recordingsDetail: (id: string) => [...playKeys.recordings, id] as const,
   clips: ['play', 'clips'] as const,
   clipsList: (page: PageParams) => [...playKeys.clips, 'list', page] as const,
@@ -19,10 +20,19 @@ export const playKeys = {
 
 // ===== Recordings (Videos) =====
 
-export function useRecordings(page: PageParams = { limit: 10, offset: 0 }) {
+export function useRecordings(
+  page: PageParams = { limit: 10, offset: 0 },
+  filters?: { q?: string; teamId?: string; leagueId?: string },
+) {
   return useQuery({
-    queryKey: playKeys.recordingsList(page),
-    queryFn: ({ signal }) => api.list<Recording>('/play/videos', page, { signal }),
+    queryKey: playKeys.recordingsList(page, filters),
+    queryFn: ({ signal }) => {
+      const query: Record<string, string> = {}
+      if (filters?.q) query.q = filters.q
+      if (filters?.teamId) query.team_id = filters.teamId
+      if (filters?.leagueId) query.league_id = filters.leagueId
+      return api.list<Recording>('/play/videos', page, { signal, query })
+    },
     placeholderData: keepPreviousData,
   })
 }

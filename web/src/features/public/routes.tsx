@@ -3,7 +3,12 @@ import { lazy, Suspense } from 'react'
 import type { Area } from '@/app/area'
 import { LoadingState } from '@/components/states'
 
-const LeaguesPage = lazy(() => import('@/features/leagues/leagues-page').then((m) => ({ default: m.LeaguesPage })))
+const LandingPage = lazy(() =>
+  import('./components/landing-page').then((m) => ({ default: m.LandingPage })),
+)
+const LeagueDirectory = lazy(() =>
+  import('./components/league-directory').then((m) => ({ default: m.LeagueDirectory })),
+)
 const LeagueDetailPage = lazy(() =>
   import('./components/league-detail-page').then((m) => ({ default: m.LeagueDetailPage })),
 )
@@ -17,8 +22,8 @@ const TeamDetailPage = lazy(() =>
 /** Public portal: league directory, tournament standings, team details. */
 export const area: Area = {
   publicRoutes: [
-    { index: true, element: <Suspense fallback={<LoadingState />}><LeaguesPage /></Suspense> },
-    { path: 'ligas', element: <Suspense fallback={<LoadingState />}><LeaguesPage /></Suspense> },
+    { index: true, element: <Suspense fallback={<LoadingState />}><LandingPage /></Suspense> },
+    { path: 'ligas', element: <Suspense fallback={<LoadingState />}><LeagueDirectory /></Suspense> },
     {
       path: 'liga/:slug',
       element: <Suspense fallback={<LoadingState />}><LeagueDetailPage /></Suspense>,

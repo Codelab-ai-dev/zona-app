@@ -68,11 +68,11 @@ export function useDiscipline(tournamentId: string | undefined) {
   })
 }
 
-/** Get teams for a league (fetches all teams; filter on client if needed). */
+/** Get teams for a league. */
 export function useTeamsByLeague(leagueId: string | undefined) {
   return useQuery({
     queryKey: publicKeys.teams(leagueId),
-    queryFn: ({ signal }) => api.list<Team>('/teams', { limit: 1000 }, { signal }),
+    queryFn: ({ signal }) => api.list<Team>('/teams', { limit: 100 }, { signal, query: { league_id: leagueId } }),
     enabled: Boolean(leagueId),
   })
 }
