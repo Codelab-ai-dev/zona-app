@@ -18,12 +18,17 @@ const (
 	ScopeTeam        Scope = "team"
 	ScopePlayer      Scope = "player"
 	ScopeAppReleases Scope = "app_releases"
+	// ScopePlayerDocument holds identity documents for manual verification.
+	// It is PRIVATE: never served through PublicBaseURL, only via short-lived
+	// presigned URLs to callers who manage the player. The bucket policy must
+	// allow public reads only on the league/, team/ and player/ prefixes.
+	ScopePlayerDocument Scope = "player_document"
 )
 
 // ValidateScope reports whether a scope is allowed.
 func ValidateScope(s Scope) bool {
 	switch s {
-	case ScopeLeague, ScopeTeam, ScopePlayer, ScopeAppReleases:
+	case ScopeLeague, ScopeTeam, ScopePlayer, ScopeAppReleases, ScopePlayerDocument:
 		return true
 	}
 	return false
@@ -112,46 +117,20 @@ func (r URLRequest) Validate() map[string]string {
 }
 
 // keyRegex validates the strict key format: {scope}/{uuid}/{uuid}.{ext}
-var keyRegex = regexp.MustCompile(`^(league|team|player|app_releases)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|apk)$`)
+var keyRegex = regexp.MustCompile(`^(league|team|player|app_releases|player_document)/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|apk|pdf)$`)
 
 // ParseKey validates and parses a key into scope and scope_id.
 // Returns error if key is invalid.
 func ParseKey(key string) (scope Scope, scopeID uuid.UUID, err error) {
-	if !keyRegex.MatchString(key) {
+	m := keyRegex.FindStringSubmatch(key)
+	if m == nil {
 		return "", uuid.Nil, ErrInvalidKeyFormat
 	}
-
-	// Extract parts from key: {scope}/{scope_id}/{file_id}.{ext}
-	parts := make([]string, 0, 4)
-	var current string
-	for i, ch := range key {
-		if ch == '/' || i == len(key)-1 {
-			if i == len(key)-1 && ch != '/' {
-				current += string(ch)
-			}
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-			continue
-		}
-		current += string(ch)
-	}
-	if current != "" {
-		parts = append(parts, current)
-	}
-
-	if len(parts) < 2 {
-		return "", uuid.Nil, ErrInvalidKeyFormat
-	}
-
-	scope = Scope(parts[0])
-	scopeID, err = uuid.Parse(parts[1])
+	scopeID, err = uuid.Parse(m[2])
 	if err != nil {
 		return "", uuid.Nil, ErrInvalidKeyFormat
 	}
-
-	return scope, scopeID, nil
+	return Scope(m[1]), scopeID, nil
 }
 
 // ErrInvalidKeyFormat is returned when a key doesn't match the expected format.
@@ -196,6 +175,14 @@ func AllowedContentTypes(s Scope) map[string]string {
 		// APK files are detected as zip
 		return map[string]string{
 			"application/zip": ".apk",
+		}
+	case ScopePlayerDocument:
+		// Photos or scans of the identity document.
+		return map[string]string{
+			"image/jpeg":      ".jpg",
+			"image/png":       ".png",
+			"image/webp":      ".webp",
+			"application/pdf": ".pdf",
 		}
 	default:
 		return nil

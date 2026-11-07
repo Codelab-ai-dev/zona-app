@@ -150,6 +150,8 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | PATCH | `/api/v1/players/{playerID}` | token |
 | POST | `/api/v1/players/{playerID}/deactivate` | token |
 | GET | `/api/v1/players/{playerID}/stats` | público |
+| GET | `/api/v1/players/{playerID}/verification` | token |
+| PATCH | `/api/v1/players/{playerID}/verification` | token |
 
 ## standings
 
@@ -228,4 +230,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 122 routes.
+Total: 124 routes.

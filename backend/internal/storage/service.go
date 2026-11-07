@@ -211,7 +211,7 @@ func (s *Service) authorizeScope(ctx context.Context, caller auth.Principal, sco
 		return s.authz.CanManageLeague(ctx, caller, scopeID)
 	case ScopeTeam:
 		return s.authz.CanManageTeam(ctx, caller, scopeID)
-	case ScopePlayer:
+	case ScopePlayer, ScopePlayerDocument:
 		return s.authz.CanManagePlayer(ctx, caller, scopeID)
 	case ScopeAppReleases:
 		// Only super admins can manage app releases

@@ -356,6 +356,8 @@ type Tournament struct {
 
 // Repository is the persistence contract the service depends on.
 type Repository interface {
+	verificationRepository
+
 	// Teams
 	GetTeamByID(ctx context.Context, teamID uuid.UUID) (Team, error)
 	GetTeamsByLeague(ctx context.Context, leagueID uuid.UUID, limit, offset int) ([]Team, error)

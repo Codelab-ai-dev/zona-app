@@ -651,3 +651,15 @@ func TestGetTeamsByLeague_InvalidLimit(t *testing.T) {
 		t.Errorf("expected 422, got %d", w.Code)
 	}
 }
+
+func (r *fakeRepository) GetPlayerVerification(_ context.Context, playerID uuid.UUID) (PlayerVerification, error) {
+	if _, ok := r.players[playerID]; !ok {
+		return PlayerVerification{}, httpx.ErrNotFound
+	}
+	return PlayerVerification{PlayerID: playerID}, nil
+}
+
+func (r *fakeRepository) SetPlayerVerification(_ context.Context, playerID uuid.UUID, req VerifyPlayerRequest, by uuid.UUID) (PlayerVerification, error) {
+	method := "manual"
+	return PlayerVerification{PlayerID: playerID, Verified: req.Verified, VerifiedBy: &by, Method: &method, DocumentKey: req.DocumentKey}, nil
+}
