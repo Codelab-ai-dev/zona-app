@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/auth-context'
 
 import { area as adminArea } from '@/features/admin/routes'
 import { area as leagueCompetitionArea } from '@/features/league-admin/competition/routes'
+import { area as leagueFixturesArea } from '@/features/league-admin/fixtures/routes'
 import { area as leagueMatchesArea } from '@/features/league-admin/matches/routes'
 import { area as leagueTeamsArea } from '@/features/league-admin/teams/routes'
 import { area as playArea } from '@/features/play/routes'
@@ -41,7 +42,7 @@ function DashboardRedirect() {
 }
 
 /** Every feature area, in navigation order. */
-export const areas: Area[] = [publicArea, playArea, adminArea, leagueMatchesArea, leagueTeamsArea, leagueCompetitionArea, teamOwnerArea]
+export const areas: Area[] = [publicArea, playArea, adminArea, leagueMatchesArea, leagueFixturesArea, leagueTeamsArea, leagueCompetitionArea, teamOwnerArea]
 
 const allNav = areas.flatMap((a) => a.nav ?? [])
 
