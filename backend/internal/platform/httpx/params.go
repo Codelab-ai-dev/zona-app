@@ -15,3 +15,12 @@ func UUIDParam(r *http.Request, name string) (uuid.UUID, error) {
 	}
 	return id, nil
 }
+
+// UUIDQuery reads a required UUID from the query string (?name=...).
+func UUIDQuery(r *http.Request, name string) (uuid.UUID, error) {
+	id, err := uuid.Parse(r.URL.Query().Get(name))
+	if err != nil {
+		return uuid.Nil, Validation(map[string]string{name: "debe ser un UUID válido"})
+	}
+	return id, nil
+}

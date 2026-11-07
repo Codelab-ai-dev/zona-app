@@ -576,7 +576,7 @@ func TestGetTeamsByLeague_EmptyList(t *testing.T) {
 
 	leagueID := uuid.New()
 
-	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=10&offset=0", leagueID), nil)
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?league_id=%s&limit=10&offset=0", leagueID), nil)
 	w := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()
@@ -610,7 +610,7 @@ func TestGetTeamsByLeague_LimitCapped(t *testing.T) {
 
 	leagueID := uuid.New()
 
-	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=200&offset=0", leagueID), nil)
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?league_id=%s&limit=200&offset=0", leagueID), nil)
 	w := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()
@@ -638,7 +638,7 @@ func TestGetTeamsByLeague_InvalidLimit(t *testing.T) {
 
 	leagueID := uuid.New()
 
-	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?leagueID=%s&limit=abc&offset=0", leagueID), nil)
+	r := httptest.NewRequest("GET", fmt.Sprintf("/teams?league_id=%s&limit=abc&offset=0", leagueID), nil)
 	w := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()

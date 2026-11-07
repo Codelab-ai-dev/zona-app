@@ -190,15 +190,34 @@ func (s *Service) GenerateFixtures(ctx context.Context, caller auth.Principal, r
 	algo := NewFixtureGenerator(req.Teams, isDoubleRound)
 	rounds := algo.Generate()
 
-	// Convert to create requests
+	matchesPerRound := make([]int, len(rounds))
+	for i, round := range rounds {
+		matchesPerRound[i] = len(round.Matches)
+	}
+	slots, err := ScheduleRounds(*req.Schedule, matchesPerRound)
+	if err != nil {
+		return nil, httpx.Validation(map[string]string{"schedule": err.Error()})
+	}
+
+	// Convert to create requests with their date, time and field.
 	var createReqs []CreateMatchRequest
-	for _, round := range rounds {
-		for _, m := range round.Matches {
+	for ri, round := range rounds {
+		for mi, m := range round.Matches {
+			slot := slots[ri][mi]
+			kickoff, field := slot.Time, slot.Field
 			creq := CreateMatchRequest{
 				TournamentID: req.TournamentID,
 				HomeTeamID:   m.HomeTeamID,
 				AwayTeamID:   m.AwayTeamID,
 				Round:        &round.Round,
+				MatchDate:    slot.Date,
+				MatchTime:    &kickoff,
+				FieldNumber:  &field,
+			}
+			// The resting team (odd team count) is recorded on the round's first match, like legacy.
+			if mi == 0 && round.ByeTeamID != uuid.Nil {
+				bye := round.ByeTeamID
+				creq.ByeTeamID = &bye
 			}
 			createReqs = append(createReqs, creq)
 		}
@@ -206,7 +225,7 @@ func (s *Service) GenerateFixtures(ctx context.Context, caller auth.Principal, r
 
 	// Save to database in transaction
 	var matches []Match
-	err := database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		txRepo := NewPGRepository(tx)
 		var err error
 		matches, err = txRepo.CreateMatches(ctx, req.TournamentID, createReqs)

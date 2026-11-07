@@ -71,9 +71,9 @@ func (h *Handler) getTeam(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, team)
 }
 
-// getTeamsByLeague returns all teams in a league (public endpoint).
+// getTeamsByLeague handles GET /teams?league_id=... (public endpoint).
 func (h *Handler) getTeamsByLeague(w http.ResponseWriter, r *http.Request) {
-	leagueID, err := httpx.UUIDParam(r, "leagueID")
+	leagueID, err := httpx.UUIDQuery(r, "league_id")
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

@@ -238,6 +238,7 @@ type GenerateFixturesRequest struct {
 	TournamentID  uuid.UUID         `json:"tournament_id"`
 	Teams         []TeamFixtureData `json:"teams"`
 	IsDoubleRound *bool             `json:"is_double_round,omitempty"`
+	Schedule      *FixtureSchedule  `json:"schedule"`
 }
 
 // Validate checks request constraints.
@@ -248,6 +249,13 @@ func (r GenerateFixturesRequest) Validate() map[string]string {
 	}
 	if len(r.Teams) < 2 {
 		errs["teams"] = "se requieren al menos 2 equipos"
+	}
+	if r.Schedule == nil {
+		errs["schedule"] = "requerido: fecha de inicio, días y horario de juego"
+	} else {
+		for k, v := range r.Schedule.Validate() {
+			errs[k] = v
+		}
 	}
 	return errs
 }
