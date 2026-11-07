@@ -1,0 +1,326 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Fondos principales */
+  --background: oklch(0.97 0.005 120); /* Blanco humo (#ECF0F1) */
+  --foreground: oklch(0.18 0.01 220); /* Azul profundo (#2C3E50) */
+
+  /* Cards y superficies elevadas */
+  --card: oklch(1 0 0); /* Blanco puro */
+  --card-foreground: oklch(0.18 0.01 220);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 220);
+
+  /* Primary - Verde césped */
+  --primary: oklch(0.65 0.15 145); /* Verde césped (#27AE60) */
+  --primary-foreground: oklch(1 0 0); /* Blanco puro */
+
+  /* Secondary - Azul profundo */
+  --secondary: oklch(0.25 0.05 220); /* Azul profundo (#2C3E50) */
+  --secondary-foreground: oklch(0.97 0.005 120);
+
+  /* Muted - Grises neutros */
+  --muted: oklch(0.93 0.005 120); /* Gris claro derivado de blanco humo */
+  --muted-foreground: oklch(0.55 0.02 200); /* Gris medio (#7F8C8D) */
+
+  /* Accent - Verde césped suave para hover states */
+  --accent: oklch(0.70 0.12 145); /* Verde césped suave para hover */
+  --accent-foreground: oklch(1 0 0); /* Blanco para contraste */
+
+  /* Destructive - Rojo pasión */
+  --destructive: oklch(0.58 0.2 25); /* Rojo pasión (#E74C3C) */
+  --destructive-foreground: oklch(1 0 0);
+
+  /* Bordes y inputs */
+  --border: oklch(0.85 0.01 120); /* Gris suave */
+  --input: oklch(0.93 0.005 120); /* Blanco humo suave */
+  --ring: oklch(0.65 0.15 145); /* Verde césped para focus */
+
+  /* Charts - Colores dinámicos del fútbol */
+  --chart-1: oklch(0.65 0.15 145); /* Verde césped */
+  --chart-2: oklch(0.25 0.05 220); /* Azul profundo */
+  --chart-3: oklch(0.78 0.12 85);  /* Amarillo dorado */
+  --chart-4: oklch(0.58 0.2 25);   /* Rojo pasión */
+  --chart-5: oklch(0.55 0.02 200); /* Gris medio */
+
+  --radius: 0rem;
+
+  /* Sidebar - Tema coherente con colores principales */
+  --sidebar: oklch(0.97 0.005 120);
+  --sidebar-foreground: oklch(0.18 0.01 220);
+  --sidebar-primary: oklch(0.65 0.15 145);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.93 0.005 120);
+  --sidebar-accent-foreground: oklch(0.18 0.01 220);
+  --sidebar-border: oklch(0.85 0.01 120);
+  --sidebar-ring: oklch(0.65 0.15 145);
+}
+
+.dark {
+  /* Fondo principal - Azul profundo de la paleta de fútbol (#2C3E50) */
+  --background: oklch(0.25 0.05 220);          /* Azul profundo #2C3E50 */
+  --foreground: oklch(0.96 0.002 120);         /* Blanco más brillante para mejor legibilidad */
+
+  /* Cards con mejor jerarquía visual y contraste mejorado */
+  --card: oklch(0.35 0.04 220);                /* Cards más claras para mejor contraste */
+  --card-foreground: oklch(0.95 0.002 120);    /* Texto más blanco y claro */
+  --popover: oklch(0.37 0.04 220);             /* Popovers más elevados */
+  --popover-foreground: oklch(0.95 0.002 120);
+
+  /* Primary - Verde césped vibrante pero cómodo */
+  --primary: oklch(0.58 0.15 150);             /* Verde más vibrante y natural */
+  --primary-foreground: oklch(0.05 0.005 240); /* Texto oscuro para mejor contraste */
+
+  /* Secondary más suave y legible */
+  --secondary: oklch(0.35 0.04 220);           /* Azul profundo más claro, armónico con el fondo */
+  --secondary-foreground: oklch(0.90 0.005 120);
+
+  /* Muted con mejor legibilidad */
+  --muted: oklch(0.30 0.04 220);               /* Fondo muted más claro */
+  --muted-foreground: oklch(0.75 0.015 200);   /* Texto muted más legible y claro */
+
+  /* Accent - Verde césped suave para hover en modo oscuro */
+  --accent: oklch(0.28 0.04 145);              /* Verde oscuro sutil para hover */
+  --accent-foreground: oklch(0.75 0.12 145);   /* Verde claro para texto */
+
+  /* Destructive más suave pero visible */
+  --destructive: oklch(0.55 0.20 30);          /* Rojo coral más cálido */
+  --destructive-foreground: oklch(0.98 0.002 0);
+
+  /* Bordes más definidos pero suaves */
+  --border: oklch(0.40 0.04 220);              /* Bordes más visibles con el azul profundo */
+  --input: oklch(0.32 0.04 220);               /* Inputs más claros para mejor contraste */
+  --ring: oklch(0.58 0.15 150);                /* Ring verde vibrante */
+
+  /* Charts con colores más vibrantes para modo oscuro */
+  --chart-1: oklch(0.58 0.15 150);             /* Verde césped vibrante */
+  --chart-2: oklch(0.60 0.12 240);             /* Azul más vibrante */
+  --chart-3: oklch(0.75 0.12 80);              /* Amarillo más brillante */
+  --chart-4: oklch(0.55 0.20 30);              /* Rojo coral cálido */
+  --chart-5: oklch(0.70 0.08 280);             /* Púrpura suave para variedad */
+
+  /* Sidebar con mejor contraste */
+  --sidebar: oklch(0.27 0.04 220);             /* Sidebar ligeramente más claro que el fondo */
+  --sidebar-foreground: oklch(0.94 0.003 120);
+  --sidebar-primary: oklch(0.58 0.15 150);     /* Verde vibrante */
+  --sidebar-primary-foreground: oklch(0.05 0.005 240);
+  --sidebar-accent: oklch(0.30 0.04 220);
+  --sidebar-accent-foreground: oklch(0.88 0.005 120);
+  --sidebar-border: oklch(0.38 0.04 220);      /* Bordes más definidos */
+  --sidebar-ring: oklch(0.58 0.15 150);
+}
+
+/* Paleta de colores específica para fútbol */
+:root {
+  --soccer-green: #27AE60;        /* Verde césped */
+  --soccer-blue: #2C3E50;         /* Azul profundo */
+  --soccer-gold: #F1C40F;         /* Amarillo dorado */
+  --soccer-white: #ECF0F1;        /* Blanco humo */
+  --soccer-gray: #7F8C8D;         /* Gris medio */
+  --soccer-red: #E74C3C;          /* Rojo pasión */
+
+  /* Variaciones para diferentes usos */
+  --soccer-green-light: #2ECC71;
+  --soccer-green-dark: #229954;
+  --soccer-blue-light: #34495E;
+  --soccer-blue-dark: #1B2631;
+  --soccer-gold-light: #F4D03F;
+  --soccer-gold-dark: #D68910;
+  --soccer-red-light: #EC7063;
+  --soccer-red-dark: #C0392B;
+}
+
+/* ============================================ */
+/* ZONA-PLAY: Paleta de colores púrpura/morada */
+/* ============================================ */
+:root {
+  /* Colores principales de zona-play */
+  --play-purple: #8B5CF6;         /* Púrpura vibrante */
+  --play-purple-light: #A78BFA;   /* Púrpura claro */
+  --play-purple-dark: #7C3AED;    /* Púrpura oscuro */
+  --play-violet: #6D28D9;         /* Violeta profundo */
+  --play-indigo: #4F46E5;         /* Índigo */
+  --play-pink: #EC4899;           /* Rosa accent */
+  --play-cyan: #06B6D4;           /* Cyan para live */
+  --play-dark: #0F0A1A;           /* Fondo oscuro */
+  --play-dark-card: #1A1425;      /* Cards oscuras */
+  --play-dark-elevated: #241B35; /* Superficies elevadas */
+}
+
+/* Tema de zona-play (siempre oscuro, estilo streaming) */
+.zona-play {
+  --background: oklch(0.12 0.03 290);           /* Fondo púrpura muy oscuro */
+  --foreground: oklch(0.95 0.01 290);           /* Texto claro */
+
+  --card: oklch(0.18 0.04 290);                 /* Cards púrpura oscuro */
+  --card-foreground: oklch(0.95 0.01 290);
+  --popover: oklch(0.20 0.04 290);
+  --popover-foreground: oklch(0.95 0.01 290);
+
+  /* Primary - Púrpura vibrante */
+  --primary: oklch(0.65 0.25 290);              /* Púrpura brillante */
+  --primary-foreground: oklch(0.98 0.01 290);
+
+  /* Secondary */
+  --secondary: oklch(0.25 0.05 290);
+  --secondary-foreground: oklch(0.90 0.02 290);
+
+  /* Muted */
+  --muted: oklch(0.22 0.04 290);
+  --muted-foreground: oklch(0.65 0.03 290);
+
+  /* Accent - Rosa/Magenta */
+  --accent: oklch(0.65 0.25 330);               /* Rosa vibrante */
+  --accent-foreground: oklch(0.98 0.01 290);
+
+  /* Destructive */
+  --destructive: oklch(0.60 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 0);
+
+  /* Bordes */
+  --border: oklch(0.30 0.05 290);
+  --input: oklch(0.20 0.04 290);
+  --ring: oklch(0.65 0.25 290);
+
+  /* Charts */
+  --chart-1: oklch(0.65 0.25 290);              /* Púrpura */
+  --chart-2: oklch(0.65 0.25 330);              /* Rosa */
+  --chart-3: oklch(0.70 0.20 200);              /* Cyan */
+  --chart-4: oklch(0.70 0.15 140);              /* Verde */
+  --chart-5: oklch(0.75 0.12 60);               /* Amarillo */
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Soccer theme colors for Tailwind */
+  --color-soccer-green: var(--soccer-green);
+  --color-soccer-blue: var(--soccer-blue);
+  --color-soccer-gold: var(--soccer-gold);
+  --color-soccer-white: var(--soccer-white);
+  --color-soccer-gray: var(--soccer-gray);
+  --color-soccer-red: var(--soccer-red);
+  --color-soccer-green-light: var(--soccer-green-light);
+  --color-soccer-green-dark: var(--soccer-green-dark);
+  --color-soccer-blue-light: var(--soccer-blue-light);
+  --color-soccer-blue-dark: var(--soccer-blue-dark);
+  --color-soccer-gold-light: var(--soccer-gold-light);
+  --color-soccer-gold-dark: var(--soccer-gold-dark);
+  --color-soccer-red-light: var(--soccer-red-light);
+  --color-soccer-red-dark: var(--soccer-red-dark);
+
+  /* Zona-play colors for Tailwind */
+  --color-play-purple: var(--play-purple);
+  --color-play-purple-light: var(--play-purple-light);
+  --color-play-purple-dark: var(--play-purple-dark);
+  --color-play-violet: var(--play-violet);
+  --color-play-indigo: var(--play-indigo);
+  --color-play-pink: var(--play-pink);
+  --color-play-cyan: var(--play-cyan);
+  --color-play-dark: var(--play-dark);
+  --color-play-dark-card: var(--play-dark-card);
+  --color-play-dark-elevated: var(--play-dark-elevated);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Mejor anti-aliasing para texto en modo oscuro */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Mejoras específicas para modo oscuro */
+  .dark {
+    /* Scrollbars más suaves en modo oscuro */
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.35 0.04 220) oklch(0.25 0.05 220);
+
+    /* Color scheme para navegadores */
+    color-scheme: dark;
+  }
+
+  /* Transiciones suaves al cambiar de tema */
+  .dark,
+  .dark *,
+  *,
+  html {
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  }
+
+  .dark *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .dark *::-webkit-scrollbar-track {
+    background: oklch(0.25 0.05 220);
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: oklch(0.35 0.04 220);
+    border-radius: 4px;
+    border: 2px solid oklch(0.25 0.05 220);
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.40 0.04 220);
+  }
+
+  /* Selección de texto más agradable en modo oscuro */
+  .dark ::selection {
+    background-color: oklch(0.58 0.15 150 / 0.3);
+    color: oklch(0.95 0.003 120);
+  }
+
+  .dark ::-moz-selection {
+    background-color: oklch(0.58 0.15 150 / 0.3);
+    color: oklch(0.95 0.003 120);
+  }
+}
+
