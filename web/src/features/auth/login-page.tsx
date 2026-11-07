@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,6 +60,11 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? 'Entrando…' : 'Entrar'}
             </Button>
+            <p className="text-center text-sm">
+              <Link to="/recuperar-contrasena" className="underline underline-offset-4">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

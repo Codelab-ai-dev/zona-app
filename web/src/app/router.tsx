@@ -21,6 +21,8 @@ import { NotFoundPage } from './not-found'
 
 // Each area is a separate chunk so the public portal stays light.
 const LoginPage = lazy(() => import('@/features/auth/login-page').then((m) => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() => import('@/features/auth/forgot-password-page').then((m) => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazy(() => import('@/features/auth/reset-password-page').then((m) => ({ default: m.ResetPasswordPage })))
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState />}>{children}</Suspense>
@@ -57,6 +59,8 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { path: 'login', element: <Lazy><LoginPage /></Lazy> },
+      { path: 'recuperar-contrasena', element: <Lazy><ForgotPasswordPage /></Lazy> },
+      { path: 'reset-password', element: <Lazy><ResetPasswordPage /></Lazy> },
       ...areas.flatMap((a) => a.publicRoutes ?? []),
     ],
   },

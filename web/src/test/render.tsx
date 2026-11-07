@@ -10,7 +10,9 @@ import { Toaster } from '@/components/ui/sonner'
 /** Renders UI with a fresh QueryClient (no retries) and a router. */
 export function renderWithProviders(ui: ReactElement, { route = '/' }: { route?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  const user = userEvent.setup()
+  // No artificial delay between keystrokes: timer coalescing (e.g. macOS on
+  // battery) otherwise stretches typing tests past their timeout.
+  const user = userEvent.setup({ delay: null })
   const result = render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>

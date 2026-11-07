@@ -2,6 +2,7 @@ import { LogOut, Menu } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, NavLink } from 'react-router'
 
+import { ChangePasswordDialog } from '@/features/auth/change-password-dialog'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useAuth } from '@/lib/auth/auth-context'
@@ -92,10 +93,13 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
             Zona Gol
           </Link>
           <span className="ml-auto hidden truncate text-sm text-muted-foreground sm:inline">{profile?.name}</span>
-          <Button variant="ghost" size="sm" onClick={() => void signOut()} className="ml-auto sm:ml-0">
+          <div className="ml-auto flex items-center gap-1 sm:ml-0">
+          <ChangePasswordDialog />
+          <Button variant="ghost" size="sm" onClick={() => void signOut()}>
             <LogOut className="size-4" aria-hidden="true" />
             Salir
           </Button>
+          </div>
         </div>
       </header>
       <div className="flex flex-1">

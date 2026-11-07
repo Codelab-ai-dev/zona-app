@@ -15,13 +15,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'error',
       'no-restricted-imports': ['error', {
-        patterns: [{ group: ['@supabase/supabase-js'], message: 'Data goes through the Go API (src/lib/api). Supabase is only used by src/lib/auth during the migration.' }],
+        patterns: [{ group: ['@supabase/*'], message: 'Data and auth go through the Go API (src/lib/api, src/lib/auth). Supabase is not used.' }],
       }],
     },
-  },
-  {
-    files: ['src/lib/auth/supabase.ts'],
-    rules: { 'no-restricted-imports': 'off' },
   },
   {
     // Vendored shadcn/ui kit and its hooks: kept as upstream ships them.

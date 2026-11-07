@@ -6,6 +6,8 @@
  * - errors are { error: { code, message, fields? } }
  */
 
+import * as session from '@/lib/auth/session'
+
 export interface Page {
   limit: number
   offset: number
@@ -54,14 +56,27 @@ type TokenProvider = () => Promise<string | null>
 type UnauthorizedHandler = () => void
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api/v1'
-let getToken: TokenProvider = async () => null
+let getToken: TokenProvider = session.getToken
+let refreshToken: TokenProvider = session.refresh
 let onUnauthorized: UnauthorizedHandler = () => {}
 
-/** Wired once by the AuthProvider; keeps the client free of React. */
-export function configureApiClient(opts: { getToken: TokenProvider; onUnauthorized: UnauthorizedHandler }) {
-  getToken = opts.getToken
+/**
+ * Wired once by the AuthProvider; keeps the client free of React.
+ * `getToken`/`refresh` default to the in-memory session (src/lib/auth/session).
+ */
+export function configureApiClient(opts: { getToken?: TokenProvider; refresh?: TokenProvider; onUnauthorized: UnauthorizedHandler }) {
+  getToken = opts.getToken ?? session.getToken
+  refreshToken = opts.refresh ?? session.refresh
   onUnauthorized = opts.onUnauthorized
 }
+
+/**
+ * Endpoints that must NEVER carry Authorization: the backend rejects any
+ * invalid/expired Bearer with 401, even on public routes. (password/change
+ * is authenticated and not listed.)
+ */
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout', '/auth/password/forgot', '/auth/password/reset']
+const isPublicAuth = (path: string) => PUBLIC_AUTH_PATHS.includes(path)
 
 type Query = Record<string, string | number | boolean | undefined | null>
 
@@ -79,9 +94,9 @@ function buildUrl(path: string, query?: Query): string {
   return url.pathname + url.search
 }
 
-async function request<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
+async function request<T>(method: string, path: string, opts: RequestOptions = {}, retried = false): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
-  const token = await getToken()
+  const token = isPublicAuth(path) ? null : await getToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
   let body: BodyInit | undefined
@@ -106,7 +121,11 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
   if (!res.ok) {
     const err = (payload as { error?: { code?: string; message?: string; fields?: Record<string, string> } } | null)?.error
     const apiError = new ApiError(res.status, err?.code ?? 'http_error', err?.message ?? 'Ocurrió un error inesperado.', err?.fields)
-    if (apiError.isUnauthorized) onUnauthorized()
+    if (apiError.isUnauthorized) {
+      // Expired access token: refresh once (single-flight) and retry once.
+      if (!retried && !path.startsWith('/auth/') && (await refreshToken())) return request<T>(method, path, opts, true)
+      onUnauthorized()
+    }
     throw apiError
   }
   return payload as T

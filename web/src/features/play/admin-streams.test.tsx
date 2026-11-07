@@ -93,7 +93,7 @@ describe('AdminPage streams', () => {
   it('hides the stream key until revealed, copies it with the clipboard and hides it again', async () => {
     mockApi({ ...base, 'GET /play/streams': list([stream]) })
     const { user } = renderWithProviders(<AdminPage />)
-    // userEvent.setup() installs its own clipboard stub; spy on it
+    // userEvent.setup({ delay: null }) installs its own clipboard stub; spy on it
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
     await openStreamsTab(user)
 
