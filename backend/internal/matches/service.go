@@ -3,6 +3,7 @@ package matches
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -250,6 +251,11 @@ func (s *Service) UpdateSchedule(ctx context.Context, caller auth.Principal, mat
 		return Match{}, err
 	}
 
+	if req.HomeTeamID != nil || req.AwayTeamID != nil {
+		if err := s.checkTeamChange(ctx, matchID, req); err != nil {
+			return Match{}, err
+		}
+	}
 	return s.repo.UpdateMatchSchedule(ctx, matchID, req)
 }
 
@@ -360,10 +366,24 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 			}
 		}
 
+		// The stats trigger only fires when a match becomes finished, so a
+		// corrected score of a finished match would leave stale standings.
+		if _, err := tx.Exec(ctx, `SELECT public.rebuild_team_stats_for_tournament($1)`, match.TournamentID); err != nil {
+			return fmt.Errorf("rebuild standings: %w", err)
+		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	// Card fines: the SQL function only acts when the league has finance and
+	// auto fines enabled, and skips fines already generated. Best effort and
+	// outside the result transaction, so a fines problem never loses a result.
+	if _, ferr := s.pool.Exec(ctx, `SELECT * FROM public.generate_fines_from_match($1, $2)`, matchID, caller.UserID); ferr != nil {
+		slog.ErrorContext(ctx, "automatic fines not generated", "match_id", matchID, "err", ferr)
+	}
+	return nil
 }
 
 // verifyPlayerBelongsToTeam checks that a player belongs to the given team and that team is home or away in the match.
@@ -465,14 +485,24 @@ func (s *Service) GeneratePlayoffs(ctx context.Context, caller auth.Principal, r
 		return nil, err
 	}
 
-	// Get standings
-	standings, err := s.repo.GetTournamentStandings(ctx, req.TournamentID)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(standings) < req.NumTeams {
-		return nil, httpx.Validation(map[string]string{"num_teams": fmt.Sprintf("solo hay %d equipos en los standings", len(standings))})
+	var (
+		standings []StandingsTeam
+		err       error
+	)
+	if len(req.TeamIDs) > 0 {
+		// Explicit seeding (group qualifiers or manual): teams of the league.
+		standings, err = s.seededTeams(ctx, req.TournamentID, req.TeamIDs)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		standings, err = s.repo.GetTournamentStandings(ctx, req.TournamentID)
+		if err != nil {
+			return nil, err
+		}
+		if len(standings) < req.NumTeams {
+			return nil, httpx.Validation(map[string]string{"num_teams": fmt.Sprintf("solo hay %d equipos en los standings", len(standings))})
+		}
 	}
 
 	// Build playoff bracket

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
 // User is the public representation of a row in public.users (never auth.users).
@@ -66,6 +68,8 @@ type CreateWhatsAppLinkRequest struct {
 	Role              string     `json:"role"`
 	DisplayName       *string    `json:"display_name,omitempty"`
 	PreferredLanguage string     `json:"preferred_language"`
+	// TournamentID scopes the assistant's answers; it must belong to the league.
+	TournamentID *uuid.UUID `json:"tournament_id,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -88,6 +92,8 @@ type UpdateWhatsAppLinkRequest struct {
 	IsActive          *bool   `json:"is_active,omitempty"`
 	DisplayName       *string `json:"display_name,omitempty"`
 	PreferredLanguage *string `json:"preferred_language,omitempty"`
+	// TournamentID sets the tournament; the nil UUID clears it.
+	TournamentID *uuid.UUID `json:"tournament_id,omitempty"`
 }
 
 // Validate checks the request for errors.
@@ -138,3 +144,6 @@ func isValidPhoneNumber(phone string) bool {
 	}
 	return true
 }
+
+// errTournamentNotInLeague is returned when a link's tournament belongs to another league.
+var errTournamentNotInLeague = httpx.Validation(map[string]string{"tournament_id": "el torneo no pertenece a la liga"})

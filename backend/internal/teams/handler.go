@@ -39,6 +39,8 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Patch("/players/{playerID}", h.updatePlayer)
 	r.With(auth.RequireAuth).Get("/players/{playerID}/verification", h.getPlayerVerification)
 	r.With(auth.RequireAuth).Patch("/players/{playerID}/verification", h.verifyPlayer)
+	r.With(auth.RequireAuth).Get("/leagues/{leagueID}/players/verification", h.listLeagueVerification)
+	r.With(auth.RequireAuth).Get("/leagues/{leagueID}/players/verification/summary", h.leagueVerificationSummary)
 	r.With(auth.RequireAuth).Post("/players/{playerID}/deactivate", h.deactivatePlayer)
 
 	// Coaching staff endpoints - public GETs return PublicCoachingStaff (no PII)

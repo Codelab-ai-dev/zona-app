@@ -133,7 +133,7 @@ func (r *PGRepository) GetPlayerStats(ctx context.Context, playerID uuid.UUID) (
 
 // GetTopScorersByTournament returns top scorers for a tournament using the SQL function.
 func (r *PGRepository) GetTopScorersByTournament(ctx context.Context, tournamentID uuid.UUID, limit int) ([]TopScorersRow, error) {
-	// First get league_id from tournament
+	// The tournament must exist (404 otherwise)
 	const getLeagueQ = `SELECT league_id FROM public.tournaments WHERE id = $1`
 	var leagueID uuid.UUID
 	if err := r.db.QueryRow(ctx, getLeagueQ, tournamentID).Scan(&leagueID); err != nil {
@@ -147,9 +147,9 @@ func (r *PGRepository) GetTopScorersByTournament(ctx context.Context, tournament
 	const q = `SELECT player_id, player_name, jersey_number, "position", photo,
 	                 team_id, team_name, matches_played, goals, assists,
 	                 yellow_cards, red_cards, minutes_played
-	          FROM public.get_top_scorers_by_league($1, $2)`
+	          FROM public.get_top_scorers_by_tournament($1, $2)`
 
-	rows, err := r.db.Query(ctx, q, leagueID, limit)
+	rows, err := r.db.Query(ctx, q, tournamentID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("get top scorers: %w", err)
 	}
@@ -175,7 +175,7 @@ func (r *PGRepository) GetTopScorersByTournament(ctx context.Context, tournament
 
 // GetDisciplineByTournament returns discipline ranking for a tournament using the SQL function.
 func (r *PGRepository) GetDisciplineByTournament(ctx context.Context, tournamentID uuid.UUID, limit int) ([]DisciplineRow, error) {
-	// First get league_id from tournament
+	// The tournament must exist (404 otherwise)
 	const getLeagueQ = `SELECT league_id FROM public.tournaments WHERE id = $1`
 	var leagueID uuid.UUID
 	if err := r.db.QueryRow(ctx, getLeagueQ, tournamentID).Scan(&leagueID); err != nil {
@@ -189,9 +189,9 @@ func (r *PGRepository) GetDisciplineByTournament(ctx context.Context, tournament
 	const q = `SELECT player_id, player_name, jersey_number, "position", photo,
 	                 team_id, team_name, matches_played, goals, assists,
 	                 yellow_cards, red_cards, minutes_played
-	          FROM public.get_discipline_by_league($1, $2)`
+	          FROM public.get_discipline_by_tournament($1, $2)`
 
-	rows, err := r.db.Query(ctx, q, leagueID, limit)
+	rows, err := r.db.Query(ctx, q, tournamentID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("get discipline: %w", err)
 	}

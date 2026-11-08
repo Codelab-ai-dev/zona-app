@@ -79,8 +79,11 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | POST | `/api/v1/leagues/{leagueID}/finance/transactions/{transactionID}/waive` | token |
 | GET | `/api/v1/leagues/{leagueID}/matches/pending` | público |
 | POST | `/api/v1/leagues/{leagueID}/players/qr-batch` | token |
+| GET | `/api/v1/leagues/{leagueID}/players/verification` | token |
+| GET | `/api/v1/leagues/{leagueID}/players/verification/summary` | token |
 | PATCH | `/api/v1/leagues/{leagueID}/product-mode` | token |
 | PATCH | `/api/v1/leagues/{leagueID}/status` | token |
+| DELETE | `/api/v1/leagues/{leagueID}/suspensions` | token |
 | GET | `/api/v1/leagues/{leagueID}/suspensions` | token |
 | GET | `/api/v1/leagues/{leagueID}/tournaments` | público |
 | GET | `/api/v1/leagues/{leagueID}/users` | token |
@@ -222,13 +225,17 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | GET | `/api/v1/tournaments/{tournamentID}/discipline` | público |
 | GET | `/api/v1/tournaments/{tournamentID}/duplicates` | token |
 | POST | `/api/v1/tournaments/{tournamentID}/fixtures/generate` | token |
+| GET | `/api/v1/tournaments/{tournamentID}/manual-stats` | token |
+| DELETE | `/api/v1/tournaments/{tournamentID}/matches` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/matches` | público |
 | POST | `/api/v1/tournaments/{tournamentID}/matches/bulk` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/matches/upcoming` | público |
 | GET | `/api/v1/tournaments/{tournamentID}/player-registration-requests` | token |
+| PUT | `/api/v1/tournaments/{tournamentID}/players/{playerID}/manual-stats` | token |
 | POST | `/api/v1/tournaments/{tournamentID}/playoffs/generate` | token |
 | POST | `/api/v1/tournaments/{tournamentID}/rounds/{round}/publish` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/standings` | público |
+| PUT | `/api/v1/tournaments/{tournamentID}/standings/{teamID}` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/top-scorers` | público |
 
 ## users
@@ -244,4 +251,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 133 routes.
+Total: 140 routes.

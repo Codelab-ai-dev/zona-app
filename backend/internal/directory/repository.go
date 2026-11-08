@@ -142,18 +142,23 @@ func (r *PGRepository) ListWhatsAppLinks(ctx context.Context, leagueID uuid.UUID
 func (r *PGRepository) CreateWhatsAppLink(ctx context.Context, leagueID uuid.UUID, req *CreateWhatsAppLinkRequest) (WhatsAppLink, error) {
 	q := `
 		INSERT INTO public.whatsapp_user_links (
-			phone_number, user_id, league_id, role, display_name, preferred_language, is_active
-		) VALUES ($1, $2, $3, $4, $5, $6, true)
+			phone_number, user_id, league_id, role, display_name, preferred_language, tournament_id, is_active
+		)
+		SELECT $1, $2, $3, $4, $5, $6, $7, true
+		WHERE $7::uuid IS NULL OR EXISTS (SELECT 1 FROM public.tournaments WHERE id = $7 AND league_id = $3)
 		RETURNING id, phone_number, user_id, league_id, tournament_id, role, is_active,
 			linked_at, last_interaction_at, display_name, preferred_language, created_at, updated_at
 	`
 
 	var link WhatsAppLink
 	err := r.db.QueryRow(ctx, q,
-		req.PhoneNumber, req.UserID, leagueID, req.Role, req.DisplayName, req.PreferredLanguage,
+		req.PhoneNumber, req.UserID, leagueID, req.Role, req.DisplayName, req.PreferredLanguage, req.TournamentID,
 	).Scan(&link.ID, &link.PhoneNumber, &link.UserID, &link.LeagueID, &link.TournamentID, &link.Role,
 		&link.IsActive, &link.LinkedAt, &link.LastInteractionAt, &link.DisplayName, &link.PreferredLanguage, &link.CreatedAt, &link.UpdatedAt)
 
+	if database.IsNoRows(err) {
+		return WhatsAppLink{}, errTournamentNotInLeague
+	}
 	if err != nil {
 		if isUniqueViolation(err) {
 			return WhatsAppLink{}, httpx.ErrConflict.Wrap(err)
@@ -210,7 +215,20 @@ func (r *PGRepository) UpdateWhatsAppLink(ctx context.Context, linkID uuid.UUID,
 		argNum++
 	}
 
-	q += fmt.Sprintf(` WHERE id = $%d`, argNum)
+	tournamentCheck := ""
+	if req.TournamentID != nil {
+		var tid *uuid.UUID
+		if *req.TournamentID != uuid.Nil {
+			tid = req.TournamentID
+		}
+		q += fmt.Sprintf(`, tournament_id = $%d`, argNum)
+		tournamentCheck = fmt.Sprintf(` AND ($%d::uuid IS NULL OR EXISTS (SELECT 1 FROM public.tournaments t
+			WHERE t.id = $%d AND t.league_id = whatsapp_user_links.league_id))`, argNum, argNum)
+		args = append(args, tid)
+		argNum++
+	}
+
+	q += fmt.Sprintf(` WHERE id = $%d`, argNum) + tournamentCheck
 	args = append(args, linkID)
 
 	q += ` RETURNING id, phone_number, user_id, league_id, tournament_id, role, is_active,
@@ -221,6 +239,11 @@ func (r *PGRepository) UpdateWhatsAppLink(ctx context.Context, linkID uuid.UUID,
 		&link.IsActive, &link.LinkedAt, &link.LastInteractionAt, &link.DisplayName, &link.PreferredLanguage, &link.CreatedAt, &link.UpdatedAt)
 
 	if database.IsNoRows(err) {
+		if tournamentCheck != "" {
+			// The service already checked the link exists: the tournament is
+			// from another league.
+			return WhatsAppLink{}, errTournamentNotInLeague
+		}
 		return WhatsAppLink{}, httpx.ErrNotFound
 	}
 	if err != nil {

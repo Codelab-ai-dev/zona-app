@@ -567,10 +567,17 @@ func (r *PGRepository) UpdateMatchSchedule(ctx context.Context, matchID uuid.UUI
 	if req.Round != nil {
 		m.Round = req.Round
 	}
+	if req.HomeTeamID != nil {
+		m.HomeTeamID = *req.HomeTeamID
+	}
+	if req.AwayTeamID != nil {
+		m.AwayTeamID = *req.AwayTeamID
+	}
 
 	const q = `
 		UPDATE public.matches
-		SET match_date = $2, match_time = $3, field_number = $4, round = $5, updated_at = now()
+		SET match_date = $2, match_time = $3, field_number = $4, round = $5,
+		    home_team_id = $6, away_team_id = $7, updated_at = now()
 		WHERE id = $1
 		RETURNING id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		          match_date, match_time, status, round, field_number, phase, playoff_round,
@@ -579,7 +586,7 @@ func (r *PGRepository) UpdateMatchSchedule(ctx context.Context, matchID uuid.UUI
 	var phaseStr string
 	var playoffRound *string
 	var leg *string
-	err = r.db.QueryRow(ctx, q, matchID, m.MatchDate, m.MatchTime, m.FieldNumber, m.Round).Scan(
+	err = r.db.QueryRow(ctx, q, matchID, m.MatchDate, m.MatchTime, m.FieldNumber, m.Round, m.HomeTeamID, m.AwayTeamID).Scan(
 		&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 		&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phaseStr, &playoffRound,
 		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,

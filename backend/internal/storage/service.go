@@ -148,8 +148,8 @@ func (s *Service) List(ctx context.Context, caller auth.Principal, scope Scope, 
 		return nil, httpx.Validation(map[string]string{"scope_id": "required"})
 	}
 
-	// Authorize the scope
-	if err := s.authorizeScope(ctx, caller, scope, scopeID); err != nil {
+	// Authorize the scope (read)
+	if err := s.authorizeRead(ctx, caller, scope, scopeID); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +186,7 @@ func (s *Service) URL(ctx context.Context, caller auth.Principal, key string) (s
 	}
 
 	// For non-public scopes (app_releases), require authorization and presign
-	if err := s.authorizeScope(ctx, caller, scope, scopeID); err != nil {
+	if err := s.authorizeRead(ctx, caller, scope, scopeID); err != nil {
 		return "", err
 	}
 
@@ -197,6 +197,15 @@ func (s *Service) URL(ctx context.Context, caller auth.Principal, key string) (s
 	}
 
 	return url, nil
+}
+
+// authorizeRead is authorizeScope for reads: league admins may also list and
+// download their own league's app releases (uploads stay super-admin only).
+func (s *Service) authorizeRead(ctx context.Context, caller auth.Principal, scope Scope, scopeID uuid.UUID) error {
+	if scope == ScopeAppReleases && !caller.IsSuperAdmin() {
+		return s.authz.CanManageLeague(ctx, caller, scopeID)
+	}
+	return s.authorizeScope(ctx, caller, scope, scopeID)
 }
 
 // authorizeScope checks if the caller can manage the given scope.

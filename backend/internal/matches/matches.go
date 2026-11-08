@@ -3,6 +3,7 @@ package matches
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -280,6 +281,9 @@ type UpdateMatchScheduleRequest struct {
 	MatchTime   *string    `json:"match_time,omitempty"`
 	FieldNumber *int       `json:"field_number,omitempty"`
 	Round       *int       `json:"round,omitempty"`
+	// Teams can only change while the match is scheduled.
+	HomeTeamID *uuid.UUID `json:"home_team_id,omitempty"`
+	AwayTeamID *uuid.UUID `json:"away_team_id,omitempty"`
 }
 
 // Validate checks request constraints.
@@ -290,6 +294,9 @@ func (r UpdateMatchScheduleRequest) Validate() map[string]string {
 	}
 	if r.Round != nil && *r.Round <= 0 {
 		errs["round"] = "debe ser mayor que 0"
+	}
+	if r.HomeTeamID != nil && r.AwayTeamID != nil && *r.HomeTeamID == *r.AwayTeamID {
+		errs["away_team_id"] = "debe ser distinto del local"
 	}
 	return errs
 }
@@ -459,6 +466,10 @@ type GeneratePlayoffsRequest struct {
 	FieldNumber     int        `json:"field_number"`
 	ThirdPlaceMatch bool       `json:"third_place_match"`
 	HomeAndAway     bool       `json:"home_and_away"` // Double-leg
+	// TeamIDs, when set, are the qualified teams in seed order (1st seed
+	// first): group qualifiers or a manual seeding. Without it the bracket
+	// is built from the overall standings.
+	TeamIDs []uuid.UUID `json:"team_ids,omitempty"`
 }
 
 // Validate checks request constraints.
@@ -469,6 +480,18 @@ func (r GeneratePlayoffsRequest) Validate() map[string]string {
 	}
 	if r.NumTeams != 4 && r.NumTeams != 8 {
 		errs["num_teams"] = "debe ser 4 u 8"
+	}
+	if len(r.TeamIDs) > 0 {
+		seen := map[uuid.UUID]bool{}
+		for _, id := range r.TeamIDs {
+			if id == uuid.Nil || seen[id] {
+				errs["team_ids"] = "equipos repetidos o vacíos"
+			}
+			seen[id] = true
+		}
+		if len(r.TeamIDs) != r.NumTeams {
+			errs["team_ids"] = fmt.Sprintf("debe incluir exactamente %d equipos", r.NumTeams)
+		}
 	}
 	if r.StartDate.IsZero() {
 		errs["start_date"] = "requerido"
@@ -536,6 +559,11 @@ type Repository interface {
 	PublishMatch(ctx context.Context, matchID uuid.UUID, isPublished bool) error
 	PublishRound(ctx context.Context, tournamentID uuid.UUID, round int, isPublished bool) error
 	GetTournamentStandings(ctx context.Context, tournamentID uuid.UUID) ([]StandingsTeam, error)
+}
+
+// DeleteMatchesResponse reports how many matches a bulk delete removed.
+type DeleteMatchesResponse struct {
+	Deleted int64 `json:"deleted"`
 }
 
 // ListMatchesFilter groups optional filters for list operations.

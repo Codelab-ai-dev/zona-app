@@ -3,6 +3,7 @@ package matches
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
@@ -37,6 +38,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Post("/tournaments/{tournamentID}/fixtures/generate", h.generateFixtures)
 	r.With(auth.RequireAuth).Patch("/matches/{matchID}/schedule", h.updateSchedule)
 	r.With(auth.RequireAuth).Delete("/matches/{matchID}", h.deleteMatch)
+	r.With(auth.RequireAuth).Delete("/tournaments/{tournamentID}/matches", h.deleteTournamentMatches)
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/result", h.postResult)
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/referee-report", h.createRefereeReport)
 	r.With(auth.RequireAuth).Patch("/matches/{matchID}/publish", h.publishMatch)
@@ -412,4 +414,34 @@ func (h *Handler) getRefereeReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, report)
+}
+
+// deleteTournamentMatches handles DELETE /tournaments/{tournamentID}/matches
+// (?round=N and/or ?phase=regular|playoffs to narrow it).
+func (h *Handler) deleteTournamentMatches(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	tournamentID, err := httpx.UUIDParam(r, "tournamentID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	var round *int
+	if raw := r.URL.Query().Get("round"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"round": "debe ser un número"}))
+			return
+		}
+		round = &n
+	}
+	var phase *string
+	if raw := r.URL.Query().Get("phase"); raw != "" {
+		phase = &raw
+	}
+	deleted, err := h.svc.DeleteTournamentMatches(r.Context(), caller, tournamentID, round, phase)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, DeleteMatchesResponse{Deleted: deleted})
 }
