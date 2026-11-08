@@ -91,10 +91,10 @@ function TabStrip({ items }: { items: NavItem[] }) {
           </SelectContent>
         </Select>
       </div>
-      <nav aria-label="Panel" className="hidden md:block overflow-x-auto">
-        <ul className="inline-flex min-w-full gap-1 rounded-lg bg-slate-800/50 border border-white/10 p-1">
+      <nav aria-label="Panel" className="hidden md:block">
+        <ul className="flex flex-wrap gap-1 rounded-lg bg-slate-800/50 border border-white/10 p-1">
           {items.map((item) => (
-            <li key={item.to} className="flex-1">
+            <li key={item.to}>
               <NavLink
                 to={item.to}
                 end
@@ -249,7 +249,9 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
       </header>
 
       <main id="main" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10 space-y-4 md:space-y-6">
-        <TabStrip items={items} />
+        {/* Only league admins navigate with this strip; the super admin and
+            team owner pages carry their own inner tabs, as in the original. */}
+        {profile?.role === 'league_admin' && <TabStrip items={items} />}
         {children}
       </main>
     </div>

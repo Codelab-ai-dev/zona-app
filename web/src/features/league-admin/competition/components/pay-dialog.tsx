@@ -56,15 +56,16 @@ export function PayDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar pago</DialogTitle>
-          <DialogDescription>{transaction.description}</DialogDescription>
+          <DialogTitle className="text-base md:text-lg font-bold text-white">Registrar pago</DialogTitle>
+          <DialogDescription className="text-gray-400 text-xs md:text-sm">{transaction.description}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
-            <Label htmlFor="pay-amount">Monto (MXN)</Label>
+            <Label htmlFor="pay-amount" className="text-[10px] md:text-xs text-gray-400">Monto (MXN)</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="pay-amount"
               type="text"
               inputMode="decimal"
@@ -75,23 +76,23 @@ export function PayDialog({
               disabled={pay.isPending}
             />
             {errors.amount && (
-              <p id="pay-amount-error" className="text-xs text-destructive">
+              <p id="pay-amount-error" className="text-xs text-red-400">
                 {errors.amount}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pay-method">Método de pago</Label>
+            <Label htmlFor="pay-method" className="text-[10px] md:text-xs text-gray-400">Método de pago</Label>
             <Select value={method} onValueChange={setMethod} disabled={pay.isPending}>
               <SelectTrigger
-                id="pay-method"
+                id="pay-method" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                 aria-invalid={!!errors.payment_method}
                 aria-describedby={errors.payment_method ? 'pay-method-error' : undefined}
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                 {paymentMethods.map((m) => (
                   <SelectItem key={m.value} value={m.value}>
                     {m.label}
@@ -100,15 +101,16 @@ export function PayDialog({
               </SelectContent>
             </Select>
             {errors.payment_method && (
-              <p id="pay-method-error" className="text-xs text-destructive">
+              <p id="pay-method-error" className="text-xs text-red-400">
                 {errors.payment_method}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pay-reference">Referencia (opcional)</Label>
+            <Label htmlFor="pay-reference" className="text-[10px] md:text-xs text-gray-400">Referencia (opcional)</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="pay-reference"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
@@ -117,10 +119,10 @@ export function PayDialog({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={pay.isPending}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={pay.isPending}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pay.isPending}>
+            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white" disabled={pay.isPending}>
               {pay.isPending ? 'Guardando…' : 'Registrar pago'}
             </Button>
           </DialogFooter>

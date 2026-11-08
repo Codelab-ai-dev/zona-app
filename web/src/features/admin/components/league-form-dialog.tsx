@@ -126,18 +126,18 @@ export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialo
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg bg-slate-900 border-white/10">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Liga' : 'Crear Nueva Liga'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-white text-base md:text-lg">{isEditing ? 'Editar Liga' : 'Crear Nueva Liga'}</DialogTitle>
+          <DialogDescription className="text-gray-500 text-xs md:text-sm">
             {isEditing ? 'Modifica la información de la liga' : 'Completa los datos para crear una nueva liga'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name">Nombre de la Liga *</Label>
-            <Input
+            <Label htmlFor="name" className="text-gray-400 text-sm">Nombre de la Liga *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="name"
               value={formData.name}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -153,8 +153,8 @@ export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialo
           </div>
 
           <div>
-            <Label htmlFor="slug">URL Personalizada *</Label>
-            <Input
+            <Label htmlFor="slug" className="text-gray-400 text-sm">URL Personalizada *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="slug"
               value={formData.slug}
               onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value.toLowerCase() }))}
@@ -170,8 +170,8 @@ export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialo
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción *</Label>
-            <Textarea
+            <Label htmlFor="description" className="text-gray-400 text-sm">Descripción *</Label>
+            <Textarea className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
@@ -189,28 +189,28 @@ export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialo
           {!isEditing && (
             <>
               <div>
-                <Label htmlFor="product-mode">Tipo de Producto</Label>
+                <Label htmlFor="product-mode" className="text-gray-400 text-sm">Tipo de Producto</Label>
                 <Select value={formData.product_mode} onValueChange={(v) => setFormData((prev) => ({ ...prev, product_mode: v as ProductMode }))}>
-                  <SelectTrigger id="product-mode">
+                  <SelectTrigger id="product-mode" className="bg-slate-700/50 border-white/10 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="full">Completo</SelectItem>
-                    <SelectItem value="web_only">Web Only</SelectItem>
+                  <SelectContent className="bg-slate-900 border-white/10">
+                    <SelectItem value="full" className="text-white hover:bg-slate-800">Completo</SelectItem>
+                    <SelectItem value="web_only" className="text-white hover:bg-slate-800">Web Only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {admins.length > 0 && (
                 <div>
-                  <Label htmlFor="admin-id">Administrador</Label>
+                  <Label htmlFor="admin-id" className="text-gray-400 text-sm">Administrador</Label>
                   <Select value={formData.admin_id || ''} onValueChange={(v) => setFormData((prev) => ({ ...prev, admin_id: v }))}>
-                    <SelectTrigger id="admin-id">
+                    <SelectTrigger id="admin-id" className="bg-slate-700/50 border-white/10 text-white">
                       <SelectValue placeholder="Selecciona un administrador" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-slate-900 border-white/10">
                       {admins.map((admin) => (
-                        <SelectItem key={admin.id} value={admin.id}>
+                        <SelectItem key={admin.id} value={admin.id} className="text-white hover:bg-slate-800">
                           {admin.name} ({admin.email})
                         </SelectItem>
                       ))}
@@ -222,10 +222,10 @@ export function LeagueFormDialog({ open, onOpenChange, league }: LeagueFormDialo
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isPending}>
+            <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => handleOpenChange(false)} disabled={isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={isPending}>
+            <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={handleSubmit} disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? 'Actualizar' : 'Crear'} Liga
             </Button>

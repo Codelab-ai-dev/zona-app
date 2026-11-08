@@ -64,16 +64,16 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg bg-slate-900 border-white/10">
         <DialogHeader>
-          <DialogTitle>Editar Usuario</DialogTitle>
-          <DialogDescription>Modifica la información del usuario</DialogDescription>
+          <DialogTitle className="text-white text-base md:text-lg">Editar Usuario</DialogTitle>
+          <DialogDescription className="text-gray-500 text-xs md:text-sm">Modifica la información del usuario</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="edit-name">Nombre Completo</Label>
-            <Input
+            <Label htmlFor="edit-name" className="text-gray-400 text-sm">Nombre Completo</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="edit-name"
               value={form.name || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -88,8 +88,8 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
           </div>
 
           <div>
-            <Label htmlFor="edit-email">Email</Label>
-            <Input
+            <Label htmlFor="edit-email" className="text-gray-400 text-sm">Email</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="edit-email"
               type="email"
               value={form.email || ''}
@@ -105,8 +105,8 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
           </div>
 
           <div>
-            <Label htmlFor="edit-phone">Teléfono</Label>
-            <Input
+            <Label htmlFor="edit-phone" className="text-gray-400 text-sm">Teléfono</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="edit-phone"
               value={form.phone || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -114,10 +114,10 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={updateUser.isPending}>
+            <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => onOpenChange(false)} disabled={updateUser.isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={updateUser.isPending}>
+            <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={handleSubmit} disabled={updateUser.isPending}>
               {updateUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Actualizar
             </Button>

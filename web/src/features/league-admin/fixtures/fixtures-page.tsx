@@ -1,7 +1,8 @@
-import { Sparkles } from 'lucide-react'
+import { Calendar, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -40,24 +41,43 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
   }, [teams.data])
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8">
-      <header className="mb-8 space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Generador de Fixtures</h1>
-          <p className="text-muted-foreground">Crea automáticamente el calendario de tu torneo</p>
-        </div>
-
-        <Button onClick={() => setIsDialogOpen(true)} size="lg" className="gap-2">
-          <Sparkles className="h-4 w-4" />
-          Generar Fixtures
-        </Button>
-      </header>
+    <section className="space-y-6 py-6">
+      <Card className="border-white/10 bg-slate-800/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Calendar className="h-5 w-5" aria-hidden="true" />
+            <h1>Generador de Jornadas</h1>
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Genera automáticamente el calendario completo de partidos para el torneo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex-1">
+              <p className="text-sm text-gray-400">
+                <strong>Equipos activos:</strong> {getActiveTeams().length}
+              </p>
+              <p className="text-sm text-gray-400">
+                <strong>Torneos activos:</strong> {(tournaments.data?.data ?? []).filter((t) => t.is_active).length}
+              </p>
+            </div>
+            <Button onClick={() => setIsDialogOpen(true)} className="border-0 bg-green-500/80 text-white shadow-lg backdrop-blur-md hover:bg-green-500/90">
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+              Generar Jornadas
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-white/10 bg-slate-900">
           <DialogHeader>
-            <DialogTitle>Generar Fixtures</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-sm text-white md:text-lg">
+              <Calendar className="h-4 w-4 text-green-400 md:h-5 md:w-5" aria-hidden="true" />
+              Generar Jornadas
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-400 md:text-sm">
               El algoritmo de round-robin generará automáticamente el calendario para tu torneo.
             </DialogDescription>
           </DialogHeader>

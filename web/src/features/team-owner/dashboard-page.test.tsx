@@ -22,7 +22,7 @@ describe('team owner DashboardPage', () => {
     renderWithProviders(<DashboardPage />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mi Equipo' })).toBeInTheDocument()
-    expect(await screen.findByText('Resumen del Equipo')).toBeInTheDocument()
+    expect(await screen.findByText('Estadísticas del Equipo')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'GET /teams/team-a')).toHaveLength(1)
     // a single team needs no selector
     expect(screen.queryByLabelText('Equipo')).not.toBeInTheDocument()
@@ -36,15 +36,15 @@ describe('team owner DashboardPage', () => {
     })
     const { user } = renderWithProviders(<DashboardPage />)
 
-    expect(await screen.findByText('Resumen del Equipo')).toBeInTheDocument()
-    expect(await screen.findByText('Águilas FC', { selector: '[data-slot="card-title"]' })).toBeInTheDocument()
+    expect(await screen.findByText('Estadísticas del Equipo')).toBeInTheDocument()
+    expect(await screen.findByText('Águilas FC - Resumen de rendimiento')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'GET /teams/team-a')).toHaveLength(1)
     expect(requestsTo(fetchMock, 'GET /teams/team-b')).toHaveLength(0)
 
     await user.click(screen.getByRole('combobox', { name: 'Equipo' }))
     await user.click(await screen.findByRole('option', { name: 'Tigres FC' }))
 
-    expect(await screen.findByText('Tigres FC', { selector: '[data-slot="card-title"]' })).toBeInTheDocument()
+    expect(await screen.findByText('Tigres FC - Resumen de rendimiento')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'GET /teams/team-b')).toHaveLength(1)
     expect(requestsTo(fetchMock, 'GET /teams/team-b/stats')).toHaveLength(1)
   })
@@ -53,7 +53,7 @@ describe('team owner DashboardPage', () => {
     mockApi({ 'GET /my-teams': listBody([]) })
     renderWithProviders(<DashboardPage />)
 
-    expect(await screen.findByText('Equipo no asignado')).toBeInTheDocument()
+    expect(await screen.findByText('Equipo No Asignado')).toBeInTheDocument()
   })
 
   it('shows the error with retry when the teams cannot be loaded', async () => {
@@ -67,7 +67,7 @@ describe('team owner DashboardPage', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(await screen.findByText('Resumen del Equipo')).toBeInTheDocument()
+    expect(await screen.findByText('Estadísticas del Equipo')).toBeInTheDocument()
   })
 
   it('opens the registration requests tab with the tournament of the team', async () => {

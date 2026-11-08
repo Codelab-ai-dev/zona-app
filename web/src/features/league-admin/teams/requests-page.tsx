@@ -22,8 +22,8 @@ export function RequestsPage() {
   return (
     <div className="space-y-6 py-6">
       <div>
-        <h1 className="text-3xl font-bold">Solicitudes de Registros</h1>
-        <p className="text-muted-foreground mt-1">Aprueba o rechaza solicitudes de jugadores</p>
+        <h1 className="text-2xl font-bold text-white">Solicitudes de Registros</h1>
+        <p className="text-gray-400">Aprueba o rechaza solicitudes de jugadores</p>
       </div>
 
       <QueryState
@@ -45,9 +45,9 @@ export function RequestsPage() {
               {(res) => (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="tournament">Torneo</Label>
+                    <Label htmlFor="tournament" className="text-gray-400">Torneo</Label>
                     <Select value={tournamentId} onValueChange={(id) => setChoice({ leagueId, tournamentId: id })}>
-                      <SelectTrigger id="tournament">
+                      <SelectTrigger id="tournament" className="w-full border-white/10 bg-slate-800/50 text-white sm:w-72">
                         <SelectValue placeholder="Selecciona un torneo" />
                       </SelectTrigger>
                       <SelectContent>

@@ -20,19 +20,19 @@ export function TeamsStep({ teams, selected, existingMatches, onToggle, onBack, 
   return (
     <div className="space-y-6">
       {existingMatches > 0 && (
-        <Alert>
+        <Alert className="border-yellow-500/20 bg-yellow-500/10 text-yellow-300">
           <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-          <AlertDescription>
+          <AlertDescription className="text-yellow-300/90">
             Este torneo ya tiene {existingMatches} partidos. Se generarán partidos nuevos además de los existentes.
           </AlertDescription>
         </Alert>
       )}
 
       <div className="space-y-3">
-        <Label className="text-base font-semibold">
+        <Label className="mb-1.5 block text-xs font-medium text-gray-400 md:text-sm">
           Equipos ({selected.size}/{teams.length})
         </Label>
-        <ScrollArea className="h-64 rounded-lg border p-3">
+        <ScrollArea className="h-64 rounded-lg border border-white/10 bg-slate-800/50 p-3">
           <div className="space-y-2 pr-4">
             {teams.map((team) => (
               <div key={team.id} className="flex items-center gap-2">
@@ -41,21 +41,21 @@ export function TeamsStep({ teams, selected, existingMatches, onToggle, onBack, 
                   checked={selected.has(team.id)}
                   onCheckedChange={(checked) => onToggle(team.id, Boolean(checked))}
                 />
-                <Label htmlFor={`team-${team.id}`} className="cursor-pointer font-normal">
+                <Label htmlFor={`team-${team.id}`} className="cursor-pointer font-normal text-gray-300">
                   {team.name}
                 </Label>
               </div>
             ))}
           </div>
         </ScrollArea>
-        <p className="text-xs text-muted-foreground">Se requieren mínimo 2 equipos.</p>
+        <p className="text-xs text-gray-500">Se requieren mínimo 2 equipos.</p>
       </div>
 
       <div className="flex gap-2">
-        <Button variant="outline" onClick={onBack}>
+        <Button className="border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white" onClick={onBack}>
           Atrás
         </Button>
-        <Button onClick={onNext} disabled={selected.size < 2}>
+        <Button className="bg-green-500 text-white hover:bg-green-600" onClick={onNext} disabled={selected.size < 2}>
           Siguiente
         </Button>
       </div>

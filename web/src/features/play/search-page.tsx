@@ -92,10 +92,10 @@ export function SearchPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-4xl px-4 py-8 space-y-8">
+    <section className="container mx-auto max-w-screen-xl py-10 space-y-8">
       {/* Search Header */}
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Buscar</h1>
+        <h1 className="text-2xl font-bold">Buscar</h1>
 
         {/* Search Input */}
         <div className="space-y-2">

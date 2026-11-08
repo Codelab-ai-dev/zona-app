@@ -13,11 +13,13 @@ type FormFieldProps = Omit<ComponentProps<typeof Input>, 'id'> & {
 export function FormField({ id, label, error, ...inputProps }: FormFieldProps) {
   const errorId = `${id}-error`
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined} {...inputProps} />
+    <div>
+      <Label htmlFor={id} className="mb-1.5 block text-[10px] text-gray-400 md:text-xs">
+        {label}
+      </Label>
+      <Input id={id} aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined} className="h-9 border-white/10 bg-slate-800/50 text-sm text-white placeholder:text-gray-500" {...inputProps} />
       {error && (
-        <p id={errorId} className="text-sm text-destructive">
+        <p id={errorId} className="mt-1 text-xs text-red-400">
           {error}
         </p>
       )}

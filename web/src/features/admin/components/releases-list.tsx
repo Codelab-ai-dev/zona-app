@@ -11,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { QueryState } from '@/components/states'
 import { ApiError } from '@/lib/api/client'
@@ -55,33 +54,36 @@ export function ReleasesList({ leagueId }: { leagueId: string }) {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Versiones Disponibles</CardTitle>
+      <div className="rounded-xl bg-slate-800/50 border border-white/10 p-4 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm md:text-base font-semibold text-white">Versiones Disponibles</h3>
           <Button
             variant="ghost"
             size="sm"
             aria-label="Actualizar versiones"
             onClick={() => void releases.refetch()}
             disabled={releases.isFetching}
+            className="text-gray-400 hover:text-white hover:bg-slate-700/50 h-7 px-2"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
           <QueryState
             query={releases}
             loadingLabel="Cargando versiones…"
             isEmpty={(res) => res.data.length === 0}
             empty={
               <div className="py-8 text-center">
-                <Smartphone className="mx-auto mb-3 h-12 w-12 text-muted-foreground" aria-hidden="true" />
-                <p className="text-muted-foreground">No hay versiones disponibles para esta liga</p>
+                <div className="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center mx-auto mb-3">
+                  <Smartphone className="w-6 h-6 text-gray-500" aria-hidden="true" />
+                </div>
+                <p className="text-gray-500 text-sm">No hay versiones disponibles para esta liga</p>
               </div>
             }
           >
             {(res) => (
-              <div className="overflow-x-auto rounded-lg border">
+              <div className="overflow-x-auto rounded-lg border border-white/10 bg-slate-700/30">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -124,11 +126,11 @@ export function ReleasesList({ leagueId }: { leagueId: string }) {
               </div>
             )}
           </QueryState>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar APK</AlertDialogTitle>
             <AlertDialogDescription>

@@ -46,15 +46,16 @@ export function ReasonDialog({ title, description, confirmLabel, pendingLabel, i
 
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle className="text-white">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-400">{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="reason-text">Motivo</Label>
+          <Label htmlFor="reason-text" className="text-[10px] md:text-xs text-gray-400">Motivo</Label>
           <Textarea
             id="reason-text"
+            className="bg-slate-800/50 border-white/10 text-white text-sm"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             aria-invalid={!!error}
@@ -63,19 +64,20 @@ export function ReasonDialog({ title, description, confirmLabel, pendingLabel, i
             rows={3}
           />
           {error && (
-            <p id="reason-text-error" className="text-xs text-destructive">
+            <p id="reason-text-error" className="text-xs text-red-400">
               {error}
             </p>
           )}
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Volver</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending} className="bg-slate-800/50 border-white/10 text-white hover:bg-slate-700 hover:text-white">Volver</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
               void submit()
             }}
             disabled={isPending}
+            className="bg-green-500 hover:bg-green-600 text-white"
           >
             {isPending ? pendingLabel : confirmLabel}
           </AlertDialogAction>

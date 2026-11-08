@@ -14,14 +14,14 @@ function renderPage() {
 }
 
 async function fillForm(user: ReturnType<typeof renderPage>['user']) {
-  await user.click(await screen.findByRole('button', { name: /Agregar Miembro/i }))
+  await user.click(await screen.findByRole('button', { name: /Nuevo Miembro/i }))
   const dialog = await screen.findByRole('dialog')
-  await user.type(within(dialog).getByLabelText('Nombre'), 'Ana Ruiz')
-  await user.click(within(dialog).getByRole('combobox', { name: 'Rol' }))
+  await user.type(within(dialog).getByLabelText('Nombre Completo'), 'Ana Ruiz')
+  await user.click(within(dialog).getByRole('combobox', { name: 'Rol / Cargo' }))
   await user.click(await screen.findByRole('option', { name: 'Médico' }))
-  await user.type(within(dialog).getByLabelText('Cédula'), '12345678')
-  await user.type(within(dialog).getByLabelText('Fecha de Nacimiento'), '1985-02-03')
-  await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+  await user.type(within(dialog).getByLabelText('Cédula / DNI (opcional)'), '12345678')
+  await user.type(within(dialog).getByLabelText('Fecha de Nacimiento (opcional)'), '1985-02-03')
+  await user.click(within(dialog).getByRole('button', { name: 'Registrar Miembro' }))
   return dialog
 }
 
@@ -87,13 +87,13 @@ describe('CoachingStaffPage', () => {
 
     const dialog = await fillForm(user)
 
-    const cedula = within(dialog).getByLabelText('Cédula')
+    const cedula = within(dialog).getByLabelText('Cédula / DNI (opcional)')
     expect(await within(dialog).findByText('cédula inválida')).toBeInTheDocument()
     expect(cedula).toHaveAttribute('aria-invalid', 'true')
     expect(cedula).toHaveAttribute('aria-describedby', 'cedula-error')
     expect(cedula).toHaveValue('12345678')
-    expect(within(dialog).getByRole('combobox', { name: 'Rol' })).toHaveAttribute('aria-invalid', 'true')
-    expect(within(dialog).getByLabelText('Nombre')).toHaveValue('ANA RUIZ')
+    expect(within(dialog).getByRole('combobox', { name: 'Rol / Cargo' })).toHaveAttribute('aria-invalid', 'true')
+    expect(within(dialog).getByLabelText('Nombre Completo')).toHaveValue('ANA RUIZ')
     expect(screen.queryByText('Cuerpo técnico agregado')).not.toBeInTheDocument()
   })
 

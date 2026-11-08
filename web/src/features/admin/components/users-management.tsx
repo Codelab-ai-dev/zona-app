@@ -26,14 +26,14 @@ export function UsersManagement() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
         <div>
-          <h2 className="text-lg font-bold">Gestión de Usuarios</h2>
-          <p className="text-sm text-muted-foreground">Administra usuarios del sistema</p>
+          <h2 className="text-lg md:text-xl font-bold text-white">Gestión de Usuarios</h2>
+          <p className="text-gray-500 text-sm">Administra usuarios del sistema</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="bg-green-500 hover:bg-green-600 text-white border-0">
+          <Plus className="w-3 h-3 mr-1" aria-hidden="true" />
           Nuevo Usuario
         </Button>
       </div>

@@ -48,9 +48,10 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Nombre del Equipo</Label>
+        <Label htmlFor="name" className="text-white">Nombre del Equipo</Label>
         <Input
           id="name"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="Ej: Águilas FC"
@@ -59,16 +60,17 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
           aria-describedby={errors.name ? 'name-error' : undefined}
         />
         {errors.name && (
-          <p id="name-error" className="mt-1 text-sm text-destructive">
+          <p id="name-error" className="mt-1 text-sm text-red-400">
             {errors.name}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="description">Descripción</Label>
+        <Label htmlFor="description" className="text-white">Descripción</Label>
         <Textarea
           id="description"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Describe tu equipo..."
@@ -78,9 +80,10 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="logo">Logo URL</Label>
+        <Label htmlFor="logo" className="text-white">Logo URL</Label>
         <Input
           id="logo"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           type="url"
           value={formData.logo}
           onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
@@ -89,7 +92,7 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
         {isLoading ? 'Guardando…' : 'Guardar'}
       </Button>
     </form>

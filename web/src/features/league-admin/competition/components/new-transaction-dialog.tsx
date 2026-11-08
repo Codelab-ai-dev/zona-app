@@ -63,24 +63,24 @@ export function NewTransactionDialog({ leagueId, onClose }: { leagueId: string; 
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nuevo movimiento</DialogTitle>
-          <DialogDescription>Registra un cargo, multa, gasto o ingreso de la liga</DialogDescription>
+          <DialogTitle className="text-base md:text-lg font-bold text-white">Nuevo movimiento</DialogTitle>
+          <DialogDescription className="text-gray-400 text-xs md:text-sm">Registra un cargo, multa, gasto o ingreso de la liga</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
-            <Label htmlFor="tx-type">Tipo</Label>
+            <Label htmlFor="tx-type" className="text-[10px] md:text-xs text-gray-400">Tipo</Label>
             <Select value={type} onValueChange={setType} disabled={create.isPending}>
               <SelectTrigger
-                id="tx-type"
+                id="tx-type" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                 aria-invalid={!!errors.transaction_type}
                 aria-describedby={errors.transaction_type ? 'tx-type-error' : undefined}
               >
                 <SelectValue placeholder="Selecciona un tipo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                 {transactionTypes.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
                     {groupLabels[t.group]}: {t.label}
@@ -89,23 +89,23 @@ export function NewTransactionDialog({ leagueId, onClose }: { leagueId: string; 
               </SelectContent>
             </Select>
             {errors.transaction_type && (
-              <p id="tx-type-error" className="text-xs text-destructive">
+              <p id="tx-type-error" className="text-xs text-red-400">
                 {errors.transaction_type}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tx-team">Equipo{option?.needsTeam ? '' : ' (opcional)'}</Label>
+            <Label htmlFor="tx-team" className="text-[10px] md:text-xs text-gray-400">Equipo{option?.needsTeam ? '' : ' (opcional)'}</Label>
             <Select value={teamId} onValueChange={setTeamId} disabled={create.isPending}>
               <SelectTrigger
-                id="tx-team"
+                id="tx-team" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                 aria-invalid={!!errors.team_id}
                 aria-describedby={errors.team_id ? 'tx-team-error' : undefined}
               >
                 <SelectValue placeholder="Selecciona un equipo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                 {(teams.data?.data ?? []).map((team) => (
                   <SelectItem key={team.id} value={team.id}>
                     {team.name}
@@ -114,15 +114,16 @@ export function NewTransactionDialog({ leagueId, onClose }: { leagueId: string; 
               </SelectContent>
             </Select>
             {errors.team_id && (
-              <p id="tx-team-error" className="text-xs text-destructive">
+              <p id="tx-team-error" className="text-xs text-red-400">
                 {errors.team_id}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tx-amount">Monto (MXN)</Label>
+            <Label htmlFor="tx-amount" className="text-[10px] md:text-xs text-gray-400">Monto (MXN)</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="tx-amount"
               type="text"
               inputMode="decimal"
@@ -134,15 +135,16 @@ export function NewTransactionDialog({ leagueId, onClose }: { leagueId: string; 
               disabled={create.isPending}
             />
             {errors.amount && (
-              <p id="tx-amount-error" className="text-xs text-destructive">
+              <p id="tx-amount-error" className="text-xs text-red-400">
                 {errors.amount}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tx-description">Descripción</Label>
+            <Label htmlFor="tx-description" className="text-[10px] md:text-xs text-gray-400">Descripción</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="tx-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -151,17 +153,17 @@ export function NewTransactionDialog({ leagueId, onClose }: { leagueId: string; 
               disabled={create.isPending}
             />
             {errors.description && (
-              <p id="tx-description-error" className="text-xs text-destructive">
+              <p id="tx-description-error" className="text-xs text-red-400">
                 {errors.description}
               </p>
             )}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={create.isPending}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={create.isPending}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={create.isPending}>
+            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white" disabled={create.isPending}>
               {create.isPending ? 'Guardando…' : 'Guardar'}
             </Button>
           </DialogFooter>

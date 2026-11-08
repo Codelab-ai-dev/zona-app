@@ -16,15 +16,15 @@ function renderPage() {
 }
 
 async function openForm(user: ReturnType<typeof renderPage>['user']) {
-  await user.click(await screen.findByRole('button', { name: /Agregar Jugador/i }))
+  await user.click(await screen.findByRole('button', { name: /Nuevo Jugador/i }))
   return screen.findByRole('dialog')
 }
 
 async function fillForm(dialog: HTMLElement, user: ReturnType<typeof renderPage>['user']) {
-  await user.type(within(dialog).getByLabelText('Nombre'), 'Luis Gómez')
+  await user.type(within(dialog).getByLabelText('Nombre Completo'), 'Luis Gómez')
   await user.click(within(dialog).getByRole('combobox', { name: 'Posición' }))
   await user.click(await screen.findByRole('option', { name: 'Portero' }))
-  await user.type(within(dialog).getByLabelText('Número de Jersey'), '9')
+  await user.type(within(dialog).getByLabelText('Número de Camiseta'), '9')
   await user.type(within(dialog).getByLabelText('Fecha de Nacimiento'), '2002-04-10')
 }
 
@@ -34,7 +34,8 @@ describe('PlayerManagementPage', () => {
     renderPage()
 
     expect(await screen.findByText('Juan Pérez')).toBeInTheDocument()
-    expect(screen.getByText(/#10 · Delantero/)).toBeInTheDocument()
+    expect(screen.getByText('#10')).toBeInTheDocument()
+    expect(screen.getByText('Delantero')).toBeInTheDocument()
     expect(screen.getByText('Activo')).toBeInTheDocument()
   })
 
@@ -43,7 +44,7 @@ describe('PlayerManagementPage', () => {
     renderPage()
 
     expect(await screen.findByText('Sin jugadores')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /Agregar Jugador/i })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /Nuevo Jugador/i })).toHaveLength(1)
   })
 
   it('shows the API error and reloads the list on retry', async () => {
@@ -68,7 +69,7 @@ describe('PlayerManagementPage', () => {
 
     const dialog = await openForm(user)
     await fillForm(dialog, user)
-    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar Jugador' }))
 
     expect(await screen.findByText('Jugador agregado')).toBeInTheDocument()
     expect(requestsTo(fetchMock, CREATE)).toEqual([
@@ -96,8 +97,8 @@ describe('PlayerManagementPage', () => {
     const file = new File(['png-bytes'], 'foto.png', { type: 'image/png' })
     await user.upload(within(dialog).getByLabelText('Foto del Jugador'), file)
     expect(await within(dialog).findByText(/Foto seleccionada: foto\.png/)).toBeInTheDocument()
-    expect(within(dialog).getByAltText('Vista previa')).toBeInTheDocument()
-    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    expect(await within(dialog).findByAltText('Vista previa')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar Jugador' }))
 
     await screen.findByText('Jugador agregado')
     await waitFor(() => expect(requestsTo(fetchMock, 'PATCH /players/player-2')).toHaveLength(1))
@@ -145,14 +146,14 @@ describe('PlayerManagementPage', () => {
 
     const dialog = await openForm(user)
     await fillForm(dialog, user)
-    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar Jugador' }))
 
-    const jersey = within(dialog).getByLabelText('Número de Jersey')
+    const jersey = within(dialog).getByLabelText('Número de Camiseta')
     expect(await within(dialog).findByText('debe estar entre 1 y 99')).toBeInTheDocument()
     expect(jersey).toHaveAttribute('aria-invalid', 'true')
     expect(jersey).toHaveAttribute('aria-describedby', 'jersey_number-error')
     expect(jersey).toHaveValue(9)
-    const name = within(dialog).getByLabelText('Nombre')
+    const name = within(dialog).getByLabelText('Nombre Completo')
     expect(name).toHaveAttribute('aria-invalid', 'true')
     expect(name).toHaveValue('LUIS GÓMEZ')
     expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -170,7 +171,7 @@ describe('PlayerManagementPage', () => {
 
     const dialog = await openForm(user)
     await fillForm(dialog, user)
-    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Registrar Jugador' }))
 
     expect(await screen.findByText('No tienes permiso para este equipo')).toBeInTheDocument()
     expect(screen.getByRole('dialog')).toBeInTheDocument()

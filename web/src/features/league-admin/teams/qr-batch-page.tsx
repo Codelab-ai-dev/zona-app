@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Loader2, QrCode, Users } from 'lucide-react'
 
 import { EmptyState, QueryState } from '@/components/states'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 
 import { useQRBatchUpdate, useTeamsByLeague, type QRRunResult } from './api'
@@ -13,7 +14,7 @@ import { useSelectedLeague } from './use-selected-league'
 function ResultSummary({ result }: { result: QRRunResult }) {
   const ok = result.failures.length === 0
   return (
-    <div role="status" className="space-y-3 rounded-lg border bg-muted/50 p-4">
+    <div role="status" className="space-y-3 rounded-lg border border-green-500/20 bg-green-500/10 p-4">
       <div className="flex items-start gap-2">
         {ok ? (
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" aria-hidden="true" />
@@ -21,16 +22,16 @@ function ResultSummary({ result }: { result: QRRunResult }) {
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
         )}
         <div>
-          <p className="font-medium">{!ok ? 'Actualización parcial' : result.updated === 0 ? 'No hay jugadores para actualizar' : 'Actualización completada exitosamente'}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Se actualizaron {result.updated} códigos QR</p>
+          <p className="font-medium text-white">{!ok ? 'Actualización parcial' : result.updated === 0 ? 'No hay jugadores para actualizar' : 'Actualización completada exitosamente'}</p>
+          <p className="mt-1 text-sm text-white/70">Se actualizaron {result.updated} códigos QR</p>
         </div>
       </div>
       {!ok && (
         <div className="space-y-1">
-          <p className="text-sm font-medium">Errores:</p>
+          <p className="text-sm font-medium text-white">Errores:</p>
           <ul className="list-disc pl-5">
             {result.failures.map((failure) => (
-              <li key={failure.label} className="text-sm text-destructive">
+              <li key={failure.label} className="text-sm text-red-400">
                 {failure.label}: {failure.error}
               </li>
             ))}
@@ -71,12 +72,18 @@ export function QRBatchPage() {
   const processing = qrMutation.isPending
 
   return (
-    <div className="space-y-6 py-6">
-      <div>
-        <h1 className="text-3xl font-bold">Actualización Masiva de QR</h1>
-        <p className="mt-1 text-muted-foreground">Regenera códigos QR para todos los jugadores de equipos seleccionados</p>
-      </div>
-
+    <div className="py-6">
+      <Card className="border-white/20 bg-white/10 backdrop-blur-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <QrCode className="h-5 w-5 text-blue-300" aria-hidden="true" />
+            <h1>Actualización Masiva de QR</h1>
+          </CardTitle>
+          <CardDescription className="text-white/80 drop-shadow">
+            Regenera los códigos QR de todos los jugadores de los equipos seleccionados para asegurar que funcionen correctamente con la app móvil
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
       <QueryState
         query={leaguesQuery}
         isEmpty={(data) => data.data.length === 0}
@@ -95,24 +102,24 @@ export function QRBatchPage() {
             >
               {(teamsRes) => (
                 <div className="space-y-6">
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" aria-hidden="true" />
-                    <AlertDescription>Selecciona los equipos cuyos jugadores necesitan actualizar sus códigos QR.</AlertDescription>
+                  <Alert className="border-yellow-500/20 bg-yellow-500/10 text-yellow-300">
+                    <AlertTriangle className="h-4 w-4 text-yellow-400" aria-hidden="true" />
+                    <AlertDescription className="text-yellow-300/90">Selecciona los equipos cuyos jugadores necesitan actualizar sus códigos QR.</AlertDescription>
                   </Alert>
 
                   <div className="space-y-3">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setIds(teamsRes.data.map((t) => t.id))}>
+                      <Button size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20" onClick={() => setIds(teamsRes.data.map((t) => t.id))}>
                         Seleccionar todos
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setIds([])}>
+                      <Button size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20" onClick={() => setIds([])}>
                         Deseleccionar todos
                       </Button>
                     </div>
                     <ul className="space-y-2">
                       {teamsRes.data.map((team) => (
                         <li key={team.id}>
-                          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50">
+                          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-slate-800/50 p-3 hover:bg-white/10">
                             <input
                               type="checkbox"
                               className="rounded"
@@ -121,8 +128,8 @@ export function QRBatchPage() {
                               aria-label={`Seleccionar ${team.name}`}
                             />
                             <span className="flex-1">
-                              <span className="block font-medium">{team.name}</span>
-                              <span className="block text-sm text-muted-foreground">{team.slug}</span>
+                              <span className="block font-medium text-white">{team.name}</span>
+                              <span className="block text-sm text-gray-400">{team.slug}</span>
                             </span>
                           </label>
                         </li>
@@ -130,7 +137,7 @@ export function QRBatchPage() {
                     </ul>
                   </div>
 
-                  <Button onClick={run} disabled={processing || selectedIds.length === 0} className="w-full gap-2">
+                  <Button onClick={run} disabled={processing || selectedIds.length === 0} className="w-full gap-2 border-0 bg-blue-500/80 text-white hover:bg-blue-500/90">
                     {processing ? (
                       <>
                         <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -143,7 +150,7 @@ export function QRBatchPage() {
 
                   {processing && <Progress value={progress} className="h-2" aria-label="Progreso" />}
                   {runError && (
-                    <p role="alert" className="text-sm text-destructive">
+                    <p role="alert" className="text-sm text-red-400">
                       {runError}
                     </p>
                   )}
@@ -154,6 +161,19 @@ export function QRBatchPage() {
           </div>
         )}
       </QueryState>
+      <div className="rounded-lg border border-white/10 bg-slate-800/50 p-4">
+        <h4 className="mb-3 flex items-center gap-2 font-semibold text-white">
+          <Users className="h-4 w-4 text-blue-300" aria-hidden="true" />
+          ¿Qué hace esta función?
+        </h4>
+        <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-white/70">
+          <li>Encuentra todos los jugadores de los equipos seleccionados</li>
+          <li>Regenera el código QR de cada jugador con el formato correcto</li>
+          <li>Muestra un reporte detallado de los resultados</li>
+        </ul>
+      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

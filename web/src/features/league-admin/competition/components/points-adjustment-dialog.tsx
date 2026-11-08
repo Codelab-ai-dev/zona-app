@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Edit } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -74,10 +74,13 @@ export function PointsAdjustmentDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-white/10">
         <DialogHeader>
-          <DialogTitle>Ajustar Puntos</DialogTitle>
-          <DialogDescription>{standing.team_name}</DialogDescription>
+          <DialogTitle className="flex items-center text-white text-sm md:text-base">
+            <Edit className="w-4 h-4 mr-2" aria-hidden="true" />
+            Ajustar Puntos
+          </DialogTitle>
+          <DialogDescription className="text-gray-400 text-xs md:text-sm">{standing.team_name}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -91,62 +94,64 @@ export function PointsAdjustmentDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="current">Puntos Actuales</Label>
+            <Label htmlFor="current" className="text-gray-400 text-[10px] md:text-xs">Puntos Actuales</Label>
             <Input
               id="current"
               type="number"
               value={standing.points}
               disabled
-              className="bg-muted"
+              className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="adjustment">Ajuste de Puntos</Label>
+            <Label htmlFor="adjustment" className="text-gray-400 text-[10px] md:text-xs">Ajuste de Puntos</Label>
             <Input
               id="adjustment"
               type="number"
               value={points}
               onChange={(e) => setPoints(e.target.value)}
               placeholder="Ej: 3 o -3"
+              className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
               aria-invalid={!!errors.points}
               aria-describedby={errors.points ? 'points-error' : undefined}
               disabled={adjust.isPending}
             />
             {errors.points && (
-              <p id="points-error" className="text-xs text-destructive">
+              <p id="points-error" className="text-xs text-red-400">
                 {errors.points}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] text-gray-500 mt-1">
               Nuevo total: {standing.points + (parseInt(points, 10) || 0)} puntos
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Motivo</Label>
+            <Label htmlFor="reason" className="text-gray-400 text-[10px] md:text-xs">Motivo</Label>
             <Textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Explica el motivo del ajuste…"
+              className="bg-slate-800/50 border-white/10 text-white text-xs md:text-sm min-h-[60px]"
               aria-invalid={!!errors.reason}
               aria-describedby={errors.reason ? 'reason-error' : undefined}
               disabled={adjust.isPending}
               rows={3}
             />
             {errors.reason && (
-              <p id="reason-error" className="text-xs text-destructive">
+              <p id="reason-error" className="text-xs text-red-400">
                 {errors.reason}
               </p>
             )}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={adjust.isPending}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={adjust.isPending} className="text-gray-400 hover:text-white hover:bg-slate-800/50">
               Cancelar
             </Button>
-            <Button type="submit" disabled={adjust.isPending}>
+            <Button type="submit" disabled={adjust.isPending} className="bg-green-500 hover:bg-green-600 text-white">
               {adjust.isPending ? 'Guardando…' : 'Ajustar'}
             </Button>
           </DialogFooter>

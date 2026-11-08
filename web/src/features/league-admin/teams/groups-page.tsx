@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState, QueryState } from '@/components/states'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -62,8 +63,8 @@ export function GroupsPage() {
   return (
     <div className="space-y-6 py-6">
       <div>
-        <h1 className="text-3xl font-bold">Gestión de Grupos</h1>
-        <p className="text-muted-foreground mt-1">Asigna equipos a grupos (A, B, C…)</p>
+        <h1 className="text-xl font-bold text-white drop-shadow-lg sm:text-2xl">Gestión de Grupos</h1>
+        <p className="text-white/80 drop-shadow">Asigna equipos a grupos (A, B, C…)</p>
       </div>
 
       <QueryState
@@ -89,24 +90,24 @@ export function GroupsPage() {
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-end gap-3">
                       <div className="space-y-2">
-                        <Label htmlFor="group-count">Número de grupos</Label>
+                        <Label htmlFor="group-count" className="text-white/90">Número de grupos</Label>
                         <Input
                           id="group-count"
                           type="number"
                           min={1}
                           max={26}
-                          className="w-28"
+                          className="w-28 border-white/30 bg-white/10 text-white"
                           value={groupCount}
                           onChange={(e) => setGroupCount(Math.min(26, Math.max(1, Number(e.target.value) || 1)))}
                         />
                       </div>
-                      <Button onClick={handleAutoDistribute} disabled={busy || unassigned.length === 0} variant="outline">
+                      <Button onClick={handleAutoDistribute} disabled={busy || unassigned.length === 0} className="border-0 bg-blue-500/80 text-white backdrop-blur-md hover:bg-blue-500/90">
                         <RefreshCw className="mr-2 size-4" aria-hidden="true" />
                         Distribuir automáticamente
                       </Button>
                     </div>
 
-                    {busy && <p role="status" className="text-sm text-muted-foreground">Procesando…</p>}
+                    {busy && <p role="status" className="text-sm text-white/70">Procesando…</p>}
 
                     {failedList.length > 0 && (
                       <Alert variant="destructive">
@@ -125,20 +126,44 @@ export function GroupsPage() {
                     )}
 
                     {unassigned.length > 0 && (
-                      <section className="space-y-3">
-                        <h2 className="text-lg font-semibold">Equipos sin grupo ({unassigned.length})</h2>
-                        <GroupTeamsTable teams={unassigned} failed={failed} disabled={busy} onAssign={handleAssign} />
-                      </section>
+                      <Card className="border-orange-400/30 bg-orange-500/20 backdrop-blur-xl">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                            <Users className="h-5 w-5" aria-hidden="true" />
+                            Equipos sin grupo ({unassigned.length})
+                          </CardTitle>
+                          <CardDescription className="text-white/80 drop-shadow">Asigna estos equipos a un grupo para continuar</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <GroupTeamsTable teams={unassigned} failed={failed} disabled={busy} onAssign={handleAssign} />
+                        </CardContent>
+                      </Card>
                     )}
 
-                    {groupTeams(res.data).map(([letter, list]) => (
-                      <section key={letter} className="space-y-3">
-                        <h2 className="text-lg font-semibold">
-                          Grupo {letter} ({list.length})
-                        </h2>
-                        <GroupTeamsTable teams={list} failed={failed} disabled={busy} onAssign={handleAssign} />
-                      </section>
-                    ))}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      {groupTeams(res.data).map(([letter, list]) => (
+                        <Card key={letter} className="border-white/20 bg-white/10 backdrop-blur-xl">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl text-white drop-shadow-lg">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/80 font-bold text-white">{letter}</div>
+                              Grupo {letter} ({list.length})
+                            </CardTitle>
+                            <CardDescription className="text-white/80 drop-shadow">{list.length} equipos asignados</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <GroupTeamsTable compact teams={list} failed={failed} disabled={busy} onAssign={handleAssign} />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+
+                    <Card className="border-blue-400/30 bg-blue-500/10 backdrop-blur-xl">
+                      <CardContent className="py-4">
+                        <p className="text-sm text-white/80 drop-shadow">
+                          <strong>Nota:</strong> Una vez que asignes los equipos a sus grupos, podrás generar los partidos de la fase de grupos en la sección &quot;Jornadas&quot;.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
                 )
               }}

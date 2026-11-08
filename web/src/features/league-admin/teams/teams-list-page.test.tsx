@@ -14,7 +14,7 @@ describe('TeamsListPage', () => {
     renderWithProviders(<TeamsListPage />)
 
     expect(await screen.findByText('Los Campeones')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Equipos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Gestión de Equipos' })).toBeInTheDocument()
     const call = fetchMock.mock.calls.find(([input]) => String(input).includes('/teams?'))
     expect(String(call?.[0])).toContain('league_id=league-1')
   })
@@ -44,8 +44,8 @@ describe('TeamsListPage', () => {
     mockApi(withTeams())
     const { user } = renderWithProviders(<TeamsListPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Crear equipo' }))
-    expect(await screen.findByRole('dialog', { name: 'Crear equipo' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Agregar Equipo' }))
+    expect(await screen.findByRole('dialog', { name: 'Crear Nuevo Equipo' })).toBeInTheDocument()
   })
 
   it('edits a team: dialog starts with its values and PATCHes the changes', async () => {

@@ -94,17 +94,17 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IdCard className="w-5 h-5" aria-hidden="true" />
+          <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+            <IdCard className="w-5 h-5 text-green-300" aria-hidden="true" />
             Credencial de Jugador
           </DialogTitle>
-          <DialogDescription>Credencial imprimible para {player.name}</DialogDescription>
+          <DialogDescription className="text-white/80 drop-shadow">Credencial imprimible para {player.name}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="flex justify-center p-4 sm:p-6">
+          <div className="flex justify-center p-4 sm:p-6 backdrop-blur-md bg-white/10 rounded-xl border border-white/20">
             <div
               ref={cardRef}
               data-testid="credential-card"
@@ -165,9 +165,9 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <div className="grid grid-cols-2 gap-4 p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
             <section aria-labelledby="credential-player-info">
-              <h4 id="credential-player-info" className="font-semibold mb-2">
+              <h4 id="credential-player-info" className="font-semibold text-white mb-2 drop-shadow-lg">
                 Información del Jugador
               </h4>
               <dl className="space-y-1 text-sm">
@@ -178,7 +178,7 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
               </dl>
             </section>
             <section aria-labelledby="credential-specs">
-              <h4 id="credential-specs" className="font-semibold mb-2">
+              <h4 id="credential-specs" className="font-semibold text-white mb-2 drop-shadow-lg">
                 Especificaciones
               </h4>
               <dl className="space-y-1 text-sm">
@@ -191,14 +191,29 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={handlePrint} disabled={printing} className="flex-1">
+            <Button onClick={handlePrint} disabled={printing} className="flex-1 backdrop-blur-md bg-blue-500/80 hover:bg-blue-500/90 text-white border-0 shadow-lg rounded-xl">
               <Printer className="w-4 h-4 mr-2" aria-hidden="true" />
               {printing ? 'Imprimiendo...' : 'Imprimir'}
             </Button>
-            <Button onClick={() => void handleDownload()} disabled={downloading} variant="outline" className="flex-1">
+            <Button onClick={() => void handleDownload()} disabled={downloading} variant="outline" className="flex-1 backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-xl">
               <Download className="w-4 h-4 mr-2" aria-hidden="true" />
               {downloading ? 'Descargando...' : 'Descargar PNG'}
             </Button>
+          </div>
+
+          <div className="p-4 backdrop-blur-md bg-amber-500/20 border border-amber-300/30 rounded-xl shadow-lg">
+            <div className="flex items-start gap-2">
+              <IdCard className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <div className="text-sm">
+                <p className="text-white font-medium mb-1 drop-shadow-lg">Instrucciones:</p>
+                <ul className="text-white/90 space-y-1 list-disc list-inside drop-shadow">
+                  <li>Imprime en papel de alta calidad o cartulina</li>
+                  <li>Utiliza una plastificadora para mayor durabilidad</li>
+                  <li>El código QR debe ser legible para escáneres</li>
+                  <li>Mantén la credencial en lugar visible durante los partidos</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
@@ -209,8 +224,8 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
 function Row({ term, value }: { term: string; value: string }) {
   return (
     <div className="flex gap-1">
-      <dt className="text-muted-foreground">{term}:</dt>
-      <dd>{value}</dd>
+      <dt className="text-white/70">{term}:</dt>
+      <dd className="text-white/90">{value}</dd>
     </div>
   )
 }

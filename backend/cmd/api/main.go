@@ -212,13 +212,15 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, to
 		slog.Warn("module disabled: notifications (KAPSO_* not set)")
 	}
 
+	// Zona Play reads always work; uploads and streams need Mux.
+	var video play.VideoProvider = play.UnconfiguredProvider{}
 	if cfg.Mux.Enabled() {
-		mux := play.NewMuxClient(play.MuxConfig{TokenID: cfg.Mux.TokenID, TokenSecret: cfg.Mux.TokenSecret})
-		svc := play.NewService(play.NewPGRepository(pool), mux, checker)
-		modules = append(modules, play.NewHandler(svc, &play.Config{MuxWebhookSecret: cfg.Mux.WebhookSecret}))
+		video = play.NewMuxClient(play.MuxConfig{TokenID: cfg.Mux.TokenID, TokenSecret: cfg.Mux.TokenSecret})
 	} else {
-		slog.Warn("module disabled: play (MUX_* not set)")
+		slog.Warn("Zona Play: video uploads and streams disabled (MUX_* not set)")
 	}
+	modules = append(modules, play.NewHandler(play.NewService(play.NewPGRepository(pool), video, checker),
+		&play.Config{MuxWebhookSecret: cfg.Mux.WebhookSecret}))
 
 	if cfg.OpenAI.Enabled() {
 		embedder := knowledge.NewOpenAIEmbedder(knowledge.Config{

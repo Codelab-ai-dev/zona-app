@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 
 import { QueryState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 
 import { useTeamMatches, useTeamsByLeague } from '../api'
 import { formatDate } from '../format'
@@ -19,6 +18,8 @@ export function outcomeFor(match: Match, teamId: string): Outcome | null {
   if (mine < theirs) return { letter: 'P', label: 'Derrota' }
   return { letter: 'E', label: 'Empate' }
 }
+
+const OUTCOME = { G: 'bg-green-500/20 text-green-400', E: 'bg-yellow-500/20 text-yellow-400', P: 'bg-red-500/20 text-red-400' }
 
 const STATUS_LABEL: Partial<Record<Match['status'], string>> = {
   scheduled: 'Programado',
@@ -49,7 +50,7 @@ export function TeamMatches({ team }: { team: Team }) {
       query={matches}
       loadingLabel="Cargando partidos…"
       isEmpty={(res) => res.data.length === 0}
-      empty={<p className="text-sm text-muted-foreground">Aún no hay partidos publicados.</p>}
+      empty={<p className="text-sm text-gray-400">Aún no hay partidos publicados.</p>}
     >
       {(res) => (
         <ul className="space-y-3">
@@ -60,8 +61,7 @@ export function TeamMatches({ team }: { team: Team }) {
             const shown = match.status === 'finished' || match.status === 'in_progress'
             return (
               <li key={match.id}>
-                <Card>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/5 bg-slate-700/30 p-3 text-white md:p-4">
                     <p className="text-sm">
                       <span className="font-semibold">{home}</span>{' '}
                       {shown ? (
@@ -69,14 +69,14 @@ export function TeamMatches({ team }: { team: Team }) {
                           {match.home_score} - {match.away_score}
                         </span>
                       ) : (
-                        <span className="mx-1 text-muted-foreground">vs</span>
+                        <span className="mx-1 text-gray-400">vs</span>
                       )}{' '}
                       <span className="font-semibold">{away}</span>
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
                       <time dateTime={match.match_date}>{formatDate(match.match_date)}</time>
                       {outcome ? (
-                        <Badge variant="outline">
+                        <Badge className={`border-0 ${OUTCOME[outcome.letter]}`}>
                           <span aria-hidden="true">{outcome.letter}</span>
                           <span className="sr-only">{outcome.label}</span>
                           <span aria-hidden="true" className="hidden sm:inline">
@@ -85,11 +85,10 @@ export function TeamMatches({ team }: { team: Team }) {
                           </span>
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">{STATUS_LABEL[match.status]}</Badge>
+                        <Badge className="border-0 bg-blue-500/20 text-blue-400">{STATUS_LABEL[match.status]}</Badge>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               </li>
             )
           })}

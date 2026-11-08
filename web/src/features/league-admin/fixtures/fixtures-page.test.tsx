@@ -54,7 +54,7 @@ type User = ReturnType<typeof renderWithProviders>['user']
 
 /** Opens the dialog, picks the tournament and clicks through to the schedule step. */
 async function goToSchedule(user: User) {
-  await user.click(screen.getByRole('button', { name: /generar fixtures/i }))
+  await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
   await user.click(await screen.findByRole('combobox'))
   await user.click(await screen.findByRole('option', { name: 'Torneo A' }))
   expect(await screen.findByText('Equipos (2/2)')).toBeInTheDocument()
@@ -73,21 +73,21 @@ describe('FixturesPage', () => {
   it('shows title and the generate button', () => {
     mockApi(base)
     renderWithProviders(<FixturesPage leagueId="league-1" />)
-    expect(screen.getByRole('heading', { name: 'Generador de Fixtures' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /generar fixtures/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Generador de Jornadas' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /generar jornadas/i })).toBeInTheDocument()
   })
 
   it('shows an empty state when the league has no tournaments', async () => {
     mockApi({ ...base, 'GET /leagues/league-1/tournaments': { body: { data: [], page } } })
     const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
-    await user.click(screen.getByRole('button', { name: /generar fixtures/i }))
+    await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
     expect(await screen.findByText('Sin torneos')).toBeInTheDocument()
   })
 
   it('shows an empty state when the league has no teams', async () => {
     mockApi({ ...base, 'GET /teams': { body: { data: [], page } } })
     const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
-    await user.click(screen.getByRole('button', { name: /generar fixtures/i }))
+    await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
     expect(await screen.findByText('Sin equipos')).toBeInTheDocument()
   })
 
@@ -97,7 +97,7 @@ describe('FixturesPage', () => {
       'GET /leagues/league-1/tournaments': { status: 500, body: { error: { code: 'internal', message: 'Falla del servidor' } } },
     })
     const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
-    await user.click(screen.getByRole('button', { name: /generar fixtures/i }))
+    await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
     expect(await screen.findByText('Falla del servidor')).toBeInTheDocument()
   })
 
@@ -186,7 +186,7 @@ describe('FixturesPage', () => {
       'POST /notifications/leagues/league-1': { body: {} },
     })
     const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
-    await user.click(screen.getByRole('button', { name: /generar fixtures/i }))
+    await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
     await user.click(await screen.findByRole('combobox'))
     await user.click(await screen.findByRole('option', { name: 'Torneo A' }))
     await screen.findByText('Equipos (3/3)')

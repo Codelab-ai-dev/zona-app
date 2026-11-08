@@ -96,16 +96,16 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10">
         <DialogHeader>
-          <DialogTitle>Configurar Features</DialogTitle>
-          <DialogDescription>{league.name}</DialogDescription>
+          <DialogTitle className="text-white text-base md:text-lg">Configurar Features</DialogTitle>
+          <DialogDescription className="text-gray-500 text-xs md:text-sm">{league.name}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {Object.entries(FEATURE_GROUPS).map(([groupKey, group]) => (
             <div key={groupKey} className="space-y-3">
-              <h3 className="text-sm font-medium">{group.label}</h3>
+              <h3 className="text-sm font-medium text-white">{group.label}</h3>
               <div className="space-y-2 pl-4">
                 {group.features.map((feature) => {
                   const isEnabled = features[feature]
@@ -115,12 +115,12 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
                   return (
                     <div
                       key={feature}
-                      className="flex items-center justify-between p-2 rounded border"
+                      className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50 border border-white/10"
                       style={{
                         opacity: isDisabled ? 0.5 : 1,
                       }}
                     >
-                      <Label htmlFor={`feature-${feature}`} className="text-sm cursor-pointer flex-1">
+                      <Label htmlFor={`feature-${feature}`} className="text-gray-400 text-sm cursor-pointer flex-1">
                         {FEATURE_LABELS[feature]}
                       </Label>
                       <Switch
@@ -138,10 +138,10 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={updateMode.isPending}>
+          <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => onOpenChange(false)} disabled={updateMode.isPending}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={updateMode.isPending}>
+          <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={handleSave} disabled={updateMode.isPending}>
             {updateMode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Cambios
           </Button>

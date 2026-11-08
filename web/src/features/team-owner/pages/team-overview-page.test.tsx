@@ -44,8 +44,8 @@ describe('TeamOverviewPage', () => {
     })
     renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
 
-    expect(await screen.findByText('Resumen del Equipo')).toBeInTheDocument()
-    expect(await screen.findByText('Águilas FC')).toBeInTheDocument()
+    expect(await screen.findByText('Estadísticas del Equipo')).toBeInTheDocument()
+    expect(await screen.findByText('Águilas FC - Resumen de rendimiento')).toBeInTheDocument()
   })
 
   it('displays team statistics', async () => {
@@ -56,11 +56,11 @@ describe('TeamOverviewPage', () => {
     renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
 
     expect(await screen.findByText('Partidos Jugados')).toBeInTheDocument()
-    const cardValue = (title: string) =>
-      screen.getByText(title).closest('[data-slot="card"]')?.querySelector('.text-3xl')?.textContent
-    expect(cardValue('Partidos Jugados')).toBe('10')
-    expect(cardValue('Goles a Favor')).toBe('25')
-    expect(cardValue('Puntos')).toBe('23')
+    const headline = screen.getByText('Partidos Jugados').closest('[data-slot="card"]')
+    expect(headline?.querySelector('.font-bold')?.textContent).toBe('10')
+    const tileValue = (title: string) => screen.getByText(title).nextElementSibling?.textContent
+    expect(tileValue('Goles a Favor')).toBe('25')
+    expect(tileValue('Puntos')).toBe('23')
   })
 
   it('shows empty state when no stats available', async () => {
@@ -70,7 +70,7 @@ describe('TeamOverviewPage', () => {
     })
     renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
 
-    await screen.findByText('Águilas FC')
+    await screen.findByText('Águilas FC - Resumen de rendimiento')
     expect(await screen.findByText('No hay información para mostrar')).toBeInTheDocument()
     expect(screen.queryByText('Partidos Jugados')).not.toBeInTheDocument()
   })
@@ -100,7 +100,7 @@ describe('TeamOverviewPage', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(await screen.findByText('Águilas FC')).toBeInTheDocument()
+    expect(await screen.findByText('Águilas FC - Resumen de rendimiento')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 

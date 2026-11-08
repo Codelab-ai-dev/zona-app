@@ -38,7 +38,7 @@ describe('TeamDetailPage', () => {
 
     // stats use matches_won/drawn/lost; points include the adjustment (13 - 1)
     const stats = await screen.findByRole('heading', { name: 'Estadísticas' })
-    const dl = stats.parentElement!.querySelector('dl')!
+    const dl = stats.closest('section')!.querySelector('dl')!
     const read = (label: string) => within(dl).getByText(label).nextElementSibling?.textContent
     expect(read('Partidos')).toBe('5')
     expect(read('Victorias')).toBe('4')
@@ -50,7 +50,7 @@ describe('TeamDetailPage', () => {
     const roster = await screen.findByRole('table', { name: 'Plantilla de jugadores' })
     expect(within(roster).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['#', 'Jugador', 'Posición'])
     expect(within(within(roster).getAllByRole('row').at(1) ?? roster).getAllByRole('cell').map((c) => c.textContent)).toEqual([
-      '10', 'Carlos Ruiz', 'Delantero',
+      '10', 'CRCarlos Ruiz', 'Delantero', // name cell = avatar initials + name
     ])
     expect(screen.queryByText(/curp|nacimiento|edad/i)).not.toBeInTheDocument()
 

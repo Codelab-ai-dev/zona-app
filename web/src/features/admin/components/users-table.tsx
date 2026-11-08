@@ -18,7 +18,7 @@ interface UsersTableProps {
 
 export function UsersTable({ users, onEditClick, onDeactivateClick }: UsersTableProps) {
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="rounded-xl bg-slate-800/50 border border-white/10 overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -32,14 +32,14 @@ export function UsersTable({ users, onEditClick, onDeactivateClick }: UsersTable
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.name}</TableCell>
-              <TableCell className="text-sm">{user.email}</TableCell>
+            <TableRow key={user.id} className="border-white/5 hover:bg-slate-700/30">
+              <TableCell className="font-medium text-white">{user.name}</TableCell>
+              <TableCell className="text-sm text-gray-400">{user.email}</TableCell>
               <TableCell className="text-sm capitalize">{user.role.replace('_', ' ')}</TableCell>
               <TableCell className="text-sm">{user.phone || '—'}</TableCell>
               <TableCell className="text-sm">
                 {user.is_active ? (
-                  <span className="text-green-600">Activo</span>
+                  <span className="text-green-400">Activo</span>
                 ) : (
                   <span className="text-gray-500">Inactivo</span>
                 )}

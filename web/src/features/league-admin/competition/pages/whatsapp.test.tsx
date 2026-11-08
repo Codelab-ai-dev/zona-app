@@ -23,7 +23,7 @@ describe('WhatsApp page: links', () => {
     mockApi({ ...mineOne, [linksRoute]: list([]) })
     renderWithProviders(<WhatsAppPageComponent />)
 
-    expect(await screen.findByText('Sin enlaces')).toBeInTheDocument()
+    expect(await screen.findByText('No hay vínculos de WhatsApp')).toBeInTheDocument()
   })
 
   it('shows the API error', async () => {
@@ -41,7 +41,7 @@ describe('WhatsApp page: links', () => {
     })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: /nuevo enlace/i }))
+    await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
     await user.type(screen.getByLabelText('Número de Teléfono'), '5215512345678')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 

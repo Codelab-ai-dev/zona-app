@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Ban } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -96,10 +96,13 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{suspension ? 'Editar Suspensión' : 'Nueva Suspensión'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+            <Ban className="w-5 h-5 text-red-400" aria-hidden="true" />
+            {suspension ? 'Editar Suspensión' : 'Nueva Suspensión'}
+          </DialogTitle>
+          <DialogDescription className="text-gray-400 text-xs md:text-sm">
             {suspension ? 'Actualiza los detalles de la suspensión' : 'Registra una nueva suspensión de jugador'}
           </DialogDescription>
         </DialogHeader>
@@ -121,20 +124,20 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
           {!suspension && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="team_id">Equipo</Label>
+                <Label htmlFor="team_id" className="text-[10px] text-gray-500 uppercase tracking-wide">Equipo</Label>
                 <Select
                   value={formData.team_id}
                   onValueChange={(value) => setFormData({ ...formData, team_id: value, player_id: '' })}
                   disabled={isPending}
                 >
                   <SelectTrigger
-                    id="team_id"
+                    id="team_id" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                     aria-invalid={!!errors.team_id}
                     aria-describedby={errors.team_id ? 'team_id-error' : undefined}
                   >
                     <SelectValue placeholder="Selecciona un equipo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                     {(teams.data?.data ?? []).map((team) => (
                       <SelectItem key={team.id} value={team.id}>
                         {team.name}
@@ -143,43 +146,43 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
                   </SelectContent>
                 </Select>
                 {errors.team_id && (
-                  <p id="team_id-error" className="text-xs text-destructive">
+                  <p id="team_id-error" className="text-xs text-red-400">
                     {errors.team_id}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="player_id">Jugador</Label>
+                <Label htmlFor="player_id" className="text-[10px] text-gray-500 uppercase tracking-wide">Jugador</Label>
                 <Select
                   value={formData.player_id}
                   onValueChange={(value) => setFormData({ ...formData, player_id: value })}
                   disabled={isPending || !formData.team_id}
                 >
                   <SelectTrigger
-                    id="player_id"
+                    id="player_id" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm"
                     aria-invalid={!!errors.player_id}
                     aria-describedby={errors.player_id ? 'player_id-error' : undefined}
                   >
                     <SelectValue placeholder="Selecciona un jugador" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                     {(players.data?.data ?? []).map((player) => (
                       <SelectItem key={player.id} value={player.id}>
-                        {player.name}
+                        {player.name} (#{player.jersey_number})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {errors.player_id && (
-                  <p id="player_id-error" className="text-xs text-destructive">
+                  <p id="player_id-error" className="text-xs text-red-400">
                     {errors.player_id}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="suspension_type">Tipo de Suspensión</Label>
+                <Label htmlFor="suspension_type" className="text-[10px] text-gray-500 uppercase tracking-wide">Tipo de Suspensión</Label>
                 <Select
                   value={formData.suspension_type}
                   onValueChange={(value: 'red_card' | 'yellow_accumulation' | 'disciplinary_committee' | 'other') =>
@@ -187,10 +190,10 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
                   }
                   disabled={isPending}
                 >
-                  <SelectTrigger id="suspension_type">
+                  <SelectTrigger id="suspension_type" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                     <SelectItem value="red_card">Tarjeta Roja</SelectItem>
                     <SelectItem value="yellow_accumulation">Acumulación de Amarillas</SelectItem>
                     <SelectItem value="disciplinary_committee">Comité Disciplinario</SelectItem>
@@ -200,8 +203,9 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Motivo</Label>
+                <Label htmlFor="reason" className="text-[10px] text-gray-500 uppercase tracking-wide">Motivo</Label>
                 <Input
+                  className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
                   id="reason"
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
@@ -211,7 +215,7 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
                   disabled={isPending}
                 />
                 {errors.reason && (
-                  <p id="reason-error" className="text-xs text-destructive">
+                  <p id="reason-error" className="text-xs text-red-400">
                     {errors.reason}
                   </p>
                 )}
@@ -220,8 +224,9 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="matches_to_serve">Jornadas a Suspender</Label>
+            <Label htmlFor="matches_to_serve" className="text-[10px] text-gray-500 uppercase tracking-wide">Jornadas a Suspender</Label>
             <Input
+                  className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="matches_to_serve"
               type="number"
               min="1"
@@ -232,15 +237,16 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
               disabled={isPending}
             />
             {errors.matches_to_serve && (
-              <p id="matches-error" className="text-xs text-destructive">
+              <p id="matches-error" className="text-xs text-red-400">
                 {errors.matches_to_serve}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
+            <Label htmlFor="notes" className="text-[10px] text-gray-500 uppercase tracking-wide">Notas</Label>
             <Textarea
+              className="bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -250,11 +256,23 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+          <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="text-xs text-yellow-300/90">
+                <p className="font-medium">Nota importante:</p>
+                <p className="mt-1 text-yellow-300/70">
+                  El jugador no podrá registrar asistencia en los próximos {Number.isFinite(formData.matches_to_serve) ? formData.matches_to_serve : 1} partido(s) de su equipo.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-white/10">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isPending} className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm">
               {isPending ? 'Guardando…' : 'Guardar'}
             </Button>
           </DialogFooter>

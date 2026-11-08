@@ -22,13 +22,13 @@ export function TransactionActions({ leagueId, transaction }: { leagueId: string
   return (
     <>
       <div className="flex justify-end gap-1">
-        <Button variant="outline" size="sm" onClick={() => setAction('pay')} aria-label={`Registrar pago de ${transaction.description}`}>
+        <Button size="sm" onClick={() => setAction('pay')} className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs" aria-label={`Registrar pago de ${transaction.description}`}>
           Pagar
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setAction('waive')} aria-label={`Condonar ${transaction.description}`}>
+        <Button variant="ghost" size="sm" onClick={() => setAction('waive')} className="text-white/70 hover:text-white hover:bg-white/10 h-7 text-xs" aria-label={`Condonar ${transaction.description}`}>
           Condonar
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setAction('cancel')} aria-label={`Cancelar ${transaction.description}`}>
+        <Button variant="ghost" size="sm" onClick={() => setAction('cancel')} className="text-red-300 hover:text-red-200 hover:bg-red-500/20 h-7 text-xs" aria-label={`Cancelar ${transaction.description}`}>
           Cancelar
         </Button>
       </div>

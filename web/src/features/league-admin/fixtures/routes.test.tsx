@@ -31,7 +31,7 @@ describe('fixtures routes league selection', () => {
     })
     const { user } = renderFixtures()
     await user.click(await screen.findByRole('button', { name: /Liga Dos/ }))
-    expect(await screen.findByRole('heading', { name: 'Generador de Fixtures' }, { timeout: 4000 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Generador de Jornadas' }, { timeout: 4000 })).toBeInTheDocument()
     vi.restoreAllMocks()
   })
 
@@ -42,7 +42,7 @@ describe('fixtures routes league selection', () => {
       'GET /teams': { body: { data: [], page } },
     })
     renderFixtures()
-    expect(await screen.findByRole('heading', { name: 'Generador de Fixtures' }, { timeout: 4000 })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Generador de Jornadas' }, { timeout: 4000 })).toBeInTheDocument()
   })
 
   it('shows an empty state when the user administers no league', async () => {

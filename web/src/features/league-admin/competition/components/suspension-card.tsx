@@ -1,4 +1,4 @@
-import { Check, Trash2 } from 'lucide-react'
+import { CheckCircle, Pencil, XCircle } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -13,31 +13,57 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TableCell, TableRow } from '@/components/ui/table'
+import { useTeamPlayers } from '@/features/league-admin/matches/api'
 
 import { useCancelSuspension, useCompleteSuspension } from '../api'
 import type { Suspension } from '../types'
 
-const statusLabels: Record<Suspension['status'], string> = {
-  active: 'Activa',
-  completed: 'Cumplida',
-  cancelled: 'Cancelada',
+const typeLabels: Record<Suspension['suspension_type'], string> = {
+  disciplinary_committee: 'Comité Disciplinario',
+  yellow_accumulation: 'Acumulación de Amarillas',
+  red_card: 'Tarjeta Roja',
+  other: 'Otro',
 }
 
-const statusColors: Record<Suspension['status'], string> = {
-  active: 'bg-red-100 text-red-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-gray-100 text-gray-800',
+const statusBadge: Record<Suspension['status'], { label: string; className: string }> = {
+  active: { label: 'Activa', className: 'backdrop-blur-md bg-red-500/80 text-white border-0' },
+  completed: { label: 'Completada', className: 'backdrop-blur-md bg-gray-500/80 text-white border-0' },
+  cancelled: { label: 'Cancelada', className: 'backdrop-blur-md bg-white/10 text-white border-white/30' },
 }
+
+const dialogClass = 'bg-slate-900 border-white/10 text-white'
+const dialogDescription = 'text-gray-400'
+const keepButton = 'bg-slate-800/50 border-white/10 text-white hover:bg-slate-700 hover:text-white'
+const actionButton = 'backdrop-blur-md text-white border-0'
 
 type Confirming = 'cancel' | 'complete' | null
 
-export function SuspensionCard({ suspension, onEdit }: { suspension: Suspension; onEdit: () => void }) {
+/** Player name and jersey, resolved from the team roster (the API only returns ids). */
+function PlayerCell({ teamId, playerId }: { teamId: string; playerId: string }) {
+  const players = useTeamPlayers(teamId)
+  const player = players.data?.data.find((p) => p.id === playerId)
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-white drop-shadow">{player?.name ?? (players.isPending ? 'Cargando…' : 'Jugador desconocido')}</span>
+      {player && <Badge className="backdrop-blur-md bg-white/10 text-white border-white/30">#{player.jersey_number}</Badge>}
+    </div>
+  )
+}
+
+interface Props {
+  suspension: Suspension
+  teamName?: string
+  onEdit: () => void
+}
+
+export function SuspensionRow({ suspension, teamName, onEdit }: Props) {
   const [confirming, setConfirming] = useState<Confirming>(null)
   const cancel = useCancelSuspension(suspension.id)
   const complete = useCompleteSuspension(suspension.id)
   const isActive = suspension.status === 'active'
   const pending = cancel.isPending || complete.isPending
+  const status = statusBadge[suspension.status]
 
   const run = async (action: 'cancel' | 'complete') => {
     try {
@@ -50,68 +76,63 @@ export function SuspensionCard({ suspension, onEdit }: { suspension: Suspension;
 
   return (
     <>
-      <Card className="hover:bg-muted/50 transition-colors">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-base">{suspension.reason}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {suspension.suspension_type.replace(/_/g, ' ')}
-              </p>
-            </div>
-            <Badge className={statusColors[suspension.status]}>{statusLabels[suspension.status]}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm">
-            <span className="text-muted-foreground">Jornadas cumplidas: </span>
-            <span className="font-medium">
-              {suspension.matches_served}/{suspension.matches_to_serve}
-            </span>
-          </p>
-
-          {suspension.notes && (
-            <div className="text-sm">
-              <p className="text-muted-foreground">Notas</p>
-              <p>{suspension.notes}</p>
-            </div>
-          )}
-
+      <TableRow className="border-white/20 hover:bg-white/5">
+        <TableCell className="font-medium">
+          <PlayerCell teamId={suspension.team_id} playerId={suspension.player_id} />
+        </TableCell>
+        <TableCell className="text-white/80 drop-shadow">{teamName ?? '—'}</TableCell>
+        <TableCell>
+          <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">{typeLabels[suspension.suspension_type]}</Badge>
+        </TableCell>
+        <TableCell className="max-w-xs text-white/80 drop-shadow">
+          <p className="truncate">{suspension.reason}</p>
+          {suspension.notes && <p className="truncate text-xs text-white/60">{suspension.notes}</p>}
+        </TableCell>
+        <TableCell className="text-center">
+          <span className="font-medium text-white drop-shadow">
+            {suspension.matches_served} / {suspension.matches_to_serve}
+          </span>
+        </TableCell>
+        <TableCell>
+          <Badge className={status.className}>{status.label}</Badge>
+        </TableCell>
+        <TableCell className="text-right">
           {isActive && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={onEdit}>
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" onClick={onEdit} className={`${actionButton} bg-blue-500/80 hover:bg-blue-500/90`}>
+                <Pencil className="w-4 h-4 mr-1" aria-hidden="true" />
                 Editar
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setConfirming('complete')} disabled={pending}>
-                <Check className="size-4" aria-hidden="true" />
+              <Button size="sm" onClick={() => setConfirming('complete')} disabled={pending} className={`${actionButton} bg-green-500/80 hover:bg-green-500/90`}>
+                <CheckCircle className="w-4 h-4 mr-1" aria-hidden="true" />
                 Completar
               </Button>
-              <Button variant="destructive" size="sm" className="gap-2" onClick={() => setConfirming('cancel')} disabled={pending}>
-                <Trash2 className="size-4" aria-hidden="true" />
+              <Button size="sm" onClick={() => setConfirming('cancel')} disabled={pending} className={`${actionButton} bg-red-500/80 hover:bg-red-500/90`}>
+                <XCircle className="w-4 h-4 mr-1" aria-hidden="true" />
                 Cancelar
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </TableCell>
+      </TableRow>
 
       <AlertDialog open={confirming === 'cancel'} onOpenChange={(open) => !open && setConfirming(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className={dialogClass}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Suspensión</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Cancelar Suspensión</AlertDialogTitle>
+            <AlertDialogDescription className={dialogDescription}>
               ¿Estás seguro de que deseas cancelar esta suspensión? Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, mantener</AlertDialogCancel>
+            <AlertDialogCancel className={keepButton}>No, mantener</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
                 void run('cancel')
               }}
               disabled={cancel.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-500 hover:bg-red-600 text-white"
             >
               {cancel.isPending ? 'Cancelando…' : 'Sí, cancelar'}
             </AlertDialogAction>
@@ -120,21 +141,22 @@ export function SuspensionCard({ suspension, onEdit }: { suspension: Suspension;
       </AlertDialog>
 
       <AlertDialog open={confirming === 'complete'} onOpenChange={(open) => !open && setConfirming(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className={dialogClass}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Completar Suspensión</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Completar Suspensión</AlertDialogTitle>
+            <AlertDialogDescription className={dialogDescription}>
               Se marcará la suspensión como cumplida y el jugador quedará habilitado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, volver</AlertDialogCancel>
+            <AlertDialogCancel className={keepButton}>No, volver</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
                 void run('complete')
               }}
               disabled={complete.isPending}
+              className="bg-green-500 hover:bg-green-600 text-white"
             >
               {complete.isPending ? 'Completando…' : 'Sí, completar'}
             </AlertDialogAction>

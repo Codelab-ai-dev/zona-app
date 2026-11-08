@@ -122,7 +122,7 @@ describe('Standings page', () => {
 
     await screen.findByText('Tigres')
     await user.click(screen.getByLabelText('Seleccionar Torneo'))
-    await user.click(await screen.findByRole('option', { name: 'Clausura' }))
+    await user.click(await screen.findByRole('option', { name: /Clausura/ }))
 
     expect(await screen.findByText('Panteras')).toBeInTheDocument()
   })

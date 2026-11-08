@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { CheckCircle, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +14,14 @@ import type { Player } from '../types'
 
 const MAX_BYTES = 10 * 1024 * 1024
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+
+const initials = (name: string) =>
+  name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 
 const messageOf = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback)
 
@@ -67,28 +77,35 @@ export function VerificationPlayerRow({ player, teamId }: { player: Player; team
   }
 
   const badge = verification.isPending ? (
-    <Badge variant="outline">Cargando…</Badge>
+    <Badge className="border-0 bg-gray-500/80 text-white">Cargando…</Badge>
   ) : verification.isError ? (
-    <Badge variant="destructive">Error</Badge>
+    <Badge className="border-0 bg-red-500/80 text-white">Error</Badge>
   ) : verified ? (
-    <Badge>Verificado</Badge>
+    <Badge className="flex w-fit items-center gap-1 border-0 bg-green-500/80 text-white"><CheckCircle className="h-3 w-3" aria-hidden="true" />Verificado</Badge>
   ) : documentKey ? (
-    <Badge variant="outline">Pendiente de revisión</Badge>
+    <Badge className="flex w-fit items-center gap-1 border-0 bg-yellow-500/80 text-white"><CreditCard className="h-3 w-3" aria-hidden="true" />Pendiente de revisión</Badge>
   ) : (
-    <Badge variant="secondary">Sin documento</Badge>
+    <Badge className="w-fit border-0 bg-gray-500/80 text-white">Sin documento</Badge>
   )
 
   return (
-    <TableRow>
+    <TableRow className="border-white/10 hover:bg-white/5">
       <TableCell>
-        <p className="font-medium">{player.name}</p>
-        <p className="text-sm text-muted-foreground">Dorsal {player.jersey_number}</p>
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8 border border-white/20">
+            <AvatarFallback className="bg-slate-700 text-xs text-white">{initials(player.name)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium text-white">{player.name}</p>
+            <p className="text-xs text-white/60">Dorsal {player.jersey_number}</p>
+          </div>
+        </div>
       </TableCell>
       <TableCell>{badge}</TableCell>
       <TableCell>
         <div className="flex flex-wrap items-center gap-2">
           {verification.isError && (
-            <Button size="sm" variant="outline" onClick={() => void verification.refetch()}>
+            <Button size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20" onClick={() => void verification.refetch()}>
               Reintentar
             </Button>
           )}
@@ -96,45 +113,45 @@ export function VerificationPlayerRow({ player, teamId }: { player: Player; team
             <Input
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.pdf"
-              className="w-56"
+              className="w-56 border-white/10 bg-slate-800/50 text-white"
               aria-label={`Subir documento de ${player.name}`}
               disabled={upload.isPending}
               onChange={(e) => void handleFile(e.target.files?.[0])}
             />
           )}
           {documentKey && (
-            <Button size="sm" variant="outline" onClick={() => void handleView()} disabled={documentUrl.isPending} aria-label={`Ver documento de ${player.name}`}>
+            <Button size="sm" className="border-white/30 bg-white/10 text-white hover:bg-white/20" onClick={() => void handleView()} disabled={documentUrl.isPending} aria-label={`Ver documento de ${player.name}`}>
               Ver documento
             </Button>
           )}
           {documentKey && !verified && (
-            <Button size="sm" onClick={() => setConfirm('verify')} disabled={decide.isPending} aria-label={`Marcar verificado a ${player.name}`}>
+            <Button size="sm" className="border-0 bg-green-500/80 text-white hover:bg-green-500/90" onClick={() => setConfirm('verify')} disabled={decide.isPending} aria-label={`Marcar verificado a ${player.name}`}>
               Marcar verificado
             </Button>
           )}
           {verified && (
-            <Button size="sm" variant="ghost" onClick={() => setConfirm('unverify')} disabled={decide.isPending} aria-label={`Quitar verificación a ${player.name}`}>
+            <Button size="sm" className="border-0 bg-red-500/80 text-white hover:bg-red-500/90" onClick={() => setConfirm('unverify')} disabled={decide.isPending} aria-label={`Quitar verificación a ${player.name}`}>
               Quitar verificación
             </Button>
           )}
         </div>
         {error && (
-          <p role="alert" className="mt-1 text-xs text-destructive">
+          <p role="alert" className="mt-1 text-xs text-red-400">
             {error}
           </p>
         )}
 
         <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-          <AlertDialogContent>
+          <AlertDialogContent className="border-white/10 bg-slate-900 text-white">
             <AlertDialogHeader>
               <AlertDialogTitle>{confirm === 'verify' ? 'Marcar como verificado' : 'Quitar verificación'}</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogDescription className="text-gray-400">
                 {confirm === 'verify'
                   ? `Confirma que revisaste el documento de ${player.name} y coincide con el jugador.`
                   : `${player.name} dejará de figurar como verificado.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-white/10 bg-slate-800/50 text-gray-400 hover:bg-slate-700/50 hover:text-white">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => void handleConfirm()}>Confirmar</AlertDialogAction>
           </AlertDialogContent>
         </AlertDialog>

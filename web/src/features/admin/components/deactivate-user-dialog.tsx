@@ -35,7 +35,7 @@ export function DeactivateUserDialog({ open, onOpenChange, user }: DeactivateUse
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="bg-slate-900 border-white/10">
         <AlertDialogHeader>
           <AlertDialogTitle>Desactivar usuario</AlertDialogTitle>
           <AlertDialogDescription>

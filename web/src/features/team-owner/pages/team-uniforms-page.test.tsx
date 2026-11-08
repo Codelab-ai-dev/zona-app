@@ -53,7 +53,7 @@ describe('TeamUniformsPage', () => {
     const hex = await screen.findByLabelText('Color Primario (Local) (hex)')
     await user.clear(hex)
     await user.type(hex, '#123456')
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await user.click(screen.getByRole('button', { name: 'Restablecer' }))
 
     expect(hex).toHaveValue('#FF0000')
     expect(requestsTo(fetchMock, PATCH)).toEqual([])

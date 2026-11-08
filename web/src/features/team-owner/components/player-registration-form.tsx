@@ -85,9 +85,10 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="player_name">Nombre del Jugador *</Label>
+        <Label htmlFor="player_name" className="text-white">Nombre del Jugador *</Label>
         <Input
           id="player_name"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           placeholder="Juan Pérez"
           {...register('player_name', {
             required: 'El nombre es requerido',
@@ -97,41 +98,43 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
           aria-describedby={getFieldError('player_name') ? 'player_name-error' : undefined}
         />
         {getFieldError('player_name') && (
-          <p id="player_name-error" className="text-sm text-red-600">
+          <p id="player_name-error" className="text-sm text-red-400">
             {getFieldError('player_name')}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="player_position">Posición *</Label>
+        <Label htmlFor="player_position" className="text-white">Posición *</Label>
         <Select value={position} onValueChange={(value) => setValue('player_position', value, { shouldValidate: true })}>
           <SelectTrigger
             id="player_position"
+            className="bg-slate-800 border-slate-600 text-white"
             aria-invalid={!!getFieldError('player_position')}
             aria-describedby={getFieldError('player_position') ? 'player_position-error' : undefined}
           >
             <SelectValue placeholder="Selecciona una posición" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-600">
             {positions.map((pos) => (
-              <SelectItem key={pos} value={pos}>
+              <SelectItem key={pos} value={pos} className="text-white hover:bg-slate-700">
                 {pos}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {getFieldError('player_position') && (
-          <p id="player_position-error" className="text-sm text-red-600">
+          <p id="player_position-error" className="text-sm text-red-400">
             {getFieldError('player_position')}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="jersey_number">Número de Camiseta (1-99) *</Label>
+        <Label htmlFor="jersey_number" className="text-white">Número de Camiseta (1-99) *</Label>
         <Input
           id="jersey_number"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           type="number"
           min={1}
           max={99}
@@ -145,32 +148,34 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
           aria-describedby={getFieldError('jersey_number') ? 'jersey_number-error' : undefined}
         />
         {getFieldError('jersey_number') && (
-          <p id="jersey_number-error" className="text-sm text-red-600">
+          <p id="jersey_number-error" className="text-sm text-red-400">
             {getFieldError('jersey_number')}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="birth_date">Fecha de Nacimiento</Label>
+        <Label htmlFor="birth_date" className="text-white">Fecha de Nacimiento</Label>
         <Input
           id="birth_date"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           type="date"
           {...register('birth_date')}
           aria-invalid={!!getFieldError('birth_date')}
           aria-describedby={getFieldError('birth_date') ? 'birth_date-error' : undefined}
         />
         {getFieldError('birth_date') && (
-          <p id="birth_date-error" className="text-sm text-red-600">
+          <p id="birth_date-error" className="text-sm text-red-400">
             {getFieldError('birth_date')}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reason">Motivo de la Solicitud *</Label>
+        <Label htmlFor="reason" className="text-white">Motivo de la Solicitud *</Label>
         <Textarea
           id="reason"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           placeholder="Describe el motivo de la solicitud de registro"
           {...register('reason', {
             required: 'El motivo es requerido',
@@ -180,13 +185,13 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
           aria-describedby={getFieldError('reason') ? 'reason-error' : undefined}
         />
         {getFieldError('reason') && (
-          <p id="reason-error" className="text-sm text-red-600">
+          <p id="reason-error" className="text-sm text-red-400">
             {getFieldError('reason')}
           </p>
         )}
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
+      <Button type="submit" disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white">
         {isLoading ? 'Enviando...' : 'Enviar Solicitud'}
       </Button>
     </form>

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 
-import { AlertTriangle, ImageDown } from 'lucide-react'
+import { AlertTriangle, Calendar as CalendarIcon, Trophy } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -13,7 +13,8 @@ import { toast } from 'sonner'
 import { useLeagueTournaments } from '@/features/leagues/api'
 
 import { useTournamentMatches, useDeleteMatch, usePublishRound } from './api'
-import { MatchCard } from './components/match-card'
+import { CalendarFilters } from './components/calendar-filters'
+import { RoundSection } from './components/round-section'
 import { MatchScheduleDialog } from './components/match-schedule-dialog'
 import { MatchResultDialog } from './components/match-result-dialog'
 import { MatchQRGenerator } from './components/match-qr-generator'
@@ -126,36 +127,42 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
   return (
     <section aria-labelledby="calendar-title" className="space-y-6 pb-8">
       <header>
-        <h1 id="calendar-title" className="text-2xl font-bold tracking-tight">
+        <h1 id="calendar-title" className="text-xl font-bold text-white drop-shadow-lg sm:text-2xl">
           Calendario y Resultados
         </h1>
-        <p className="mt-1 text-muted-foreground">Gestiona la programación, resultados y publicación de jornadas.</p>
+        <p className="text-white/80 drop-shadow">Gestiona la programación, resultados y publicación de jornadas.</p>
       </header>
 
       {/* Tournament selector */}
-      <Card>
+      <Card className="border-white/20 bg-white/10 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="text-sm">Selecciona un torneo</CardTitle>
+          <CardTitle className="text-white drop-shadow-lg">Seleccionar Torneo</CardTitle>
+          <CardDescription className="text-white/80 drop-shadow">Elige el torneo para ver sus partidos</CardDescription>
         </CardHeader>
         <CardContent>
           <QueryState
             query={tournaments}
             isEmpty={(res) => res.data.length === 0}
-            empty={<p className="text-sm text-muted-foreground">No hay torneos disponibles</p>}
+            empty={<p className="text-sm text-gray-400">No hay torneos disponibles</p>}
           >
             {(res) => (
-              <Select value={selectedTournamentId} onValueChange={setPickedTournamentId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {res.data.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="max-w-md">
+                <Select value={selectedTournamentId} onValueChange={(id) => { setPickedTournamentId(id); setSelectedRound('all') }}>
+                  <SelectTrigger aria-label="Torneo" className="w-full rounded-lg border-white/30 bg-white/10 text-white backdrop-blur-md">
+                    <SelectValue placeholder="Selecciona un torneo" />
+                  </SelectTrigger>
+                  <SelectContent className="border-white/20 bg-gray-700/95 backdrop-blur-xl">
+                    {res.data.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="text-white">
+                        <span className="flex items-center gap-2">
+                          <Trophy className={`h-4 w-4 ${t.is_active ? 'text-green-300' : 'text-white/50'}`} aria-hidden="true" />
+                          {t.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </QueryState>
         </CardContent>
@@ -163,91 +170,61 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
 
       {/* Filters */}
       {selectedTournamentId && (
-        <div className="flex flex-wrap gap-3">
-          <Select value={String(selectedRound)} onValueChange={(v) => setSelectedRound(v === 'all' ? 'all' : Number(v))}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las jornadas</SelectItem>
-              {availableRounds.map((r) => (
-                <SelectItem key={r} value={String(r)}>
-                  Jornada {r}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los equipos</SelectItem>
-              {availableTeams.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <CalendarFilters
+          round={selectedRound}
+          team={selectedTeam}
+          rounds={availableRounds}
+          teams={availableTeams}
+          onRound={setSelectedRound}
+          onTeam={setSelectedTeam}
+        />
       )}
 
       {/* Matches by round */}
       <QueryState
         query={matches}
         isEmpty={(res) => res.data.length === 0}
-        empty={<p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">No hay partidos para este torneo.</p>}
+        empty={
+          <div className="rounded-xl border border-white/10 bg-slate-800/50 p-6 text-center">
+            <CalendarIcon className="mx-auto mb-3 h-10 w-10 text-gray-500" aria-hidden="true" />
+            <h3 className="mb-1 text-sm font-medium text-white">No hay partidos programados</h3>
+            <p className="text-xs text-gray-500">No hay partidos para este torneo. Genera las jornadas en la sección Jornadas.</p>
+          </div>
+        }
       >
         {() => (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {matchesByRound.length === 0 ? (
-              <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">No hay partidos que coincidan con los filtros.</p>
+              <div className="rounded-xl border border-white/10 bg-slate-800/50 p-6 text-center">
+                <CalendarIcon className="mx-auto mb-3 h-10 w-10 text-gray-500" aria-hidden="true" />
+                <h3 className="mb-1 text-sm font-medium text-white">No hay partidos con estos filtros</h3>
+                <p className="mb-4 text-xs text-gray-500">No hay partidos que coincidan con los filtros.</p>
+                <Button
+                  size="sm"
+                  onClick={() => { setSelectedRound('all'); setSelectedTeam('all') }}
+                  className="border-white/10 bg-slate-700/50 text-xs text-gray-400 hover:text-white"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
             ) : (
               matchesByRound.map(([round, roundMatches]) => {
-                const isRoundPublished = roundMatches.every((m) => m.is_published)
                 const roundNum = round as number
                 return (
-                  <div key={round ?? 'bye'} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-semibold">
-                        {roundNum === -1 ? 'Partidos sin jornada' : `Jornada ${roundNum}`}
-                      </h2>
-                      {roundNum !== -1 && (
-                        <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => setPosterRound(roundNum)}>
-                          <ImageDown className="size-4" aria-hidden="true" />
-                          Póster de la jornada
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={isRoundPublished ? 'outline' : 'default'}
-                          onClick={() => void handlePublishRound(roundNum)}
-                          disabled={publishRound.isPending || roundMatches.length === 0}
-                        >
-                          {isRoundPublished ? 'Publicada' : 'Publicar jornada'}
-                        </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <ul className="space-y-2">
-                      {roundMatches.map((match) => (
-                        <li key={match.id}>
-                          <MatchCard
-                            match={match}
-                            onEdit={() => setEditingMatch(match)}
-                            onResult={() => setResultMatch(match)}
-                            onDelete={() => setDeletingMatchId(match.id)}
-                            onQr={() => setQrMatch(match)}
-                            onAttendance={() => setAttendanceMatch(match)}
-                            onReport={() => setReportMatch(match)}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <RoundSection
+                    key={round}
+                    round={roundNum}
+                    matches={roundMatches}
+                    publishing={publishRound.isPending}
+                    onPoster={() => setPosterRound(roundNum)}
+                    onPublish={() => void handlePublishRound(roundNum)}
+                    onEdit={setEditingMatch}
+                    onResult={setResultMatch}
+                    onDelete={(m) => setDeletingMatchId(m.id)}
+                    onQr={setQrMatch}
+                    onAttendance={setAttendanceMatch}
+                    onReport={setReportMatch}
+                  />
                 )
               })
             )}
@@ -265,10 +242,10 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
       {reportMatch && <RefereeReportDialog match={reportMatch} open onOpenChange={() => setReportMatch(null)} />}
       {attendanceMatch && (
         <Dialog open onOpenChange={() => setAttendanceMatch(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-white/10 bg-slate-900 text-white">
             <DialogHeader>
               <DialogTitle>Asistencia</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-gray-400">
                 {attendanceMatch.home_team_name} vs {attendanceMatch.away_team_name}
               </DialogDescription>
             </DialogHeader>
@@ -288,21 +265,21 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
 
       {/* Delete confirmation */}
       <AlertDialog open={deletingMatchId !== null} onOpenChange={(open) => !open && setDeletingMatchId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-white/10 bg-slate-900 text-white">
           <AlertDialogTitle>Eliminar partido</AlertDialogTitle>
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-destructive" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 size-5 flex-shrink-0 text-red-400" aria-hidden="true" />
             <div className="space-y-2">
-              <AlertDialogDescription>Esto elimina el partido de forma permanente. Esta acción no se puede deshacer.</AlertDialogDescription>
-              <p className="text-sm font-semibold">¿Continuar?</p>
+              <AlertDialogDescription className="text-gray-400">Esto elimina el partido de forma permanente. Esta acción no se puede deshacer.</AlertDialogDescription>
+              <p className="text-sm font-semibold text-white">¿Continuar?</p>
             </div>
           </div>
           <div className="flex gap-3">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-white/10 bg-slate-800/50 text-gray-400 hover:bg-slate-700/50 hover:text-white">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteMatch}
               disabled={deleteMatch.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-600 text-white hover:bg-red-700"
             >
               {deleteMatch.isPending ? 'Eliminando…' : 'Eliminar'}
             </AlertDialogAction>

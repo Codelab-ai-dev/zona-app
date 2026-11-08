@@ -1,16 +1,12 @@
-import { useState, useRef } from 'react'
-import { Download, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Download, ImageDown, Loader2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+
 import type { Standings } from '../types'
+import { StandingsPoster } from './standings-poster'
 
 interface StandingsPosterGeneratorProps {
   open: boolean
@@ -18,17 +14,13 @@ interface StandingsPosterGeneratorProps {
   standings: Standings[]
   tournamentName: string
   leagueName: string
+  leagueLogo?: string
 }
 
-export function StandingsPosterGenerator({
-  open,
-  onOpenChange,
-  standings,
-  tournamentName,
-  leagueName,
-}: StandingsPosterGeneratorProps) {
+export function StandingsPosterGenerator({ open, onOpenChange, standings, tournamentName, leagueName, leagueLogo }: StandingsPosterGeneratorProps) {
   const [downloading, setDownloading] = useState(false)
   const posterRef = useRef<HTMLDivElement>(null)
+  const league = { name: leagueName, logo: leagueLogo }
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -36,20 +28,42 @@ export function StandingsPosterGenerator({
       const el = posterRef.current
       if (!el) throw new Error('Poster element not found')
 
-      // Import html2canvas dynamically
-      const html2canvas = (await import('html2canvas')).default
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1000px;height:5000px;border:none;'
+      document.body.appendChild(iframe)
 
-      // Create canvas from the poster element
-      const canvas = await html2canvas(el, {
+      const iframeDoc = iframe.contentDocument as Document
+      iframeDoc.open()
+      iframeDoc.write(`<!DOCTYPE html><html><head><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{-webkit-font-smoothing:antialiased;}
+table{border-collapse:collapse;border-spacing:0;}
+td,th{vertical-align:middle;}
+img{display:block;}
+</style></head><body></body></html>`)
+      iframeDoc.close()
+
+      const clone = el.cloneNode(true) as HTMLDivElement
+      iframeDoc.body.appendChild(clone)
+
+      const imgs = clone.querySelectorAll('img')
+      await Promise.all(Array.from(imgs).map(img =>
+        img.complete ? Promise.resolve() : new Promise<void>(res => { img.onload = () => res(); img.onerror = () => res() })
+      ))
+      await new Promise(r => setTimeout(r, 300))
+
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 1080,
-        height: el.scrollHeight,
+        backgroundColor: null,
+        width: 900,
+        ...({ window: iframe.contentWindow } as Record<string, unknown>),
       })
 
-      // Download the image
+      document.body.removeChild(iframe)
+
       const link = document.createElement('a')
       link.download = `posiciones-${tournamentName.replace(/\s+/g, '_')}-${Date.now()}.png`
       link.href = canvas.toDataURL('image/png', 1.0)
@@ -57,11 +71,10 @@ export function StandingsPosterGenerator({
       link.click()
       document.body.removeChild(link)
 
-      toast.success('Poster descargado exitosamente')
-      onOpenChange(false)
+      toast.success('Imagen descargada exitosamente')
     } catch (error) {
-      console.error('Error downloading poster:', error)
-      toast.error('Error al descargar el poster')
+      console.error('Error descargando poster:', error)
+      toast.error('Error al descargar la imagen')
     } finally {
       setDownloading(false)
     }
@@ -69,87 +82,51 @@ export function StandingsPosterGenerator({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Descargar Poster de Posiciones</DialogTitle>
-          <DialogDescription>{tournamentName}</DialogDescription>
+      <DialogContent className="max-w-2xl sm:max-w-2xl max-h-[90vh] flex flex-col backdrop-blur-xl bg-slate-900/95 border-white/10 text-white p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
+          <DialogTitle className="text-white flex items-center gap-2">
+            <ImageDown className="w-5 h-5" />
+            Generar Imagen de Posiciones
+          </DialogTitle>
+          <DialogDescription className="text-white/60">
+            Vista previa de la tabla de posiciones
+          </DialogDescription>
         </DialogHeader>
 
-        <div ref={posterRef} className="w-full bg-white p-8 space-y-6">
-          {/* Header */}
-          <div className="text-center border-b-2 pb-4">
-            <h1 className="text-3xl font-bold">{leagueName}</h1>
-            <h2 className="text-xl font-semibold text-muted-foreground">{tournamentName}</h2>
-            <p className="text-sm text-muted-foreground">Tabla de Posiciones</p>
+        {standings.length === 0 ? (
+          <div className="text-center py-12 text-white/50 px-5">
+            No hay datos de posiciones para generar imagen.
           </div>
+        ) : (
+          <>
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-3">
+              <div className="rounded-lg overflow-hidden border border-white/10" style={{ zoom: 0.58 }}>
+                <StandingsPoster posterRef={posterRef} standings={standings} league={league} tournamentName={tournamentName} />
+              </div>
+            </div>
 
-          {/* Standings Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted">
-                  <th className="border p-2 text-center font-bold">Pos.</th>
-                  <th className="border p-2 text-left font-bold">Equipo</th>
-                  <th className="border p-2 text-center font-bold">PJ</th>
-                  <th className="border p-2 text-center font-bold">G</th>
-                  <th className="border p-2 text-center font-bold">E</th>
-                  <th className="border p-2 text-center font-bold">P</th>
-                  <th className="border p-2 text-center font-bold">GF</th>
-                  <th className="border p-2 text-center font-bold">GC</th>
-                  <th className="border p-2 text-center font-bold">DG</th>
-                  <th className="border p-2 text-center font-bold">Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {standings.map((standing, idx) => (
-                  <tr key={standing.team_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border p-2 text-center font-medium">{standing.position}</td>
-                    <td className="border p-2 font-medium">{standing.team_name}</td>
-                    <td className="border p-2 text-center">{standing.matches_played}</td>
-                    <td className="border p-2 text-center">{standing.matches_won}</td>
-                    <td className="border p-2 text-center">{standing.matches_drawn}</td>
-                    <td className="border p-2 text-center">{standing.matches_lost}</td>
-                    <td className="border p-2 text-center">{standing.goals_for}</td>
-                    <td className="border p-2 text-center">{standing.goals_against}</td>
-                    <td className="border p-2 text-center">{standing.goal_difference}</td>
-                    <td className="border p-2 text-center font-bold">
-                      {standing.points}
-                      {standing.points_adjustment !== 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          ({standing.points_adjustment > 0 ? '+' : ''}{standing.points_adjustment})
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-xs text-muted-foreground border-t-2 pt-4">
-            <p>Generado el {new Date().toLocaleDateString('es-MX')}</p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={downloading}>
-            Cancelar
-          </Button>
-          <Button onClick={handleDownload} disabled={downloading} className="gap-2">
-            {downloading ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Descargando…
-              </>
-            ) : (
-              <>
-                <Download className="size-4" />
-                Descargar Poster
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+            <div className="px-5 py-4 border-t border-white/10 shrink-0">
+              <Button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="w-full bg-gradient-to-r from-yellow-600 to-amber-500 hover:from-yellow-700 hover:to-amber-600 text-white font-bold border-0 shadow-lg"
+                size="lg"
+              >
+                {downloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generando imagen...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Descargar PNG
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

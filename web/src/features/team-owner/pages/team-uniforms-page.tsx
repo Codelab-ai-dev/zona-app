@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { QueryState } from '@/components/states'
 import { Button } from '@/components/ui/button'
+import { RotateCcw, Save, Shirt } from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { ApiError } from '@/lib/api/client'
 
 import { useTeam, useUpdateTeam } from '../api'
+import { glassCard, glassInput, pageSubtitle, pageTitle } from '../glass'
 import type { Team, UpdateTeamRequest } from '../types'
 
 type ColorKey =
@@ -42,16 +45,9 @@ export function TeamUniformsPage({ teamId }: { teamId: string }) {
   const team = useTeam(teamId)
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Uniformes</h2>
-        <p className="text-muted-foreground">Personaliza los colores de los uniformes de tu equipo.</p>
-      </div>
-
-      <QueryState query={team} loadingLabel="Cargando información del equipo…">
-        {(data) => <UniformsEditor team={data} />}
-      </QueryState>
-    </div>
+    <QueryState query={team} loadingLabel="Cargando información del equipo…">
+      {(data) => <UniformsEditor team={data} />}
+    </QueryState>
   )
 }
 
@@ -81,71 +77,107 @@ function UniformsEditor({ team }: { team: Team }) {
     }
   }
 
+  const preview = (id: string) => {
+    const shirt = colors[`${id}_primary_color` as ColorKey]
+    return HEX.test(shirt ?? '') ? shirt : '#6b7280'
+  }
+
   return (
     <div className="space-y-6">
-      {categories.map((category) => (
-        <Card key={category.id}>
-          <CardHeader>
-            <CardTitle>{category.title}</CardTitle>
-            <CardDescription>{category.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {colorFields
-              .filter((f) => f.category === category.id)
-              .map(({ key, label }) => (
-                <div key={key}>
-                  <div className="flex items-center justify-between gap-4">
-                    <Label htmlFor={key} className="flex-1">
-                      {label}
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        id={key}
-                        type="color"
-                        value={HEX.test(colors[key]) ? colors[key] : '#000000'}
-                        onChange={(e) => handleColorChange(key, e.target.value)}
-                        disabled={updateTeam.isPending}
-                        className="h-10 w-16 cursor-pointer rounded border"
-                      />
-                      <Input
-                        type="text"
-                        aria-label={`${label} (hex)`}
-                        value={colors[key]}
-                        onChange={(e) => handleColorChange(key, e.target.value)}
-                        placeholder="#000000"
-                        disabled={updateTeam.isPending}
-                        aria-invalid={Boolean(errors[key])}
-                        aria-describedby={errors[key] ? `${key}-error` : undefined}
-                        className="w-24 font-mono text-sm"
-                      />
-                    </div>
-                  </div>
-                  {errors[key] && (
-                    <p id={`${key}-error`} className="mt-1 text-right text-sm text-destructive">
-                      {errors[key]}
-                    </p>
-                  )}
-                </div>
-              ))}
-          </CardContent>
-        </Card>
-      ))}
+      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div>
+          <h2 className={`${pageTitle} flex items-center`}>
+            <Shirt className="w-6 h-6 mr-2" aria-hidden="true" />
+            Gestión de Uniformes
+          </h2>
+          <p className={pageSubtitle}>Configura los colores de los uniformes de {team.name}</p>
+        </div>
 
-      <div className="flex gap-2">
-        <Button onClick={() => void handleSave()} disabled={changed.length === 0 || updateTeam.isPending} className="flex-1">
-          {updateTeam.isPending ? 'Guardando…' : 'Guardar Cambios'}
-        </Button>
-        {changed.length > 0 && (
+        <div className="flex space-x-2">
+          {changed.length > 0 && (
+            <Button
+              variant="outline"
+              disabled={updateTeam.isPending}
+              onClick={() => {
+                setColors(saved)
+                setErrors({})
+              }}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" aria-hidden="true" />
+              Restablecer
+            </Button>
+          )}
           <Button
-            variant="outline"
-            onClick={() => {
-              setColors(saved)
-              setErrors({})
-            }}
+            onClick={() => void handleSave()}
+            disabled={changed.length === 0 || updateTeam.isPending}
+            className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl"
           >
-            Cancelar
+            <Save className="w-4 h-4 mr-2" aria-hidden="true" />
+            {updateTeam.isPending ? 'Guardando…' : 'Guardar Cambios'}
           </Button>
-        )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {categories.map((category) => (
+          <Card key={category.id} className={glassCard}>
+            <CardHeader>
+              <CardTitle className="flex items-center text-white drop-shadow-lg">
+                <Shirt className="w-5 h-5 mr-2" aria-hidden="true" />
+                {category.title}
+              </CardTitle>
+              <CardDescription className="text-white/70 drop-shadow">{category.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {category.id !== 'alternativo' && (
+                <div className="flex justify-center mb-4">
+                  <Shirt
+                    className="w-12 h-12 sm:w-16 sm:h-16"
+                    aria-hidden="true"
+                    style={{ color: preview(category.id === 'local' ? 'home' : 'away'), stroke: '#000000', strokeWidth: '1' }}
+                    fill="currentColor"
+                  />
+                </div>
+              )}
+              <div className="space-y-3">
+                {colorFields
+                  .filter((f) => f.category === category.id)
+                  .map(({ key, label }) => (
+                    <div key={key}>
+                      <Label htmlFor={key} className="text-white drop-shadow">{label}</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <input
+                          id={key}
+                          type="color"
+                          value={HEX.test(colors[key]) ? colors[key] : '#000000'}
+                          onChange={(e) => handleColorChange(key, e.target.value)}
+                          disabled={updateTeam.isPending}
+                          className="w-12 h-10 rounded cursor-pointer bg-transparent border border-white/30"
+                        />
+                        <Input
+                          type="text"
+                          aria-label={`${label} (hex)`}
+                          value={colors[key]}
+                          onChange={(e) => handleColorChange(key, e.target.value)}
+                          placeholder="#000000"
+                          disabled={updateTeam.isPending}
+                          aria-invalid={Boolean(errors[key])}
+                          aria-describedby={errors[key] ? `${key}-error` : undefined}
+                          className={`flex-1 min-w-0 font-mono text-sm rounded-xl ${glassInput}`}
+                        />
+                      </div>
+                      {errors[key] && (
+                        <p id={`${key}-error`} className="mt-1 text-sm text-red-400">
+                          {errors[key]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
-import { Megaphone, Plus, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, Plus, Trash2, User, XCircle, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
+import { ErrorState, LoadingState } from '@/components/states'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,125 +12,202 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { EmptyState, QueryState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { useWhatsAppLinks, useDeleteWhatsAppLink } from '../api'
+import { useDeleteWhatsAppLink, useTournaments, useWhatsAppLinks } from '../api'
 import type { WhatsAppLink } from '../types'
 import { BroadcastDialog } from './broadcast-dialog'
 import { WhatsAppForm } from './whatsapp-form'
+
+const glass = 'backdrop-blur-xl bg-white/10 border-white/20'
+const roleLabels: Record<string, string> = {
+  super_admin: 'Super Admin',
+  league_admin: 'Admin Liga',
+  team_owner: 'Dueño Equipo',
+  user: 'Usuario',
+}
+
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: LucideIcon; color: string }) {
+  return (
+    <Card className={glass}>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-white/70 drop-shadow">{label}</p>
+            <p className={`text-3xl font-bold drop-shadow-lg ${color}`}>{value}</p>
+          </div>
+          <Icon className={`w-8 h-8 ${color}`} aria-hidden="true" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export function WhatsAppPage({ leagueId }: { leagueId: string }) {
   const [showForm, setShowForm] = useState(false)
   const [showBroadcast, setShowBroadcast] = useState(false)
   const links = useWhatsAppLinks(leagueId)
+  const tournaments = useTournaments(leagueId)
+  const rows = links.data?.data ?? []
 
   return (
     <section aria-labelledby="whatsapp-title" className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h2 id="whatsapp-title" className="text-2xl font-bold">
-            Enlaces de WhatsApp
-          </h2>
-          <p className="text-sm text-muted-foreground">Gestiona los números de teléfono para notificaciones</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowBroadcast(true)} size="sm" variant="outline" className="gap-2">
-            <Megaphone className="size-4" aria-hidden="true" />
-            Enviar jornada
-          </Button>
-          <Button onClick={() => setShowForm(true)} size="sm" className="gap-2">
-            <Plus className="size-4" aria-hidden="true" />
-            Nuevo Enlace
-          </Button>
-        </div>
-      </header>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard label="Total Vínculos" value={rows.length} icon={MessageSquare} color="text-blue-300" />
+        <StatCard label="Activos" value={rows.filter((l) => l.is_active).length} icon={CheckCircle} color="text-green-300" />
+        <StatCard label="Inactivos" value={rows.filter((l) => !l.is_active).length} icon={XCircle} color="text-red-300" />
+        <StatCard label="Con Interacciones" value={rows.filter((l) => l.last_interaction_at).length} icon={Clock} color="text-yellow-300" />
+      </div>
+
+      <Card className={glass}>
+        <CardHeader>
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div>
+              <CardTitle id="whatsapp-title" className="flex items-center gap-2 text-white drop-shadow-lg">
+                <MessageSquare className="w-5 h-5 text-green-400" aria-hidden="true" />
+                Gestión de WhatsApp
+              </CardTitle>
+              <CardDescription className="text-white/80 drop-shadow">Vincula números de WhatsApp con usuarios de tu liga</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => setShowBroadcast(true)} className="backdrop-blur-md bg-white/10 border border-white/30 text-white hover:bg-white/20">
+                <Megaphone className="w-4 h-4 mr-2" aria-hidden="true" />
+                Enviar jornada
+              </Button>
+              <Button onClick={() => setShowForm(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0">
+                <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                Nuevo Vínculo
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {rows.some((l) => !l.tournament_id && l.is_active) && (
+            <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+              <div className="flex gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-xs text-orange-300/90">
+                  <strong className="text-orange-300">Atención:</strong> Hay vínculos sin torneo asignado. El agente no podrá responder consultas de tabla, resultados o calendario sin un torneo configurado.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {links.isPending ? (
+            <LoadingState label="Cargando vínculos..." />
+          ) : links.isError ? (
+            <ErrorState error={links.error} onRetry={() => void links.refetch()} />
+          ) : rows.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageSquare className="w-16 h-16 text-white/30 mx-auto mb-4" aria-hidden="true" />
+              <p className="text-white/80 drop-shadow mb-2">No hay vínculos de WhatsApp</p>
+              <p className="text-white/60 drop-shadow text-sm">Crea el primer vínculo para empezar a usar el Agent Service</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/20 hover:bg-white/5">
+                    <TableHead className="text-white/90 drop-shadow">Contacto</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Teléfono</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Rol</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Torneo</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Estado</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Última Interacción</TableHead>
+                    <TableHead className="text-white/90 drop-shadow text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((link) => (
+                    <WhatsAppRow key={link.id} link={link} tournamentName={tournaments.data?.data.find((t) => t.id === link.tournament_id)?.name} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {showBroadcast && <BroadcastDialog leagueId={leagueId} onClose={() => setShowBroadcast(false)} />}
-
       {showForm && <WhatsAppForm leagueId={leagueId} onClose={() => setShowForm(false)} />}
-
-      <QueryState
-        query={links}
-        loadingLabel="Cargando enlaces…"
-        isEmpty={(res) => res.data.length === 0}
-        empty={<EmptyState title="Sin enlaces" description="Añade números de teléfono para notificaciones" />}
-      >
-        {(res) => (
-          <ul className="grid gap-4">
-            {res.data.map((link) => (
-              <li key={link.id}>
-                <WhatsAppLinkCard link={link} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </QueryState>
     </section>
   )
 }
 
-function WhatsAppLinkCard({ link }: { link: WhatsAppLink }) {
+function WhatsAppRow({ link, tournamentName }: { link: WhatsAppLink; tournamentName?: string }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const deleteLink = useDeleteWhatsAppLink(link.id)
+  const name = link.display_name || link.phone_number
 
   const handleDelete = async () => {
     try {
       await deleteLink.mutateAsync()
       setShowConfirm(false)
     } catch {
-      // Error is already handled by mutation toast
+      // The mutation already shows the error toast; keep the dialog open.
     }
   }
 
   return (
     <>
-      <Card className="hover:bg-muted/50 transition-colors">
-        <CardHeader className="flex flex-row items-start justify-between space-y-0">
-          <div>
-            <CardTitle className="text-base">{link.display_name || link.phone_number}</CardTitle>
-            <p className="text-sm text-muted-foreground">+{link.phone_number}</p>
-          </div>
+      <TableRow className="border-white/20 hover:bg-white/5">
+        <TableCell>
           <div className="flex items-center gap-2">
-            <Badge variant={link.is_active ? 'default' : 'secondary'}>
-              {link.is_active ? 'Activo' : 'Inactivo'}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowConfirm(true)}
-              disabled={deleteLink.isPending}
-              aria-label={`Eliminar enlace de ${link.display_name || link.phone_number}`}
-            >
-              <Trash2 className="size-4" aria-hidden="true" />
-            </Button>
+            <User className="w-4 h-4 text-white/50" aria-hidden="true" />
+            <p className="text-white drop-shadow font-medium">{link.display_name || 'Sin nombre'}</p>
           </div>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <p>Rol: {link.role}</p>
-          {link.last_interaction_at && (
-            <p>Última interacción: {new Date(link.last_interaction_at).toLocaleDateString()}</p>
+        </TableCell>
+        <TableCell>
+          <code className="text-white/90 drop-shadow bg-white/10 px-2 py-1 rounded text-sm">+{link.phone_number}</code>
+        </TableCell>
+        <TableCell className="text-white/80 text-sm">{roleLabels[link.role] ?? link.role}</TableCell>
+        <TableCell>
+          {link.tournament_id ? (
+            <Badge className="bg-blue-500/80 text-white">{tournamentName ?? 'Torneo'}</Badge>
+          ) : (
+            <Badge className="bg-orange-500/80 text-white">
+              <AlertCircle className="w-3 h-3 mr-1" aria-hidden="true" />
+              Sin torneo
+            </Badge>
           )}
-        </CardContent>
-      </Card>
+        </TableCell>
+        <TableCell>
+          {link.is_active ? (
+            <Badge className="bg-green-500/80 text-white">
+              <CheckCircle className="w-3 h-3 mr-1" aria-hidden="true" />
+              Activo
+            </Badge>
+          ) : (
+            <Badge className="bg-red-500/80 text-white">
+              <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />
+              Inactivo
+            </Badge>
+          )}
+        </TableCell>
+        <TableCell className="text-white/80 drop-shadow text-sm">
+          {link.last_interaction_at ? new Date(link.last_interaction_at).toLocaleDateString('es-ES') : <span className="text-white/50">Sin interacciones</span>}
+        </TableCell>
+        <TableCell className="text-right">
+          <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)} disabled={deleteLink.isPending} aria-label={`Eliminar enlace de ${name}`}>
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
+          </Button>
+        </TableCell>
+      </TableRow>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar Enlace</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Eliminar Enlace</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
               ¿Estás seguro de que deseas eliminar este enlace de WhatsApp? Ya no recibirán notificaciones.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteLink.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogCancel className="bg-slate-800/50 border-white/10 text-white hover:bg-slate-700 hover:text-white">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteLink.isPending} className="bg-red-500 hover:bg-red-600 text-white">
               {deleteLink.isPending ? 'Eliminando…' : 'Sí, eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>

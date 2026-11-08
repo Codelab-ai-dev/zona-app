@@ -61,10 +61,10 @@ export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nuevo Enlace de WhatsApp</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base md:text-lg font-bold text-white">Nuevo Enlace de WhatsApp</DialogTitle>
+          <DialogDescription className="text-gray-400 text-xs md:text-sm">
             Añade un número de teléfono para recibir notificaciones de la liga
           </DialogDescription>
         </DialogHeader>
@@ -80,8 +80,9 @@ export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Número de Teléfono</Label>
+            <Label htmlFor="phone" className="text-[10px] md:text-xs text-gray-400">Número de Teléfono</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="phone"
               type="tel"
               placeholder="5215551234567"
@@ -93,15 +94,16 @@ export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
             />
             <p className="text-xs text-muted-foreground">Formato: 10-15 dígitos sin símbolos</p>
             {errors.phone_number && (
-              <p id="phone-error" className="text-xs text-destructive">
+              <p id="phone-error" className="text-xs text-red-400">
                 {errors.phone_number}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="display_name">Nombre (opcional)</Label>
+            <Label htmlFor="display_name" className="text-[10px] md:text-xs text-gray-400">Nombre (opcional)</Label>
             <Input
+              className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="display_name"
               placeholder="Ej: Tesorería de la Liga"
               value={formData.display_name}
@@ -111,16 +113,16 @@ export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Rol</Label>
+            <Label htmlFor="role" className="text-[10px] md:text-xs text-gray-400">Rol</Label>
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value })}
               disabled={create.isPending}
             >
-              <SelectTrigger id="role">
+              <SelectTrigger id="role" className="h-10 bg-slate-800/50 border-white/10 text-white text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-900 border-white/10 max-h-60">
                 <SelectItem value="league_admin">Admin de Liga</SelectItem>
                 <SelectItem value="team_owner">Dueño de Equipo</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
@@ -130,10 +132,10 @@ export function WhatsAppForm({ leagueId, onClose }: WhatsAppFormProps) {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={create.isPending}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={create.isPending}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={create.isPending}>
+            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white" disabled={create.isPending}>
               {create.isPending ? 'Guardando…' : 'Guardar'}
             </Button>
           </DialogFooter>

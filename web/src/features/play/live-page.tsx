@@ -11,7 +11,7 @@ export function LivePage() {
   const stream = useStream(streamId || '')
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8">
+    <section className="container mx-auto max-w-screen-2xl py-8 lg:py-10">
       <QueryState query={stream} loadingLabel="Cargando transmisión…">
         {(data) => {
           if (data.status !== 'live' && data.status !== 'ended') {

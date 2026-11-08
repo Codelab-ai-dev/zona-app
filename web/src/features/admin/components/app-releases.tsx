@@ -12,13 +12,15 @@ export function AppReleases() {
   const [leagueId, setLeagueId] = useState('')
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="flex items-center gap-2 text-lg font-bold">
-          <Smartphone className="h-5 w-5" aria-hidden="true" />
-          Gestión de Versiones APK
-        </h2>
-        <p className="text-sm text-muted-foreground">Administra las versiones del APK</p>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex items-start gap-3">
+        <div className="p-2 md:p-2.5 rounded-lg bg-green-500/20">
+          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-green-400" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 className="text-lg md:text-xl font-bold text-white">Gestión de Versiones APK</h2>
+          <p className="text-gray-500 text-sm">Administra las versiones del APK</p>
+        </div>
       </div>
 
       <QueryState query={leagues} loadingLabel="Cargando ligas…" isEmpty={(res) => res.data.length === 0}>

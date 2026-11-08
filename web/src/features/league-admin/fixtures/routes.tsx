@@ -35,7 +35,7 @@ function LeagueGate({ area: key, render }: { area: string; render: (leagueId: st
   const list = leagues.data?.data ?? []
   if (list.length === 0) {
     return (
-      <section className="mx-auto w-full max-w-6xl px-4 py-8">
+      <section className="py-6">
         <EmptyState
           title="Sin ligas"
           description="Tu cuenta no administra ninguna liga. Crea una o pide que te agreguen como administrador."
@@ -47,18 +47,17 @@ function LeagueGate({ area: key, render }: { area: string; render: (leagueId: st
   const chosen = list.find((l) => l.id === selectedLeagueId) ?? (list.length === 1 ? list[0] : undefined)
   if (!chosen) {
     return (
-      <section className="mx-auto w-full max-w-6xl px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight">Selecciona una liga</h1>
+      <section className="py-6">
+        <h1 className="mb-6 text-xl font-bold text-white drop-shadow-lg sm:text-2xl">Selecciona una liga</h1>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((league) => (
             <Button
               key={league.id}
-              variant="outline"
-              className="h-auto flex-col items-start gap-2 p-4"
+              className="h-auto flex-col items-start gap-2 border-white/20 bg-white/10 p-4 text-white backdrop-blur-xl hover:bg-white/15"
               onClick={() => setSelectedLeagueId(league.id)}
             >
               <span className="font-semibold">{league.name}</span>
-              <span className="text-xs text-muted-foreground">{league.slug}</span>
+              <span className="text-xs text-white/70">{league.slug}</span>
             </Button>
           ))}
         </div>

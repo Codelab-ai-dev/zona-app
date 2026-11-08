@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { EmptyState, QueryState } from '@/components/states'
+import { ErrorState, LoadingState } from '@/components/states'
 
 import { useRecordings, useStreams } from './api'
 import type { Recording, Stream } from './types'
@@ -119,25 +119,21 @@ export function PlayPage() {
   const recentVideos = recordings.data?.data.slice(1, 5) ?? []
 
   return (
-    <section aria-labelledby="play-title" className="mx-auto w-full max-w-6xl px-4 py-8">
-      <header className="mb-6 space-y-1">
-        <h1 id="play-title" className="text-2xl font-bold tracking-tight">
-          Zona Play
-        </h1>
-        <p className="text-muted-foreground">Revive tus partidos favoritos</p>
-      </header>
+    <section aria-labelledby="play-title" className="container mx-auto max-w-screen-2xl py-10 space-y-10">
+      <h1 id="play-title" className="sr-only">
+        Zona Play
+      </h1>
+      {recordings.isPending && <LoadingState />}
 
       {/* Live banner */}
       {liveStream && <LiveBanner stream={liveStream} />}
 
       {/* Featured video */}
       {featuredVideo && (
-        <section aria-labelledby="featured-title" className="mb-8">
+        <section aria-labelledby="featured-title" className="space-y-4">
           <h2 id="featured-title" className="sr-only">
             Video destacado
           </h2>
-          <QueryState query={recordings} isEmpty={(res) => res.data.length === 0} empty={<EmptyState title="No hay videos" />}>
-            {() => (
               <Link
                 to={`/play/watch/${featuredVideo.id}`}
                 className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -202,8 +198,6 @@ export function PlayPage() {
                   </CardContent>
                 </Card>
               </Link>
-            )}
-          </QueryState>
         </section>
       )}
 
@@ -230,13 +224,30 @@ export function PlayPage() {
         </section>
       )}
 
-      <QueryState
-        query={recordings}
-        isEmpty={(res) => res.data.length === 0}
-        empty={<EmptyState title="Aún no hay videos" description="Vuelve pronto para ver los partidos." />}
-      >
-        {() => null}
-      </QueryState>
+      {featuredVideo && (
+        <section className="text-center py-12 space-y-4">
+          <h2 className="text-2xl font-bold">Revive cada jugada de tu liga</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Accede a partidos completos, highlights y clips de las mejores jugadas del fútbol amateur
+          </p>
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <Button variant="outline" asChild>
+              <Link to="/">Explorar ligas</Link>
+            </Button>
+          </div>
+        </section>
+      )}
+      {recordings.isSuccess && !streams.isPending && recordings.data.data.length === 0 && !liveStream && (
+        <div className="text-center py-20 space-y-4">
+          <Video className="w-16 h-16 mx-auto text-muted-foreground/50" aria-hidden="true" />
+          <h2 className="text-xl font-semibold">No hay videos todavía</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">Pronto tendremos partidos, highlights y más contenido para ti.</p>
+          <Button variant="outline" className="mt-4" asChild>
+            <Link to="/play/admin">Subir primer video</Link>
+          </Button>
+        </div>
+      )}
+      {recordings.isError && <ErrorState error={recordings.error} onRetry={() => void recordings.refetch()} />}
     </section>
   )
 }

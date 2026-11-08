@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { SecurityCards } from './security-cards'
 import { ApiError } from '@/lib/api/client'
 
 import { useLeague, useUpdateLeague, useUploadLogo } from '../api'
@@ -18,20 +19,23 @@ export function SettingsPage({ leagueId }: { leagueId: string }) {
   const league = useLeague(leagueId)
 
   return (
+    <div className="space-y-6">
+    <SecurityCards />
     <QueryState query={league} loadingLabel="Cargando configuración…">
       {(data) => (
-        <section aria-labelledby="settings-title" className="space-y-6 max-w-2xl">
-          <header>
-            <h2 id="settings-title" className="text-2xl font-bold">
+        <section aria-labelledby="settings-title" className="space-y-6">
+          <header className="pt-2">
+            <h2 id="settings-title" className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
               Configuración de la Liga
             </h2>
-            <p className="text-sm text-muted-foreground">Administra los detalles de tu liga</p>
+            <p className="text-white/80 drop-shadow">Administra los detalles de tu liga</p>
           </header>
           <LogoCard league={data} />
           <GeneralCard league={data} />
         </section>
       )}
     </QueryState>
+    </div>
   )
 }
 
@@ -54,20 +58,20 @@ function LogoCard({ league }: { league: League }) {
   }
 
   return (
-    <Card>
+    <Card className="backdrop-blur-xl bg-white/10 border-white/20">
       <CardHeader>
-        <CardTitle>Logo de la Liga</CardTitle>
-        <CardDescription>Sube la imagen del escudo o logo de tu liga</CardDescription>
+        <CardTitle className="text-white drop-shadow-lg">Logo de la Liga</CardTitle>
+        <CardDescription className="text-white/80 drop-shadow">Sube la imagen del escudo o logo de tu liga</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-4">
           <Avatar className="size-20">
             {league.logo && <AvatarImage src={league.logo} alt={`Logo de ${league.name}`} />}
-            <AvatarFallback>{league.name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="bg-green-500/20 text-green-300">{league.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
-            <Label htmlFor="logo-upload" className="cursor-pointer">
-              <Button asChild>
+            <Label htmlFor="logo-upload" className="cursor-pointer text-white">
+              <Button asChild className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0">
                 <span className="gap-2">
                   <Upload className="size-4" aria-hidden="true" />
                   {isPending ? 'Cargando…' : 'Cargar Logo'}
@@ -82,7 +86,7 @@ function LogoCard({ league }: { league: League }) {
               disabled={isPending}
               className="sr-only"
             />
-            <p className="text-xs text-muted-foreground mt-2">JPG, PNG o GIF (máx. 5MB)</p>
+            <p className="text-xs text-white/60 mt-2">JPG, PNG o GIF (máx. 5MB)</p>
           </div>
         </div>
         {upload.isError && (
@@ -116,10 +120,10 @@ function GeneralCard({ league }: { league: League }) {
   }
 
   return (
-    <Card>
+    <Card className="backdrop-blur-xl bg-white/10 border-white/20">
       <CardHeader>
-        <CardTitle>Información General</CardTitle>
-        <CardDescription>Detalles principales de la liga</CardDescription>
+        <CardTitle className="text-white drop-shadow-lg">Información General</CardTitle>
+        <CardDescription className="text-white/80 drop-shadow">Detalles principales de la liga</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,9 +135,10 @@ function GeneralCard({ league }: { league: League }) {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre de la Liga</Label>
+            <Label htmlFor="name" className="text-white/90 drop-shadow">Nombre de la Liga</Label>
             <Input
               id="name"
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               aria-invalid={!!errors.name}
@@ -141,16 +146,17 @@ function GeneralCard({ league }: { league: League }) {
               disabled={update.isPending}
             />
             {errors.name && (
-              <p id="name-error" className="text-xs text-destructive">
+              <p id="name-error" className="text-xs text-red-300">
                 {errors.name}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug</Label>
+            <Label htmlFor="slug" className="text-white/90 drop-shadow">URL Slug</Label>
             <Input
               id="slug"
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               forceLowercase
               value={formData.slug}
               onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
@@ -160,16 +166,17 @@ function GeneralCard({ league }: { league: League }) {
               disabled={update.isPending}
             />
             {errors.slug && (
-              <p id="slug-error" className="text-xs text-destructive">
+              <p id="slug-error" className="text-xs text-red-300">
                 {errors.slug}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description" className="text-white/90 drop-shadow">Descripción</Label>
             <Textarea
               id="description"
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white placeholder:text-white/50 rounded-lg"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe tu liga…"
@@ -179,13 +186,13 @@ function GeneralCard({ league }: { league: League }) {
               rows={4}
             />
             {errors.description && (
-              <p id="description-error" className="text-xs text-destructive">
+              <p id="description-error" className="text-xs text-red-300">
                 {errors.description}
               </p>
             )}
           </div>
 
-          <Button type="submit" disabled={update.isPending} className="w-full sm:w-auto">
+          <Button type="submit" disabled={update.isPending} className="w-full sm:w-auto backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
             {update.isPending ? 'Guardando…' : 'Guardar Cambios'}
           </Button>
         </form>

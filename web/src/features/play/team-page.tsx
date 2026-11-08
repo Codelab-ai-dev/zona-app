@@ -82,9 +82,9 @@ export function TeamPage() {
   const recordings = useRecordings({ limit: 20, offset: 0 }, { teamId })
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8">
+    <section className="container mx-auto max-w-screen-2xl py-10">
       <header className="mb-6 space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Videos del equipo</h1>
+        <h1 className="text-2xl font-bold">Videos del equipo</h1>
         <p className="text-muted-foreground">Partidos y momentos destacados</p>
       </header>
 

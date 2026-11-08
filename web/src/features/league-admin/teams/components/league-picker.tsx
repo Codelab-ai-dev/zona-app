@@ -13,9 +13,9 @@ export function LeaguePicker({ leagues, value, onChange }: LeaguePickerProps) {
   if (leagues.length < 2) return null
   return (
     <div className="space-y-2">
-      <Label htmlFor="league-select">Selecciona una liga</Label>
+      <Label htmlFor="league-select" className="text-white/90">Selecciona una liga</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id="league-select">
+        <SelectTrigger id="league-select" className="w-full border-white/30 bg-white/10 text-white sm:w-72">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

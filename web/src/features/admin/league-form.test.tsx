@@ -113,7 +113,7 @@ describe('Create league', () => {
 describe('Edit league', () => {
   async function openEdit(user: User, index: number) {
     await screen.findByText('Liga Premier')
-    await user.click(screen.getAllByRole('button', { name: /^editar$/i })[index]!)
+    await user.click(screen.getAllByRole('button', { name: /^editar /i })[index]!)
     return screen.findByRole('dialog', { name: 'Editar Liga' })
   }
 

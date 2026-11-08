@@ -107,9 +107,9 @@ export function ClipsPage() {
   const clips = useClips({ limit: 24, offset: 0 })
 
   return (
-    <section aria-labelledby="clips-title" className="mx-auto w-full max-w-6xl px-4 py-8">
+    <section aria-labelledby="clips-title" className="container mx-auto max-w-screen-2xl py-10 space-y-10">
       <header className="mb-6 space-y-1">
-        <h1 id="clips-title" className="text-2xl font-bold tracking-tight">
+        <h1 id="clips-title" className="text-2xl font-bold">
           Clips
         </h1>
         <p className="text-muted-foreground">Las mejores jugadas del fútbol amateur</p>

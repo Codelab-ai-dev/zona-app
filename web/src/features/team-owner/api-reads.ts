@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { api, type PageParams } from '@/lib/api/client'
+import { api, type ListResponse, type PageParams } from '@/lib/api/client'
 
 import { teamOwnerKeys } from './keys'
 import type {
@@ -55,7 +55,12 @@ export function useTopScorers(tournamentId: string | undefined) {
 export function useTeamStats(teamId: string | undefined) {
   return useQuery({
     queryKey: teamOwnerKeys.stats(teamId ?? ''),
-    queryFn: ({ signal }) => api.list<TeamStats>(`/teams/${teamId}/stats`, { limit: 10 }, { signal }),
+    // The API answers with the single stats row of the team's tournament, not a list.
+    queryFn: async ({ signal }): Promise<ListResponse<TeamStats>> => {
+      const res = await api.get<ListResponse<TeamStats> | TeamStats>(`/teams/${teamId}/stats`, { signal, query: { limit: 10 } })
+      if ('data' in res && Array.isArray(res.data)) return res
+      return { data: [res as TeamStats], page: { limit: 1, offset: 0 } }
+    },
     enabled: Boolean(teamId),
   })
 }

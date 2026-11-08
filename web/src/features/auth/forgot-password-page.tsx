@@ -3,10 +3,11 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ApiError, api } from '@/lib/api/client'
+
+import { AuthShell, authButtonClass, authErrorClass, authInputClass, authLabelClass, authLinkClass } from './auth-shell'
 
 export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false)
@@ -29,42 +30,34 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex justify-center px-4 py-12">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>
-            <h1>Recuperar contraseña</h1>
-          </CardTitle>
-          <CardDescription>Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {sent ? (
-            <p role="status" className="text-sm">
-              Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.
+    <AuthShell title="Recuperar contraseña">
+      <h1 className="sr-only">Recuperar contraseña</h1>
+      {sent ? (
+        <p role="status" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
+          Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.
+        </p>
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-5" noValidate>
+          <p className="text-sm text-gray-400">Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+          <div className="space-y-2">
+            <Label htmlFor="email" className={authLabelClass}>Correo electrónico</Label>
+            <Input id="email" name="email" type="email" autoComplete="email" placeholder="tu@email.com" required className={authInputClass} aria-invalid={error ? true : undefined} aria-describedby={error ? 'forgot-error' : undefined} />
+          </div>
+          {error && (
+            <p id="forgot-error" role="alert" className={authErrorClass}>
+              {error}
             </p>
-          ) : (
-            <form onSubmit={onSubmit} className="space-y-4" noValidate>
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <Input id="email" name="email" type="email" autoComplete="email" required aria-invalid={error ? true : undefined} aria-describedby={error ? 'forgot-error' : undefined} />
-              </div>
-              {error && (
-                <p id="forgot-error" role="alert" className="text-sm text-destructive">
-                  {error}
-                </p>
-              )}
-              <Button type="submit" className="w-full" disabled={forgot.isPending}>
-                {forgot.isPending ? 'Enviando…' : 'Enviar enlace'}
-              </Button>
-            </form>
           )}
-          <p className="mt-4 text-center text-sm">
-            <Link to="/login" className="underline underline-offset-4">
-              Volver a iniciar sesión
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          <Button type="submit" className={authButtonClass} disabled={forgot.isPending}>
+            {forgot.isPending ? 'Enviando…' : 'Enviar enlace'}
+          </Button>
+        </form>
+      )}
+      <p className="mt-6 text-center">
+        <Link to="/login" className={authLinkClass}>
+          Volver a iniciar sesión
+        </Link>
+      </p>
+    </AuthShell>
   )
 }

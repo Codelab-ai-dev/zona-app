@@ -8,6 +8,9 @@ import { TeamInfoPage } from './team-info-page'
 
 const GET = `GET /teams/${TEAM_ID}`
 const PATCH = `PATCH /teams/${TEAM_ID}`
+const empty = { body: { data: [], page: { limit: 100, offset: 0 } } }
+// The player statistics section below the card loads its own data.
+const sideData = { [`GET /teams/${TEAM_ID}/players`]: empty, [`GET /teams/${TEAM_ID}/stats`]: empty }
 
 function renderPage() {
   return renderWithProviders(<TeamInfoPage teamId={TEAM_ID} />)
@@ -31,16 +34,16 @@ describe('TeamInfoPage', () => {
     expect(await screen.findByRole('heading', { name: 'Águilas FC' })).toBeInTheDocument()
     expect(screen.getByText('/aguilas-fc')).toBeInTheDocument()
     expect(screen.getByText('Equipo histórico')).toBeInTheDocument()
-    expect(screen.getByText('Activo')).toBeInTheDocument()
-    expect(screen.getByText('1 de enero de 2024')).toBeInTheDocument()
+    expect(screen.getByText('Estado: Activo')).toBeInTheDocument()
+    expect(screen.getByText('Fundado: 1 de enero de 2024')).toBeInTheDocument()
   })
 
   it('shows the API error and reloads on retry', async () => {
-    mockApi({ [GET]: serverError })
+    mockApi({ [GET]: serverError, ...sideData })
     const { user } = renderPage()
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Error interno del servidor')
-    mockApi({ [GET]: { body: team } })
+    mockApi({ [GET]: { body: team }, ...sideData })
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
     expect(await screen.findByRole('heading', { name: 'Águilas FC' })).toBeInTheDocument()

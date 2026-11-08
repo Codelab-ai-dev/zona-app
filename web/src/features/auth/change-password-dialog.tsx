@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { ApiError, api } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/auth-context'
 
+import { authInputClass, authLabelClass } from './auth-shell'
 import { passwordProblem } from './password-rules'
 
 type Errors = { current?: string; next?: string; confirm?: string }
@@ -18,10 +19,10 @@ type Errors = { current?: string; next?: string; confirm?: string }
 function Field({ id, label, error, autoComplete }: { id: string; label: string; error?: string; autoComplete: string }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} name={id} type="password" autoComplete={autoComplete} required aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} />
+      <Label htmlFor={id} className={authLabelClass}>{label}</Label>
+      <Input id={id} className={authInputClass} name={id} type="password" autoComplete={autoComplete} required aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} />
       {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
+        <p id={`${id}-error`} className="text-sm text-red-400">
           {error}
         </p>
       )}
@@ -81,17 +82,22 @@ export function ChangePasswordDialog({ trigger }: { trigger?: ReactElement } = {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="rounded-2xl border-white/10 bg-[#0a0f1a] text-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cambiar contraseña</DialogTitle>
-          <DialogDescription>Al guardar se cerrará tu sesión en todos los dispositivos.</DialogDescription>
+          <DialogTitle className="flex items-center gap-3 font-[family-name:var(--font-orbitron)] text-white">
+            <span className="rounded-lg bg-emerald-500/20 p-2">
+              <KeyRound className="size-5 text-emerald-400" aria-hidden="true" />
+            </span>
+            Cambiar contraseña
+          </DialogTitle>
+          <DialogDescription className="text-gray-400">Al guardar se cerrará tu sesión en todos los dispositivos.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field id="current-password" label="Contraseña actual" error={errors.current} autoComplete="current-password" />
           <Field id="new-password" label="Nueva contraseña" error={errors.next} autoComplete="new-password" />
           <Field id="confirm-password" label="Confirmar nueva contraseña" error={errors.confirm} autoComplete="new-password" />
           <DialogFooter>
-            <Button type="submit" disabled={change.isPending}>
+            <Button type="submit" className="h-12 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400" disabled={change.isPending}>
               {change.isPending ? 'Guardando…' : 'Guardar contraseña'}
             </Button>
           </DialogFooter>

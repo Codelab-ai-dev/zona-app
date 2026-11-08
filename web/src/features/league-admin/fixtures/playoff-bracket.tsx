@@ -7,18 +7,20 @@ import type { Match } from './types'
 
 interface PlayoffBracketProps {
   matches: Match[]
+  /** team id -> name; falls back to a short id. */
+  teamNames?: Record<string, string>
 }
 
 /**
  * Displays playoff bracket from matches with phase='playoffs'.
  * Organizes matches by playoff_round (quarterfinals, semifinals, final, third_place).
  */
-export function PlayoffBracket({ matches: allMatches }: PlayoffBracketProps) {
+export function PlayoffBracket({ matches: allMatches, teamNames = {} }: PlayoffBracketProps) {
   const playoffMatches = allMatches.filter((m) => m.phase === 'playoffs')
 
   if (playoffMatches.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-white/20 p-8 text-center text-white/70">
         No hay partidos de llave generados
       </div>
     )
@@ -46,7 +48,7 @@ export function PlayoffBracket({ matches: allMatches }: PlayoffBracketProps) {
 
         return (
           <div key={roundType} className="space-y-3">
-            <h3 className="font-semibold capitalize text-lg">
+            <h3 className="flex items-center gap-2 text-lg font-semibold capitalize text-white drop-shadow-lg">
               {roundType === 'quarterfinals'
                 ? 'Cuartos de Final'
                 : roundType === 'semifinals'
@@ -64,12 +66,12 @@ export function PlayoffBracket({ matches: allMatches }: PlayoffBracketProps) {
                 return (
                   <div key={key} className="space-y-2">
                     {hasLegs && (
-                      <div className="text-xs font-medium text-muted-foreground">
+                      <div className="text-xs font-medium text-white/70">
                         {roundMatches[0]?.leg === 'first' ? 'Ida' : 'Vuelta'}
                       </div>
                     )}
                     {roundMatches.map((match) => (
-                      <PlayoffMatchCard key={match.id} match={match} />
+                      <PlayoffMatchCard key={match.id} match={match} teamNames={teamNames} />
                     ))}
                   </div>
                 )
@@ -82,41 +84,42 @@ export function PlayoffBracket({ matches: allMatches }: PlayoffBracketProps) {
   )
 }
 
-function PlayoffMatchCard({ match }: { match: Match }): ReactNode {
-  const homeTeam = match.home_team_id ? `Equipo ${match.home_team_id.slice(0, 8)}` : '—'
-  const awayTeam = match.away_team_id ? `Equipo ${match.away_team_id.slice(0, 8)}` : '—'
+function PlayoffMatchCard({ match, teamNames }: { match: Match; teamNames: Record<string, string> }): ReactNode {
+  const nameOf = (id: string) => (id ? (teamNames[id] ?? `Equipo ${id.slice(0, 8)}`) : '—')
+  const homeTeam = nameOf(match.home_team_id)
+  const awayTeam = nameOf(match.away_team_id)
 
   const matchDate = match.match_date ? new Date(match.match_date).toLocaleDateString('es-MX') : '—'
   const matchTime = match.match_time ?? '—'
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-green-400/20 bg-white/5 backdrop-blur-md">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 text-sm font-medium truncate">{homeTeam}</div>
+          <div className="flex-1 truncate text-sm font-medium text-white">{homeTeam}</div>
 
           <div className="flex flex-col items-center gap-1">
             {match.status === 'finished' && (
-              <div className="text-lg font-bold">
+              <div className="text-lg font-bold text-green-400">
                 {match.home_score} - {match.away_score}
               </div>
             )}
             {match.status === 'scheduled' && (
-              <Badge variant="outline" className="text-xs">
-                {matchTime}
+              <Badge className="border-white/30 bg-white/10 text-xs text-white">
+                {matchTime.slice(0, 5)}
               </Badge>
             )}
             {match.status === 'in_progress' && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge className="border-0 bg-green-500/80 text-xs text-white">
                 EN VIVO
               </Badge>
             )}
           </div>
 
-          <div className="flex-1 text-right text-sm font-medium truncate">{awayTeam}</div>
+          <div className="flex-1 truncate text-right text-sm font-medium text-white">{awayTeam}</div>
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-2 flex items-center justify-between text-xs text-white/70">
           <span>{matchDate}</span>
           {match.field_number && <span>Cancha {match.field_number}</span>}
         </div>

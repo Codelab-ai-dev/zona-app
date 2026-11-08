@@ -15,6 +15,7 @@ import {
 import { Trophy, Target, AlertTriangle, Users } from 'lucide-react'
 
 import { useTeamPlayers, useTeamStats } from '../api'
+import { glassCard, pageSubtitle, pageTitle } from '../glass'
 
 export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
   const players = useTeamPlayers(teamId)
@@ -48,14 +49,14 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Estadísticas de Jugadores</h2>
-        <p className="text-muted-foreground">Rendimiento individual de cada jugador del equipo.</p>
+        <h2 className={pageTitle}>Estadísticas de Jugadores</h2>
+        <p className={pageSubtitle}>Rendimiento individual de cada jugador del equipo.</p>
       </div>
 
       {stats.isError && (
-        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3 text-sm">
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-red-300/30 bg-red-500/20 text-white p-3 text-sm">
           <span>No se pudieron cargar las estadísticas del equipo.</span>
-          <Button variant="outline" size="sm" onClick={() => void stats.refetch()}>
+          <Button variant="outline" size="sm" className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20" onClick={() => void stats.refetch()}>
             Reintentar
           </Button>
         </div>
@@ -63,44 +64,44 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
 
       {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className={glassCard}>
           <CardContent className="pt-6 text-center">
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold">{playersWithStats.length}</p>
-            <p className="text-sm text-muted-foreground">Jugadores</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{playersWithStats.length}</p>
+            <p className="text-sm text-white/80 drop-shadow">Jugadores</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={glassCard}>
           <CardContent className="pt-6 text-center">
             <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold">{teamTotals.goals}</p>
-            <p className="text-sm text-muted-foreground">Goles Totales</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.goals}</p>
+            <p className="text-sm text-white/80 drop-shadow">Goles Totales</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={glassCard}>
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold">{teamTotals.yellowCards}</p>
-            <p className="text-sm text-muted-foreground">Tarjetas Amarillas</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.yellowCards}</p>
+            <p className="text-sm text-white/80 drop-shadow">Tarjetas Amarillas</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={glassCard}>
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-            <p className="text-xl sm:text-2xl font-bold">{teamTotals.redCards}</p>
-            <p className="text-sm text-muted-foreground">Tarjetas Rojas</p>
+            <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.redCards}</p>
+            <p className="text-sm text-white/80 drop-shadow">Tarjetas Rojas</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Players Statistics Table */}
-      <Card>
+      <Card className={glassCard}>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-white drop-shadow-lg">
             <Trophy className="w-5 h-5 mr-2" />
             Plantilla
           </CardTitle>
-          <CardDescription>Jugadores registrados en el equipo</CardDescription>
+          <CardDescription className="text-white/70 drop-shadow">Jugadores registrados en el equipo</CardDescription>
         </CardHeader>
         <CardContent>
           <QueryState
@@ -118,9 +119,9 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Jugador</TableHead>
-                      <TableHead className="text-center">Posición</TableHead>
-                      <TableHead className="text-center">Número</TableHead>
+                      <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Posición</TableHead>
+                      <TableHead className="text-center text-white/90 drop-shadow">Número</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -138,13 +139,13 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
                               )}
                             </Avatar>
                             <div>
-                              <p className="font-medium">{player.name}</p>
+                              <p className="font-medium text-white drop-shadow">{player.name}</p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">{player.position}</TableCell>
+                        <TableCell className="text-center text-white/80">{player.position}</TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline">#{player.jersey_number}</Badge>
+                          <Badge variant="outline" className="backdrop-blur-md bg-white/20 border-white/30 text-white">#{player.jersey_number}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -157,9 +158,9 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
       </Card>
 
       {/* Note about stats availability */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="backdrop-blur-md bg-blue-500/20 border-blue-300/30 shadow-lg">
         <CardContent className="pt-6">
-          <p className="text-sm text-blue-900">
+          <p className="text-sm text-white/90">
             <strong>Nota:</strong> Las estadísticas detalladas (goles, asistencias, tarjetas, etc.) se mostrarán cuando el árbitro
             publique los reportes de los partidos.
           </p>

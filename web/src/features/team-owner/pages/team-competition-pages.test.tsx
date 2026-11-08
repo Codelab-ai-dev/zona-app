@@ -70,10 +70,10 @@ describe('TeamStandingsPage', () => {
     const fetchMock = mockApi({ [TEAM]: { body: team }, [STANDINGS]: listBody([standing]) })
     renderWithProviders(<TeamStandingsPage teamId={TEAM_ID} />)
 
-    const row = (await screen.findByRole('cell', { name: 'Águilas FC' })).closest('tr') as HTMLElement
-    expect(within(row).getAllByRole('cell').map((c) => c.textContent)).toEqual([
-      '1', 'Águilas FC', '10', '7', '2', '1', '25', '8', '17', '23',
-    ])
+    const row = (await screen.findByRole('cell', { name: /Águilas FC/ })).closest('tr') as HTMLElement
+    const cells = within(row).getAllByRole('cell').map((c) => c.textContent)
+    expect(cells[1]).toContain('Águilas FC')
+    expect([cells[0], ...cells.slice(2)]).toEqual(['11°', '10', '7', '2', '1', '25', '8', '+17', '23'])
     expect(requestsTo(fetchMock, STANDINGS)).toHaveLength(1)
   })
 
@@ -100,7 +100,7 @@ describe('TeamStandingsPage', () => {
     mockApi({ [TEAM]: { body: team }, [STANDINGS]: listBody([standing]) })
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(await screen.findByRole('cell', { name: 'Águilas FC' })).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: /Águilas FC/ })).toBeInTheDocument()
   })
 
   it('shows the error when the team itself cannot be loaded', async () => {
@@ -123,7 +123,7 @@ describe('TeamScorersPage', () => {
     renderWithProviders(<TeamScorersPage teamId={TEAM_ID} />)
 
     expect(await screen.findByText('Rival Uno')).toBeInTheDocument()
-    const own = screen.getByText('Goleadores de Tu Equipo').closest('[data-slot="card"]') as HTMLElement
+    const own = screen.getByText('Máximos Goleadores').closest('[data-slot="card"]') as HTMLElement
     expect(within(own).getByText('Juan Pérez')).toBeInTheDocument()
     expect(within(own).queryByText('Rival Uno')).not.toBeInTheDocument()
   })
@@ -161,8 +161,7 @@ describe('TeamCalendarPage', () => {
 
     expect(await screen.findByText('Águilas FC')).toBeInTheDocument()
     expect(screen.getByText('Tigres FC')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Tigres FC').closest('.rounded-xl')).toHaveTextContent('3-1')
     expect(screen.getByText('18:00')).toBeInTheDocument()
     expect(screen.getByText('Finalizado')).toBeInTheDocument()
   })
@@ -171,7 +170,7 @@ describe('TeamCalendarPage', () => {
     mockApi({ [MATCHES]: listBody([]) })
     renderWithProviders(<TeamCalendarPage teamId={TEAM_ID} />)
 
-    expect(await screen.findByText('No hay partidos')).toBeInTheDocument()
+    expect(await screen.findByText('No hay partidos programados todavía')).toBeInTheDocument()
   })
 
   it('shows the API error and retries', async () => {
@@ -191,14 +190,14 @@ describe('TeamRecordPage', () => {
     mockApi({ [STATS]: listBody([teamStats]) })
     renderWithProviders(<TeamRecordPage teamId={TEAM_ID} />)
 
-    const row = async (label: string) =>
-      (await screen.findByText(label)).parentElement?.lastElementChild?.textContent
-    expect(await row('Jugados')).toBe('10')
-    expect(await row('Ganados')).toBe('7')
-    expect(await row('A Favor')).toBe('25')
-    expect(await row('Promedio por Partido')).toBe('2.50')
-    expect(await row('Tarjetas Amarillas')).toBe('12')
-    expect(await row('Puntos')).toBe('23')
+    const tile = async (label: string) => (await screen.findByText(label)).closest('.rounded-xl')?.lastElementChild?.textContent
+    expect(await tile('Jugados')).toBe('10')
+    expect(await tile('Ganados')).toBe('7')
+    expect(await tile('A Favor')).toBe('25')
+    expect(await tile('Promedio por Partido')).toBe('2.50')
+    expect(await tile('Tarjetas Amarillas')).toBe('12')
+    expect(await screen.findByText('Puntos')).toBeInTheDocument()
+    expect(screen.getByText('23')).toBeInTheDocument()
   })
 
   it('shows the empty state when there are no stats', async () => {

@@ -45,7 +45,7 @@ const base = {
 type User = ReturnType<typeof renderWithProviders>['user']
 
 async function openAndPickTournament(user: User) {
-  await user.click(screen.getByRole('button', { name: /generar llave/i }))
+  await user.click(screen.getByRole('button', { name: /generar liguilla/i }))
   await user.click(await screen.findByRole('combobox', { name: 'Torneo' }))
   await user.click(await screen.findByRole('option', { name: 'Torneo A' }))
 }
@@ -54,7 +54,7 @@ describe('PlayoffsPage', () => {
   it('shows the title and asks to select a tournament', () => {
     mockApi(base)
     renderWithProviders(<PlayoffsPage leagueId="league-1" />)
-    expect(screen.getByRole('heading', { name: 'Llave de Playoffs' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Fase de Liguilla' })).toBeInTheDocument()
     expect(screen.getByText('Selecciona un torneo arriba para ver su llave')).toBeInTheDocument()
   })
 

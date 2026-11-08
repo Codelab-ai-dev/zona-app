@@ -12,7 +12,7 @@ export function WatchPage() {
   const recording = useRecording(videoId || '')
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-8">
+    <section className="container mx-auto max-w-screen-2xl py-8 lg:py-10">
       <QueryState query={recording} loadingLabel="Cargando video…">
         {(data) => {
           if (!data.mux_playback_id) {

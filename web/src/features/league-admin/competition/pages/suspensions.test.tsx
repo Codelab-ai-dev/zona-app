@@ -25,8 +25,8 @@ describe('Suspensions page', () => {
     expect(await screen.findByText('Agresión')).toBeInTheDocument()
     expect(screen.getByText('Insultos')).toBeInTheDocument()
     expect(screen.getByText('Activa')).toBeInTheDocument()
-    expect(screen.getByText('Cumplida')).toBeInTheDocument()
-    expect(screen.getAllByText('1/3')).toHaveLength(2)
+    expect(screen.getByText('Completada')).toBeInTheDocument()
+    expect(screen.getAllByText('1 / 3')).toHaveLength(2)
     // only the active one offers actions
     expect(screen.getAllByRole('button', { name: 'Cancelar' })).toHaveLength(1)
   })
@@ -35,7 +35,7 @@ describe('Suspensions page', () => {
     mockApi({ ...mineOne, [listRoute]: list([]) })
     renderWithProviders(<SuspensionsPageComponent />)
 
-    expect(await screen.findByText('Sin suspensiones')).toBeInTheDocument()
+    expect(await screen.findByText('No hay suspensiones registradas')).toBeInTheDocument()
   })
 
   it('shows the API error', async () => {
@@ -58,7 +58,7 @@ describe('Suspensions page', () => {
     await user.click(screen.getByLabelText('Equipo'))
     await user.click(await screen.findByRole('option', { name: 'Tigres' }))
     await user.click(screen.getByLabelText('Jugador'))
-    await user.click(await screen.findByRole('option', { name: 'Carlos Ruiz' }))
+    await user.click(await screen.findByRole('option', { name: /Carlos Ruiz/ }))
     await user.type(screen.getByLabelText('Motivo'), 'agresión al árbitro')
     const matches = screen.getByLabelText('Jornadas a Suspender')
     await user.clear(matches)
@@ -108,7 +108,7 @@ describe('Suspensions page', () => {
     await user.click(screen.getByLabelText('Equipo'))
     await user.click(await screen.findByRole('option', { name: 'Tigres' }))
     await user.click(screen.getByLabelText('Jugador'))
-    await user.click(await screen.findByRole('option', { name: 'Carlos Ruiz' }))
+    await user.click(await screen.findByRole('option', { name: /Carlos Ruiz/ }))
     await user.type(screen.getByLabelText('Motivo'), 'x')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 

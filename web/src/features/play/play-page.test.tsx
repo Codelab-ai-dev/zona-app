@@ -99,7 +99,7 @@ describe('PlayPage', () => {
     })
     renderWithProviders(<PlayPage />)
 
-    expect(await screen.findByText('Aún no hay videos')).toBeInTheDocument()
+    expect(await screen.findByText('No hay videos todavía')).toBeInTheDocument()
   })
 
   it('shows error state and retry button on API error', async () => {

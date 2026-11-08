@@ -85,16 +85,16 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg bg-slate-900 border-white/10">
         <DialogHeader>
-          <DialogTitle>Crear Usuario</DialogTitle>
-          <DialogDescription>Crea un nuevo usuario en el sistema</DialogDescription>
+          <DialogTitle className="text-white text-base md:text-lg">Crear Usuario</DialogTitle>
+          <DialogDescription className="text-gray-500 text-xs md:text-sm">Crea un nuevo usuario en el sistema</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="create-name">Nombre Completo *</Label>
-            <Input
+            <Label htmlFor="create-name" className="text-gray-400 text-sm">Nombre Completo *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="create-name"
               value={form.name || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -110,8 +110,8 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="create-email">Email *</Label>
-            <Input
+            <Label htmlFor="create-email" className="text-gray-400 text-sm">Email *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="create-email"
               type="email"
               value={form.email || ''}
@@ -128,8 +128,8 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="create-password">Contraseña (mín. 10 caracteres) *</Label>
-            <Input
+            <Label htmlFor="create-password" className="text-gray-400 text-sm">Contraseña (mín. 10 caracteres) *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="create-password"
               type="password"
               value={form.password || ''}
@@ -146,8 +146,8 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="create-confirm">Confirmar Contraseña *</Label>
-            <Input
+            <Label htmlFor="create-confirm" className="text-gray-400 text-sm">Confirmar Contraseña *</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="create-confirm"
               type="password"
               value={form.confirmPassword || ''}
@@ -164,20 +164,20 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="create-role">Rol *</Label>
+            <Label htmlFor="create-role" className="text-gray-400 text-sm">Rol *</Label>
             <Select value={form.role || ''} onValueChange={handleRoleChange}>
-              <SelectTrigger id="create-role">
+              <SelectTrigger id="create-role" className="bg-slate-700/50 border-white/10 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="league_admin">Administrador de Liga</SelectItem>
-                <SelectItem value="team_owner">Propietario de Equipo</SelectItem>
+              <SelectContent className="bg-slate-900 border-white/10">
+                <SelectItem value="league_admin" className="text-white hover:bg-slate-800">Administrador de Liga</SelectItem>
+                <SelectItem value="team_owner" className="text-white hover:bg-slate-800">Propietario de Equipo</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="create-league">Liga *</Label>
+            <Label htmlFor="create-league" className="text-gray-400 text-sm">Liga *</Label>
             {/* /leagues/admin: super admins must see inactive leagues too */}
             <QueryState
               query={leagues}
@@ -188,14 +188,15 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                 <Select value={form.league_id || ''} onValueChange={(v) => setForm((prev) => ({ ...prev, league_id: v }))}>
                   <SelectTrigger
                     id="create-league"
+                    className="bg-slate-700/50 border-white/10 text-white"
                     aria-invalid={!!formErrors.league_id}
                     aria-describedby={formErrors.league_id ? 'create-league-error' : undefined}
                   >
                     <SelectValue placeholder="Seleccionar Liga" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-900 border-white/10">
                     {res.data.map((league) => (
-                      <SelectItem key={league.id} value={league.id}>
+                      <SelectItem key={league.id} value={league.id} className="text-white hover:bg-slate-800">
                         {league.name}
                       </SelectItem>
                     ))}
@@ -209,8 +210,8 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="create-phone">Teléfono</Label>
-            <Input
+            <Label htmlFor="create-phone" className="text-gray-400 text-sm">Teléfono</Label>
+            <Input className="bg-slate-700/50 border-white/10 text-white placeholder:text-gray-500"
               id="create-phone"
               value={form.phone || ''}
               onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -219,10 +220,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={createUser.isPending}>
+            <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => onOpenChange(false)} disabled={createUser.isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={createUser.isPending}>
+            <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={handleSubmit} disabled={createUser.isPending}>
               {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear
             </Button>

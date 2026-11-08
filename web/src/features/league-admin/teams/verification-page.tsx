@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
 
 import { EmptyState, QueryState } from '@/components/states'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -22,8 +24,8 @@ export function VerificationPage() {
   return (
     <div className="space-y-6 py-6">
       <div>
-        <h1 className="text-3xl font-bold">Verificación de Jugadores</h1>
-        <p className="mt-1 text-muted-foreground">
+        <h1 className="text-xl font-bold text-white drop-shadow-lg sm:text-2xl">Verificación de Jugadores</h1>
+        <p className="text-white/80 drop-shadow">
           Revisa el documento de identidad de cada jugador y márcalo como verificado. Los documentos son privados.
         </p>
       </div>
@@ -47,9 +49,9 @@ export function VerificationPage() {
               {(teamsRes) => (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="verification-team">Equipo</Label>
+                    <Label htmlFor="verification-team" className="text-white/90">Equipo</Label>
                     <Select value={teamId} onValueChange={(id) => setChoice({ leagueId, teamId: id })}>
-                      <SelectTrigger id="verification-team">
+                      <SelectTrigger id="verification-team" className="w-full border-white/10 bg-slate-800/50 text-white sm:w-72">
                         <SelectValue placeholder="Selecciona un equipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -70,22 +72,32 @@ export function VerificationPage() {
                       empty={<EmptyState title="No hay jugadores" description="Este equipo aún no tiene jugadores" />}
                     >
                       {(playersRes) => (
-                        <div className="overflow-x-auto rounded-lg border border-border">
-                          <Table>
-                            <TableHeader className="bg-muted/50">
-                              <TableRow>
-                                <TableHead>Jugador</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>Acciones</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {playersRes.data.map((player) => (
-                                <VerificationPlayerRow key={player.id} player={player} teamId={teamId} />
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                        <Card className="border-white/20 bg-white/10 shadow-xl backdrop-blur-xl">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
+                              <ShieldCheck className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                              Lista de Jugadores
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="border-white/10 hover:bg-transparent">
+                                    <TableHead className="text-white/90">Jugador</TableHead>
+                                    <TableHead className="text-white/90">Estado</TableHead>
+                                    <TableHead className="text-white/90">Acciones</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {playersRes.data.map((player) => (
+                                    <VerificationPlayerRow key={player.id} player={player} teamId={teamId} />
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </CardContent>
+                        </Card>
                       )}
                     </QueryState>
                   )}

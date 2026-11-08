@@ -75,51 +75,53 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Nombre</Label>
+        <Label htmlFor="name" className="text-white">Nombre Completo</Label>
         <Input
           id="name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Ej: Juan Pérez"
+          placeholder="Carlos Rodríguez"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           disabled={isLoading}
           aria-invalid={Boolean(errors.name)}
           aria-describedby={errors.name ? 'name-error' : undefined}
         />
         {errors.name && (
-          <p id="name-error" className="mt-1 text-sm text-destructive">
+          <p id="name-error" className="mt-1 text-sm text-red-400">
             {errors.name}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="position">Posición</Label>
+        <Label htmlFor="position" className="text-white">Posición</Label>
         <Select value={formData.position} onValueChange={(value) => setFormData({ ...formData, position: value })}>
           <SelectTrigger
             id="position"
+            className="bg-slate-800 border-slate-600 text-white"
             disabled={isLoading}
             aria-invalid={Boolean(errors.position)}
             aria-describedby={errors.position ? 'position-error' : undefined}
           >
             <SelectValue placeholder="Seleccionar posición" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-600">
             {positions.map((pos) => (
-              <SelectItem key={pos} value={pos}>
+              <SelectItem key={pos} value={pos} className="text-white hover:bg-slate-700">
                 {pos}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {errors.position && (
-          <p id="position-error" className="mt-1 text-sm text-destructive">
+          <p id="position-error" className="mt-1 text-sm text-red-400">
             {errors.position}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="jersey-number">Número de Jersey</Label>
+        <Label htmlFor="jersey-number" className="text-white">Número de Camiseta</Label>
         <Input
           id="jersey-number"
           type="number"
@@ -127,23 +129,25 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
           max="99"
           value={formData.jersey_number}
           onChange={(e) => setFormData({ ...formData, jersey_number: e.target.value })}
-          placeholder="Ej: 10"
+          placeholder="9"
+          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
           disabled={isLoading}
           aria-invalid={Boolean(errors.jersey_number)}
           aria-describedby={errors.jersey_number ? 'jersey_number-error' : undefined}
         />
         {errors.jersey_number && (
-          <p id="jersey_number-error" className="mt-1 text-sm text-destructive">
+          <p id="jersey_number-error" className="mt-1 text-sm text-red-400">
             {errors.jersey_number}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="birth-date">Fecha de Nacimiento</Label>
+        <Label htmlFor="birth-date" className="text-white">Fecha de Nacimiento</Label>
         <Input
           id="birth-date"
           type="date"
+          className="bg-slate-800 border-slate-600 text-white"
           value={formData.birth_date}
           onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
           disabled={isLoading}
@@ -151,21 +155,21 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
           aria-describedby={errors.birth_date ? 'birth-date-error' : undefined}
         />
         {errors.birth_date && (
-          <p id="birth-date-error" className="mt-1 text-sm text-destructive">
+          <p id="birth-date-error" className="mt-1 text-sm text-red-400">
             {errors.birth_date}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="photo">Foto del Jugador</Label>
+        <Label htmlFor="photo" className="text-white">Foto del Jugador</Label>
         <div className="mt-2 space-y-3">
           {photoPreview && (
             <div className="relative w-full max-w-xs">
               <img
                 src={photoPreview}
                 alt="Vista previa"
-                className="w-full h-auto rounded-lg border border-gray-200 max-h-64 object-cover"
+                className="w-full h-auto rounded-lg border border-slate-600 max-h-64 object-cover"
               />
               <button
                 type="button"
@@ -192,25 +196,25 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2 border-2 border-dashed border-slate-600 text-slate-300 rounded-lg hover:border-slate-400 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
           >
             <Upload className="w-4 h-4" />
             Seleccionar imagen (JPEG, PNG, WebP - máx 10MB)
           </button>
 
           {photoError && (
-            <div role="alert" className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div role="alert" className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-sm text-red-300">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {photoError}
             </div>
           )}
 
-          {photo && <p className="text-sm text-green-600">✓ Foto seleccionada: {photo.name}</p>}
+          {photo && <p className="text-sm text-green-400">✓ Foto seleccionada: {photo.name}</p>}
         </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Guardando…' : 'Guardar'}
+      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
+        {isLoading ? 'Guardando…' : 'Registrar Jugador'}
       </Button>
     </form>
   )

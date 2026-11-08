@@ -6,7 +6,7 @@ const AdminDashboardPage = lazy(() => import('./admin-dashboard-page').then(m =>
 
 const dashboardRoutes: RouteObject[] = [
   {
-    index: true,
+    path: 'admin',
     Component: AdminDashboardPage,
   },
 ]

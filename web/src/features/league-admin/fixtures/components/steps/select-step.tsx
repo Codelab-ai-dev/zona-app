@@ -13,11 +13,11 @@ interface SelectStepProps {
 export function SelectStep({ tournaments, value, onSelect }: SelectStepProps) {
   return (
     <div className="space-y-3">
-      <Label htmlFor="tournament-select" className="text-base font-semibold">
+      <Label htmlFor="tournament-select" className="mb-1.5 block text-xs font-medium text-gray-400 md:text-sm">
         Selecciona el torneo
       </Label>
       <Select value={value} onValueChange={onSelect}>
-        <SelectTrigger id="tournament-select">
+        <SelectTrigger id="tournament-select" className="h-9 w-full border-white/10 bg-slate-700/50 text-sm text-white">
           <SelectValue placeholder="Elige un torneo" />
         </SelectTrigger>
         <SelectContent>
@@ -28,7 +28,7 @@ export function SelectStep({ tournaments, value, onSelect }: SelectStepProps) {
           ))}
         </SelectContent>
       </Select>
-      <p className="text-xs text-muted-foreground">{tournaments.length} torneos disponibles</p>
+      <p className="text-xs text-gray-500">{tournaments.length} torneos disponibles</p>
     </div>
   )
 }

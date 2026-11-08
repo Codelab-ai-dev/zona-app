@@ -14,7 +14,7 @@ import { WhatsAppPage } from './whatsapp-page'
 const emptyLinks = { body: { data: [], page: { limit: 100, offset: 0 } } }
 
 async function openFormAndFill(user: ReturnType<typeof renderWithProviders>['user'], phone: string) {
-  await user.click(await screen.findByRole('button', { name: /nuevo enlace/i }))
+  await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
   await user.type(screen.getByLabelText(/número de teléfono/i), phone)
   await user.type(screen.getByLabelText(/nombre/i), 'tesoreria')
   await user.click(screen.getByRole('button', { name: 'Guardar' }))

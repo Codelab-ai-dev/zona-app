@@ -30,3 +30,13 @@ export function toDateInput(iso: string | undefined): string {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
+
+/** "Luis García" -> "LG". */
+export function initials(name: string): string {
+  return name
+    .split(' ')
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}

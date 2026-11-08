@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { QueryState, EmptyState } from '@/components/states'
+import { QueryState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,15 +19,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { IdCard, Plus, Trash2 } from 'lucide-react'
+import { Plus, User } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useTeam, useTeamPlayers, useCreatePlayer, useDeactivatePlayer, useUpdatePlayer, useUploadFile } from '../api'
+import { useTeam, useTeamPlayers, useTeamSuspensions, useCreatePlayer, useDeactivatePlayer, useUpdatePlayer, useUploadFile } from '../api'
 import type { CreatePlayerRequest, Player } from '../types'
 import { PLAYER_POSITIONS } from '../constants'
 import { PlayerCredential } from '../components/player-credential'
 import { PlayerForm } from '../components/player-form'
-import { PlayerRow } from '../components/player-row'
+import { PlayerCard } from '../components/player-card'
+import { pageSubtitle, pageTitle } from '../glass'
 
 export function PlayerManagementPage({ teamId }: { teamId: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -36,6 +37,7 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
 
   const team = useTeam(teamId)
   const players = useTeamPlayers(teamId)
+  const suspensions = useTeamSuspensions(teamId)
   const createPlayer = useCreatePlayer()
   const updatePlayer = useUpdatePlayer()
   const uploadFile = useUploadFile()
@@ -55,24 +57,28 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
     }
   }
 
+  const suspended = new Set(
+    (suspensions.data?.data ?? []).filter((x) => x.status === 'active' || x.matches_served < x.matches_to_serve).map((x) => x.player_id),
+  )
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Gestión de Jugadores</h2>
-          <p className="text-muted-foreground">Agrega y edita los jugadores de tu equipo.</p>
+          <h2 className={pageTitle}>Gestión de Jugadores</h2>
+          <p className={pageSubtitle}>Administra los jugadores de tu equipo</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Jugador
+            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+              Nuevo Jugador
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-slate-900 border-slate-700 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Agregar Jugador</DialogTitle>
-              <DialogDescription>Ingresa los detalles del nuevo jugador.</DialogDescription>
+              <DialogTitle className="text-white">Registrar Nuevo Jugador</DialogTitle>
+              <DialogDescription className="text-slate-400">Completa la información del jugador</DialogDescription>
             </DialogHeader>
             <PlayerForm
               positions={PLAYER_POSITIONS}
@@ -86,43 +92,34 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
       <QueryState
         query={players}
         isEmpty={(res) => res.data.length === 0}
-        empty={<EmptyState title="Sin jugadores" description="Agrega jugadores a tu equipo." />}
+        empty={
+          <div className="text-center py-12">
+            <User className="w-12 h-12 text-gray-400 mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-base sm:text-lg font-medium text-white mb-2">Sin jugadores</h3>
+            <p className="text-white/70">Comienza registrando jugadores para tu equipo</p>
+          </div>
+        }
       >
         {(res) => (
-          <div className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {res.data.map((player) => (
-              <div key={player.id} className="flex items-center justify-between rounded-lg border p-4">
-                <PlayerRow player={player} />
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCredentialPlayer(player)}
-                    aria-label={`Credencial de ${player.name}`}
-                  >
-                    <IdCard className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeletePlayerId(player.id)}
-                    aria-label={`Desactivar a ${player.name}`}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              </div>
+              <PlayerCard
+                key={player.id}
+                player={player}
+                suspended={suspended.has(player.id)}
+                onCredential={() => setCredentialPlayer(player)}
+                onDeactivate={() => setDeletePlayerId(player.id)}
+              />
             ))}
           </div>
         )}
       </QueryState>
 
       <AlertDialog open={Boolean(deletePlayerId)} onOpenChange={(open) => !open && setDeletePlayerId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>Desactivar Jugador</AlertDialogTitle>
-            <AlertDialogDescription>¿Estás seguro de que quieres desactivar este jugador? Esta acción no se puede deshacer.</AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Desactivar Jugador</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">¿Estás seguro de que quieres desactivar este jugador? Esta acción no se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>

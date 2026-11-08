@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Edit } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -57,20 +58,23 @@ export function EditTeamDialog({ team, open, onOpenChange }: EditTeamDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto border-white/10 bg-slate-900 md:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Editar equipo</DialogTitle>
-          <DialogDescription>Actualiza la información del equipo</DialogDescription>
+          <DialogTitle className="flex items-center text-sm text-white md:text-base">
+            <Edit className="mr-2 h-4 w-4 text-blue-400" aria-hidden="true" />
+            Editar Equipo
+          </DialogTitle>
+          <DialogDescription className="text-xs text-gray-400 md:text-sm">Modifica la información del equipo.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 py-3">
           <FormField id="name" label="Nombre del equipo" value={formData.name} error={errors.name} onChange={(e) => handleChange('name', e.target.value)} />
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={3} />
+          <div>
+            <Label htmlFor="description" className="mb-1.5 block text-[10px] text-gray-400 md:text-xs">Descripción</Label>
+            <Textarea className="min-h-[60px] border-white/10 bg-slate-800/50 text-sm text-white placeholder:text-gray-500" id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={3} />
           </div>
           <FormField id="group_name" label="Grupo (letra única)" maxLength={1} placeholder="A" value={formData.group_name} error={errors.group_name} onChange={(e) => handleChange('group_name', e.target.value.toUpperCase())} />
-          <Button onClick={handleSubmit} disabled={updateMutation.isPending} className="w-full">
+          <Button onClick={handleSubmit} disabled={updateMutation.isPending} className="h-9 w-full bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
             {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
           </Button>
         </div>

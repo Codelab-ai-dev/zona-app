@@ -1,10 +1,13 @@
 import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
 import { apiError, league, list, mineOne } from '../test-fixtures'
 import { SettingsPageComponent } from './settings'
+
+// The page embeds the change-password dialog, which needs the auth context.
+vi.mock('@/lib/auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }))
 
 const getLeague = 'GET /leagues/league-1'
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -102,28 +102,31 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto border-white/10 bg-slate-900 md:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Crear equipo</DialogTitle>
-          <DialogDescription>{step === 'team' ? 'Información del equipo' : 'Información del propietario'}</DialogDescription>
+          <DialogTitle className="flex items-center text-sm text-white md:text-base">
+            <Shield className="mr-2 h-4 w-4 text-green-400" aria-hidden="true" />
+            Crear Nuevo Equipo
+          </DialogTitle>
+          <DialogDescription className="text-xs text-gray-400 md:text-sm">{step === 'team' ? 'Información del equipo' : 'Información del propietario'}</DialogDescription>
         </DialogHeader>
 
         {step === 'team' && (
-          <div className="space-y-4">
+          <div className="space-y-3 py-3">
             <FormField id="name" label="Nombre del equipo" placeholder="ej. Los Campeones" value={team.name} error={errors.name} onChange={(e) => changeTeam('name', e.target.value)} />
             <FormField id="slug" label="Slug" forceLowercase placeholder="ej. los-campeones" value={team.slug} error={errors.slug} onChange={(e) => changeTeam('slug', e.target.value)} />
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea id="description" placeholder="Descripción del equipo (opcional)" value={team.description} onChange={(e) => changeTeam('description', e.target.value)} rows={3} />
+            <div>
+              <Label htmlFor="description" className="mb-1.5 block text-[10px] text-gray-400 md:text-xs">Descripción</Label>
+              <Textarea className="min-h-[60px] border-white/10 bg-slate-800/50 text-sm text-white placeholder:text-gray-500" id="description" placeholder="Descripción del equipo (opcional)" value={team.description} onChange={(e) => changeTeam('description', e.target.value)} rows={3} />
             </div>
-            <Button onClick={handleContinue} className="w-full">
+            <Button onClick={handleContinue} className="h-9 w-full bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
               Continuar
             </Button>
           </div>
         )}
 
         {step === 'owner' && (
-          <div className="space-y-4">
+          <div className="space-y-3 py-3">
             <FormField id="owner-name" label="Nombre del propietario" placeholder="ej. Juan Pérez" value={owner.name} error={errors.ownerName} onChange={(e) => changeOwner('name', e.target.value, 'ownerName')} />
             <FormField id="owner-email" type="email" label="Email" placeholder="propietario@ejemplo.com" value={owner.email} error={errors.email} onChange={(e) => changeOwner('email', e.target.value)} />
             <FormField id="owner-phone" type="tel" label="Teléfono (opcional)" placeholder="+52 555-0123" value={owner.phone} onChange={(e) => changeOwner('phone', e.target.value)} />
@@ -135,6 +138,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
                 type="button"
                 size="sm"
                 variant="ghost"
+                className="text-gray-400 hover:bg-white/10 hover:text-white"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
@@ -143,10 +147,10 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
             </div>
             <FormField id="owner-confirm-password" type={passwordType} label="Confirmar contraseña" value={owner.confirmPassword} error={errors.confirmPassword} onChange={(e) => changeOwner('confirmPassword', e.target.value)} />
 
-            <Button onClick={handleSubmit} disabled={createMutation.isPending} className="w-full">
+            <Button onClick={handleSubmit} disabled={createMutation.isPending} className="h-9 w-full bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
               {createMutation.isPending ? 'Creando…' : teamCreated ? 'Reintentar propietario' : 'Crear equipo y propietario'}
             </Button>
-            <Button variant="outline" onClick={() => setStep('team')} disabled={teamCreated} className="w-full">
+            <Button onClick={() => setStep('team')} disabled={teamCreated} className="h-9 w-full border-white/10 bg-slate-800/50 text-xs text-gray-400 hover:bg-slate-700/50 hover:text-white md:text-sm">
               Atrás
             </Button>
           </div>

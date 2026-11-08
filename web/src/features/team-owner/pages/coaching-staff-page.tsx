@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { QueryState, EmptyState } from '@/components/states'
+import { QueryState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,12 +19,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, User } from 'lucide-react'
 
 import { useTeamCoachingStaff, useCreateCoachingStaff, useDeactivateCoachingStaff } from '../api'
 import type { CreateCoachingStaffRequest } from '../types'
 import { CoachingStaffForm } from '../components/coaching-staff-form'
 import { CoachingStaffRow } from '../components/coaching-staff-row'
+import { pageSubtitle, pageTitle } from '../glass'
 
 const roles = ['Entrenador Principal', 'Asistente Técnico', 'Preparador Físico', 'Médico', 'Kinesiologo', 'Nutricionista']
 
@@ -44,22 +45,22 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Gestión del Cuerpo Técnico</h2>
-          <p className="text-muted-foreground">Administra el cuerpo técnico de tu equipo.</p>
+          <h2 className={pageTitle}>Gestión de Cuerpo Técnico</h2>
+          <p className={pageSubtitle}>Administra el cuerpo técnico de tu equipo</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Miembro
+            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+              Nuevo Miembro
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-slate-900 border-slate-700">
             <DialogHeader>
-              <DialogTitle>Agregar Cuerpo Técnico</DialogTitle>
-              <DialogDescription>Ingresa los detalles del miembro del cuerpo técnico.</DialogDescription>
+              <DialogTitle className="text-white">Registrar Nuevo Miembro del Cuerpo Técnico</DialogTitle>
+              <DialogDescription className="text-slate-400">Completa la información del miembro</DialogDescription>
             </DialogHeader>
             <CoachingStaffForm roles={roles} onSubmit={handleCreateStaff} isLoading={createStaff.isPending} />
           </DialogContent>
@@ -69,33 +70,28 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
       <QueryState
         query={staff}
         isEmpty={(res) => res.data.length === 0}
-        empty={<EmptyState title="Sin cuerpo técnico" description="Agrega miembros del cuerpo técnico a tu equipo." />}
+        empty={
+          <div className="text-center py-12">
+            <User className="w-12 h-12 text-white/60 mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-base sm:text-lg font-medium text-white mb-2 drop-shadow-lg">Sin cuerpo técnico</h3>
+            <p className="text-white/80 drop-shadow">Comienza registrando miembros del cuerpo técnico para tu equipo</p>
+          </div>
+        }
       >
         {(res) => (
-          <div className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {res.data.map((member) => (
-              <div key={member.id} className="flex items-center justify-between rounded-lg border p-4">
-                <CoachingStaffRow staff={member} />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeleteStaffId(member.id)}
-                  aria-label={`Desactivar a ${member.name}`}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
+              <CoachingStaffRow key={member.id} staff={member} onDeactivate={() => setDeleteStaffId(member.id)} />
             ))}
           </div>
         )}
       </QueryState>
 
       <AlertDialog open={Boolean(deleteStaffId)} onOpenChange={(open) => !open && setDeleteStaffId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>Desactivar Miembro</AlertDialogTitle>
-            <AlertDialogDescription>¿Estás seguro de que quieres desactivar este miembro del cuerpo técnico?</AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Desactivar Miembro</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">¿Estás seguro de que quieres desactivar este miembro del cuerpo técnico?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
