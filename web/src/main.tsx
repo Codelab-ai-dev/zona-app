@@ -27,3 +27,11 @@ createRoot(root).render(
     </ThemeProvider>
   </StrictMode>,
 )
+
+// Offline support and installability (production builds only, so the dev
+// server never serves stale code).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js')
+  })
+}

@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { createBrowserRouter, Navigate, Outlet } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, type RouteObject } from 'react-router'
 
 import { LoadingState } from '@/components/states'
 import { RequireRole } from '@/lib/auth/require-role'
@@ -17,7 +17,10 @@ import { area as teamOwnerArea } from '@/features/team-owner/routes'
 import type { Area } from './area'
 import { DashboardLayout } from './layouts/dashboard-layout'
 import { PublicLayout } from './layouts/public-layout'
+import { DocumentTitle } from './document-title'
 import { NotFoundPage } from './not-found'
+import { InstallPrompt } from './pwa/install-prompt'
+import { RouteError } from './route-error'
 
 // Each area is a separate chunk so the public portal stays light.
 const LoginPage = lazy(() => import('@/features/auth/login-page').then((m) => ({ default: m.LoginPage })))
@@ -54,7 +57,7 @@ const allNav = areas.flatMap((a) => a.nav ?? [])
  * - super admin: /admin/*        - league admin: /liga-admin/*
  * - team owner: /mi-equipo/*     - Zona Play: /play/*
  */
-export const router = createBrowserRouter([
+const appRoutes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
@@ -89,4 +92,17 @@ export const router = createBrowserRouter([
     children: [{ path: 'dashboard', element: <DashboardRedirect /> }],
   },
   { path: '*', element: <NotFoundPage /> },
-])
+]
+
+/** App shell: route errors, page titles and the install prompt wrap every page. */
+function Root() {
+  return (
+    <>
+      <DocumentTitle />
+      <Outlet />
+      <InstallPrompt />
+    </>
+  )
+}
+
+export const router = createBrowserRouter([{ element: <Root />, errorElement: <RouteError />, children: appRoutes }])

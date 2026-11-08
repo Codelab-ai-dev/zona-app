@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
-import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/lib/auth/auth-context'
@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth/auth-context'
 import { AuthShell, authButtonClass, authErrorClass, authInputClass, authLabelClass, authLinkClass } from './auth-shell'
 
 export function LoginPage() {
-  const { status, signIn } = useAuth()
+  const { status, signIn, expired, dismissExpired } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/dashboard'
@@ -38,6 +38,20 @@ export function LoginPage() {
   return (
     <AuthShell>
       <h1 className="sr-only">Iniciar sesión</h1>
+      {expired && (
+        <div role="status" className="mb-6 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="flex-1">
+              <p className="text-amber-400 text-sm font-medium">Tu sesión ha expirado</p>
+              <p className="text-amber-400/70 text-xs mt-1">Por seguridad, inicia sesión nuevamente para continuar.</p>
+            </div>
+            <button type="button" onClick={dismissExpired} aria-label="Cerrar aviso" className="text-amber-400/70 hover:text-amber-300 text-sm">
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       {/* Uncontrolled inputs keep the values if sign-in fails. */}
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <div className="space-y-2">

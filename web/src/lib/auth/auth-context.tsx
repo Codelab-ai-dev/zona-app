@@ -26,6 +26,11 @@ interface AuthContextValue {
   profile: Profile | null
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  /** True when the last session ended by itself (inactivity or a failed refresh). */
+  expired: boolean
+  /** Ends the session because it expired (shows the notice on the login page). */
+  expire: () => Promise<void>
+  dismissExpired: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -49,7 +54,9 @@ function signInMessage(err: unknown): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [hasSession, setHasSession] = useState<boolean | null>(null)
+  const [expired, setExpired] = useState(false)
   const channel = useRef<BroadcastChannel | null>(null)
+  const hadSession = useRef(false)
 
   /** Drops every trace of the session in this tab (never keep another user's cache). */
   const clearLocal = useCallback(() => {
@@ -59,7 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   useEffect(() => {
-    configureApiClient({ onUnauthorized: clearLocal })
+    configureApiClient({
+      onUnauthorized: () => {
+        // A session that was alive and could not be renewed has expired.
+        if (hadSession.current) setExpired(true)
+        clearLocal()
+      },
+    })
     channel.current = openChannel()
     const ch = channel.current
     if (ch) ch.onmessage = (e: MessageEvent) => {
@@ -92,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(signInMessage(err))
       }
       await queryClient.resetQueries({ queryKey: ['me'] })
+      setExpired(false)
       setHasSession(true)
     },
     [queryClient],
@@ -107,12 +121,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channel.current?.postMessage('logout')
   }, [clearLocal])
 
-  const value = useMemo<AuthContextValue>(() => {
-    let status: Status = 'loading'
-    if (hasSession === false || me.isError) status = 'anonymous'
-    else if (hasSession && me.data) status = 'authenticated'
-    return { status, profile: me.data ?? null, signIn, signOut }
-  }, [hasSession, me.data, me.isError, signIn, signOut])
+  const expire = useCallback(async () => {
+    await signOut()
+    setExpired(true)
+  }, [signOut])
+  const dismissExpired = useCallback(() => setExpired(false), [])
+
+  let status: Status = 'loading'
+  if (hasSession === false || me.isError) status = 'anonymous'
+  else if (hasSession && me.data) status = 'authenticated'
+
+  // Remember that a session existed, so a later failed refresh means "expired".
+  useEffect(() => {
+    if (status !== 'loading') hadSession.current = status === 'authenticated'
+  }, [status])
+
+  const value = useMemo<AuthContextValue>(
+    () => ({ status, profile: me.data ?? null, signIn, signOut, expired, expire, dismissExpired }),
+    [status, me.data, signIn, signOut, expired, expire, dismissExpired],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

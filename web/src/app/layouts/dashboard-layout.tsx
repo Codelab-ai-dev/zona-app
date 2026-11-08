@@ -13,6 +13,7 @@ import type { NavItem } from '../area'
 import { AppDownloadDialog } from './app-download-dialog'
 import { gateTabs, orderTabs } from './dashboard-nav'
 import { useLeagueCapabilities } from './league-capabilities'
+import { useIdleTimeout } from './use-idle-timeout'
 
 const roleLabel: Record<Role, string> = {
   super_admin: 'Super Administrador',
@@ -81,7 +82,8 @@ function TabStrip({ items }: { items: NavItem[] }) {
 }
 
 export function DashboardLayout({ children, nav = [] }: { children: ReactNode; nav?: NavItem[] }) {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, expire } = useAuth()
+  useIdleTimeout(() => void expire())
   const [menuOpen, setMenuOpen] = useState(false)
   const isLeagueAdmin = profile?.role === 'league_admin'
   const caps = useLeagueCapabilities(isLeagueAdmin)
