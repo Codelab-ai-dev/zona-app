@@ -223,6 +223,16 @@ func (r *PGRepository) UpdateTeam(ctx context.Context, teamID uuid.UUID, req Upd
 		argIndex++
 	}
 
+	if req.TournamentID != nil {
+		var tid *uuid.UUID
+		if *req.TournamentID != uuid.Nil {
+			tid = req.TournamentID
+		}
+		query += fmt.Sprintf("tournament_id = $%d, ", argIndex)
+		args = append(args, tid)
+		argIndex++
+	}
+
 	// Always update updated_at
 	query += fmt.Sprintf("updated_at = now() WHERE id = $1 ")
 	query += `RETURNING id, name, slug, league_id, tournament_id, owner_id, logo, description, is_active,

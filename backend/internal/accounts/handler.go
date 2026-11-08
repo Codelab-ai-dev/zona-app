@@ -25,6 +25,8 @@ func (h *Handler) Routes(r chi.Router) {
 		Post("/admin/users", h.createUser)
 	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleSuperAdmin, auth.RoleLeagueAdmin)).
 		Patch("/admin/users/{userID}", h.updateUser)
+	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleSuperAdmin, auth.RoleLeagueAdmin)).
+		Get("/admin/users/{userID}", h.getUser)
 }
 
 func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {

@@ -184,6 +184,11 @@ func (s *Service) UpdateTeam(ctx context.Context, caller auth.Principal, teamID 
 	if err := s.authz.CanManageTeam(ctx, caller, teamID); err != nil {
 		return Team{}, err
 	}
+	if req.TournamentID != nil {
+		if err := s.checkTournamentChange(ctx, caller, teamID, *req.TournamentID); err != nil {
+			return Team{}, err
+		}
+	}
 
 	return s.repo.UpdateTeam(ctx, teamID, req)
 }

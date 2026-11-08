@@ -61,3 +61,30 @@ func deleteTeamTx(ctx context.Context, tx pgx.Tx, teamID uuid.UUID) error {
 	}
 	return nil
 }
+
+// checkTournamentChange lets only the league admin move a team, and only to
+// a tournament of the team's league (uuid.Nil = no tournament).
+func (s *Service) checkTournamentChange(ctx context.Context, caller auth.Principal, teamID, tournamentID uuid.UUID) error {
+	team, err := s.repo.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return err
+	}
+	if err := s.authz.CanManageLeague(ctx, caller, team.LeagueID); err != nil {
+		return err
+	}
+	if tournamentID == uuid.Nil {
+		return nil
+	}
+	if s.pool == nil {
+		return errors.New("teams: pool not configured")
+	}
+	var ok bool
+	if err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM public.tournaments WHERE id = $1 AND league_id = $2)`,
+		tournamentID, team.LeagueID).Scan(&ok); err != nil {
+		return fmt.Errorf("check tournament: %w", err)
+	}
+	if !ok {
+		return httpx.Validation(map[string]string{"tournament_id": "el torneo no pertenece a la liga del equipo"})
+	}
+	return nil
+}

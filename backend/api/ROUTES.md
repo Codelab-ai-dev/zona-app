@@ -11,6 +11,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | Method | Path | Access |
 |---|---|---|
 | POST | `/api/v1/admin/users` | token |
+| GET | `/api/v1/admin/users/{userID}` | token |
 | PATCH | `/api/v1/admin/users/{userID}` | token |
 
 ## agent
@@ -251,4 +252,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 140 routes.
+Total: 141 routes.

@@ -76,6 +76,9 @@ type UpdateTeamRequest struct {
 	AwayAccentColor    *string `json:"away_accent_color,omitempty"`
 	Alt1ShortsColor    *string `json:"alt1_shorts_color,omitempty"`
 	Alt2ShortsColor    *string `json:"alt2_shorts_color,omitempty"`
+	// TournamentID moves the team to a tournament of its league (league
+	// admins only); the nil UUID removes it from any tournament.
+	TournamentID *uuid.UUID `json:"tournament_id,omitempty"`
 }
 
 // Validate checks the request for errors.
