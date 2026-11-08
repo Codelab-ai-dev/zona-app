@@ -323,6 +323,19 @@ func (s *Service) CreateTournament(ctx context.Context, caller auth.Principal, r
 }
 
 // UpdateTournament updates a tournament (league admin or super admin).
+// DeleteTournament permanently deletes a tournament (league admin or super
+// admin). Clients must confirm: matches and their statistics are lost.
+func (s *Service) DeleteTournament(ctx context.Context, caller auth.Principal, tournamentID uuid.UUID) error {
+	t, err := s.repo.GetTournamentByID(ctx, tournamentID)
+	if err != nil {
+		return err
+	}
+	if err := s.authz.CanManageLeague(ctx, caller, t.LeagueID); err != nil {
+		return err
+	}
+	return s.repo.DeleteTournament(ctx, tournamentID)
+}
+
 func (s *Service) UpdateTournament(ctx context.Context, caller auth.Principal, tournamentID uuid.UUID, req *UpdateTournamentRequest) (Tournament, error) {
 	// Load tournament first to get league_id for authorization
 	t, err := s.repo.GetTournamentByID(ctx, tournamentID)

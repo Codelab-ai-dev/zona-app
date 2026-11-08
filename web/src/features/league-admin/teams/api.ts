@@ -149,6 +149,24 @@ export function useDeactivateTeam() {
   })
 }
 
+/** Permanently delete a team (players, matches and stats go with it). */
+export function useDeleteTeam() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (teamId: string) => api.delete(`/teams/${teamId}`),
+    onSuccess: () => {
+      // Rivals' standings are rebuilt server-side; refresh everything.
+      void queryClient.invalidateQueries()
+      toast.success('Equipo eliminado')
+    },
+    onError: (error) => {
+      const msg = error instanceof Error ? error.message : 'Error al eliminar equipo'
+      toast.error(msg)
+    },
+  })
+}
+
 /** Approve/reject a player registration request. */
 export function useReviewPlayerRegistration() {
   const queryClient = useQueryClient()

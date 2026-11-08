@@ -33,10 +33,11 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Patch("/leagues/{leagueID}/status", h.setLeagueStatus)
 
 	// Tournament endpoints
-	r.Get("/tournaments/{tournamentID}", h.getTournament)                             // Public: get tournament
-	r.Get("/leagues/{leagueID}/tournaments", h.listTournamentsByLeague)               // Public: list tournaments by league
-	r.With(auth.RequireAuth).Post("/tournaments", h.createTournament)                 // League admin+: create tournament
-	r.With(auth.RequireAuth).Patch("/tournaments/{tournamentID}", h.updateTournament) // League admin+: update tournament
+	r.Get("/tournaments/{tournamentID}", h.getTournament)                              // Public: get tournament
+	r.Get("/leagues/{leagueID}/tournaments", h.listTournamentsByLeague)                // Public: list tournaments by league
+	r.With(auth.RequireAuth).Post("/tournaments", h.createTournament)                  // League admin+: create tournament
+	r.With(auth.RequireAuth).Patch("/tournaments/{tournamentID}", h.updateTournament)  // League admin+: update tournament
+	r.With(auth.RequireAuth).Delete("/tournaments/{tournamentID}", h.deleteTournament) // League admin+: permanent delete
 }
 
 // listActiveLeagues handles GET /leagues (public, paginated).
@@ -283,6 +284,21 @@ func (h *Handler) updateTournament(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, tournament)
+}
+
+// deleteTournament handles DELETE /tournaments/{tournamentID}.
+func (h *Handler) deleteTournament(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	id, err := httpx.UUIDParam(r, "tournamentID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	if err := h.svc.DeleteTournament(r.Context(), caller, id); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.NoContent(w)
 }
 
 // myLeagues handles GET /leagues/mine.

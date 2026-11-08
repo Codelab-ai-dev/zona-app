@@ -268,6 +268,20 @@ func (r *PGRepository) CreateTournament(ctx context.Context, t *Tournament) (uui
 }
 
 // UpdateTournament updates an existing tournament.
+// DeleteTournament permanently deletes a tournament. Its matches (with
+// goals, cards and player stats), standings and registration requests
+// cascade; teams, suspensions and finance rows keep existing unlinked.
+func (r *PGRepository) DeleteTournament(ctx context.Context, id uuid.UUID) error {
+	tag, err := r.db.Exec(ctx, `DELETE FROM public.tournaments WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete tournament: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.ErrNotFound
+	}
+	return nil
+}
+
 func (r *PGRepository) UpdateTournament(ctx context.Context, t *Tournament) error {
 	_, err := r.db.Exec(ctx, `
 		UPDATE public.tournaments

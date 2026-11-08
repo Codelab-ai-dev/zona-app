@@ -30,6 +30,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Patch("/teams/{teamID}", h.updateTeam)
 	r.With(auth.RequireAuth).Post("/teams/{teamID}/activate", h.activateTeam)
 	r.With(auth.RequireAuth).Post("/teams/{teamID}/deactivate", h.deactivateTeam)
+	r.With(auth.RequireAuth).Delete("/teams/{teamID}", h.deleteTeam)
 
 	// Player endpoints - public GETs return PublicPlayer (no PII)
 	r.Get("/teams/{teamID}/players", h.getTeamPlayers)
@@ -544,4 +545,19 @@ func (h *Handler) batchUpdatePlayerQRCodes(w http.ResponseWriter, r *http.Reques
 	}
 
 	httpx.JSON(w, http.StatusOK, map[string]int{"updated": updated})
+}
+
+// deleteTeam handles DELETE /teams/{teamID} (permanent; league admin only).
+func (h *Handler) deleteTeam(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	id, err := httpx.UUIDParam(r, "teamID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	if err := h.svc.DeleteTeam(r.Context(), caller, id); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.NoContent(w)
 }

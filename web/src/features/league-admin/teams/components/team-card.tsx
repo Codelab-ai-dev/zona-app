@@ -1,10 +1,13 @@
-import { CheckCircle, Edit, Shield, XCircle } from 'lucide-react'
+import { CheckCircle, Edit, Shield, Trash2, XCircle } from 'lucide-react'
+import { useState } from 'react'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { useDeleteTeam } from '../api'
 import type { Team } from '../types'
 
 interface TeamCardProps {
@@ -24,6 +27,8 @@ const initials = (name: string) =>
     .slice(0, 2)
 
 export function TeamCard({ team, tournamentName, disabled, onEdit, onToggle }: TeamCardProps) {
+  const remove = useDeleteTeam()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   return (
     <Card className="relative border-white/20 bg-white/10 backdrop-blur-xl transition-all hover:bg-white/15">
       <CardHeader>
@@ -82,8 +87,25 @@ export function TeamCard({ team, tournamentName, disabled, onEdit, onToggle }: T
               {team.is_active ? 'Desactivar' : 'Activar'}
             </Button>
           </div>
+          <Button
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+            className="w-full backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0"
+          >
+            <Trash2 className="w-4 h-4 mr-1" aria-hidden="true" />
+            Eliminar Equipo
+          </Button>
         </div>
       </CardContent>
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        name={team.name}
+        consequences={['Todos los jugadores del equipo', 'Todas las estadísticas', 'El historial de partidos (la tabla se recalcula)']}
+        hint="Considera desactivar el equipo si solo quieres ocultarlo."
+        pending={remove.isPending}
+        onConfirm={() => remove.mutate(team.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
     </Card>
   )
 }

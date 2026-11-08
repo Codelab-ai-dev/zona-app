@@ -196,6 +196,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 |---|---|---|
 | GET | `/api/v1/teams` | público |
 | POST | `/api/v1/teams` | token |
+| DELETE | `/api/v1/teams/{teamID}` | token |
 | GET | `/api/v1/teams/{teamID}` | público |
 | PATCH | `/api/v1/teams/{teamID}` | token |
 | POST | `/api/v1/teams/{teamID}/activate` | token |
@@ -215,6 +216,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | Method | Path | Access |
 |---|---|---|
 | POST | `/api/v1/tournaments` | token |
+| DELETE | `/api/v1/tournaments/{tournamentID}` | token |
 | GET | `/api/v1/tournaments/{tournamentID}` | público |
 | PATCH | `/api/v1/tournaments/{tournamentID}` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/discipline` | público |
@@ -242,4 +244,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 131 routes.
+Total: 133 routes.

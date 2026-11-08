@@ -54,6 +54,20 @@ export function useUpdateTournament(tournamentId: string) {
   })
 }
 
+/** Permanently deletes a tournament (its matches and stats go with it). */
+export function useDeleteTournament() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (tournamentId: string) => api.delete(`/tournaments/${tournamentId}`),
+    onSuccess: () => {
+      // Matches, standings and team links of several areas change at once.
+      void queryClient.invalidateQueries()
+      toast.success('Torneo eliminado')
+    },
+    onError,
+  })
+}
+
 // STANDINGS
 
 export function useStandings(tournamentId: string | undefined) {

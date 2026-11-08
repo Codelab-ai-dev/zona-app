@@ -1,12 +1,13 @@
-import { Calendar, Edit, Loader2, Lock, Plus, ShieldCheck, Trophy, Unlock, UserCheck, Users } from 'lucide-react'
+import { Calendar, Edit, Loader2, Lock, Plus, ShieldCheck, Trash2, Trophy, Unlock, UserCheck, Users } from 'lucide-react'
 import { useState } from 'react'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { ErrorState, LoadingState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-import { useTournaments, useUpdateTournament } from '../api'
+import { useDeleteTournament, useTournaments, useUpdateTournament } from '../api'
 import type { Tournament } from '../types'
 import { TournamentForm } from './tournament-form'
 
@@ -65,6 +66,8 @@ export function TournamentList({ leagueId }: { leagueId: string }) {
 function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leagueId: string }) {
   const [showEdit, setShowEdit] = useState(false)
   const update = useUpdateTournament(tournament.id)
+  const remove = useDeleteTournament()
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   return (
     <>
@@ -139,11 +142,28 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
               {tournament.registration_open ? <Lock className="w-4 h-4 mr-1" aria-hidden="true" /> : <Unlock className="w-4 h-4 mr-1" aria-hidden="true" />}
               {tournament.registration_open ? 'Cerrar Registros' : 'Abrir Registros'}
             </Button>
+            <Button
+              size="sm"
+              onClick={() => setConfirmDelete(true)}
+              className="backdrop-blur-md bg-red-600/80 hover:bg-red-600/90 text-white border-0"
+            >
+              <Trash2 className="w-4 h-4 mr-1" aria-hidden="true" />
+              Borrar Torneo
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {showEdit && <TournamentForm leagueId={leagueId} tournament={tournament} onClose={() => setShowEdit(false)} />}
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        name={tournament.name}
+        consequences={['Todos los partidos del torneo', 'Todas las estadísticas de jugadores', 'Los equipos perderán su vinculación']}
+        hint='Si solo quieres ocultar temporalmente el torneo, usa "Desactivar".'
+        pending={remove.isPending}
+        onConfirm={() => remove.mutate(tournament.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
     </>
   )
 }

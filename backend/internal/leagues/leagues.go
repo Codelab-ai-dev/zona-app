@@ -235,4 +235,5 @@ type Repository interface {
 	ListTournamentsByLeague(ctx context.Context, leagueID uuid.UUID, limit int, offset int) ([]Tournament, int, error)
 	CreateTournament(ctx context.Context, t *Tournament) (uuid.UUID, error)
 	UpdateTournament(ctx context.Context, t *Tournament) error
+	DeleteTournament(ctx context.Context, id uuid.UUID) error
 }

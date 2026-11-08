@@ -159,6 +159,14 @@ func (f *fakeRepository) UpdateTournament(ctx context.Context, t *Tournament) er
 	return nil
 }
 
+func (f *fakeRepository) DeleteTournament(ctx context.Context, id uuid.UUID) error {
+	if _, ok := f.tournaments[id]; !ok {
+		return httpx.ErrNotFound
+	}
+	delete(f.tournaments, id)
+	return nil
+}
+
 // fakeChecker implements authz.Checker for testing.
 type fakeChecker struct {
 	allowLeague     bool
