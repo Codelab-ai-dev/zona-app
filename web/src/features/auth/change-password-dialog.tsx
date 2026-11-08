@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { KeyRound } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactElement } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 
@@ -30,7 +30,7 @@ function Field({ id, label, error, autoComplete }: { id: string; label: string; 
 }
 
 /** Header button + dialog. The server revokes every session on success, so we sign out. */
-export function ChangePasswordDialog() {
+export function ChangePasswordDialog({ trigger }: { trigger?: ReactElement } = {}) {
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -74,10 +74,12 @@ export function ChangePasswordDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label="Cambiar contraseña">
-          <KeyRound className="size-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Cambiar contraseña</span>
-        </Button>
+        {trigger ?? (
+          <Button variant="ghost" size="sm" aria-label="Cambiar contraseña">
+            <KeyRound className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Cambiar contraseña</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
