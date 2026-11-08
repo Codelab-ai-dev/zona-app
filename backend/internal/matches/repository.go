@@ -88,10 +88,13 @@ func (r *PGRepository) GetMatchWithRelations(ctx context.Context, matchID uuid.U
 
 	// Fetch goals
 	const goalsQ = `
-		SELECT id, match_id, player_id, team_id, minute, goal_type, assist_player_id, description, created_at
-		FROM public.match_goals
-		WHERE match_id = $1
-		ORDER BY minute ASC`
+		SELECT g.id, g.match_id, g.player_id, g.team_id, g.minute, g.goal_type, g.assist_player_id, g.description, g.created_at,
+		       p.name, p.jersey_number, a.name
+		FROM public.match_goals g
+		LEFT JOIN public.players p ON p.id = g.player_id
+		LEFT JOIN public.players a ON a.id = g.assist_player_id
+		WHERE g.match_id = $1
+		ORDER BY g.minute ASC`
 	rows, err := r.db.Query(ctx, goalsQ, matchID)
 	if err == nil {
 		defer rows.Close()
@@ -99,7 +102,7 @@ func (r *PGRepository) GetMatchWithRelations(ctx context.Context, matchID uuid.U
 			var g Goal
 			var goalType string
 			if err := rows.Scan(&g.ID, &g.MatchID, &g.PlayerID, &g.TeamID, &g.Minute, &goalType,
-				&g.AssistPlayerID, &g.Description, &g.CreatedAt); err == nil {
+				&g.AssistPlayerID, &g.Description, &g.CreatedAt, &g.PlayerName, &g.PlayerJersey, &g.AssistPlayerName); err == nil {
 				g.GoalType = GoalType(goalType)
 				mwr.Goals = append(mwr.Goals, g)
 			}
@@ -108,10 +111,12 @@ func (r *PGRepository) GetMatchWithRelations(ctx context.Context, matchID uuid.U
 
 	// Fetch cards
 	const cardsQ = `
-		SELECT id, match_id, player_id, team_id, card_type, minute, reason, created_at
-		FROM public.match_cards
-		WHERE match_id = $1
-		ORDER BY minute ASC`
+		SELECT c.id, c.match_id, c.player_id, c.team_id, c.card_type, c.minute, c.reason, c.created_at,
+		       p.name, p.jersey_number
+		FROM public.match_cards c
+		LEFT JOIN public.players p ON p.id = c.player_id
+		WHERE c.match_id = $1
+		ORDER BY c.minute ASC`
 	rows, err = r.db.Query(ctx, cardsQ, matchID)
 	if err == nil {
 		defer rows.Close()
@@ -119,7 +124,7 @@ func (r *PGRepository) GetMatchWithRelations(ctx context.Context, matchID uuid.U
 			var c Card
 			var cardType string
 			if err := rows.Scan(&c.ID, &c.MatchID, &c.PlayerID, &c.TeamID, &cardType, &c.Minute,
-				&c.Reason, &c.CreatedAt); err == nil {
+				&c.Reason, &c.CreatedAt, &c.PlayerName, &c.PlayerJersey); err == nil {
 				c.CardType = CardType(cardType)
 				mwr.Cards = append(mwr.Cards, c)
 			}
@@ -128,17 +133,18 @@ func (r *PGRepository) GetMatchWithRelations(ctx context.Context, matchID uuid.U
 
 	// Fetch incidents
 	const incidentsQ = `
-		SELECT id, match_id, incident_type, description, minute, player_id, team_id, created_at
-		FROM public.match_incidents
-		WHERE match_id = $1
-		ORDER BY minute ASC NULLS LAST`
+		SELECT i.id, i.match_id, i.incident_type, i.description, i.minute, i.player_id, i.team_id, i.created_at, p.name
+		FROM public.match_incidents i
+		LEFT JOIN public.players p ON p.id = i.player_id
+		WHERE i.match_id = $1
+		ORDER BY i.minute ASC NULLS LAST`
 	rows, err = r.db.Query(ctx, incidentsQ, matchID)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {
 			var inc Incident
 			if err := rows.Scan(&inc.ID, &inc.MatchID, &inc.IncidentType, &inc.Description, &inc.Minute,
-				&inc.PlayerID, &inc.TeamID, &inc.CreatedAt); err == nil {
+				&inc.PlayerID, &inc.TeamID, &inc.CreatedAt, &inc.PlayerName); err == nil {
 				mwr.Incidents = append(mwr.Incidents, inc)
 			}
 		}

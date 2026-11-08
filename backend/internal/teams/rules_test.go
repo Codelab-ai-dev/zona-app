@@ -121,7 +121,8 @@ func TestRequestPlayerRegistrationRules(t *testing.T) {
 	}{
 		{"happy path", open, 5, 2, &adult, ""},
 		{"tournament of another league", foreign, 0, 0, &adult, "tournament_id"},
-		{"registration closed", closed, 0, 0, &adult, "tournament_id"},
+		// Requests exist for exceptional registrations: allowed when closed.
+		{"registration closed is still requestable", closed, 0, 0, &adult, ""},
 		{"limit reached counting pending", open, 18, 2, &adult, "team_id"},
 		{"too young", ageRules, 0, 0, &minor, "birth_date"},
 		{"missing birth date when ages are validated", ageRules, 0, 0, nil, "birth_date"},

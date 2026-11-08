@@ -574,6 +574,11 @@ func (r *PGRepository) UpdateCoachingStaff(ctx context.Context, staffID uuid.UUI
 		args = append(args, *req.Cedula)
 		argIndex++
 	}
+	if req.IsActive != nil {
+		query += fmt.Sprintf("is_active = $%d, ", argIndex)
+		args = append(args, *req.IsActive)
+		argIndex++
+	}
 
 	query += "updated_at = now() WHERE id = $1 "
 	query += `RETURNING id, team_id, name, role, photo, birth_date, cedula, is_active, created_at, updated_at`

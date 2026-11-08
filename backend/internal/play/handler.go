@@ -137,7 +137,11 @@ func (h *Handler) getRecording(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rec, err := h.svc.GetRecording(r.Context(), videoID)
+	var caller *auth.Principal
+	if p, ok := auth.FromContext(r.Context()); ok {
+		caller = &p
+	}
+	rec, err := h.svc.GetRecording(r.Context(), caller, videoID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

@@ -185,7 +185,7 @@ func TestHandlerGetRecording(t *testing.T) {
 	recID := uuid.New()
 	repo.GetRecordingFunc = func(ctx context.Context, id uuid.UUID) (*Recording, error) {
 		if id == recID {
-			return &Recording{ID: recID, Title: "Test"}, nil
+			return &Recording{ID: recID, Title: "Test", Status: "ready", Visibility: "public"}, nil
 		}
 		return nil, nil
 	}

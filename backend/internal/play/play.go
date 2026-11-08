@@ -39,6 +39,25 @@ type Recording struct {
 	AwayScore          *int       `json:"away_score,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
+
+	// Context for display (read-only, joined from the match and league).
+	HomeTeam *TeamRef   `json:"home_team,omitempty"`
+	AwayTeam *TeamRef   `json:"away_team,omitempty"`
+	League   *LeagueRef `json:"league,omitempty"`
+}
+
+// TeamRef identifies a team for display.
+type TeamRef struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Logo *string   `json:"logo,omitempty"`
+}
+
+// LeagueRef identifies a league for display.
+type LeagueRef struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Slug string    `json:"slug"`
 }
 
 // RecordingRequest is used for creating recordings.
@@ -332,6 +351,10 @@ type Repository interface {
 	UpdateRecordingFromMuxAsset(ctx context.Context, assetID, playbackID string, duration int, resolution string) error
 	UpdateRecordingError(ctx context.Context, assetID string, errMsg string) error
 	UpdateStreamFromMuxLive(ctx context.Context, streamID string, newStatus string) error
+	// AttachRecordingContext fills teams and league of the given recordings.
+	AttachRecordingContext(ctx context.Context, recs []*Recording) error
+	// SetStreamRecording stores the replay of a finished live stream.
+	SetStreamRecording(ctx context.Context, muxStreamID, assetID, playbackID string, duration float64) error
 }
 
 // ListRecordingsOpts filters recordings list.

@@ -12,6 +12,7 @@ import (
 
 // FakeRepository is a test fake for Repository.
 type FakeRepository struct {
+	SetStreamRecordingFunc          func(ctx context.Context, muxStreamID, assetID, playbackID string, duration float64) error
 	UpdateRecordingFromMuxAssetFunc func(ctx context.Context, assetID, playbackID string, duration int, resolution string) error
 	GetRecordingFunc                func(ctx context.Context, id uuid.UUID) (*Recording, error)
 	CreateRecordingFunc             func(ctx context.Context, req *RecordingRequest, uploadedBy uuid.UUID) (*Recording, error)
@@ -150,6 +151,17 @@ func (f *FakeRepository) UpdateStreamFromMuxLive(ctx context.Context, streamID, 
 	return nil
 }
 
+func (f *FakeRepository) AttachRecordingContext(ctx context.Context, recs []*Recording) error {
+	return nil
+}
+
+func (f *FakeRepository) SetStreamRecording(ctx context.Context, muxStreamID, assetID, playbackID string, duration float64) error {
+	if f.SetStreamRecordingFunc != nil {
+		return f.SetStreamRecordingFunc(ctx, muxStreamID, assetID, playbackID, duration)
+	}
+	return nil
+}
+
 // FakeAuthzChecker is a test fake for Checker.
 type FakeAuthzChecker struct {
 	CanManageLeagueFunc func(ctx context.Context, p auth.Principal, leagueID uuid.UUID) error
@@ -249,7 +261,7 @@ func TestGetRecording_NotFound(t *testing.T) {
 	svc := NewService(repo, provider, authz)
 
 	ctx := context.Background()
-	_, err := svc.GetRecording(ctx, uuid.New())
+	_, err := svc.GetRecording(ctx, nil, uuid.New())
 	if err != httpx.ErrNotFound {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}

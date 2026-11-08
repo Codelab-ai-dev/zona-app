@@ -257,6 +257,8 @@ type UpdateCoachingStaffRequest struct {
 	Photo     *string     `json:"photo,omitempty"`
 	BirthDate *httpx.Date `json:"birth_date,omitempty"`
 	Cedula    *string     `json:"cedula,omitempty"`
+	// IsActive reactivates (true) or deactivates (false) the member.
+	IsActive *bool `json:"is_active,omitempty"`
 }
 
 // Validate checks the request for errors.

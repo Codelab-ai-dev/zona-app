@@ -123,6 +123,10 @@ type Goal struct {
 	AssistPlayerID *uuid.UUID `json:"assist_player_id,omitempty"`
 	Description    *string    `json:"description,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
+	// Display names (read-only).
+	PlayerName       *string `json:"player_name,omitempty"`
+	PlayerJersey     *int    `json:"player_jersey,omitempty"`
+	AssistPlayerName *string `json:"assist_player_name,omitempty"`
 }
 
 // Card represents a disciplinary card in a match.
@@ -135,6 +139,9 @@ type Card struct {
 	Minute    int       `json:"minute"`
 	Reason    *string   `json:"reason,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
+	// Display names (read-only).
+	PlayerName   *string `json:"player_name,omitempty"`
+	PlayerJersey *int    `json:"player_jersey,omitempty"`
 }
 
 // Incident represents a match incident (not a goal or card).
@@ -147,6 +154,7 @@ type Incident struct {
 	PlayerID     *uuid.UUID `json:"player_id,omitempty"`
 	TeamID       *uuid.UUID `json:"team_id,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
+	PlayerName   *string    `json:"player_name,omitempty"`
 }
 
 // RefereeReport represents a match referee report.

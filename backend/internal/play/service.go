@@ -31,14 +31,24 @@ func NewService(repo Repository, provider VideoProvider, authz authz.Checker) *S
 	return &Service{repo: repo, provider: provider, authz: authz}
 }
 
-// GetRecording retrieves a recording by ID (public reads allowed).
-func (s *Service) GetRecording(ctx context.Context, id uuid.UUID) (*Recording, error) {
+// GetRecording retrieves a recording by ID. Public and unlisted (link
+// sharing) videos that are ready are open to everyone; private or not yet
+// ready ones only to the league's managers (404 otherwise, so their
+// existence isn't revealed).
+func (s *Service) GetRecording(ctx context.Context, caller *auth.Principal, id uuid.UUID) (*Recording, error) {
 	rec, err := s.repo.GetRecording(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if rec == nil {
 		return nil, httpx.ErrNotFound
+	}
+	openToAll := rec.Status == "ready" && rec.Visibility != "private"
+	if !openToAll && !s.canSeeAllRecordings(ctx, caller, rec.LeagueID) {
+		return nil, httpx.ErrNotFound
+	}
+	if err := s.repo.AttachRecordingContext(ctx, []*Recording{rec}); err != nil {
+		return nil, err
 	}
 	return rec, nil
 }
@@ -58,7 +68,14 @@ func (s *Service) ListRecordings(ctx context.Context, caller *auth.Principal, op
 		opts.Visibility = "public"
 		opts.Status = "ready"
 	}
-	return s.repo.ListRecordings(ctx, opts)
+	recs, total, err := s.repo.ListRecordings(ctx, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := s.repo.AttachRecordingContext(ctx, recs); err != nil {
+		return nil, 0, err
+	}
+	return recs, total, nil
 }
 
 func (s *Service) canSeeAllRecordings(ctx context.Context, caller *auth.Principal, leagueID *uuid.UUID) bool {
@@ -470,6 +487,23 @@ func (s *Service) ProcessMuxWebhook(ctx context.Context, signature, body string,
 		// Live stream is now active
 		if streamID, ok := event.Data["id"].(string); ok {
 			if err := s.repo.UpdateStreamFromMuxLive(ctx, streamID, "live"); err != nil {
+				return fmt.Errorf("apply mux event %s: %w", event.Type, err)
+			}
+		}
+
+	case "video.asset.live_stream_completed":
+		// The replay of a finished live stream is ready.
+		assetID, _ := event.Data["id"].(string)
+		streamID, _ := event.Data["live_stream_id"].(string)
+		if assetID != "" && streamID != "" {
+			var playbackID string
+			if ids, ok := event.Data["playback_ids"].([]interface{}); ok && len(ids) > 0 {
+				if pb, ok := ids[0].(map[string]interface{}); ok {
+					playbackID, _ = pb["id"].(string)
+				}
+			}
+			duration, _ := event.Data["duration"].(float64)
+			if err := s.repo.SetStreamRecording(ctx, streamID, assetID, playbackID, duration); err != nil {
 				return fmt.Errorf("apply mux event %s: %w", event.Type, err)
 			}
 		}

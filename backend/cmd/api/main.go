@@ -36,6 +36,7 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/stats"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/statsadmin"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/storage"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/superadmin"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/teams"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/users"
 )
@@ -179,6 +180,7 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, to
 		teams.NewHandler(teams.NewService(teams.NewPGRepository(pool), pool, checker)),
 		stats.NewHandler(stats.NewService(stats.NewPGRepository(pool), checker)),
 		statsadmin.NewHandler(statsadmin.NewService(pool, checker)),
+		superadmin.NewHandler(superadmin.NewService(pool)),
 		finance.NewHandler(finance.NewService(finance.NewPGRepository(pool), checker)),
 		attendance.NewHandler(attendance.NewService(attendance.NewPGRepository(pool), checker), checker),
 		directory.NewHandler(directory.NewService(directory.NewPGRepository(pool), checker)),

@@ -70,6 +70,9 @@ var anonymousAllowed = map[string]bool{
 	"POST /api/v1/auth/password/forgot": true,
 	"POST /api/v1/auth/password/reset":  true,
 
+	// Public team page: per-player totals, no personal data.
+	"GET /api/v1/teams/{teamID}/player-stats": true,
+
 	// Private files: authorized by an HMAC-signed, expiring link.
 	"GET /api/v1/storage/download": true,
 }

@@ -34,6 +34,7 @@ func (h *Handler) Routes(r chi.Router) {
 
 	// Player endpoints - public GETs return PublicPlayer (no PII)
 	r.Get("/teams/{teamID}/players", h.getTeamPlayers)
+	r.Get("/teams/{teamID}/player-stats", h.getTeamPlayerStats) // public, no personal data
 	r.Get("/players/{playerID}", h.getPlayer)
 	r.With(auth.RequireAuth).Post("/teams/{teamID}/players", h.createPlayer)
 	r.With(auth.RequireAuth).Patch("/players/{playerID}", h.updatePlayer)

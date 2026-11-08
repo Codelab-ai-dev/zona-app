@@ -10,6 +10,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 
 | Method | Path | Access |
 |---|---|---|
+| GET | `/api/v1/admin/stats` | token |
 | POST | `/api/v1/admin/users` | token |
 | GET | `/api/v1/admin/users/{userID}` | token |
 | PATCH | `/api/v1/admin/users/{userID}` | token |
@@ -62,8 +63,10 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | GET | `/api/v1/leagues/admin` | token |
 | GET | `/api/v1/leagues/mine` | token |
 | GET | `/api/v1/leagues/slug/{slug}` | público |
+| DELETE | `/api/v1/leagues/{leagueID}` | token |
 | GET | `/api/v1/leagues/{leagueID}` | público |
 | PATCH | `/api/v1/leagues/{leagueID}` | token |
+| PUT | `/api/v1/leagues/{leagueID}/admin` | token |
 | GET | `/api/v1/leagues/{leagueID}/finance/balances` | token |
 | GET | `/api/v1/leagues/{leagueID}/finance/config` | token |
 | PUT | `/api/v1/leagues/{leagueID}/finance/config` | token |
@@ -209,6 +212,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | POST | `/api/v1/teams/{teamID}/deactivate` | token |
 | GET | `/api/v1/teams/{teamID}/matches` | público |
 | GET | `/api/v1/teams/{teamID}/player-registration-requests` | token |
+| GET | `/api/v1/teams/{teamID}/player-stats` | público |
 | GET | `/api/v1/teams/{teamID}/players` | público |
 | POST | `/api/v1/teams/{teamID}/players` | token |
 | GET | `/api/v1/teams/{teamID}/stats` | público |
@@ -252,4 +256,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 141 routes.
+Total: 145 routes.

@@ -253,13 +253,25 @@ func (s *Service) CreatePlayer(ctx context.Context, caller auth.Principal, teamI
 			}
 		}
 
-		// Check max_coaching_staff limit for coaching staff if needed
-		staffCount, err := s.repo.CountCoachingStaffByTeam(ctx, teamID)
-		if err != nil {
-			return Player{}, fmt.Errorf("count coaching staff: %w", err)
-		}
-		if staffCount >= tournament.MaxCoachingStaff {
-			// This is just for information; doesn't block player creation
+		// Team owners follow the tournament's registration rules; league
+		// admins may add players anyway (they decide exceptions).
+		if !caller.IsSuperAdmin() && caller.Role == auth.RoleTeamOwner {
+			if !tournament.RegistrationOpen {
+				errs["team_id"] = "el registro está cerrado; envía una solicitud de registro"
+			}
+			if tournament.AgeValidationEnabled {
+				if req.BirthDate == nil {
+					errs["birth_date"] = "la fecha de nacimiento es obligatoria en este torneo"
+				} else {
+					used, err := s.repo.CountExceptionPlayersByTeamTournament(ctx, teamID, *team.TournamentID)
+					if err != nil {
+						return Player{}, fmt.Errorf("count exceptions: %w", err)
+					}
+					if res := s.validatePlayerAge(req.BirthDate.Time, tournament, used); !res.isValid {
+						errs["birth_date"] = res.reason
+					}
+				}
+			}
 		}
 	}
 
@@ -317,6 +329,10 @@ func (s *Service) CreateCoachingStaff(ctx context.Context, caller auth.Principal
 		return CoachingStaff{}, err
 	}
 
+	if err := s.checkStaffLimit(ctx, caller, teamID); err != nil {
+		return CoachingStaff{}, err
+	}
+
 	staff := CoachingStaff{
 		ID:        uuid.New(),
 		TeamID:    teamID,
@@ -341,6 +357,11 @@ func (s *Service) UpdateCoachingStaff(ctx context.Context, caller auth.Principal
 	// Authorization: check if caller can manage this team
 	if err := s.authz.CanManageTeam(ctx, caller, staff.TeamID); err != nil {
 		return CoachingStaff{}, err
+	}
+	if req.IsActive != nil && *req.IsActive && !staff.IsActive {
+		if err := s.checkStaffLimit(ctx, caller, staff.TeamID); err != nil {
+			return CoachingStaff{}, err
+		}
 	}
 
 	return s.repo.UpdateCoachingStaff(ctx, staffID, req)
@@ -430,12 +451,8 @@ func (s *Service) RequestPlayerRegistration(ctx context.Context, caller auth.Pri
 		})
 	}
 
-	// Check registration is open
-	if !tournament.RegistrationOpen {
-		return PlayerRegistrationRequest{}, httpx.Validation(map[string]string{
-			"tournament_id": "el registro para este torneo está cerrado",
-		})
-	}
+	// Requests are how a team asks for an exceptional registration, so
+	// they are allowed even when registration is closed (as in the original).
 
 	// Check age validation if enabled
 	errs := make(map[string]string)
@@ -605,4 +622,33 @@ func (s *Service) BatchUpdatePlayerQRCodes(ctx context.Context, caller auth.Prin
 	// but that's external to this service (likely handled by a job queue or hooks)
 
 	return len(playerIDs), nil
+}
+
+// checkStaffLimit applies the tournament's max_coaching_staff to team owners.
+func (s *Service) checkStaffLimit(ctx context.Context, caller auth.Principal, teamID uuid.UUID) error {
+	if caller.IsSuperAdmin() || caller.Role != auth.RoleTeamOwner {
+		return nil
+	}
+	team, err := s.repo.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return err
+	}
+	if team.TournamentID == nil {
+		return nil
+	}
+	tournament, err := s.repo.GetTournamentByID(ctx, *team.TournamentID)
+	if err != nil {
+		return err
+	}
+	if tournament.MaxCoachingStaff <= 0 {
+		return nil
+	}
+	count, err := s.repo.CountCoachingStaffByTeam(ctx, teamID)
+	if err != nil {
+		return fmt.Errorf("count coaching staff: %w", err)
+	}
+	if count >= tournament.MaxCoachingStaff {
+		return httpx.Validation(map[string]string{"team_id": fmt.Sprintf("límite de %d integrantes del cuerpo técnico alcanzado", tournament.MaxCoachingStaff)})
+	}
+	return nil
 }

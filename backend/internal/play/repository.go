@@ -785,6 +785,19 @@ func (r *PGRepository) UpdateRecordingError(ctx context.Context, assetID, errMsg
 	return err
 }
 
+// SetStreamRecording implements Repository (Mux video.asset.live_stream_completed).
+func (r *PGRepository) SetStreamRecording(ctx context.Context, muxStreamID, assetID, playbackID string, duration float64) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE public.live_streams
+		SET recording_asset_id = $2, recording_playback_id = NULLIF($3, ''), recording_duration = $4,
+		    recording_ready = ($3 <> '')
+		WHERE mux_live_stream_id = $1`, muxStreamID, assetID, playbackID, duration)
+	if err != nil {
+		return fmt.Errorf("set stream recording: %w", err)
+	}
+	return nil
+}
+
 // UpdateStreamFromMuxLive updates a stream from Mux live stream events.
 func (r *PGRepository) UpdateStreamFromMuxLive(ctx context.Context, streamID, newStatus string) error {
 	// live_streams has no updated_at column; actual_start/ended_at are only
@@ -802,4 +815,55 @@ func (r *PGRepository) UpdateStreamFromMuxLive(ctx context.Context, streamID, ne
 		return fmt.Errorf("update stream from mux: %w", err)
 	}
 	return nil
+}
+
+// AttachRecordingContext implements Repository with one query for all
+// recordings (no N+1).
+func (r *PGRepository) AttachRecordingContext(ctx context.Context, recs []*Recording) error {
+	ids := make([]uuid.UUID, 0, len(recs))
+	for _, rec := range recs {
+		ids = append(ids, rec.ID)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT mr.id, ht.id, ht.name, ht.logo, at.id, at.name, at.logo, l.id, l.name, l.slug
+		FROM public.match_recordings mr
+		LEFT JOIN public.matches m ON m.id = mr.match_id
+		LEFT JOIN public.teams ht ON ht.id = m.home_team_id
+		LEFT JOIN public.teams at ON at.id = m.away_team_id
+		LEFT JOIN public.leagues l ON l.id = mr.league_id
+		WHERE mr.id = ANY($1)`, ids)
+	if err != nil {
+		return fmt.Errorf("recording context: %w", err)
+	}
+	defer rows.Close()
+	byID := make(map[uuid.UUID]*Recording, len(recs))
+	for _, rec := range recs {
+		byID[rec.ID] = rec
+	}
+	for rows.Next() {
+		var id uuid.UUID
+		var hID, aID, lID *uuid.UUID
+		var hName, aName, lName, lSlug *string
+		var hLogo, aLogo *string
+		if err := rows.Scan(&id, &hID, &hName, &hLogo, &aID, &aName, &aLogo, &lID, &lName, &lSlug); err != nil {
+			return fmt.Errorf("scan recording context: %w", err)
+		}
+		rec := byID[id]
+		if rec == nil {
+			continue
+		}
+		if hID != nil && hName != nil {
+			rec.HomeTeam = &TeamRef{ID: *hID, Name: *hName, Logo: hLogo}
+		}
+		if aID != nil && aName != nil {
+			rec.AwayTeam = &TeamRef{ID: *aID, Name: *aName, Logo: aLogo}
+		}
+		if lID != nil && lName != nil && lSlug != nil {
+			rec.League = &LeagueRef{ID: *lID, Name: *lName, Slug: *lSlug}
+		}
+	}
+	return rows.Err()
 }
