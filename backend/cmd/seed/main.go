@@ -106,7 +106,12 @@ func seed(ctx context.Context, tx pgx.Tx, passwordHash string) error {
 	leagueAdmin, owner := accounts[1], accounts[2]
 
 	leagueID, tournamentID := uuid.New(), uuid.New()
-	if err := exec(`INSERT INTO public.leagues (id, name, slug, description, admin_id) VALUES ($1, 'Liga Demo Zona Gol', $2, 'Liga de demostración para desarrollo local', $3)`,
+	// Full plan with finance enabled, so every tab of the panel is visible.
+	if err := exec(`INSERT INTO public.leagues (id, name, slug, description, admin_id, product_mode, features)
+		VALUES ($1, 'Liga Demo Zona Gol', $2, 'Liga de demostración para desarrollo local', $3, 'full',
+		        '{"ai_agent": true, "qr_codes": true, "mobile_app": true, "statistics": true, "manual_entry": true,
+		          "public_portal": true, "realtime_updates": true, "facial_recognition": true,
+		          "finance": true, "finance_auto_fines": true, "finance_payments": true}'::jsonb)`,
 		leagueID, demoSlug, leagueAdmin.id); err != nil {
 		return err
 	}

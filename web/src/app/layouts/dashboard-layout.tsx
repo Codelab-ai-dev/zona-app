@@ -1,4 +1,4 @@
-import { KeyRound, LogOut, Menu, Sparkles, User } from 'lucide-react'
+import { KeyRound, LogOut, Menu, Smartphone, Sparkles, User } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 
@@ -6,48 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ChangePasswordDialog } from '@/features/auth/change-password-dialog'
-import { useMyLeagues } from '@/features/leagues/api'
 import { useAuth, type Role } from '@/lib/auth/auth-context'
 import { cn } from '@/lib/utils'
 
 import type { NavItem } from '../area'
-
-/**
- * Tab labels and order of the original dashboard (one tab strip per role).
- * Routes not listed keep their own label and go last.
- */
-const tabs: { to: string; label: string }[] = [
-  { to: '/admin', label: 'Resumen' },
-  { to: '/liga-admin', label: 'Resumen' },
-  { to: '/liga-admin/torneos', label: 'Torneos' },
-  { to: '/liga-admin/equipos', label: 'Equipos' },
-  { to: '/liga-admin/solicitudes', label: 'Solicitudes' },
-  { to: '/liga-admin/grupos', label: 'Grupos' },
-  { to: '/liga-admin/fixtures', label: 'Jornadas' },
-  { to: '/liga-admin/playoffs', label: 'Liguilla' },
-  { to: '/liga-admin/calendario', label: 'Calendario' },
-  { to: '/liga-admin/tabla', label: 'Posiciones' },
-  { to: '/liga-admin/goleadores', label: 'Goleadores' },
-  { to: '/liga-admin/suspensiones', label: 'Suspensiones' },
-  { to: '/liga-admin/verificacion', label: 'Verificación' },
-  { to: '/liga-admin/qr-batch', label: 'Gestión QR' },
-  { to: '/liga-admin/finanzas', label: 'Finanzas' },
-  { to: '/liga-admin/whatsapp', label: 'WhatsApp' },
-  { to: '/liga-admin/ajustes', label: 'Configuración' },
-  { to: '/mi-equipo', label: 'Mi Equipo' },
-  { to: '/play/admin', label: 'Zona Play' },
-]
-
-export function orderTabs(items: NavItem[]): NavItem[] {
-  const known = tabs
-    .map((t) => {
-      const item = items.find((i) => i.to === t.to)
-      return item ? { ...item, label: t.label } : null
-    })
-    .filter((i): i is NavItem => i !== null)
-  const rest = items.filter((i) => !tabs.some((t) => t.to === i.to))
-  return [...known, ...rest]
-}
+import { AppDownloadDialog } from './app-download-dialog'
+import { gateTabs, orderTabs } from './dashboard-nav'
+import { useLeagueCapabilities } from './league-capabilities'
 
 const roleLabel: Record<Role, string> = {
   super_admin: 'Super Administrador',
@@ -118,10 +83,14 @@ function TabStrip({ items }: { items: NavItem[] }) {
 export function DashboardLayout({ children, nav = [] }: { children: ReactNode; nav?: NavItem[] }) {
   const { profile, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
-  const leagues = useMyLeagues()
-  const items = profile ? orderTabs(nav.filter((item) => item.roles.includes(profile.role))) : []
-  const mode = profile?.role === 'league_admin' ? leagues.data?.data[0]?.product_mode : undefined
+  const isLeagueAdmin = profile?.role === 'league_admin'
+  const caps = useLeagueCapabilities(isLeagueAdmin)
+  const allowed = profile ? orderTabs(nav.filter((item) => item.roles.includes(profile.role))) : []
+  const items = isLeagueAdmin ? gateTabs(allowed, caps) : allowed
+  // With several leagues the badge shows the best plan among them.
+  const mode = caps.leagues.some((l) => l.product_mode === 'full') ? 'full' : caps.leagues[0]?.product_mode
   const plan = mode ? productModes[mode] : undefined
+  const showAppDownload = isLeagueAdmin && caps.has('mobile_app')
 
   return (
     <div className="min-h-dvh bg-slate-950 relative text-white">
@@ -160,6 +129,17 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
 
             <div className="flex items-center gap-2">
               <div className="hidden md:flex items-center gap-2">
+                {showAppDownload && (
+                  <AppDownloadDialog
+                    leagues={caps.leagues}
+                    trigger={
+                      <Button variant="outline" size="sm" className={headerButton}>
+                        <Smartphone className="h-4 w-4 mr-2" aria-hidden="true" />
+                        App Móvil
+                      </Button>
+                    }
+                  />
+                )}
                 <ChangePasswordDialog
                   trigger={
                     <Button variant="outline" size="sm" className={headerButton}>
@@ -216,6 +196,17 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
                             </span>
                           </div>
                         )}
+                        {showAppDownload && (
+                          <AppDownloadDialog
+                            leagues={caps.leagues}
+                            trigger={
+                              <Button variant="outline" className={cn('w-full', headerButton)}>
+                                <Smartphone className="h-4 w-4 mr-2" aria-hidden="true" />
+                                Descargar App Móvil
+                              </Button>
+                            }
+                          />
+                        )}
                         <ChangePasswordDialog
                           trigger={
                             <Button variant="outline" className={cn('w-full', headerButton)}>
@@ -251,7 +242,7 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
       <main id="main" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10 space-y-4 md:space-y-6">
         {/* Only league admins navigate with this strip; the super admin and
             team owner pages carry their own inner tabs, as in the original. */}
-        {profile?.role === 'league_admin' && <TabStrip items={items} />}
+        {isLeagueAdmin && <TabStrip items={items} />}
         {children}
       </main>
     </div>

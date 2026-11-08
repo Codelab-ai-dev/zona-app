@@ -19,8 +19,11 @@ import { formatDate, formatFileSize } from './apk-utils'
 
 const fileName = (release: StorageObject) => release.key.split('/').pop() ?? release.key
 
-/** APK releases of one league: download link, delete with confirmation. */
-export function ReleasesList({ leagueId }: { leagueId: string }) {
+/**
+ * APK releases of one league: download link, delete with confirmation.
+ * readOnly (league admins) hides deletion; the API also forbids it.
+ */
+export function ReleasesList({ leagueId, readOnly = false }: { leagueId: string; readOnly?: boolean }) {
   const releases = useStorageObjects('app_releases', leagueId)
   const getUrl = useGetStorageUrl()
   const deleteObject = useDeleteStorageObject()
@@ -109,15 +112,17 @@ export function ReleasesList({ leagueId }: { leagueId: string }) {
                           >
                             <Download className="h-3 w-3" aria-hidden="true" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label={`Eliminar ${fileName(release)}`}
-                            onClick={() => setDeleteConfirm(release)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" aria-hidden="true" />
-                          </Button>
+                          {!readOnly && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Eliminar ${fileName(release)}`}
+                              onClick={() => setDeleteConfirm(release)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" aria-hidden="true" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
