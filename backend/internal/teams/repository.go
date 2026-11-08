@@ -733,6 +733,9 @@ func (r *PGRepository) ReviewPlayerRegistrationRequest(ctx context.Context, reqI
 	return r.reviewPlayerRegistrationRequestWithQuerier(ctx, r.db, reqID, status, reviewedBy, notes)
 }
 
+// errRequestAlreadyReviewed is returned when a request is no longer pending.
+var errRequestAlreadyReviewed = &httpx.Error{Status: 409, Code: "conflict", Message: "La solicitud ya fue revisada"}
+
 // ReviewPlayerRegistrationRequestTx updates a registration request using a provided Querier (for transactional use).
 func (r *PGRepository) ReviewPlayerRegistrationRequestTx(ctx context.Context, q database.Querier, reqID uuid.UUID, status string, reviewedBy uuid.UUID, notes *string) (PlayerRegistrationRequest, error) {
 	return r.reviewPlayerRegistrationRequestWithQuerier(ctx, q, reqID, status, reviewedBy, notes)
@@ -743,7 +746,7 @@ func (r *PGRepository) reviewPlayerRegistrationRequestWithQuerier(ctx context.Co
 	const stmt = `
 		UPDATE public.player_registration_requests
 		SET status = $2, reviewed_by = $3, review_notes = $4, reviewed_at = now(), updated_at = now()
-		WHERE id = $1
+		WHERE id = $1 AND status = 'pending'
 		RETURNING id, team_id, tournament_id, player_name, player_position, jersey_number, birth_date,
 		       reason, status, requested_by, reviewed_by, review_notes, created_at, updated_at, reviewed_at`
 
@@ -754,7 +757,9 @@ func (r *PGRepository) reviewPlayerRegistrationRequestWithQuerier(ctx context.Co
 		&req.CreatedAt, &req.UpdatedAt, &req.ReviewedAt,
 	)
 	if database.IsNoRows(err) {
-		return PlayerRegistrationRequest{}, httpx.ErrNotFound
+		// Unknown, or already reviewed by a concurrent request (the
+		// status condition makes a double approval impossible).
+		return PlayerRegistrationRequest{}, errRequestAlreadyReviewed
 	}
 	if err != nil {
 		return PlayerRegistrationRequest{}, fmt.Errorf("review registration request: %w", err)

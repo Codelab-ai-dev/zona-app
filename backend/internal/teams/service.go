@@ -500,12 +500,12 @@ func (s *Service) ReviewPlayerRegistration(ctx context.Context, caller auth.Prin
 
 	// Validate status values
 	if status != "approved" && status != "rejected" {
-		return PlayerRegistrationRequest{}, fmt.Errorf("status must be 'approved' or 'rejected', got '%s'", status)
+		return PlayerRegistrationRequest{}, httpx.Validation(map[string]string{"status": "debe ser 'approved' o 'rejected'"})
 	}
 
-	// Must transition from 'pending' only
+	// Must transition from 'pending' only (re-checked atomically by the UPDATE)
 	if req.Status != "pending" {
-		return PlayerRegistrationRequest{}, fmt.Errorf("can only review pending requests, this one is '%s'", req.Status)
+		return PlayerRegistrationRequest{}, errRequestAlreadyReviewed
 	}
 
 	// Authorization: CanManageTournament (validates league admin can manage this tournament)
@@ -525,59 +525,58 @@ func (s *Service) ReviewPlayerRegistration(ctx context.Context, caller auth.Prin
 
 	var result PlayerRegistrationRequest
 	err = database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
-		// Re-check max_players limit inside transaction
-		tournament, err := s.repo.GetTournamentByID(ctx, req.TournamentID)
-		if err != nil {
-			return fmt.Errorf("get tournament: %w", err)
-		}
-
-		if tournament.MaxPlayers != nil && *tournament.MaxPlayers > 0 {
-			count, err := s.repo.CountPlayersByTeam(ctx, req.TeamID)
-			if err != nil {
-				return fmt.Errorf("count active players: %w", err)
-			}
-			if count >= *tournament.MaxPlayers {
-				return httpx.Validation(map[string]string{
-					"team_id": fmt.Sprintf("límite de %d jugadores alcanzado", *tournament.MaxPlayers),
-				})
-			}
-		}
-
-		// Create the player using the transaction (pgx.Tx implements database.Querier)
-		player := Player{
-			ID:           uuid.New(),
-			Name:         req.PlayerName,
-			TeamID:       req.TeamID,
-			Position:     req.PlayerPosition,
-			JerseyNumber: req.JerseyNumber,
-			BirthDate:    req.BirthDate,
-			IsActive:     true,
-		}
-
-		_, err = s.repo.CreatePlayerTx(ctx, tx, player)
-		if err != nil {
-			if database.IsUniqueViolation(err) {
-				// Jersey number conflict
-				return httpx.ErrConflict
-			}
-			return fmt.Errorf("create player: %w", err)
-		}
-
-		// Update the request status within the same transaction
-		updatedReq, err := s.repo.ReviewPlayerRegistrationRequestTx(ctx, tx, reqID, "approved", caller.UserID, notes)
-		if err != nil {
-			return fmt.Errorf("update request: %w", err)
-		}
-
-		result = updatedReq
-		return nil
+		result, err = approveRegistrationTx(ctx, tx, req, caller.UserID, notes)
+		return err
 	})
-
 	if err != nil {
 		return PlayerRegistrationRequest{}, err
 	}
-
 	return result, nil
+}
+
+// approveRegistrationTx creates the player and marks the request approved.
+// Every read and write uses tx, and the team row is locked first, so
+// concurrent approvals for one team are serialized and the roster limit
+// holds; a second approval of the same request finds it no longer pending
+// and rolls back, including the player it created.
+func approveRegistrationTx(ctx context.Context, tx pgx.Tx, req PlayerRegistrationRequest, reviewer uuid.UUID, notes *string) (PlayerRegistrationRequest, error) {
+	repo := NewPGRepository(tx)
+	if _, err := tx.Exec(ctx, `SELECT 1 FROM public.teams WHERE id = $1 FOR UPDATE`, req.TeamID); err != nil {
+		return PlayerRegistrationRequest{}, fmt.Errorf("lock team: %w", err)
+	}
+
+	tournament, err := repo.GetTournamentByID(ctx, req.TournamentID)
+	if err != nil {
+		return PlayerRegistrationRequest{}, fmt.Errorf("get tournament: %w", err)
+	}
+	if tournament.MaxPlayers != nil && *tournament.MaxPlayers > 0 {
+		count, err := repo.CountPlayersByTeam(ctx, req.TeamID)
+		if err != nil {
+			return PlayerRegistrationRequest{}, fmt.Errorf("count active players: %w", err)
+		}
+		if count >= *tournament.MaxPlayers {
+			return PlayerRegistrationRequest{}, httpx.Validation(map[string]string{
+				"team_id": fmt.Sprintf("límite de %d jugadores alcanzado", *tournament.MaxPlayers),
+			})
+		}
+	}
+
+	player := Player{
+		ID:           uuid.New(),
+		Name:         req.PlayerName,
+		TeamID:       req.TeamID,
+		Position:     req.PlayerPosition,
+		JerseyNumber: req.JerseyNumber,
+		BirthDate:    req.BirthDate,
+		IsActive:     true,
+	}
+	if _, err := repo.CreatePlayerTx(ctx, tx, player); err != nil {
+		if database.IsUniqueViolation(err) {
+			return PlayerRegistrationRequest{}, httpx.ErrConflict // jersey number taken
+		}
+		return PlayerRegistrationRequest{}, fmt.Errorf("create player: %w", err)
+	}
+	return repo.ReviewPlayerRegistrationRequestTx(ctx, tx, req.ID, "approved", reviewer, notes)
 }
 
 // BatchUpdatePlayerQRCodes is for league admins to bulk update QR codes for players in a league.
