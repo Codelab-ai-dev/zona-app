@@ -35,7 +35,13 @@ Crea una liga con 6 equipos, jugadores y partidos, y tres cuentas (`superadmin@z
 | `make logs` | Logs de la API y de Caddy. Los correos de recuperación de contraseña aparecen aquí mientras no haya SMTP. |
 | `make ps` | Estado de los contenedores. |
 | `make down` | Detiene todo (los datos se conservan). |
+| `make backup` | Copia la base de datos y los archivos subidos en `backups/<fecha>/`. |
+| `make restore FROM=backups/<fecha>` | **Reemplaza** los datos actuales por una copia (pide confirmación y verifica que no esté dañada). |
 | `make reset` | Detiene todo y **borra** la base de datos y los archivos. |
+
+## Copias de seguridad
+
+`make backup` guarda en `backups/<fecha>/` un volcado de la base (`db.dump`), los archivos públicos y los privados (`.tar.gz`) y sus sumas SHA-256. Contienen datos personales (incluidos documentos de identidad): se crean con permisos solo para tu usuario, `backups/` no se sube a git, y conviene guardar una copia fuera de esta máquina.
 
 ## Integraciones opcionales
 
@@ -43,4 +49,4 @@ Se activan añadiendo sus variables a `deploy/.env` (lista completa en `backend/
 
 ## Más adelante: VPS
 
-El mismo stack sirve en producción. En `deploy/.env`: `APP_ENV=production`, `APP_URL=https://tu-dominio`, `SITE_ADDRESS=tu-dominio`, `HTTP_BIND=0.0.0.0:80`, `CORS_ALLOWED_ORIGINS=https://tu-dominio`, `SMTP_*`, y añade `"443:443"` a `web.ports`. Caddy obtiene el certificado TLS solo. Programa copias de seguridad de los volúmenes `pgdata` y `media_*`.
+El mismo stack sirve en producción. En `deploy/.env`: `APP_ENV=production`, `APP_URL=https://tu-dominio`, `SITE_ADDRESS=tu-dominio`, `HTTP_BIND=0.0.0.0:80`, `CORS_ALLOWED_ORIGINS=https://tu-dominio`, `SMTP_*`, y añade `"443:443"` a `web.ports`. Caddy obtiene el certificado TLS solo. Programa `make backup` (por ejemplo con cron) y copia `backups/` fuera del servidor.

@@ -1,7 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- ⚠️ DEBUG BUILD: Cleartext traffic ALLOWED -->
-    <!-- This manifest is only used for debug builds -->
-    <application
-        android:usesCleartextTraffic="true">
-    </application>
-</manifest>

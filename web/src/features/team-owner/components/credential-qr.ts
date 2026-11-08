@@ -7,7 +7,7 @@ export function normalizeQrName(name: string): string {
 
 /**
  * Player QR payload. Same JSON the mobile apps generate and parse
- * (zona_gol_mobile QRService / Zona-G QRService): `player_id`, `player_name` and
+ * (zona_gol_mobile QRService): `player_id`, `player_name` and
  * `team_id` are mandatory for the scanner, `jersey_number` must be an int.
  * The old pipe format (`id|name|jersey`) is rejected by both apps (it needs the
  * team id as third part), so it must not be used.

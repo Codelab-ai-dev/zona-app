@@ -1,7 +1,0 @@
-packages:
-  - '.'
-
-ignoredBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - dlib-build
-  - sharp

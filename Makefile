@@ -2,7 +2,7 @@
 COMPOSE_BIN := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 COMPOSE := $(COMPOSE_BIN) -f deploy/compose.yml --env-file deploy/.env
 
-.PHONY: env up seed admin down logs ps reset
+.PHONY: env up seed admin backup restore down logs ps reset
 
 # Creates deploy/.env with random secrets (only if it doesn't exist yet).
 env:
@@ -32,6 +32,15 @@ admin:
 	@printf "Password (10-72 characters): "; stty -echo; read pw; stty echo; echo; \
 	$(COMPOSE) run --rm --no-deps --entrypoint /createadmin \
 		-e ADMIN_EMAIL="$(EMAIL)" -e ADMIN_NAME="$(NAME)" -e ADMIN_PASSWORD="$$pw" api
+
+# Database + uploaded files into backups/<timestamp>/ (git-ignored).
+backup:
+	@COMPOSE="$(COMPOSE)" deploy/backup.sh
+
+# Replaces current data with a backup: make restore FROM=backups/<timestamp>
+restore:
+	@test -n "$(FROM)" || { echo "usage: make restore FROM=backups/<timestamp>"; exit 1; }
+	@COMPOSE="$(COMPOSE)" deploy/restore.sh "$(FROM)"
 
 down:
 	$(COMPOSE) down
