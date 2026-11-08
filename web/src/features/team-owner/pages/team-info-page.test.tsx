@@ -10,7 +10,7 @@ const GET = `GET /teams/${TEAM_ID}`
 const PATCH = `PATCH /teams/${TEAM_ID}`
 const empty = { body: { data: [], page: { limit: 100, offset: 0 } } }
 // The player statistics section below the card loads its own data.
-const sideData = { [`GET /teams/${TEAM_ID}/players`]: empty, [`GET /teams/${TEAM_ID}/stats`]: empty }
+const sideData = { [`GET /teams/${TEAM_ID}/player-stats`]: empty, [`GET /teams/${TEAM_ID}/stats`]: empty }
 
 function renderPage() {
   return renderWithProviders(<TeamInfoPage teamId={TEAM_ID} />)

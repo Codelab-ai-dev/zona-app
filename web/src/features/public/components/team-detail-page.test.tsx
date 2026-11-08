@@ -1,17 +1,25 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { Route, Routes } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
-import { apiError, matchFinished, matchScheduled, page, player, staff, team, team2, teamStats } from './fixtures'
+import { apiError, matchFinished, league, matchScheduled, page, player, staff, team, team2, teamStats } from './fixtures'
 import { TeamDetailPage } from './team-detail-page'
 import { latestMatches, outcomeFor } from './team-matches'
-import type { Match } from '../types'
+import type { Match, Team } from '../types'
+import { buildRosterHtml } from './team-print'
+
+const auth = vi.hoisted(() => ({ value: { status: 'anonymous', profile: null } as { status: string; profile: { role: string } | null } }))
+vi.mock('@/lib/auth/auth-context', () => ({ useAuth: () => auth.value }))
+
+const playerStat = { player_id: 'pl1', name: 'Carlos Ruiz', jersey_number: 10, position: 'Delantero', matches_played: 4, goals: 6, assists: 2, yellow_cards: 1, red_cards: 0, minutes_played: 300 }
 
 const handlers = {
   'GET /teams/team1': { body: team },
   'GET /teams/team1/players': { body: { data: [player], page } },
+  'GET /teams/team1/player-stats': { body: { data: [playerStat] } },
+  'GET /leagues/l1': { body: league },
   'GET /teams/team1/coaching-staff': { body: { data: [staff], page } },
   'GET /teams/team1/stats': { body: teamStats },
   'GET /teams/team1/matches': { body: { data: [matchScheduled, matchFinished], page } },
@@ -45,12 +53,15 @@ describe('TeamDetailPage', () => {
     expect(read('Empates')).toBe('1')
     expect(read('Derrotas')).toBe('0')
     expect(read('Goles a favor')).toBe('15')
+    expect(read('Goles en contra')).toBe('5')
+    expect(read('Diferencia de goles')).toBe('10')
     expect(read('Puntos')).toBe('12')
+    expect(await screen.findByText('Activo')).toBeInTheDocument()
 
     const roster = await screen.findByRole('table', { name: 'Plantilla de jugadores' })
-    expect(within(roster).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['#', 'Jugador', 'Posición'])
+    expect(within(roster).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['#', 'Jugador', 'Posición', 'PJ', 'Goles', 'Asist.', 'TA', 'TR', 'Min.'])
     expect(within(within(roster).getAllByRole('row').at(1) ?? roster).getAllByRole('cell').map((c) => c.textContent)).toEqual([
-      '10', 'CRCarlos Ruiz', 'Delantero', // name cell = avatar initials + name
+      '10', 'CRCarlos Ruiz', 'Delantero', '4', '6', '2', '1', '0', '300', // name cell = avatar initials + name
     ])
     expect(screen.queryByText(/curp|nacimiento|edad/i)).not.toBeInTheDocument()
 
@@ -72,7 +83,7 @@ describe('TeamDetailPage', () => {
   it('shows empty roster and staff messages', async () => {
     mockApi({
       ...handlers,
-      'GET /teams/team1/players': { body: { data: [], page } },
+      'GET /teams/team1/player-stats': { body: { data: [] } },
       'GET /teams/team1/coaching-staff': { body: { data: [], page } },
       'GET /teams/team1/matches': { body: { data: [], page } },
     })
@@ -98,6 +109,50 @@ describe('TeamDetailPage', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
     await waitFor(() => expect(requestsTo(fetchMock, 'GET /teams/team1')).toHaveLength(2))
+  })
+})
+
+describe('TeamDetailPage player detail and admin actions', () => {
+  it('opens the player modal with totals and per-game averages, without birth date', async () => {
+    mockApi(handlers)
+    const { user } = renderPage()
+    await user.click(await screen.findByRole('button', { name: 'Ver estadísticas de Carlos Ruiz' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('1.50')).toBeInTheDocument() // 6 goals / 4 games
+    expect(within(dialog).getByText('0.50')).toBeInTheDocument()
+    expect(within(dialog).getByText("75'")).toBeInTheDocument()
+    expect(within(dialog).queryByText(/nacimiento/i)).not.toBeInTheDocument()
+  })
+
+  it('shows print buttons to the admin of the team league and prints escaped HTML', async () => {
+    mockApi({ ...handlers, 'GET /leagues/mine': { body: { data: [league], page } } })
+    auth.value = { status: 'authenticated', profile: { role: 'league_admin' } }
+    const write = vi.fn()
+    const win = { document: { write, close: vi.fn() }, print: vi.fn(), close: vi.fn() }
+    vi.stubGlobal('open', vi.fn(() => win))
+    const { user } = renderPage()
+    await user.click(await screen.findByRole('button', { name: 'Imprimir Plantilla' }))
+    await waitFor(() => expect(write).toHaveBeenCalled())
+    expect(String(write.mock.calls[0]?.[0])).toContain('Carlos Ruiz')
+    expect(screen.getByRole('button', { name: 'Imprimir Credenciales' })).toBeInTheDocument()
+    auth.value = { status: 'anonymous', profile: null }
+  })
+
+  it('hides print buttons from anonymous visitors and admins of other leagues', async () => {
+    mockApi({ ...handlers, 'GET /leagues/mine': { body: { data: [{ ...league, id: 'other' }], page } } })
+    auth.value = { status: 'authenticated', profile: { role: 'league_admin' } }
+    renderPage()
+    await screen.findByText('Carlos Ruiz')
+    expect(screen.queryByRole('button', { name: 'Imprimir Plantilla' })).not.toBeInTheDocument()
+    auth.value = { status: 'anonymous', profile: null }
+  })
+})
+
+describe('print html escaping', () => {
+  it('escapes user strings', () => {
+    const html = buildRosterHtml({ team: { ...(team as Team), name: '<script>x</script>' }, players: [], staff: [] })
+    expect(html).not.toContain('<script>x')
+    expect(html).toContain('&lt;script&gt;')
   })
 })
 

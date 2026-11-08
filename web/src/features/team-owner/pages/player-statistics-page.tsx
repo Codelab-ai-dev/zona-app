@@ -14,16 +14,29 @@ import {
 } from '@/components/ui/table'
 import { Trophy, Target, AlertTriangle, Users } from 'lucide-react'
 
-import { useTeamPlayers, useTeamStats } from '../api'
+import { useTeamPlayerStats, useTeamStats } from '../api'
 import { glassCard, pageSubtitle, pageTitle } from '../glass'
+import type { TeamPlayerStats } from '../types'
+import { initials } from '../utils'
+
+const columns: { key: keyof Pick<TeamPlayerStats, 'matches_played' | 'goals' | 'assists' | 'yellow_cards' | 'red_cards' | 'minutes_played'>; label: string; title: string }[] = [
+  { key: 'matches_played', label: 'PJ', title: 'Partidos jugados' },
+  { key: 'goals', label: 'Goles', title: 'Goles' },
+  { key: 'assists', label: 'Asist.', title: 'Asistencias' },
+  { key: 'yellow_cards', label: 'TA', title: 'Tarjetas amarillas' },
+  { key: 'red_cards', label: 'TR', title: 'Tarjetas rojas' },
+  { key: 'minutes_played', label: 'Min.', title: 'Minutos jugados' },
+]
 
 export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
-  const players = useTeamPlayers(teamId)
+  const players = useTeamPlayerStats(teamId)
   const stats = useTeamStats(teamId)
 
-  const playersWithStats = useMemo(() => {
-    return players.data?.data ?? []
-  }, [players.data])
+  // Most goals first; ties keep the jersey order so the table is stable.
+  const playersWithStats = useMemo(
+    () => [...(players.data?.data ?? [])].sort((a, b) => b.goals - a.goals || a.jersey_number - b.jersey_number),
+    [players.data],
+  )
 
   const teamTotals = useMemo(() => {
     const totalStats = stats.data?.data[0]
@@ -36,15 +49,6 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
       redCards: totalStats.red_cards || 0,
     }
   }, [stats.data])
-
-  const getPlayerInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   return (
     <div className="space-y-6">
@@ -101,7 +105,7 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
             <Trophy className="w-5 h-5 mr-2" />
             Plantilla
           </CardTitle>
-          <CardDescription className="text-white/70 drop-shadow">Jugadores registrados en el equipo</CardDescription>
+          <CardDescription className="text-white/70 drop-shadow">Jugadores registrados en el equipo, ordenados por goles</CardDescription>
         </CardHeader>
         <CardContent>
           <QueryState
@@ -114,7 +118,7 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
               />
             }
           >
-            {(res) => (
+            {() => (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -122,31 +126,37 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
                       <TableHead className="text-white/90 drop-shadow">Jugador</TableHead>
                       <TableHead className="text-center text-white/90 drop-shadow">Posición</TableHead>
                       <TableHead className="text-center text-white/90 drop-shadow">Número</TableHead>
+                      {columns.map((c) => (
+                        <TableHead key={c.key} className="text-center text-white/90 drop-shadow" title={c.title}>
+                          {c.label}
+                        </TableHead>
+                      ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {res.data.map((player) => (
-                      <TableRow key={player.id}>
+                    {playersWithStats.map((player) => (
+                      <TableRow key={player.player_id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-8 h-8">
                               {player.photo ? (
                                 <AvatarImage src={player.photo} alt={player.name} />
                               ) : (
-                                <AvatarFallback className="bg-blue-100 text-blue-800 text-xs">
-                                  {getPlayerInitials(player.name)}
-                                </AvatarFallback>
+                                <AvatarFallback className="bg-blue-100 text-blue-800 text-xs">{initials(player.name)}</AvatarFallback>
                               )}
                             </Avatar>
-                            <div>
-                              <p className="font-medium text-white drop-shadow">{player.name}</p>
-                            </div>
+                            <p className="font-medium text-white drop-shadow">{player.name}</p>
                           </div>
                         </TableCell>
                         <TableCell className="text-center text-white/80">{player.position}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className="backdrop-blur-md bg-white/20 border-white/30 text-white">#{player.jersey_number}</Badge>
                         </TableCell>
+                        {columns.map((c) => (
+                          <TableCell key={c.key} className={`text-center ${c.key === 'goals' ? 'font-bold text-green-400' : 'text-white/90'}`}>
+                            {player[c.key]}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -154,16 +164,6 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
               </div>
             )}
           </QueryState>
-        </CardContent>
-      </Card>
-
-      {/* Note about stats availability */}
-      <Card className="backdrop-blur-md bg-blue-500/20 border-blue-300/30 shadow-lg">
-        <CardContent className="pt-6">
-          <p className="text-sm text-white/90">
-            <strong>Nota:</strong> Las estadísticas detalladas (goles, asistencias, tarjetas, etc.) se mostrarán cuando el árbitro
-            publique los reportes de los partidos.
-          </p>
         </CardContent>
       </Card>
     </div>

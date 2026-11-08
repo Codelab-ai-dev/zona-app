@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Clock, Eye, Loader2, RefreshCw, Upload } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Eye, Loader2, Pencil, RefreshCw, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 
@@ -9,6 +9,7 @@ import { QueryState } from '@/components/states'
 
 import { useDeleteRecording, useRecordings, useRefreshRecording } from './api'
 import { DeleteConfirm } from './delete-confirm'
+import { EditVideoDialog } from './edit-video-dialog'
 import type { Recording } from './types'
 import { VideoUploadDialog } from './video-upload-dialog'
 
@@ -20,7 +21,7 @@ const statusConfig = {
   failed: { label: 'Error', color: 'bg-red-500/20 text-red-700 dark:text-red-400', icon: AlertCircle },
 } as const
 
-function RecordingRow({ recording }: { recording: Recording }) {
+function RecordingRow({ recording, onEdit }: { recording: Recording; onEdit: (r: Recording) => void }) {
   const config = statusConfig[recording.status] ?? statusConfig.pending
   const Icon = config.icon
   const deleteRecording = useDeleteRecording()
@@ -58,6 +59,9 @@ function RecordingRow({ recording }: { recording: Recording }) {
             <RefreshCw className="w-4 h-4" aria-hidden="true" />
           </Button>
         )}
+        <Button size="sm" variant="outline" aria-label={`Editar video ${recording.title}`} onClick={() => onEdit(recording)}>
+          <Pencil className="w-4 h-4" aria-hidden="true" />
+        </Button>
         <DeleteConfirm
           label={`Eliminar video ${recording.title}`}
           title="¿Eliminar video?"
@@ -71,6 +75,7 @@ function RecordingRow({ recording }: { recording: Recording }) {
 
 export function AdminVideos() {
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [editing, setEditing] = useState<Recording | null>(null)
   const recordings = useRecordings({ limit: 50, offset: 0 })
 
   return (
@@ -91,7 +96,7 @@ export function AdminVideos() {
                 <ul className="divide-y">
                   {res.data.map((recording) => (
                     <li key={recording.id}>
-                      <RecordingRow recording={recording} />
+                      <RecordingRow recording={recording} onEdit={setEditing} />
                     </li>
                   ))}
                 </ul>
@@ -103,6 +108,7 @@ export function AdminVideos() {
         )}
       </QueryState>
 
+      <EditVideoDialog recording={editing} onClose={() => setEditing(null)} />
       <VideoUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   )

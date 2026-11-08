@@ -2,6 +2,7 @@ package directory
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -45,6 +46,16 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	var req ListUsersRequest
 	req.Limit = page.Limit
 	req.Offset = page.Offset
+	if role := r.URL.Query().Get("role"); role != "" {
+		switch role {
+		case "super_admin", "league_admin", "team_owner", "public":
+			req.Role = &role
+		default:
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"role": "rol no válido"}))
+			return
+		}
+	}
+	req.Search = strings.TrimSpace(r.URL.Query().Get("q"))
 	users, err := h.svc.ListUsers(r.Context(), caller, &req)
 	if err != nil {
 		httpx.WriteError(w, r, err)

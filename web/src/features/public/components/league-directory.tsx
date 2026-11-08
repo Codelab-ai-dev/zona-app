@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { ArrowRight, Calendar, ChevronLeft, ChevronRight, LogIn, Play, Trophy, Users } from 'lucide-react'
 
 import { QueryState } from '@/components/states'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { useActiveLeagues } from '@/features/leagues/api'
 import { initials } from '@/features/leagues/leagues-page'
 import type { League } from '@/features/leagues/types'
+import { useAuth } from '@/lib/auth/auth-context'
 
 import { useTeamsByLeague, useTournamentsByLeague } from '../api'
 import { tournamentStatus } from '../format'
@@ -32,6 +33,8 @@ const arrowBtn =
 
 export function LeagueDirectory() {
   const leagues = useActiveLeagues()
+  const { status } = useAuth()
+  const { pathname } = useLocation()
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const visibleLeagues = leagues.data?.data ?? []
@@ -40,6 +43,8 @@ export function LeagueDirectory() {
 
   const handlePrevious = () => setCurrentIndex(index === 0 ? visibleLeagues.length - 1 : index - 1)
   const handleNext = () => setCurrentIndex(index === visibleLeagues.length - 1 ? 0 : index + 1)
+  // Signed-in visitors of the home go straight to their dashboard (never while the session is loading).
+  if (pathname === '/' && status === 'authenticated') return <Navigate to="/dashboard" replace />
   const fade = (extra = '') => `zg-in ${extra}`
 
   return (

@@ -1,5 +1,5 @@
-import { Eye } from 'lucide-react'
-import { useParams } from 'react-router'
+import { ChevronLeft, Eye } from 'lucide-react'
+import { Link, useParams } from 'react-router'
 
 import { EmptyState, QueryState } from '@/components/states'
 import MuxPlayer from '@mux/mux-player-react'
@@ -12,6 +12,10 @@ export function LivePage() {
 
   return (
     <section className="container mx-auto max-w-screen-2xl py-8 lg:py-10">
+      <Link to="/play" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <ChevronLeft className="size-4" aria-hidden="true" />
+        Volver
+      </Link>
       <QueryState query={stream} loadingLabel="Cargando transmisión…">
         {(data) => {
           if (data.status !== 'live' && data.status !== 'ended') {
@@ -23,14 +27,23 @@ export function LivePage() {
             )
           }
 
-          const playbackId = data.status === 'live' ? data.mux_playback_id : data.recording_playback_id
+          const replayReady = data.recording_ready && !!data.recording_playback_id
+          const playbackId = data.status === 'live' ? data.mux_playback_id : replayReady ? data.recording_playback_id : undefined
 
           if (!playbackId) {
-            return <EmptyState title="Transmisión no disponible" description="No hay contenido disponible para reproducción." />
+            return data.status === 'ended' ? (
+              <EmptyState
+                title="Grabación no disponible"
+                description="La transmisión terminó y la grabación aún se está procesando o no se generó. Vuelve a intentar en unos minutos."
+              />
+            ) : (
+              <EmptyState title="Transmisión no disponible" description="No hay contenido disponible para reproducción." />
+            )
           }
 
           return (
             <div className="space-y-6">
+              {data.status === 'ended' && <p className="text-sm font-medium text-muted-foreground">Repetición de la transmisión</p>}
               {/* Live Badge */}
               {data.status === 'live' && (
                 <div className="flex items-center gap-2 text-red-600">

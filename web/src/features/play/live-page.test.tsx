@@ -56,6 +56,26 @@ describe('LivePage', () => {
     expect(screen.getByText('Estado: Pendiente')).toBeInTheDocument()
   })
 
+  it('plays the replay of an ended stream once the recording is ready', async () => {
+    mockApi({
+      'GET /play/streams/s1': { body: { ...stream, status: 'ended', recording_ready: true, recording_playback_id: 'rec-pb' } },
+    })
+    renderLive()
+
+    expect(await screen.findByTestId('mux-player')).toHaveAttribute('data-playback-id', 'rec-pb')
+    expect(screen.getByTestId('mux-player')).toHaveAttribute('data-stream-type', 'on-demand')
+  })
+
+  it('says the recording is not available when the ended stream has no ready recording', async () => {
+    mockApi({
+      'GET /play/streams/s1': { body: { ...stream, status: 'ended', recording_ready: false, recording_playback_id: 'rec-pb' } },
+    })
+    renderLive()
+
+    expect(await screen.findByText('Grabación no disponible')).toBeInTheDocument()
+    expect(screen.queryByTestId('mux-player')).not.toBeInTheDocument()
+  })
+
   it('shows the API error with retry', async () => {
     mockApi({ 'GET /play/streams/s1': { status: 404, body: { error: { code: 'not_found', message: 'Transmisión no encontrada' } } } })
     renderLive()

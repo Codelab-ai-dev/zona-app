@@ -49,7 +49,8 @@ export interface CreateUserRequest {
   password: string
   name: string
   role: 'league_admin' | 'team_owner'
-  league_id: string
+  /** Required for team owners; league admins get their league when assigned to one. */
+  league_id?: string
   phone?: string
 }
 
@@ -75,4 +76,20 @@ export interface UpdateUserRequest {
   email?: string
   phone?: string
   is_active?: boolean
+}
+
+/** Mirrors superadmin.Stats in the Go API (GET /admin/stats). */
+export interface Count {
+  total: number
+  active: number
+}
+
+export interface SystemStatsData {
+  leagues: Count
+  tournaments: Count
+  teams: Count
+  players: Count
+  users: Count
+  league_admins: number
+  team_owners: number
 }

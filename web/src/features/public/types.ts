@@ -116,3 +116,18 @@ export interface TeamStats {
   points_adjustment: number
   adjustment_reason?: string
 }
+
+/** GET /teams/{id}/player-stats row (stats.TeamPlayerStats). */
+export interface TeamPlayerStats {
+  player_id: string
+  name: string
+  jersey_number: number
+  position: string
+  photo?: string
+  matches_played: number
+  goals: number
+  assists: number
+  yellow_cards: number
+  red_cards: number
+  minutes_played: number
+}

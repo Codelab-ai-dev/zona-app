@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 
 import { api } from '@/lib/api/client'
 import { leagueKeys } from '@/features/leagues/api'
-import type { Tournament } from '@/features/leagues/types'
+import type { League, Tournament } from '@/features/leagues/types'
 
-import type { Discipline, Match, Standing, Team, TopScorer, Player, CoachingStaff, TeamStats } from './types'
+import type { Discipline, Match, Standing, Team, TopScorer, Player, CoachingStaff, TeamStats, TeamPlayerStats } from './types'
 
 /** Query keys for public portal data. */
 export const publicKeys = {
@@ -20,6 +20,8 @@ export const publicKeys = {
   teamPlayers: (teamId: string) => ['team-players', teamId] as const,
   teamStats: (teamId: string) => ['team-stats', teamId] as const,
   teamMatches: (teamId: string) => ['team-matches', teamId] as const,
+  teamPlayerStats: (teamId: string) => ['team-player-stats', teamId] as const,
+  league: (leagueId: string) => ['league-public', leagueId] as const,
   coachingStaff: (teamId: string) => ['coaching-staff', teamId] as const,
 }
 
@@ -143,5 +145,23 @@ export function useTeamCoachingStaff(teamId: string | undefined) {
     queryKey: publicKeys.coachingStaff(teamId ?? ''),
     queryFn: ({ signal }) => api.list<CoachingStaff>(`/teams/${teamId}/coaching-staff`, { limit: 50 }, { signal }),
     enabled: Boolean(teamId),
+  })
+}
+
+/** Per-player totals of a team (public). */
+export function useTeamPlayerStats(teamId: string | undefined) {
+  return useQuery({
+    queryKey: publicKeys.teamPlayerStats(teamId ?? ''),
+    queryFn: ({ signal }) => api.get<{ data: TeamPlayerStats[] }>(`/teams/${teamId}/player-stats`, { signal }),
+    enabled: Boolean(teamId),
+  })
+}
+
+/** Get one league (public), for the team header logo. */
+export function usePublicLeague(leagueId: string | undefined) {
+  return useQuery({
+    queryKey: publicKeys.league(leagueId ?? ''),
+    queryFn: ({ signal }) => api.get<League>(`/leagues/${leagueId}`, { signal }),
+    enabled: Boolean(leagueId),
   })
 }

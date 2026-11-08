@@ -119,4 +119,44 @@ describe('TeamOverviewPage', () => {
     expect(screen.getByText('Tarjetas Amarillas')).toBeInTheDocument()
     expect(screen.getByText('Tarjetas Rojas')).toBeInTheDocument()
   })
+
+  it('shows the player-derived tiles from the per-player totals', async () => {
+    mockApi({
+      'GET /teams/team-123': { body: mockTeam },
+      'GET /teams/team-123/stats': { body: { data: [mockTeamStats], page: { limit: 10, offset: 0 } } },
+      'GET /teams/team-123/player-stats': {
+        body: {
+          data: [
+            { player_id: 'a', name: 'A', jersey_number: 1, position: 'Portero', matches_played: 4, goals: 3, assists: 0, yellow_cards: 2, red_cards: 0, minutes_played: 300 },
+            { player_id: 'b', name: 'B', jersey_number: 2, position: 'Defensa', matches_played: 2, goals: 0, assists: 1, yellow_cards: 0, red_cards: 0, minutes_played: 100 },
+            { player_id: 'c', name: 'C', jersey_number: 3, position: 'Delantero', matches_played: 0, goals: 0, assists: 0, yellow_cards: 0, red_cards: 0, minutes_played: 0 },
+          ],
+        },
+      },
+    })
+    renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
+
+    const tile = async (label: string) => {
+      const caption = (await screen.findAllByText(label)).find((el) => el.tagName === 'P')
+      return caption?.parentElement?.querySelectorAll('p')[1]?.textContent
+    }
+    expect(await tile('Goles por Jugador')).toBe('1.0')
+    expect(await tile('Tarjetas por Jugador')).toBe('0.7')
+    expect(await tile('Jugadores sin Tarjetas')).toBe('2')
+    expect(await tile('Partidos Jugados (Total)')).toBe('6')
+    expect(await tile('Minutos Jugados (Total)')).toBe("400'")
+    expect(await tile('Promedio Minutos por Jugador')).toBe("133'")
+    expect(await tile('Jugadores Activos')).toBe('2')
+  })
+
+  it('keeps the team tiles and hides the player-derived ones when the per-player totals fail', async () => {
+    mockApi({
+      'GET /teams/team-123': { body: mockTeam },
+      'GET /teams/team-123/stats': { body: { data: [mockTeamStats], page: { limit: 10, offset: 0 } } },
+    })
+    renderWithProviders(<TeamOverviewPage teamId={mockTeamId} />)
+
+    expect(await screen.findByText('Goles a Favor')).toBeInTheDocument()
+    expect(screen.queryByText('Goles por Jugador')).not.toBeInTheDocument()
+  })
 })

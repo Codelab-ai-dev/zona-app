@@ -1,4 +1,4 @@
-import { Ban, CheckCircle, IdCard, Trash2 } from 'lucide-react'
+import { Ban, CheckCircle, IdCard, Pencil, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -20,12 +20,14 @@ function age(birthDate: string): number {
 interface PlayerCardProps {
   player: Player
   suspended: boolean
-  onCredential: () => void
+  /** Omitted when the league has no QR credentials. */
+  onCredential?: () => void
+  onEdit: () => void
   onDeactivate: () => void
 }
 
 /** One player of the Jugadores tab, in the original glass card. */
-export function PlayerCard({ player, suspended, onCredential, onDeactivate }: PlayerCardProps) {
+export function PlayerCard({ player, suspended, onCredential, onEdit, onDeactivate }: PlayerCardProps) {
   return (
     <Card className={suspended ? 'border-red-400/50 backdrop-blur-xl bg-red-500/20 shadow-xl' : 'backdrop-blur-xl bg-white/10 border-white/20 shadow-xl'}>
       <CardHeader>
@@ -67,9 +69,14 @@ export function PlayerCard({ player, suspended, onCredential, onDeactivate }: Pl
             <p className="text-sm text-white/70 drop-shadow">Registrado: {new Date(player.created_at).toLocaleDateString('es-ES')}</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={onCredential} aria-label={`Credencial de ${player.name}`} className={glassOutlineButton}>
-              <IdCard className="w-4 h-4" aria-hidden="true" />
+            <Button variant="outline" size="sm" onClick={onEdit} aria-label={`Editar a ${player.name}`} className={glassOutlineButton}>
+              <Pencil className="w-4 h-4" aria-hidden="true" />
             </Button>
+            {onCredential && (
+              <Button variant="outline" size="sm" onClick={onCredential} aria-label={`Credencial de ${player.name}`} className={glassOutlineButton}>
+                <IdCard className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

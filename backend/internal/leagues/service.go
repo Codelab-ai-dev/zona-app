@@ -173,19 +173,10 @@ func (s *Service) UpdateLeagueProductMode(ctx context.Context, caller auth.Princ
 		return League{}, err
 	}
 
-	// Default features if not provided
+	// Default features of the chosen plan (as the original PRODUCT_MODE_CONFIG).
 	features := req.Features
 	if features == nil {
-		defaultFeatures, _ := json.Marshal(map[string]bool{
-			"ai_agent":           true,
-			"qr_codes":           true,
-			"mobile_app":         true,
-			"statistics":         true,
-			"manual_entry":       true,
-			"public_portal":      true,
-			"realtime_updates":   true,
-			"facial_recognition": true,
-		})
+		defaultFeatures, _ := json.Marshal(planFeatures(req.ProductMode))
 		features = json.RawMessage(defaultFeatures)
 	}
 
@@ -427,4 +418,22 @@ func timeNow() time.Time {
 // MyLeagues returns the leagues the caller administers.
 func (s *Service) MyLeagues(ctx context.Context, caller auth.Principal) ([]League, error) {
 	return s.repo.ListLeaguesByAdmin(ctx, caller.UserID)
+}
+
+// planFeatures are the features each product mode includes by default.
+func planFeatures(mode string) map[string]bool {
+	full := mode != "web_only"
+	return map[string]bool{
+		"qr_codes":           full,
+		"facial_recognition": full,
+		"mobile_app":         full,
+		"realtime_updates":   full,
+		"manual_entry":       true,
+		"public_portal":      true,
+		"statistics":         true,
+		"ai_agent":           true,
+		"finance":            true,
+		"finance_auto_fines": full,
+		"finance_payments":   full,
+	}
 }

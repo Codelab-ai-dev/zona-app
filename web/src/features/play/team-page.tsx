@@ -8,6 +8,7 @@ import { Link } from 'react-router'
 
 import { useRecordings } from './api'
 import type { Recording } from './types'
+import { LeagueBadge, videoScore, videoTitle } from './video-meta'
 
 function formatDuration(seconds: number | null | undefined): string {
   if (!seconds) return '--:--'
@@ -21,8 +22,8 @@ function formatDuration(seconds: number | null | undefined): string {
 }
 
 function VideoCard({ video }: { video: Recording }) {
-  const title = video.title
-  const score = video.home_score != null && video.away_score != null ? `${video.home_score} - ${video.away_score}` : null
+  const title = videoTitle(video)
+  const score = videoScore(video)
 
   return (
     <Link
@@ -45,6 +46,7 @@ function VideoCard({ video }: { video: Recording }) {
                 <Play className="w-6 h-6 text-primary fill-current ml-1" aria-hidden="true" />
               </div>
             </div>
+            <LeagueBadge video={video} className="absolute top-2 left-2" />
             {/* Duration badge */}
             <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-xs text-white font-medium">
               {formatDuration(video.duration_seconds)}

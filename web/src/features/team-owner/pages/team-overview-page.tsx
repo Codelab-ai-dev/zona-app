@@ -5,7 +5,8 @@ import { QueryState } from '@/components/states'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-import { useTeam, useTeamPlayers, useTeamMatches, useTeamStats, useTeamSuspensions, useTopScorers } from '../api'
+import { useTeam, useTeamPlayers, useTeamMatches, useTeamPlayerStats, useTeamStats, useTeamSuspensions, useTopScorers } from '../api'
+import { DisciplineTiles, GoalsPerPlayerTile, ParticipationSection } from '../components/player-derived-stats'
 import { PositionsCard, ResultsCard, StatTile, SuspensionsCard } from '../components/overview-panels'
 import { RefereeReportModal } from '../components/referee-report-modal'
 import { glassCard, pageSubtitle, pageTitle } from '../glass'
@@ -61,6 +62,8 @@ function HeadlineCards({ teamStat, active, total, upcoming }: { teamStat: TeamSt
 function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: string }) {
   const scorers = useTopScorers(teamStat.tournament_id)
   const top = (scorers.data?.data ?? []).filter((p) => p.team_id === teamId).slice(0, 3)
+  // Player-derived tiles need the per-player totals; without them the team-level tiles stay.
+  const playerStats = useTeamPlayerStats(teamId, teamStat.tournament_id).data?.data
   return (
     <Card className={glassCard}>
       <CardHeader>
@@ -76,11 +79,12 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
             <Target className="w-5 h-5 mr-2 text-green-400" aria-hidden="true" />
             Rendimiento Ofensivo
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             <StatTile label="Goles a Favor" value={teamStat.goals_for} valueClass="text-green-400" tint="p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg" />
             <StatTile label="Goles en Contra" value={teamStat.goals_against} valueClass="text-red-400" />
             <StatTile label="Diferencia de Goles" value={teamStat.goal_difference} valueClass="text-purple-400" tint="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg" />
             <StatTile label="Vallas Invictas" value={teamStat.clean_sheets} />
+            {playerStats && <GoalsPerPlayerTile players={playerStats} />}
           </div>
         </div>
 
@@ -121,7 +125,7 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
             <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" aria-hidden="true" />
             Disciplina
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             <div className="p-4 backdrop-blur-md bg-yellow-500/20 rounded-xl border border-yellow-300/30 shadow-lg">
               <div className="flex items-center space-x-2 mb-2">
                 <div className="w-4 h-6 bg-yellow-400 rounded" />
@@ -137,8 +141,11 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
               <p className="text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">{teamStat.red_cards}</p>
             </div>
             <StatTile label="Puntos" value={teamStat.points} valueClass="text-green-400" />
+            {playerStats && <DisciplineTiles players={playerStats} />}
           </div>
         </div>
+
+        {playerStats && <ParticipationSection players={playerStats} />}
       </CardContent>
     </Card>
   )

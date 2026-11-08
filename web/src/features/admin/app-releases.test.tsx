@@ -93,6 +93,24 @@ describe('AppReleases', () => {
     expect(hrefs).toEqual(['https://cdn.example.com/aaa.apk'])
   })
 
+  it('copies the download link to the clipboard with GET /storage/url?key=...', async () => {
+    const { fetchMock, user } = setup({ 'GET /storage/url': { body: { url: 'https://cdn.example.com/aaa.apk' } } })
+    await selectLeague(user)
+    await user.click(await screen.findByRole('button', { name: 'Copiar enlace de aaa.apk' }))
+
+    expect(await screen.findByText('Enlace copiado')).toBeInTheDocument()
+    expect(await navigator.clipboard.readText()).toBe('https://cdn.example.com/aaa.apk')
+    const urlCall = fetchMock.mock.calls.map(([input]) => new URL(String(input), 'http://localhost')).find((u) => u.pathname.endsWith('/storage/url'))
+    expect(urlCall?.searchParams.get('key')).toBe('app_releases/league1/aaa.apk')
+  })
+
+  it('shows an error toast when the link to copy cannot be fetched', async () => {
+    const { user } = setup({ 'GET /storage/url': { status: 404, body: errorBody('not_found', 'No encontrado') } })
+    await selectLeague(user)
+    await user.click(await screen.findByRole('button', { name: 'Copiar enlace de aaa.apk' }))
+    expect(await screen.findByText('No encontrado')).toBeInTheDocument()
+  })
+
   it('shows an error toast when the download link cannot be fetched', async () => {
     const { user } = setup({ 'GET /storage/url': { status: 404, body: errorBody('not_found', 'No encontrado') } })
     await selectLeague(user)

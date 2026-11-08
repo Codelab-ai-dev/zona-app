@@ -1,4 +1,4 @@
-import type { Player } from '../types'
+import type { CoachingStaff, Player } from '../types'
 
 /** Uppercase and strip accents, exactly like the mobile app's credential screen (_normalizeName). */
 export function normalizeQrName(name: string): string {
@@ -23,4 +23,25 @@ export function buildPlayerQrPayload(player: Player, opts: { leagueId?: string; 
     timestamp: (opts.now ?? new Date()).toISOString(),
     version: '1.0',
   })
+}
+
+/** Staff QR payload of the original app: {t:'s', i: id, n: name, r: role, tm: team}. */
+export function buildStaffQrPayload(staff: CoachingStaff): string {
+  return JSON.stringify({ t: 's', i: staff.id, n: staff.name, r: staff.role, tm: staff.team_id })
+}
+
+/** Credential-shaped view of a staff member (role as position, no jersey). */
+export function staffAsCredentialPerson(staff: CoachingStaff): Player {
+  return {
+    id: staff.id,
+    name: staff.name,
+    team_id: staff.team_id,
+    position: staff.role,
+    jersey_number: 0,
+    photo: staff.photo,
+    is_active: staff.is_active,
+    created_at: staff.created_at,
+    updated_at: staff.updated_at,
+    id_verified: false,
+  }
 }

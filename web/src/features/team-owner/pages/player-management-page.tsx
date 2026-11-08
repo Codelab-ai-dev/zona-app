@@ -19,25 +19,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, User } from 'lucide-react'
+import { Lock, Plus, User } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useTeam, useTeamPlayers, useTeamSuspensions, useCreatePlayer, useDeactivatePlayer, useUpdatePlayer, useUploadFile } from '../api'
+import { countUsedExceptions } from '../age-rules'
+import { useLeagueQrEnabled, useTeam, useTeamPlayers, useTeamSuspensions, useCreatePlayer, useDeactivatePlayer, useUpdatePlayer, useUploadFile } from '../api'
+import { useTeamRules } from '../use-team-rules'
 import type { CreatePlayerRequest, Player } from '../types'
 import { PLAYER_POSITIONS } from '../constants'
 import { PlayerCredential } from '../components/player-credential'
 import { PlayerForm } from '../components/player-form'
 import { PlayerCard } from '../components/player-card'
+import { ExceptionalRequest } from '../components/exceptional-request'
+import { PlayerEditDialog } from '../components/player-edit-dialog'
+import { LimitBanner, RegistrationClosedBanner } from '../components/registration-banners'
 import { pageSubtitle, pageTitle } from '../glass'
 
 export function PlayerManagementPage({ teamId }: { teamId: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [deletePlayerId, setDeletePlayerId] = useState<string | null>(null)
   const [credentialPlayer, setCredentialPlayer] = useState<Player | null>(null)
+  const [editPlayer, setEditPlayer] = useState<Player | null>(null)
 
   const team = useTeam(teamId)
   const players = useTeamPlayers(teamId)
   const suspensions = useTeamSuspensions(teamId)
+  const rules = useTeamRules(teamId)
+  const qrEnabled = useLeagueQrEnabled(team.data?.league_id).data === true
   const createPlayer = useCreatePlayer()
   const updatePlayer = useUpdatePlayer()
   const uploadFile = useUploadFile()
@@ -58,11 +66,28 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
   }
 
   const suspended = new Set(
-    (suspensions.data?.data ?? []).filter((x) => x.status === 'active' || x.matches_served < x.matches_to_serve).map((x) => x.player_id),
+    (suspensions.data?.data ?? []).filter((x) => x.status === 'active').map((x) => x.player_id),
   )
+
+  const playerList = players.data?.data ?? []
+  const activeCount = playerList.filter((p) => p.is_active).length
+  const atLimit = rules.maxPlayers !== null && activeCount >= rules.maxPlayers
+  const canRegister = rules.registrationOpen && !atLimit
+  const buttonLabel = !rules.registrationOpen ? 'Registros Cerrados' : atLimit ? 'Límite Alcanzado' : 'Nuevo Jugador'
 
   return (
     <div className="space-y-6">
+      {!rules.registrationOpen && <RegistrationClosedBanner />}
+      {rules.maxPlayers !== null && rules.registrationOpen && (
+        <LimitBanner
+          title="Límite de jugadores"
+          atLimitText={`Has registrado el máximo de ${rules.maxPlayers} jugadores permitidos para este torneo.`}
+          used={activeCount}
+          max={rules.maxPlayers}
+          noun="jugadores"
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h2 className={pageTitle}>Gestión de Jugadores</h2>
@@ -70,9 +95,9 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-              Nuevo Jugador
+            <Button disabled={!canRegister} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto">
+              {rules.registrationOpen ? <Plus className="w-4 h-4 mr-2" aria-hidden="true" /> : <Lock className="w-4 h-4 mr-2" aria-hidden="true" />}
+              {buttonLabel}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-slate-900 border-slate-700 max-h-[90vh] overflow-y-auto">
@@ -82,6 +107,8 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
             </DialogHeader>
             <PlayerForm
               positions={PLAYER_POSITIONS}
+              ageRules={rules.ageRules}
+              usedExceptions={countUsedExceptions(playerList, rules.ageRules)}
               onSubmit={handleCreatePlayer}
               isLoading={createPlayer.isPending || uploadFile.isPending || updatePlayer.isPending}
             />
@@ -107,7 +134,8 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
                 key={player.id}
                 player={player}
                 suspended={suspended.has(player.id)}
-                onCredential={() => setCredentialPlayer(player)}
+                onCredential={qrEnabled ? () => setCredentialPlayer(player) : undefined}
+                onEdit={() => setEditPlayer(player)}
                 onDeactivate={() => setDeletePlayerId(player.id)}
               />
             ))}
@@ -129,6 +157,19 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {!rules.registrationOpen && rules.team?.tournament_id && (
+        <ExceptionalRequest teamId={teamId} tournamentId={rules.team.tournament_id} />
+      )}
+
+      {editPlayer && (
+        <PlayerEditDialog
+          player={editPlayer}
+          ageRules={rules.ageRules}
+          usedExceptions={countUsedExceptions(playerList, rules.ageRules, editPlayer.id)}
+          onClose={() => setEditPlayer(null)}
+        />
+      )}
 
       {credentialPlayer && team.data && (
         <PlayerCredential

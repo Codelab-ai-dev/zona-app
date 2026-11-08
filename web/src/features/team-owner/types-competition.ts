@@ -30,6 +30,59 @@ export interface Match {
   updated_at: string
   home_team?: MatchTeam
   away_team?: MatchTeam
+  /** Only GET /matches/{id} embeds the events. */
+  goals?: MatchGoal[]
+  cards?: MatchCard[]
+  incidents?: MatchIncident[]
+}
+
+export interface MatchGoal {
+  id: string
+  player_id: string
+  team_id: string
+  minute: number
+  goal_type: string
+  assist_player_id?: string
+  description?: string
+  player_name?: string
+  player_jersey?: number
+  assist_player_name?: string
+}
+
+export interface MatchCard {
+  id: string
+  player_id: string
+  team_id: string
+  card_type: 'yellow' | 'red'
+  minute: number
+  reason?: string
+  player_name?: string
+  player_jersey?: number
+}
+
+export interface MatchIncident {
+  id: string
+  incident_type: string
+  description: string
+  minute?: number
+  player_id?: string
+  team_id?: string
+  player_name?: string
+}
+
+/** GET /teams/{id}/player-stats row. */
+export interface TeamPlayerStats {
+  player_id: string
+  name: string
+  jersey_number: number
+  position: string
+  photo?: string
+  matches_played: number
+  goals: number
+  assists: number
+  yellow_cards: number
+  red_cards: number
+  minutes_played: number
 }
 
 export interface Standings {

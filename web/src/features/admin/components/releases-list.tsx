@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Loader2, RefreshCw, Smartphone, Trash2 } from 'lucide-react'
+import { Copy, Download, Loader2, RefreshCw, Smartphone, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -41,6 +41,16 @@ export function ReleasesList({ leagueId, readOnly = false }: { leagueId: string;
       toast.success('Descarga iniciada')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Error al obtener el enlace de descarga')
+    }
+  }
+
+  const handleCopyLink = async (release: StorageObject) => {
+    try {
+      const result = await getUrl.mutateAsync(release.key)
+      await navigator.clipboard.writeText(result.url)
+      toast.success('Enlace copiado')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'No se pudo copiar el enlace')
     }
   }
 
@@ -111,6 +121,15 @@ export function ReleasesList({ leagueId, readOnly = false }: { leagueId: string;
                             disabled={getUrl.isPending}
                           >
                             <Download className="h-3 w-3" aria-hidden="true" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Copiar enlace de ${fileName(release)}`}
+                            onClick={() => void handleCopyLink(release)}
+                            disabled={getUrl.isPending}
+                          >
+                            <Copy className="h-3 w-3" aria-hidden="true" />
                           </Button>
                           {!readOnly && (
                             <Button

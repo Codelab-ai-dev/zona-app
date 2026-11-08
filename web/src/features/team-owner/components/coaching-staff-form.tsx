@@ -4,48 +4,47 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApiError } from '@/lib/api/client'
+import { AlertCircle } from 'lucide-react'
 
-import type { CreateCoachingStaffRequest } from '../types'
-import { toApiDate } from '../utils'
+import type { CoachingStaff, CreateCoachingStaffRequest } from '../types'
+import { toApiDate, toDateInput } from '../utils'
+import { PhotoPicker } from './photo-picker'
 
-type FormDataLocal = {
-  name: string
-  role: string
-  photo: string
-  birth_date: string
-  cedula: string
-}
+const FORM_FIELDS = ['name', 'role', 'cedula', 'birth_date']
 
 interface CoachingStaffFormProps {
   roles: string[]
-  onSubmit: (data: CreateCoachingStaffRequest) => Promise<void>
+  /** `photo` is the optional image the user picked; the caller uploads it. */
+  onSubmit: (data: CreateCoachingStaffRequest, photo?: File) => Promise<void>
   isLoading?: boolean
-  initialData?: Partial<FormDataLocal>
+  /** Edit mode: the member to prefill (the photo stays unless a new one is picked). */
+  staff?: CoachingStaff
 }
 
-export function CoachingStaffForm({ roles, onSubmit, isLoading, initialData }: CoachingStaffFormProps) {
+export function CoachingStaffForm({ roles, onSubmit, isLoading, staff }: CoachingStaffFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    role: '',
-    photo: '',
-    birth_date: '',
-    cedula: '',
-    ...initialData,
+    name: staff?.name ?? '',
+    role: staff?.role ?? '',
+    birth_date: toDateInput(staff?.birth_date),
+    cedula: staff?.cedula ?? '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [photo, setPhoto] = useState<File | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
     try {
-      await onSubmit({
-        name: formData.name,
-        role: formData.role,
-        photo: formData.photo || undefined,
-        birth_date: toApiDate(formData.birth_date),
-        cedula: formData.cedula || undefined,
-      })
+      await onSubmit(
+        {
+          name: formData.name,
+          role: formData.role,
+          birth_date: toApiDate(formData.birth_date),
+          cedula: formData.cedula || undefined,
+        },
+        photo ?? undefined,
+      )
     } catch (error) {
       if (error instanceof ApiError && error.isValidation && Object.keys(error.fields).length > 0) {
         setErrors(error.fields)
@@ -53,8 +52,17 @@ export function CoachingStaffForm({ roles, onSubmit, isLoading, initialData }: C
     }
   }
 
+  // API errors for fields this form does not have (team_id: staff limit reached).
+  const extraErrors = Object.entries(errors).filter(([key]) => !FORM_FIELDS.includes(key))
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {extraErrors.length > 0 && (
+        <div role="alert" className="flex items-start gap-2 p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-sm text-red-300">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          {extraErrors.map(([, message]) => message).join('. ')}
+        </div>
+      )}
       <div>
         <Label htmlFor="name" className="text-white">Nombre Completo</Label>
         <Input
@@ -139,21 +147,10 @@ export function CoachingStaffForm({ roles, onSubmit, isLoading, initialData }: C
         )}
       </div>
 
-      <div>
-        <Label htmlFor="photo" className="text-white">Foto URL</Label>
-        <Input
-          id="photo"
-          className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
-          type="url"
-          value={formData.photo}
-          onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-          placeholder="https://..."
-          disabled={isLoading}
-        />
-      </div>
+      <PhotoPicker label="Foto" currentUrl={staff?.photo} disabled={isLoading} onChange={setPhoto} />
 
       <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
-        {isLoading ? 'Guardando…' : 'Registrar Miembro'}
+        {isLoading ? 'Guardando…' : staff ? 'Guardar Cambios' : 'Registrar Miembro'}
       </Button>
     </form>
   )

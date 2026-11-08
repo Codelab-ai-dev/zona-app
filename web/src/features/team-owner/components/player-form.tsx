@@ -1,55 +1,44 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApiError } from '@/lib/api/client'
-import { AlertCircle, Upload } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
-import type { CreatePlayerRequest } from '../types'
-import { toApiDate } from '../utils'
+import { validateAge, type AgeRules } from '../age-rules'
+import type { CreatePlayerRequest, Player } from '../types'
+import { toApiDate, toDateInput } from '../utils'
+import { AgeResultBox, AgeRulesText } from './age-result'
+import { PhotoPicker } from './photo-picker'
 
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024
-const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const FORM_FIELDS = ['name', 'position', 'jersey_number', 'birth_date']
 
 interface PlayerFormProps {
   positions: string[]
-  /** `photo` is the optional image the user picked; the caller uploads it once the player exists. */
+  /** `photo` is the optional image the user picked; the caller uploads it. */
   onSubmit: (data: CreatePlayerRequest, photo?: File) => Promise<void>
   isLoading?: boolean
+  /** Edit mode: the player to prefill (the photo stays unless a new one is picked). */
+  player?: Player
+  /** Tournament age rules; shows the rules text and a live result for the birth date. */
+  ageRules?: AgeRules | null
+  /** Age exceptions already used by the other players of the team. */
+  usedExceptions?: number
 }
 
-export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) {
-  const [formData, setFormData] = useState({ name: '', position: '', jersey_number: '', birth_date: '' })
+export function PlayerForm({ positions, onSubmit, isLoading, player, ageRules, usedExceptions = 0 }: PlayerFormProps) {
+  const [formData, setFormData] = useState({
+    name: player?.name ?? '',
+    position: player?.position ?? '',
+    jersey_number: player ? String(player.jersey_number) : '',
+    birth_date: toDateInput(player?.birth_date),
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [photo, setPhoto] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoError, setPhotoError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const clearPhoto = () => {
-    setPhoto(null)
-    setPhotoPreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!PHOTO_TYPES.includes(file.type)) {
-      setPhotoError('El tipo de archivo debe ser JPEG, PNG o WebP')
-      return
-    }
-    if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoError('El archivo no debe exceder 10 MB')
-      return
-    }
-    setPhotoError(null)
-    setPhoto(file)
-    const reader = new FileReader()
-    reader.onload = (ev) => setPhotoPreview(typeof ev.target?.result === 'string' ? ev.target.result : null)
-    reader.readAsDataURL(file)
-  }
+  const ageResult = ageRules && formData.birth_date ? validateAge(formData.birth_date, ageRules, usedExceptions) : null
+  const available = ageRules ? Math.max(0, ageRules.exceptionCount - usedExceptions) : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,8 +61,17 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
     }
   }
 
+  // API errors for fields this form does not have (team_id: registration closed / player limit).
+  const extraErrors = Object.entries(errors).filter(([key]) => !FORM_FIELDS.includes(key))
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {extraErrors.length > 0 && (
+        <div role="alert" className="flex items-start gap-2 p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-sm text-red-300">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          {extraErrors.map(([, message]) => message).join('. ')}
+        </div>
+      )}
       <div>
         <Label htmlFor="name" className="text-white">Nombre Completo</Label>
         <Input
@@ -159,62 +157,15 @@ export function PlayerForm({ positions, onSubmit, isLoading }: PlayerFormProps) 
             {errors.birth_date}
           </p>
         )}
+        {ageRules && <AgeRulesText rules={ageRules} available={available} />}
       </div>
 
-      <div>
-        <Label htmlFor="photo" className="text-white">Foto del Jugador</Label>
-        <div className="mt-2 space-y-3">
-          {photoPreview && (
-            <div className="relative w-full max-w-xs">
-              <img
-                src={photoPreview}
-                alt="Vista previa"
-                className="w-full h-auto rounded-lg border border-slate-600 max-h-64 object-cover"
-              />
-              <button
-                type="button"
-                onClick={clearPhoto}
-                aria-label="Quitar foto"
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
-          )}
+      {ageResult && <AgeResultBox result={ageResult} />}
 
-          <input
-            ref={fileInputRef}
-            id="photo"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoChange}
-            disabled={isLoading}
-            className="hidden"
-          />
+      <PhotoPicker label="Foto del Jugador" currentUrl={player?.photo} disabled={isLoading} onChange={setPhoto} />
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border-2 border-dashed border-slate-600 text-slate-300 rounded-lg hover:border-slate-400 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            Seleccionar imagen (JPEG, PNG, WebP - máx 10MB)
-          </button>
-
-          {photoError && (
-            <div role="alert" className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-sm text-red-300">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {photoError}
-            </div>
-          )}
-
-          {photo && <p className="text-sm text-green-400">✓ Foto seleccionada: {photo.name}</p>}
-        </div>
-      </div>
-
-      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
-        {isLoading ? 'Guardando…' : 'Registrar Jugador'}
+      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading || (ageResult !== null && !ageResult.isValid)}>
+        {isLoading ? 'Guardando…' : player ? 'Guardar Cambios' : 'Registrar Jugador'}
       </Button>
     </form>
   )

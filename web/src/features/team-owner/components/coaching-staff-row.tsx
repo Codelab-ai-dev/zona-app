@@ -1,11 +1,11 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, QrCode, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-import { glassCard } from '../glass'
+import { glassCard, glassOutlineButton } from '../glass'
 import type { CoachingStaff } from '../types'
 import { initials } from '../utils'
 
@@ -18,7 +18,17 @@ function age(birthDate: string): number {
 }
 
 /** One staff member of the Cuerpo Técnico tab, in the original glass card. */
-export function CoachingStaffRow({ staff, onDeactivate }: { staff: CoachingStaff; onDeactivate: () => void }) {
+interface CoachingStaffRowProps {
+  staff: CoachingStaff
+  onEdit: () => void
+  onDeactivate: () => void
+  onReactivate: () => void
+  /** Omitted when the league has no QR credentials. */
+  onCredential?: () => void
+  reactivating?: boolean
+}
+
+export function CoachingStaffRow({ staff, onEdit, onDeactivate, onReactivate, onCredential, reactivating }: CoachingStaffRowProps) {
   return (
     <Card className={glassCard}>
       <CardHeader>
@@ -44,15 +54,29 @@ export function CoachingStaffRow({ staff, onDeactivate }: { staff: CoachingStaff
             <p className="text-sm text-white/70 drop-shadow">Registrado: {new Date(staff.created_at).toLocaleDateString('es-ES')}</p>
           )}
           <div className="flex flex-wrap gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDeactivate}
-              aria-label={`Desactivar a ${staff.name}`}
-              className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
-            >
-              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            <Button variant="outline" size="sm" onClick={onEdit} aria-label={`Editar a ${staff.name}`} className={glassOutlineButton}>
+              <Pencil className="w-4 h-4" aria-hidden="true" />
             </Button>
+            {onCredential && (
+              <Button variant="outline" size="sm" onClick={onCredential} aria-label={`Credencial de ${staff.name}`} className={glassOutlineButton}>
+                <QrCode className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            )}
+            {staff.is_active ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDeactivate}
+                aria-label={`Desactivar a ${staff.name}`}
+                className="backdrop-blur-md bg-red-500/30 border-red-300/50 text-red-300 hover:bg-red-500/40"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={onReactivate} disabled={reactivating} aria-label={`Activar a ${staff.name}`} className={glassOutlineButton}>
+                {reactivating ? 'Activando…' : 'Activar'}
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

@@ -14,6 +14,8 @@ import type {
   MyTeam,
   RefereeReport,
   Tournament,
+  TeamPlayerStats,
+  LeagueInfo,
 } from './types'
 
 /** GET /my-teams - teams owned by the signed-in user (an owner may have several). */
@@ -126,5 +128,28 @@ export function useTournament(tournamentId: string | undefined) {
     queryKey: teamOwnerKeys.tournament(tournamentId ?? ''),
     queryFn: ({ signal }) => api.get<Tournament>(`/tournaments/${tournamentId}`, { signal }),
     enabled: Boolean(tournamentId),
+  })
+}
+
+/** GET /teams/{teamID}/player-stats - per-player totals of a team (public). */
+export function useTeamPlayerStats(teamId: string | undefined, tournamentId?: string) {
+  return useQuery({
+    queryKey: teamOwnerKeys.playerStats(teamId ?? '', tournamentId),
+    queryFn: ({ signal }) =>
+      api.get<{ data: TeamPlayerStats[] }>(`/teams/${teamId}/player-stats`, {
+        signal,
+        query: tournamentId ? { tournament_id: tournamentId } : undefined,
+      }),
+    enabled: Boolean(teamId),
+  })
+}
+
+/** GET /leagues/{leagueID} (public): whether the league enabled QR credentials. */
+export function useLeagueQrEnabled(leagueId: string | undefined) {
+  return useQuery({
+    queryKey: teamOwnerKeys.league(leagueId ?? ''),
+    queryFn: ({ signal }) => api.get<LeagueInfo>(`/leagues/${leagueId}`, { signal }),
+    select: (league) => league.features?.qr_codes === true,
+    enabled: Boolean(leagueId),
   })
 }

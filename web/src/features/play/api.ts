@@ -1,9 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { api, type PageParams } from '@/lib/api/client'
+import { api, ApiError, type PageParams } from '@/lib/api/client'
 
 import type { Clip, DirectUploadResponse, Recording, Stream } from './types'
+
+/** Live status and viewers refresh while a streams screen is mounted. */
+const STREAM_POLL_MS = 15_000
 
 export const playKeys = {
   recordings: ['play', 'recordings'] as const,
@@ -42,6 +45,12 @@ export function useRecording(id: string) {
     queryKey: playKeys.recordingsDetail(id),
     queryFn: ({ signal }) => api.get<Recording>(`/play/videos/${encodeURIComponent(id)}`, { signal }),
     enabled: id !== '',
+    retry: (count, error) => !(error instanceof ApiError && error.isNotFound) && count < 2,
+    // Follow the processing progress until the video is ready or failed.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'pending' || status === 'uploading' || status === 'processing' ? 10_000 : false
+    },
   })
 }
 
@@ -174,6 +183,7 @@ export function useStreams(page: PageParams = { limit: 20, offset: 0 }) {
     queryKey: playKeys.streamsList(page),
     queryFn: ({ signal }) => api.list<Stream>('/play/streams', page, { signal }),
     placeholderData: keepPreviousData,
+    refetchInterval: STREAM_POLL_MS,
   })
 }
 
@@ -182,6 +192,7 @@ export function useStream(id: string) {
     queryKey: playKeys.streamsDetail(id),
     queryFn: ({ signal }) => api.get<Stream>(`/play/streams/${encodeURIComponent(id)}`, { signal }),
     enabled: id !== '',
+    refetchInterval: STREAM_POLL_MS,
   })
 }
 

@@ -10,6 +10,7 @@ import { EmptyState, QueryState } from '@/components/states'
 
 import { useRecordings } from './api'
 import type { Recording } from './types'
+import { LeagueBadge, videoScore, videoTitle } from './video-meta'
 
 function formatDuration(seconds: number | null | undefined): string {
   if (!seconds) return '--:--'
@@ -23,6 +24,8 @@ function formatDuration(seconds: number | null | undefined): string {
 }
 
 function SearchResultCard({ video }: { video: Recording }) {
+  const title = videoTitle(video)
+  const score = videoScore(video)
   return (
     <Link
       to={`/play/watch/${video.id}`}
@@ -34,12 +37,13 @@ function SearchResultCard({ video }: { video: Recording }) {
             {/* Thumbnail */}
             <div className="relative aspect-video bg-muted flex-shrink-0 w-48">
               {video.thumbnail_url ? (
-                <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
+                <img src={video.thumbnail_url} alt={title} className="w-full h-full object-cover" />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Play className="w-8 h-8 text-muted-foreground/50" aria-hidden="true" />
                 </div>
               )}
+              <LeagueBadge video={video} className="absolute top-2 left-2" />
               <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-xs text-white font-medium">
                 {formatDuration(video.duration_seconds)}
               </div>
@@ -47,7 +51,8 @@ function SearchResultCard({ video }: { video: Recording }) {
 
             {/* Info */}
             <div className="p-4 flex-1 min-w-0">
-              <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary">{video.title}</h3>
+              <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary">{title}</h3>
+              {score && <p className="text-base font-bold text-primary">{score}</p>}
               {video.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{video.description}</p>}
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                 <span className="flex items-center gap-1">

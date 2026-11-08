@@ -22,6 +22,8 @@ interface PlayerRegistrationFormProps {
   positions: string[]
   onSubmit: (data: CreatePlayerRegistrationRequestRequest) => Promise<void>
   isLoading: boolean
+  /** Wording of the original "Solicitar Registro Excepcional" dialog (Jugadores tab, registration closed). */
+  exceptional?: boolean
 }
 
 type FormValues = {
@@ -34,7 +36,7 @@ type FormValues = {
 
 const FORM_FIELDS = ['player_name', 'player_position', 'jersey_number', 'birth_date', 'reason']
 
-export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: PlayerRegistrationFormProps) {
+export function PlayerRegistrationForm({ positions, onSubmit, isLoading, exceptional }: PlayerRegistrationFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const {
@@ -155,7 +157,7 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="birth_date" className="text-white">Fecha de Nacimiento</Label>
+        <Label htmlFor="birth_date" className="text-white">{exceptional ? 'Fecha de Nacimiento (opcional)' : 'Fecha de Nacimiento'}</Label>
         <Input
           id="birth_date"
           className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
@@ -172,11 +174,11 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reason" className="text-white">Motivo de la Solicitud *</Label>
+        <Label htmlFor="reason" className="text-white">{exceptional ? 'Justificación de la Solicitud' : 'Motivo de la Solicitud *'}</Label>
         <Textarea
           id="reason"
           className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
-          placeholder="Describe el motivo de la solicitud de registro"
+          placeholder={exceptional ? 'Ejemplo: El jugador titular sufrió una lesión...' : 'Describe el motivo de la solicitud de registro'}
           {...register('reason', {
             required: 'El motivo es requerido',
             minLength: { value: 5, message: 'El motivo debe tener al menos 5 caracteres' },
@@ -184,6 +186,9 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading }: Playe
           aria-invalid={!!getFieldError('reason')}
           aria-describedby={getFieldError('reason') ? 'reason-error' : undefined}
         />
+        {exceptional && (
+          <p className="text-xs text-slate-500">Explica detalladamente la razón por la cual necesitas registrar este jugador</p>
+        )}
         {getFieldError('reason') && (
           <p id="reason-error" className="text-sm text-red-400">
             {getFieldError('reason')}

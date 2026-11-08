@@ -115,6 +115,8 @@ export interface UpdateCoachingStaffRequest {
   photo?: string
   birth_date?: string
   cedula?: string
+  /** true reactivates the member (422 when the staff limit is reached). */
+  is_active?: boolean
 }
 
 export interface MyTeam {
@@ -205,6 +207,12 @@ export interface UploadResult {
   url?: string
   is_public: boolean
   filename?: string
+}
+
+/** GET /leagues/{id}: only the part the team owner needs. */
+export interface LeagueInfo {
+  id: string
+  features?: { qr_codes?: boolean }
 }
 
 export * from './types-competition'

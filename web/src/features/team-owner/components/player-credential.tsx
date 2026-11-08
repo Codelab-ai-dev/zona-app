@@ -16,9 +16,11 @@ interface PlayerCredentialProps {
   teamName: string
   teamLogo?: string
   leagueId?: string
+  /** Coaching staff reuse this card: role instead of position, no jersey, own QR payload. */
+  staff?: { qrValue: string }
 }
 
-export function PlayerCredential({ open, onOpenChange, player, teamName, teamLogo, leagueId }: PlayerCredentialProps) {
+export function PlayerCredential({ open, onOpenChange, player, teamName, teamLogo, leagueId, staff }: PlayerCredentialProps) {
   const [printing, setPrinting] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -26,8 +28,8 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
 
   // Computed once per player so the QR does not change on every render.
   const qrData = useMemo(
-    () => buildPlayerQrPayload(player, { leagueId }),
-    [player, leagueId],
+    () => staff?.qrValue ?? buildPlayerQrPayload(player, { leagueId }),
+    [player, leagueId, staff?.qrValue],
   )
 
   const handlePrint = () => {
@@ -44,6 +46,7 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
           teamName,
           teamLogo,
           qrSvg: new XMLSerializer().serializeToString(qrElement),
+          showJersey: !staff,
         }),
       )
       printWindow.document.close()
@@ -98,7 +101,7 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
             <IdCard className="w-5 h-5 text-green-300" aria-hidden="true" />
-            Credencial de Jugador
+            {staff ? 'Credencial de Cuerpo Técnico' : 'Credencial de Jugador'}
           </DialogTitle>
           <DialogDescription className="text-white/80 drop-shadow">Credencial imprimible para {player.name}</DialogDescription>
         </DialogHeader>
@@ -148,9 +151,11 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
                     {player.name}
                   </h4>
                   <p className="text-sm text-slate-600 m-0 mb-3 truncate font-medium">{player.position}</p>
-                  <div className="inline-flex items-center justify-center w-10 h-10 bg-white border-3 border-blue-600 rounded-full self-start">
-                    <span className="text-base sm:text-lg font-bold text-blue-600">{player.jersey_number}</span>
-                  </div>
+                  {!staff && (
+                    <div className="inline-flex items-center justify-center w-10 h-10 bg-white border-3 border-blue-600 rounded-full self-start">
+                      <span className="text-base sm:text-lg font-bold text-blue-600">{player.jersey_number}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div ref={qrRef} className="flex-shrink-0 bg-white p-2 rounded-md border-2 border-slate-300">
@@ -168,12 +173,12 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
           <div className="grid grid-cols-2 gap-4 p-4 backdrop-blur-md bg-blue-500/20 rounded-xl border border-blue-300/30 shadow-lg">
             <section aria-labelledby="credential-player-info">
               <h4 id="credential-player-info" className="font-semibold text-white mb-2 drop-shadow-lg">
-                Información del Jugador
+                {staff ? 'Información del Miembro' : 'Información del Jugador'}
               </h4>
               <dl className="space-y-1 text-sm">
                 <Row term="Nombre" value={player.name} />
-                <Row term="Posición" value={player.position} />
-                <Row term="Número" value={`#${player.jersey_number}`} />
+                <Row term={staff ? 'Rol' : 'Posición'} value={player.position} />
+                {!staff && <Row term="Número" value={`#${player.jersey_number}`} />}
                 <Row term="Equipo" value={teamName} />
               </dl>
             </section>

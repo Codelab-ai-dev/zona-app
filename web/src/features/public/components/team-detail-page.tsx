@@ -1,4 +1,4 @@
-import { ArrowLeft, Home, Trophy, Users } from 'lucide-react'
+import { ArrowLeft, Home, Trophy } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 import { QueryState } from '@/components/states'
@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/badge'
 import { initials } from '@/features/leagues/leagues-page'
 import { ApiError } from '@/lib/api/client'
 
-import { useTeam, useTeamCoachingStaff, useTeamPlayers, useTeamStats } from '../api'
+import { usePublicLeague, useTeam, useTeamCoachingStaff, useTeamPlayerStats, useTeamStats } from '../api'
 import { panelClass } from './public-shell'
+import { TeamAdminActions } from './team-admin-actions'
 import { TeamMatches } from './team-matches'
+import { TeamPlayersTable } from './team-players-table'
 
 const iconBtn =
   'inline-flex size-8 items-center justify-center rounded-md border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 md:size-9'
-const th = 'pb-2 text-xs font-medium text-gray-500 md:pb-3'
 
 function SectionTitle({ id, children, count }: { id: string; children: string; count?: number }) {
   return (
@@ -30,9 +31,10 @@ const muted = 'text-sm text-gray-400'
 export function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>()
   const team = useTeam(teamId)
-  const players = useTeamPlayers(teamId)
+  const players = useTeamPlayerStats(teamId)
   const coachingStaff = useTeamCoachingStaff(teamId)
   const stats = useTeamStats(teamId)
+  const league = usePublicLeague(team.data?.league_id)
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-white">
@@ -56,10 +58,22 @@ export function TeamDetailPage() {
                     <AvatarFallback className="bg-green-500/20 text-sm font-bold text-green-400 md:text-lg" aria-hidden="true">{initials(teamData.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <h1 className="text-xl font-bold text-white md:text-2xl">{teamData.name}</h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl font-bold text-white md:text-2xl">{teamData.name}</h1>
+                      <Badge className={`border-0 ${teamData.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {teamData.is_active ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </div>
                     {teamData.description && <p className="line-clamp-2 text-sm text-gray-400">{teamData.description}</p>}
+                    {league.data && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
+                        {league.data.logo && <img src={league.data.logo} alt="" className="size-4 rounded-sm object-contain" />}
+                        <Link to={`/liga/${league.data.slug}`} className="hover:text-green-400">{league.data.name}</Link>
+                      </p>
+                    )}
                   </div>
                 </div>
+                <div className="mt-3"><TeamAdminActions team={teamData} /></div>
               </header>
 
               <section aria-labelledby="team-stats-title" className={`${panelClass} p-3 md:rounded-2xl md:p-5`}>
@@ -69,12 +83,14 @@ export function TeamDetailPage() {
                 ) : (
                   <QueryState query={stats} loadingLabel="Cargando estadísticas…">
                     {(s) => (
-                      <dl className="grid grid-cols-3 gap-2 md:grid-cols-6 md:gap-3">
+                      <dl className="grid grid-cols-3 gap-2 md:grid-cols-4 md:gap-3 lg:grid-cols-8">
                         <Stat label="Partidos" value={s.matches_played} />
                         <Stat label="Victorias" value={s.matches_won} tone="text-green-400" />
                         <Stat label="Empates" value={s.matches_drawn} tone="text-yellow-400" />
                         <Stat label="Derrotas" value={s.matches_lost} tone="text-red-400" />
                         <Stat label="Goles a favor" value={s.goals_for} tone="text-green-400" />
+                        <Stat label="Goles en contra" value={s.goals_against} tone="text-red-400" />
+                        <Stat label="Diferencia de goles" value={s.goal_difference} tone={s.goal_difference < 0 ? 'text-red-400' : 'text-green-400'} />
                         <Stat label="Puntos" value={s.points + s.points_adjustment} tone="text-green-400" />
                       </dl>
                     )}
@@ -84,48 +100,7 @@ export function TeamDetailPage() {
 
               <section aria-labelledby="team-players-title" className={`${panelClass} p-3 md:rounded-2xl md:p-5`}>
                 <SectionTitle id="team-players-title" count={players.data?.data.length}>Jugadores</SectionTitle>
-                <QueryState
-                  query={players}
-                  loadingLabel="Cargando jugadores…"
-                  isEmpty={(res) => res.data.length === 0}
-                  empty={
-                    <div className="py-6 text-center">
-                      <Users className="mx-auto mb-3 size-10 text-gray-600" aria-hidden="true" />
-                      <p className={muted}>Aún no hay jugadores registrados.</p>
-                    </div>
-                  }
-                >
-                  {(res) => (
-                    <div className="overflow-x-auto">
-                      <table className="w-full" aria-label="Plantilla de jugadores">
-                        <thead>
-                          <tr className="border-b border-white/10 text-left">
-                            <th scope="col" className={`${th} w-12 text-center`}>#</th>
-                            <th scope="col" className={th}>Jugador</th>
-                            <th scope="col" className={th}>Posición</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {res.data.map((player) => (
-                            <tr key={player.id} className="border-b border-white/5 last:border-0 hover:bg-white/5">
-                              <td className="py-2 text-center text-sm font-semibold text-green-400 md:py-3">{player.jersey_number || '-'}</td>
-                              <td className="py-2 md:py-3">
-                                <div className="flex items-center gap-2 md:gap-3">
-                                  <Avatar className="size-7 border border-green-500/30 md:size-8">
-                                    {player.photo && <AvatarImage src={player.photo} alt="" />}
-                                    <AvatarFallback className="bg-green-500/20 text-[10px] text-green-400 md:text-xs" aria-hidden="true">{initials(player.name)}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="truncate text-xs font-medium text-white md:text-sm">{player.name}</span>
-                                </div>
-                              </td>
-                              <td className="py-2 text-xs text-gray-500 md:py-3 md:text-sm">{player.position || '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </QueryState>
+                <TeamPlayersTable teamId={teamData.id} />
               </section>
 
               <section aria-labelledby="team-staff-title" className={`${panelClass} p-3 md:rounded-2xl md:p-5`}>

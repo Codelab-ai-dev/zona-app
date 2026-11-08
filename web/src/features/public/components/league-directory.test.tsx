@@ -1,10 +1,14 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { Route, Routes } from 'react-router'
+import { describe, expect, it, vi } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
 import { LeagueDirectory } from './league-directory'
 import { apiError, league, league2, page, team, team2, tournament } from './fixtures'
+
+const auth = vi.hoisted(() => ({ value: { status: 'anonymous', profile: null } as { status: string; profile: { role: string } | null } }))
+vi.mock('@/lib/auth/auth-context', () => ({ useAuth: () => auth.value }))
 
 const baseHandlers = {
   'GET /leagues': { body: { data: [league, league2], page } },
@@ -14,6 +18,25 @@ const baseHandlers = {
 }
 
 describe('LeagueDirectory', () => {
+  it('redirects authenticated visitors of / to the dashboard, but not while loading', async () => {
+    mockApi(baseHandlers)
+    auth.value = { status: 'loading', profile: null }
+    const { unmount } = renderWithProviders(<LeagueDirectory />, { route: '/' })
+    expect(await screen.findByRole('heading', { name: 'Liga Norte', level: 3 })).toBeInTheDocument()
+    unmount()
+
+    auth.value = { status: 'authenticated', profile: { role: 'team_owner' } }
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<LeagueDirectory />} />
+        <Route path="/dashboard" element={<p>Panel</p>} />
+      </Routes>,
+      { route: '/' },
+    )
+    expect(await screen.findByText('Panel')).toBeInTheDocument()
+    auth.value = { status: 'anonymous', profile: null }
+  })
+
   it('has one h1 and links each league to its page', async () => {
     mockApi(baseHandlers)
     renderWithProviders(<LeagueDirectory />)

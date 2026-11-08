@@ -15,10 +15,10 @@ describe('TeamUniformsPage', () => {
     mockApi({ [GET]: { body: coloredTeam } })
     renderWithProviders(<TeamUniformsPage teamId={TEAM_ID} />)
 
-    expect(await screen.findByLabelText('Color Primario (Local) (hex)')).toHaveValue('#FF0000')
-    expect(screen.getByLabelText('Color Primario (Local)')).toHaveValue('#ff0000')
-    expect(screen.getByLabelText('Color Primario (Visitante) (hex)')).toHaveValue('#0000FF')
-    expect(screen.getByLabelText('Shorts Alternativos 1 (hex)')).toHaveValue('')
+    expect(await screen.findByLabelText('Camiseta Local (hex)')).toHaveValue('#FF0000')
+    expect(screen.getByLabelText('Camiseta Local')).toHaveValue('#ff0000')
+    expect(screen.getByLabelText('Camiseta Visitante (hex)')).toHaveValue('#0000FF')
+    expect(screen.getByLabelText('Shorts alterna 1 (hex)')).toHaveValue('')
     expect(screen.getByRole('button', { name: 'Guardar Cambios' })).toBeDisabled()
   })
 
@@ -30,14 +30,14 @@ describe('TeamUniformsPage', () => {
     mockApi({ [GET]: { body: coloredTeam } })
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(await screen.findByLabelText('Color Primario (Local) (hex)')).toHaveValue('#FF0000')
+    expect(await screen.findByLabelText('Camiseta Local (hex)')).toHaveValue('#FF0000')
   })
 
   it('sends only the changed colors, confirms and refreshes the team', async () => {
     const fetchMock = mockApi({ [GET]: { body: coloredTeam }, [PATCH]: { body: coloredTeam } })
     const { user } = renderWithProviders(<TeamUniformsPage teamId={TEAM_ID} />)
 
-    const hex = await screen.findByLabelText('Color Secundario (Local) (hex)')
+    const hex = await screen.findByLabelText('Short Local (hex)')
     await user.type(hex, '#00ff00')
     await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
 
@@ -50,7 +50,7 @@ describe('TeamUniformsPage', () => {
     const fetchMock = mockApi({ [GET]: { body: coloredTeam } })
     const { user } = renderWithProviders(<TeamUniformsPage teamId={TEAM_ID} />)
 
-    const hex = await screen.findByLabelText('Color Primario (Local) (hex)')
+    const hex = await screen.findByLabelText('Camiseta Local (hex)')
     await user.clear(hex)
     await user.type(hex, '#123456')
     await user.click(screen.getByRole('button', { name: 'Restablecer' }))
@@ -75,7 +75,7 @@ describe('TeamUniformsPage', () => {
     })
     const { user } = renderWithProviders(<TeamUniformsPage teamId={TEAM_ID} />)
 
-    const hex = await screen.findByLabelText('Color Primario (Local) (hex)')
+    const hex = await screen.findByLabelText('Camiseta Local (hex)')
     await user.clear(hex)
     await user.type(hex, 'rojo')
     await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))

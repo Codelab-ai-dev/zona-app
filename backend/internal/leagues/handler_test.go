@@ -643,3 +643,16 @@ func TestListActiveLeagues_InvalidLimit(t *testing.T) {
 		t.Errorf("expected 422, got %d", w.Code)
 	}
 }
+
+func TestPlanFeatures(t *testing.T) {
+	web := planFeatures("web_only")
+	if web["qr_codes"] || web["mobile_app"] || web["finance_auto_fines"] || !web["finance"] || !web["public_portal"] {
+		t.Errorf("web_only defaults = %v", web)
+	}
+	full := planFeatures("full")
+	for _, f := range []string{"qr_codes", "mobile_app", "facial_recognition", "finance", "finance_payments"} {
+		if !full[f] {
+			t.Errorf("full plan lacks %s", f)
+		}
+	}
+}

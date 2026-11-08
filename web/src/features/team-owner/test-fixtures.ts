@@ -1,4 +1,4 @@
-import type { CoachingStaff, MyTeam, Player, Team, TeamStats } from './types'
+import type { CoachingStaff, MyTeam, Player, Team, TeamPlayerStats, TeamStats, Tournament } from './types'
 
 export const TEAM_ID = 'team-123'
 export const TOURNAMENT_ID = 'tournament-1'
@@ -74,4 +74,36 @@ export const teamStats: TeamStats = {
   points_adjustment: 0,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
+}
+
+export const tournament: Tournament = {
+  id: TOURNAMENT_ID,
+  name: 'Apertura 2024',
+  league_id: 'league-1',
+  start_date: '2024-01-01T00:00:00Z',
+  end_date: '2024-06-01T00:00:00Z',
+  is_active: true,
+  registration_open: true,
+  tournament_format: 'league',
+  rounds_per_season: 1,
+  has_third_place_match: false,
+  age_validation_enabled: false,
+  id_document_required: false,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+}
+
+export const leagueWithQr = { id: 'league-1', features: { qr_codes: true } }
+
+export const playerStat: TeamPlayerStats = {
+  player_id: 'player-1',
+  name: 'Juan Pérez',
+  jersey_number: 10,
+  position: 'Delantero',
+  matches_played: 5,
+  goals: 4,
+  assists: 2,
+  yellow_cards: 1,
+  red_cards: 0,
+  minutes_played: 410,
 }

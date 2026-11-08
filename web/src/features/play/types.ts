@@ -7,6 +7,18 @@ export type StreamStatus = 'idle' | 'connecting' | 'live' | 'ended' | 'failed'
 export type StreamSourceType = 'xbotgo' | 'obs' | 'mobile' | 'web'
 export type ClipType = 'goal' | 'save' | 'yellow_card' | 'red_card' | 'penalty' | 'highlight' | 'custom' | 'ai_generated'
 
+export interface TeamRef {
+  id: string
+  name: string
+  logo?: string
+}
+
+export interface LeagueRef {
+  id: string
+  name: string
+  slug: string
+}
+
 export interface Recording {
   id: string
   match_id?: string
@@ -35,6 +47,9 @@ export interface Recording {
   uploaded_by: string
   home_score?: number
   away_score?: number
+  home_team?: TeamRef
+  away_team?: TeamRef
+  league?: LeagueRef
   created_at: string
   updated_at: string
 }

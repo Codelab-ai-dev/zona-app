@@ -118,7 +118,7 @@ export function ResultsCard({ teamId, matches, teamName, onViewReport }: Results
 }
 
 export function SuspensionsCard({ suspensions, players }: { suspensions: Suspension[]; players: Player[] }) {
-  const active = suspensions.filter((s) => s.status === 'active' || s.matches_served < s.matches_to_serve)
+  const active = suspensions.filter((s) => s.status === 'active')
   return (
     <Card className={glassCard}>
       <CardHeader>

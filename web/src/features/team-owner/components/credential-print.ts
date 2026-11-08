@@ -182,8 +182,10 @@ export function buildCredentialPrintHtml(opts: {
   teamName: string
   teamLogo?: string
   qrSvg: string
+  /** Staff credentials have no jersey number. */
+  showJersey?: boolean
 }): string {
-  const { player, teamName, teamLogo, qrSvg } = opts
+  const { player, teamName, teamLogo, qrSvg, showJersey = true } = opts
   const name = escapeHtml(player.name)
   const photoHTML = player.photo
     ? `<img src="${escapeHtml(player.photo)}" alt="${name}" crossorigin="anonymous" />`
@@ -212,7 +214,7 @@ export function buildCredentialPrintHtml(opts: {
         <div class="player-info">
           <h4 class="player-name">${name}</h4>
           <p class="player-position">${escapeHtml(player.position)}</p>
-          <div class="jersey-number">${player.jersey_number}</div>
+          ${showJersey ? `<div class="jersey-number">${player.jersey_number}</div>` : ''}
         </div>
         <div class="qr-container">${qrSvg}</div>
       </div>

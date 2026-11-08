@@ -8,6 +8,7 @@ import { ErrorState, LoadingState } from '@/components/states'
 import { ApiError } from '@/lib/api/client'
 
 import { useRefereeReport, useMatch } from '../api'
+import { RefereeEvents } from './referee-events'
 
 interface RefereeReportModalProps {
   open: boolean
@@ -152,6 +153,8 @@ export function RefereeReportModal({ open, onOpenChange, matchId }: RefereeRepor
                 </CardContent>
               </Card>
             )}
+
+            {matchData && <RefereeEvents match={matchData} />}
 
             {/* Match Conditions */}
             {reportData && (reportData.weather_conditions || reportData.field_conditions) && (

@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
-import { TEAM_ID, listBody, player, serverError, team } from '../test-fixtures'
+import { TEAM_ID, leagueWithQr, listBody, player, serverError, team } from '../test-fixtures'
 import { PlayerManagementPage } from './player-management-page'
 
 const PLAYERS = `GET /teams/${TEAM_ID}/players`
@@ -209,7 +209,7 @@ describe('PlayerManagementPage', () => {
   })
 
   it('opens the player credential with the team name', async () => {
-    mockApi({ [PLAYERS]: listBody([player]), [TEAM]: { body: team } })
+    mockApi({ [PLAYERS]: listBody([player]), [TEAM]: { body: team }, 'GET /leagues/league-1': { body: leagueWithQr } })
     const { user } = renderPage()
 
     await user.click(await screen.findByRole('button', { name: 'Credencial de Juan Pérez' }))

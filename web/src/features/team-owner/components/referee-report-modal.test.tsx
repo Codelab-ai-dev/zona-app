@@ -203,4 +203,48 @@ describe('RefereeReportModal', () => {
     // Loading indicator should appear momentarily
     expect(screen.getByText(/Cargando cédula arbitral/)).toBeInTheDocument()
   })
+
+  it('lists goals, cards and incidents with player names, jerseys and assists', async () => {
+    mockApi({
+      'GET /matches/match-123': {
+        body: {
+          ...mockMatch,
+          goals: [
+            { id: 'g1', player_id: 'p1', team_id: 'team-1', minute: 12, goal_type: 'penalty', player_name: 'Luis Gómez', player_jersey: 9, assist_player_name: 'Ana Ruiz' },
+          ],
+          cards: [
+            { id: 'c1', player_id: 'p2', team_id: 'team-2', card_type: 'red', minute: 80, reason: 'Juego brusco', player_name: 'Pedro Mora', player_jersey: 4 },
+          ],
+          incidents: [{ id: 'i1', incident_type: 'Lesión', description: 'Esguince de tobillo', minute: 33, player_name: 'Luis Gómez' }],
+        },
+      },
+      'GET /matches/match-123/referee-report': { body: mockRefereeReport },
+    })
+    renderWithProviders(<RefereeReportModal open onOpenChange={() => {}} matchId={mockMatchId} />)
+
+    const goals = await screen.findByText(/Goles \(1\)/)
+    const goalCard = goals.closest('[data-slot="card"]') as HTMLElement
+    expect(within(goalCard).getByText('Luis Gómez (#9)')).toBeInTheDocument()
+    expect(within(goalCard).getByText('Águilas FC - Penal')).toBeInTheDocument()
+    expect(within(goalCard).getByText('Asistencia: Ana Ruiz')).toBeInTheDocument()
+    expect(within(goalCard).getByText("12'")).toBeInTheDocument()
+
+    const cards = screen.getByText(/Tarjetas \(1\)/).closest('[data-slot="card"]') as HTMLElement
+    expect(within(cards).getByText('Pedro Mora (#4)')).toBeInTheDocument()
+    expect(within(cards).getByText('Tigres FC - Tarjeta Roja')).toBeInTheDocument()
+    expect(within(cards).getByText('Juego brusco')).toBeInTheDocument()
+
+    const incidents = screen.getByText(/Incidencias \(1\)/).closest('[data-slot="card"]') as HTMLElement
+    expect(within(incidents).getByText('Esguince de tobillo')).toBeInTheDocument()
+    expect(within(incidents).getByText('Lesión')).toBeInTheDocument()
+  })
+
+  it('omits the event sections when the match has none', async () => {
+    renderWithProviders(<RefereeReportModal open onOpenChange={() => {}} matchId={mockMatchId} />)
+
+    await screen.findByText('Cédula Arbitral')
+    await screen.findByText('Carlos García')
+    expect(screen.queryByText(/Goles \(/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Incidencias \(/)).not.toBeInTheDocument()
+  })
 })

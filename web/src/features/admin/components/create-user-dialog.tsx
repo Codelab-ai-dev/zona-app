@@ -57,14 +57,15 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
       return
     }
 
-    if (!form.league_id) {
+    // League admins get their league when they are assigned to one
+    if (form.role === 'team_owner' && !form.league_id) {
       setFormErrors({ league_id: 'requerido' })
       return
     }
 
     try {
       const { email, password, name, role, phone, league_id } = form
-      await createUser.mutateAsync({ email, password, name, role, phone, league_id } as CreateUserRequest)
+      await createUser.mutateAsync({ email, password, name, role, phone, league_id: role === 'team_owner' ? league_id : undefined } as CreateUserRequest)
       toast.success('Usuario creado exitosamente')
       onOpenChange(false)
       setForm({ role: 'league_admin' })
@@ -176,38 +177,40 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="create-league" className="text-gray-400 text-sm">Liga *</Label>
-            {/* /leagues/admin: super admins must see inactive leagues too */}
-            <QueryState
-              query={leagues}
-              loadingLabel="Cargando ligas…"
-              isEmpty={(res) => res.data.length === 0}
-            >
-              {(res) => (
-                <Select value={form.league_id || ''} onValueChange={(v) => setForm((prev) => ({ ...prev, league_id: v }))}>
-                  <SelectTrigger
-                    id="create-league"
-                    className="bg-slate-700/50 border-white/10 text-white"
-                    aria-invalid={!!formErrors.league_id}
-                    aria-describedby={formErrors.league_id ? 'create-league-error' : undefined}
-                  >
-                    <SelectValue placeholder="Seleccionar Liga" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-white/10">
-                    {res.data.map((league) => (
-                      <SelectItem key={league.id} value={league.id} className="text-white hover:bg-slate-800">
-                        {league.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {form.role === 'team_owner' && (
+            <div>
+              <Label htmlFor="create-league" className="text-gray-400 text-sm">Liga *</Label>
+              {/* /leagues/admin: super admins must see inactive leagues too */}
+              <QueryState
+                query={leagues}
+                loadingLabel="Cargando ligas…"
+                isEmpty={(res) => res.data.length === 0}
+              >
+                {(res) => (
+                  <Select value={form.league_id || ''} onValueChange={(v) => setForm((prev) => ({ ...prev, league_id: v }))}>
+                    <SelectTrigger
+                      id="create-league"
+                      className="bg-slate-700/50 border-white/10 text-white"
+                      aria-invalid={!!formErrors.league_id}
+                      aria-describedby={formErrors.league_id ? 'create-league-error' : undefined}
+                    >
+                      <SelectValue placeholder="Seleccionar Liga" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-white/10">
+                      {res.data.map((league) => (
+                        <SelectItem key={league.id} value={league.id} className="text-white hover:bg-slate-800">
+                          {league.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </QueryState>
+              {formErrors.league_id && (
+                <p id="create-league-error" className="text-xs text-destructive mt-1">{formErrors.league_id}</p>
               )}
-            </QueryState>
-            {formErrors.league_id && (
-              <p id="create-league-error" className="text-xs text-destructive mt-1">{formErrors.league_id}</p>
-            )}
-          </div>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="create-phone" className="text-gray-400 text-sm">Teléfono</Label>

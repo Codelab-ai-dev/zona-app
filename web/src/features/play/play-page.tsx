@@ -8,21 +8,11 @@ import { ErrorState, LoadingState } from '@/components/states'
 
 import { useRecordings, useStreams } from './api'
 import type { Recording, Stream } from './types'
-
-function formatDuration(seconds: number | null | undefined): string {
-  if (!seconds) return '--:--'
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = Math.floor(seconds % 60)
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  }
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { formatDuration, LeagueBadge, videoScore, videoTitle } from './video-meta'
 
 function VideoCard({ video }: { video: Recording }) {
-  const title = video.title
-  const score = video.home_score != null && video.away_score != null ? `${video.home_score} - ${video.away_score}` : null
+  const title = videoTitle(video)
+  const score = videoScore(video)
 
   return (
     <Link
@@ -45,6 +35,7 @@ function VideoCard({ video }: { video: Recording }) {
                 <Play className="w-6 h-6 text-primary fill-current ml-1" aria-hidden="true" />
               </div>
             </div>
+            <LeagueBadge video={video} className="absolute top-2 left-2" />
             {/* Duration badge */}
             <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/80 text-xs text-white font-medium">
               {formatDuration(video.duration_seconds)}
@@ -54,6 +45,7 @@ function VideoCard({ video }: { video: Recording }) {
           {/* Info */}
           <div className="p-4 space-y-1">
             <div className="font-semibold text-sm line-clamp-1">{title}</div>
+            {title !== video.title && <div className="text-xs text-muted-foreground line-clamp-1">{video.title}</div>}
             {score && <div className="text-lg font-bold text-primary">{score}</div>}
             <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
               <span className="flex items-center gap-1">
@@ -144,7 +136,7 @@ export function PlayPage() {
                       {/* Thumbnail */}
                       <div className="relative aspect-video bg-muted">
                         {featuredVideo.thumbnail_url ? (
-                          <img src={featuredVideo.thumbnail_url} alt={featuredVideo.title} className="w-full h-full object-cover" />
+                          <img src={featuredVideo.thumbnail_url} alt={videoTitle(featuredVideo)} className="w-full h-full object-cover" />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Video className="w-16 h-16 text-muted-foreground/50" aria-hidden="true" />
@@ -158,6 +150,7 @@ export function PlayPage() {
                         <div className="absolute top-4 left-4">
                           <Badge className="bg-primary text-primary-foreground">Destacado</Badge>
                         </div>
+                        <LeagueBadge video={featuredVideo} className="absolute top-4 right-4" />
                         <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded bg-black/80 text-sm text-white font-medium">
                           {formatDuration(featuredVideo.duration_seconds)}
                         </div>
@@ -166,12 +159,10 @@ export function PlayPage() {
                       {/* Info */}
                       <div className="p-6 md:p-8 flex flex-col justify-center space-y-4">
                         <div className="space-y-2">
-                          <h2 className="text-2xl md:text-3xl font-bold">{featuredVideo.title}</h2>
+                          <h2 className="text-2xl md:text-3xl font-bold">{videoTitle(featuredVideo)}</h2>
                         </div>
-                        {(featuredVideo.home_score != null && featuredVideo.away_score != null) && (
-                          <div className="text-4xl md:text-5xl font-bold text-primary">
-                            {featuredVideo.home_score} - {featuredVideo.away_score}
-                          </div>
+                        {videoScore(featuredVideo) && (
+                          <div className="text-4xl md:text-5xl font-bold text-primary">{videoScore(featuredVideo)}</div>
                         )}
                         <div className="flex items-center gap-6 text-sm text-muted-foreground">
                           <span className="flex items-center gap-2">

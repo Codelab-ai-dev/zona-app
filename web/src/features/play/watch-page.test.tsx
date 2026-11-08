@@ -94,7 +94,65 @@ describe('WatchPage', () => {
     })
     renderWatch()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Video no encontrado')
+    expect(await screen.findByText('Video no disponible')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/play')
+  })
+
+  it('shows the error state with retry on a server error', async () => {
+    mockApi({ 'GET /play/videos/r1': { status: 500, body: { error: { code: 'internal', message: 'Falla del servidor' } } } })
+    renderWatch()
+
+    expect(await screen.findByRole('alert', {}, { timeout: 4000 })).toHaveTextContent('Falla del servidor')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  }, 10000)
+
+  it('shows the processing state with progress and no player', async () => {
+    mockApi({
+      'GET /play/videos/r1': { body: { ...recording, status: 'processing', processing_progress: 40, mux_playback_id: undefined } },
+    })
+    renderWatch()
+
+    expect(await screen.findByText('Procesando video')).toBeInTheDocument()
+    expect(screen.getByText('40%')).toBeInTheDocument()
+    expect(screen.queryByTestId('mux-player')).not.toBeInTheDocument()
+  })
+
+  it('shows the failure reason when processing failed', async () => {
+    mockApi({
+      'GET /play/videos/r1': { body: { ...recording, status: 'failed', error_message: 'Formato no soportado', mux_playback_id: undefined } },
+    })
+    renderWatch()
+
+    expect(await screen.findByText('Error al procesar')).toBeInTheDocument()
+    expect(screen.getByText('Formato no soportado')).toBeInTheDocument()
+  })
+
+  it('shows teams linking to their page, the league and the 5 newest related videos of the league', async () => {
+    const withContext = {
+      ...recording,
+      league_id: 'lg1',
+      league: { id: 'lg1', name: 'Liga Premier', slug: 'premier' },
+      home_team: { id: 't1', name: 'Tigres FC' },
+      away_team: { id: 't2', name: 'Leones United' },
+    }
+    const related = Array.from({ length: 6 }, (_, i) => ({
+      ...recording,
+      id: i === 0 ? 'r1' : `rel${i}`,
+      title: `Relacionado ${i}`,
+      home_team: undefined,
+    }))
+    const fetchMock = mockApi({
+      'GET /play/videos/r1': { body: withContext },
+      'GET /play/videos': { body: { data: related, page: { limit: 6, offset: 0 } } },
+    })
+    renderWatch()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tigres FC vs Leones United' })).toBeInTheDocument()
+    expect(screen.getAllByText('Liga Premier').length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: /Tigres FC/ })).toHaveAttribute('href', '/play/team/t1')
+    expect(screen.getByRole('link', { name: /Leones United/ })).toHaveAttribute('href', '/play/team/t2')
+    expect(await screen.findByText('Relacionado 5')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Relacionado/ })).toHaveLength(5)
+    expect(requestsTo(fetchMock, 'GET /play/videos').length).toBe(1)
   })
 })

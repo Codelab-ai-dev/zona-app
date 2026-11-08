@@ -156,6 +156,18 @@ describe('VideoUploadDialog', () => {
     expect(screen.getByLabelText('Descripción (opcional)')).toHaveValue('FINAL')
   })
 
+  it('shows the service-not-configured message when the video service is off (503)', async () => {
+    mockApi(
+      handlers({ 'POST /play/upload': { status: 503, body: { error: { code: 'unavailable', message: 'El servicio de video no está configurado' } } } }),
+    )
+    const { user } = renderDialog()
+    await fillAndSubmit(user, videoFile())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('El servicio de video no está configurado')
+    expect(FakeXHR.instances).toHaveLength(0)
+    expect(screen.getByLabelText('Título *')).toHaveValue('partido')
+  })
+
   it('rejects non-video files and keeps the submit disabled', async () => {
     mockApi(handlers())
     renderDialog()

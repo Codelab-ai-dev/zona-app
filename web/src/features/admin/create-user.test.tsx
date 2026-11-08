@@ -22,17 +22,25 @@ async function openDialog(user: User) {
   return screen.findByRole('dialog', { name: 'Crear Usuario' })
 }
 
+async function chooseOwnerRole(user: User) {
+  await user.click(screen.getByRole('combobox', { name: /^rol/i }))
+  await user.click(await screen.findByRole('option', { name: 'Propietario de Equipo' }))
+}
+
+async function pickLeague(user: User) {
+  await user.click(screen.getByRole('combobox', { name: /^liga/i }))
+  await user.click(await screen.findByRole('option', { name: 'Liga Premier' }))
+}
+
 async function fillValid(user: User, password = 'securepass123', confirm = password) {
   await user.type(screen.getByLabelText(/nombre completo/i), 'Ana López')
   await user.type(screen.getByLabelText(/^email/i), 'ana@example.com')
   await user.type(screen.getByLabelText(/^contraseña/i), password)
   await user.type(screen.getByLabelText(/confirmar contraseña/i), confirm)
-  await user.click(screen.getByRole('combobox', { name: /^liga/i }))
-  await user.click(await screen.findByRole('option', { name: 'Liga Premier' }))
 }
 
 describe('Create user', () => {
-  it('posts email, typed password, name, role and league to POST /admin/users and refreshes the list', async () => {
+  it('creates a league admin without a league: POST /admin/users has no league_id', async () => {
     const { fetchMock, user } = setup()
     await openDialog(user)
     await fillValid(user)
@@ -45,16 +53,36 @@ describe('Create user', () => {
         password: 'securepass123',
         name: 'ANA LÓPEZ',
         role: 'league_admin',
-        league_id: 'league1',
       },
     ])
     expect(screen.queryByRole('dialog', { name: 'Crear Usuario' })).not.toBeInTheDocument()
     expect(requestsTo(fetchMock, 'GET /users').length).toBeGreaterThanOrEqual(2)
   })
 
+  it('does not ask for a league when creating a league admin', async () => {
+    const { user } = setup()
+    await openDialog(user)
+    expect(screen.queryByRole('combobox', { name: /^liga/i })).not.toBeInTheDocument()
+  })
+
+  it('creates a team owner with the chosen league: POST /admin/users sends league_id', async () => {
+    const { fetchMock, user } = setup()
+    await openDialog(user)
+    await fillValid(user)
+    await chooseOwnerRole(user)
+    await pickLeague(user)
+    await user.click(screen.getByRole('button', { name: 'Crear' }))
+
+    expect(await screen.findByText('Usuario creado exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /admin/users')).toEqual([
+      { email: 'ana@example.com', password: 'securepass123', name: 'ANA LÓPEZ', role: 'team_owner', league_id: 'league1' },
+    ])
+  })
+
   it('lets super admins pick inactive leagues too (GET /leagues/admin)', async () => {
     const { fetchMock, user } = setup()
     await openDialog(user)
+    await chooseOwnerRole(user)
     await user.click(screen.getByRole('combobox', { name: /^liga/i }))
 
     expect(await screen.findByRole('option', { name: 'Liga Premier' })).toBeInTheDocument()
@@ -66,8 +94,8 @@ describe('Create user', () => {
     const { fetchMock, user } = setup()
     await openDialog(user)
     await fillValid(user)
-    await user.click(screen.getByRole('combobox', { name: /^rol/i }))
-    await user.click(await screen.findByRole('option', { name: 'Propietario de Equipo' }))
+    await chooseOwnerRole(user)
+    await pickLeague(user)
     await user.click(screen.getByRole('button', { name: 'Crear' }))
 
     await screen.findByText('Usuario creado exitosamente')
@@ -107,9 +135,10 @@ describe('Create user', () => {
     expect(requestsTo(fetchMock, 'POST /admin/users')).toHaveLength(0)
   })
 
-  it('requires a league before sending', async () => {
+  it('requires a league for team owners before sending', async () => {
     const { fetchMock, user } = setup()
     await openDialog(user)
+    await chooseOwnerRole(user)
     await user.type(screen.getByLabelText(/nombre completo/i), 'Ana López')
     await user.type(screen.getByLabelText(/^email/i), 'ana@example.com')
     await user.type(screen.getByLabelText(/^contraseña/i), 'securepass123')
