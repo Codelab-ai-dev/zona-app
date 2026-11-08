@@ -37,11 +37,42 @@ export function useUpdateFinanceConfig(leagueId: string) {
   })
 }
 
-export function useTransactions(leagueId: string | undefined, page: PageParams = { limit: 25, offset: 0 }) {
+/** Server-side filters of GET /leagues/{id}/finance/transactions (empty or "all" = no filter). */
+export interface TransactionFilters {
+  status?: string
+  transaction_type?: string
+}
+
+const activeFilters = (filters: TransactionFilters) =>
+  Object.fromEntries(Object.entries(filters).filter(([, value]) => value && value !== 'all'))
+
+export function useTransactions(
+  leagueId: string | undefined,
+  page: PageParams = { limit: 25, offset: 0 },
+  filters: TransactionFilters = {},
+) {
+  const query = activeFilters(filters)
   return useQuery({
-    queryKey: competitionKeys.transactions(leagueId ?? '', page),
-    queryFn: ({ signal }) => api.list<Transaction>(`/leagues/${leagueId}/finance/transactions`, page, { signal }),
+    queryKey: competitionKeys.transactions(leagueId ?? '', page, query),
+    queryFn: ({ signal }) => api.list<Transaction>(`/leagues/${leagueId}/finance/transactions`, page, { signal, query }),
     enabled: Boolean(leagueId),
+  })
+}
+
+/** GET /leagues/{id}/finance/teams/{teamID}/transactions: the statement of one team. */
+export function useTeamTransactions(leagueId: string, teamId: string) {
+  return useQuery({
+    queryKey: competitionKeys.teamTransactions(leagueId, teamId),
+    queryFn: ({ signal }) =>
+      api.list<Transaction>(`/leagues/${leagueId}/finance/teams/${teamId}/transactions`, { limit: 100, offset: 0 }, { signal }),
+  })
+}
+
+/** GET /leagues/{id}/finance/teams/{teamID}/balance */
+export function useTeamBalance(leagueId: string, teamId: string) {
+  return useQuery({
+    queryKey: competitionKeys.oneTeamBalance(leagueId, teamId),
+    queryFn: ({ signal }) => api.get<TeamBalance>(`/leagues/${leagueId}/finance/teams/${teamId}/balance`, { signal }),
   })
 }
 

@@ -89,10 +89,15 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
             <Edit className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="sr-only">Editar</span>
           </Button>
-          {isScheduled && (
-            <Button size="sm" onClick={onResult} title="Ingresar resultado" className={`${ghost} bg-green-500/20 text-green-400 hover:bg-green-500/30`}>
+          {(isScheduled || isFinished) && (
+            <Button
+              size="sm"
+              onClick={onResult}
+              title={isFinished ? 'Editar Marcador' : 'Ingresar resultado'}
+              className={`${ghost} ${isFinished ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'}`}
+            >
               <Target className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="sr-only">Ingresar resultado</span>
+              <span className="sr-only">{isFinished ? 'Editar Marcador' : 'Ingresar resultado'}</span>
             </Button>
           )}
           <DropdownMenu>

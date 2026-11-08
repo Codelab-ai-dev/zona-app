@@ -9,11 +9,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLeagueBySlug } from '@/features/leagues/api'
 import { initials } from '@/features/leagues/leagues-page'
 
-import { useDiscipline, useStandings, useTopScorers, useTournament, useTournamentMatches } from '../api'
-import { formatDate, tournamentStatus } from '../format'
-import { MatchList, type TeamLookup } from './match-list'
+import { useDiscipline, useStandings, useTeamsByLeague, useTopScorers, useTournament, useTournamentMatches } from '../api'
+import { formatDate, tournamentLayout, tournamentStatus, type TournamentLayout } from '../format'
+import { GroupsTab } from './groups-tab'
+import { MatchesTab } from './matches-tab'
+import type { TeamLookup } from './match-list'
+import { PlayoffBracket } from './playoff-bracket'
+import { RoundsTab } from './rounds-tab'
+import { TeamsTab } from './teams-tab'
 import { HeroCard, PublicPage, panelClass, tabTriggerClass } from './public-shell'
 import { DisciplineTable, StandingsTable, TopScorersTable } from './stats-tables'
+
+const GOLEADORES = { value: 'top-scorers', label: 'Goleadores' }
+const DISCIPLINA = { value: 'discipline', label: 'Disciplina' }
+const TABS: Record<TournamentLayout, Array<{ value: string; label: string }>> = {
+  league: [{ value: 'standings', label: 'Posiciones' }, { value: 'matches', label: 'Partidos' }, { value: 'rounds', label: 'Jornadas' }, { value: 'teams', label: 'Equipos' }, GOLEADORES, DISCIPLINA],
+  group_knockout: [{ value: 'groups', label: 'Grupos' }, { value: 'knockout', label: 'Eliminación' }, { value: 'matches', label: 'Partidos' }, { value: 'teams', label: 'Equipos' }, GOLEADORES, DISCIPLINA],
+  knockout: [{ value: 'knockout', label: 'Eliminación' }, { value: 'matches', label: 'Partidos' }, { value: 'teams', label: 'Equipos' }, GOLEADORES, DISCIPLINA],
+}
 
 function Tile({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
@@ -27,7 +40,7 @@ function Tile({ icon, value, label }: { icon: React.ReactNode; value: string | n
 
 export function TournamentDetailPage() {
   const { slug, tournamentId } = useParams<{ slug: string; tournamentId: string }>()
-  const [activeTab, setActiveTab] = useState('standings')
+  const [chosenTab, setActiveTab] = useState<string>()
 
   const league = useLeagueBySlug(slug ?? '')
   const tournament = useTournament(tournamentId)
@@ -35,13 +48,21 @@ export function TournamentDetailPage() {
   const matches = useTournamentMatches(tournamentId)
   const topScorers = useTopScorers(tournamentId)
   const discipline = useDiscipline(tournamentId)
+  const leagueTeams = useTeamsByLeague(tournament.data?.league_id)
 
   // Match payloads only carry team ids; standings list every team of the tournament.
-  const teams = useMemo<TeamLookup>(
-    () => new Map((standings.data?.data ?? []).map((s) => [s.team_id, { name: s.team_name, logo: s.team_logo }])),
-    [standings.data],
-  )
+  const teams = useMemo<TeamLookup>(() => {
+    const map: TeamLookup = new Map()
+    for (const tm of leagueTeams.data?.data ?? []) {
+      if (tm.tournament_id === tournamentId) map.set(tm.id, { name: tm.name, logo: tm.logo })
+    }
+    for (const s of standings.data?.data ?? []) map.set(s.team_id, { name: s.team_name, logo: s.team_logo })
+    return map
+  }, [standings.data, leagueTeams.data, tournamentId])
   const t = tournament.data
+  const layout = tournamentLayout(t?.tournament_format)
+  const tabs = TABS[layout]
+  const activeTab = chosenTab && tabs.some((x) => x.value === chosenTab) ? chosenTab : (tabs[0]?.value ?? 'standings')
   const lg = league.data
   const iconCls = 'size-4 md:size-5'
 
@@ -73,17 +94,16 @@ export function TournamentDetailPage() {
       </HeroCard>
 
       <div className="my-4 grid grid-cols-3 gap-2 md:my-6 md:gap-4">
-        <Tile icon={<Shield className={`${iconCls} text-blue-400`} aria-hidden="true" />} value={standings.data?.data.length ?? 0} label="Equipos" />
+        <Tile icon={<Shield className={`${iconCls} text-blue-400`} aria-hidden="true" />} value={teams.size} label="Equipos" />
         <Tile icon={<Calendar className={`${iconCls} text-purple-400`} aria-hidden="true" />} value={matches.data?.data.length ?? 0} label="Partidos" />
         <Tile icon={<Trophy className={`${iconCls} text-yellow-400`} aria-hidden="true" />} value={t ? tournamentStatus(t.start_date, t.end_date) : '-'} label="Estado" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-white/10 bg-slate-800/50 p-1 sm:grid-cols-4">
-          <TabsTrigger value="standings" className={tabTriggerClass}>Tabla</TabsTrigger>
-          <TabsTrigger value="matches" className={tabTriggerClass}>Partidos</TabsTrigger>
-          <TabsTrigger value="top-scorers" className={tabTriggerClass}>Goleadores</TabsTrigger>
-          <TabsTrigger value="discipline" className={tabTriggerClass}>Disciplina</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap gap-1 rounded-xl border border-white/10 bg-slate-800/50 p-1">
+          {tabs.map((x) => (
+            <TabsTrigger key={x.value} value={x.value} className={`${tabTriggerClass} min-w-[40%] sm:min-w-0`}>{x.label}</TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="standings" className="min-h-[300px]">
@@ -92,10 +112,32 @@ export function TournamentDetailPage() {
           </QueryState>
         </TabsContent>
 
+        <TabsContent value="groups" className="min-h-[300px]">
+          <QueryState query={standings} loadingLabel="Cargando grupos…" isEmpty={(res) => res.data.length === 0} empty={<EmptyState title="Aún no hay grupos" />}>
+            {(res) => <GroupsTab standings={res.data} teams={leagueTeams.data?.data ?? []} advancing={t?.teams_advancing_per_group} />}
+          </QueryState>
+        </TabsContent>
+
+        <TabsContent value="knockout" className="min-h-[300px]">
+          <QueryState query={matches} loadingLabel="Cargando eliminatoria…" isEmpty={(res) => !res.data.some((m) => m.phase === 'playoffs')} empty={<EmptyState title="Aún no hay llaves de eliminación" description="Las llaves aparecerán cuando se publiquen" />}>
+            {(res) => <PlayoffBracket matches={res.data} teams={teams} />}
+          </QueryState>
+        </TabsContent>
+
         <TabsContent value="matches" className="min-h-[300px]">
           <QueryState query={matches} loadingLabel="Cargando partidos…" isEmpty={(res) => res.data.length === 0} empty={<EmptyState title="No hay partidos" />}>
-            {(res) => <MatchList matches={res.data} teams={teams} />}
+            {(res) => <MatchesTab matches={res.data} teams={teams} />}
           </QueryState>
+        </TabsContent>
+
+        <TabsContent value="rounds" className="min-h-[300px]">
+          <QueryState query={matches} loadingLabel="Cargando jornadas…" isEmpty={(res) => res.data.length === 0} empty={<EmptyState title="Aún no hay jornadas publicadas" />}>
+            {(res) => <RoundsTab matches={res.data} teams={teams} />}
+          </QueryState>
+        </TabsContent>
+
+        <TabsContent value="teams" className="min-h-[300px]">
+          {teams.size === 0 ? <EmptyState title="Aún no hay equipos en este torneo" /> : <TeamsTab teams={teams} />}
         </TabsContent>
 
         <TabsContent value="top-scorers" className="min-h-[300px]">

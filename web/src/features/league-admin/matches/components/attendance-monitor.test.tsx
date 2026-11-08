@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
@@ -71,5 +71,36 @@ describe('AttendanceMonitor', () => {
       expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Asistencia: 1 del equipo local, 1 del equipo visitante'),
     )
     expect(requestsTo(fetchMock, 'GET /matches/match-1/attendance')).toHaveLength(2)
+  })
+
+  it('lists who is present with time and method (QR or facial)', async () => {
+    mockApi({
+      ...rosters,
+      'GET /matches/match-1/attendance': page(
+        [
+          { ...record('a1', 'facial'), player_name: 'Carlos', jersey_number: 7, timestamp: '2024-06-15T15:10:00Z' },
+          { ...record('h1', 'qr'), player_name: 'Ana', jersey_number: 9, timestamp: '2024-06-15T15:05:00Z' },
+        ],
+        1000,
+      ),
+    })
+    renderWithProviders(<AttendanceMonitor match={match1} />)
+
+    const list = await screen.findByRole('list')
+    const rows = within(list).getAllByRole('listitem')
+    expect(rows).toHaveLength(2)
+    // Earliest check-in first, with team, jersey and method.
+    expect(rows[0]).toHaveTextContent('#9')
+    expect(rows[0]).toHaveTextContent('Ana (Tigres FC)')
+    expect(rows[0]).toHaveTextContent('QR')
+    expect(rows[1]).toHaveTextContent('Carlos (Leones United)')
+    expect(rows[1]).toHaveTextContent('Facial')
+    expect(within(rows[0] as HTMLElement).getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument()
+  })
+
+  it('says nobody has checked in yet', async () => {
+    mockApi({ ...rosters, 'GET /matches/match-1/attendance': page([], 1000) })
+    renderWithProviders(<AttendanceMonitor match={match1} />)
+    expect(await screen.findByText('Aún no hay jugadores registrados.')).toBeInTheDocument()
   })
 })

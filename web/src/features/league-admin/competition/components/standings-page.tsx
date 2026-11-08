@@ -1,4 +1,4 @@
-import { AlertTriangle, Edit, ImageDown, Loader2, Trophy } from 'lucide-react'
+import { AlertTriangle, Edit, ImageDown, ListChecks, Loader2, Trophy } from 'lucide-react'
 import { useState } from 'react'
 
 import { ErrorState } from '@/components/states'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { useStandings, useTournaments } from '../api'
 import type { Standings } from '../types'
 import { PointsAdjustmentDialog } from './points-adjustment-dialog'
+import { StandingsEditDialog } from './standings-edit-dialog'
 import { StandingsPosterGenerator } from './standings-poster-generator'
 import { getTeamInitials } from './standings-poster'
 
@@ -23,6 +24,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
   const leagues = useMyLeagues()
   const [chosen, setChosen] = useState('')
   const [selectedStanding, setSelectedStanding] = useState<Standings | null>(null)
+  const [editingStats, setEditingStats] = useState<Standings | null>(null)
   const [posterOpen, setPosterOpen] = useState(false)
 
   const list = tournaments.data?.data ?? []
@@ -124,7 +126,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                     <TableHead className={cn(th, 'hidden md:table-cell')}>GC</TableHead>
                     <TableHead className={cn(th, 'w-8')}>DG</TableHead>
                     <TableHead className={cn(th, 'w-9 md:w-12')}>PTS</TableHead>
-                    <TableHead className={cn(th, 'w-8')}>
+                    <TableHead className={cn(th, 'w-16')}>
                       <span className="sr-only">Acciones</span>
                     </TableHead>
                   </TableRow>
@@ -180,12 +182,23 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-center px-1">
+                        <TableCell className="text-center px-1 whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingStats(team)}
+                            aria-label={`Editar estadísticas de ${team.team_name}`}
+                            title="Editar estadísticas"
+                            className="h-7 w-7 md:h-8 md:w-8 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
+                          >
+                            <ListChecks className="w-3 h-3 md:w-4 md:h-4" aria-hidden="true" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => setSelectedStanding(team)}
                             aria-label={`Ajustar puntos de ${team.team_name}`}
+                            title="Ajustar puntos"
                             className="h-7 w-7 md:h-8 md:w-8 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
                           >
                             <Edit className="w-3 h-3 md:w-4 md:h-4" aria-hidden="true" />
@@ -203,6 +216,10 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
 
       {selectedStanding && (
         <PointsAdjustmentDialog standing={selectedStanding} tournamentId={selectedTournament} onClose={() => setSelectedStanding(null)} />
+      )}
+
+      {editingStats && (
+        <StandingsEditDialog standing={editingStats} tournamentId={selectedTournament} onClose={() => setEditingStats(null)} />
       )}
 
       <StandingsPosterGenerator

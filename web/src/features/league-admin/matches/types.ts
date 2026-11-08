@@ -111,6 +111,35 @@ export interface UpdateMatchScheduleRequest {
   match_time?: string
   field_number?: number
   round?: number
+  /** Only accepted while the match is scheduled (422 otherwise). */
+  home_team_id?: string
+  away_team_id?: string
+}
+
+export interface TeamSummary {
+  id: string
+  name: string
+  tournament_id?: string
+  is_active: boolean
+}
+
+export interface CreateMatchRequest {
+  home_team_id: string
+  away_team_id: string
+  /** RFC 3339 */
+  match_date: string
+  /** HH:MM */
+  match_time?: string
+  round?: number
+  field_number?: number
+}
+
+export interface BulkCreateMatchesRequest {
+  matches: CreateMatchRequest[]
+}
+
+export interface DeleteMatchesResponse {
+  deleted: number
 }
 
 export interface PostMatchResultRequest {

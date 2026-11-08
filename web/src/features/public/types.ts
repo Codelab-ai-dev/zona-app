@@ -58,6 +58,7 @@ export interface Match {
   phase: 'regular' | 'playoffs'
   playoff_round?: string
   playoff_position?: number
+  leg?: 'first' | 'second'
   is_published: boolean
   created_at: string
   updated_at: string
@@ -69,6 +70,8 @@ export interface Team {
   slug: string
   league_id: string
   tournament_id?: string
+  /** Group letter (A, B…) in group_knockout tournaments. */
+  group_name?: string
   owner_id: string
   logo?: string
   description?: string

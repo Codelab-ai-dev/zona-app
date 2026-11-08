@@ -10,6 +10,7 @@ import type {
   GenerateFixturesResponse,
   GeneratePlayoffsRequest,
   Match,
+  StandingRow,
 } from './types'
 
 export interface TeamListItem {
@@ -19,6 +20,7 @@ export interface TeamListItem {
   league_id: string
   tournament_id?: string
   is_active: boolean
+  group_name?: string
 }
 
 /** Query keys for fixtures & playoffs area. */
@@ -29,6 +31,7 @@ export const fixturesKeys = {
     [...fixturesKeys.all, 'matches', tournamentId, phase ?? 'all'] as const,
   tournamentMatches: (tournamentId: string) => [...fixturesKeys.all, 'matches', tournamentId] as const,
   teams: (leagueId: string) => [...fixturesKeys.all, 'teams', leagueId] as const,
+  standings: (tournamentId: string) => [...fixturesKeys.all, 'standings', tournamentId] as const,
 }
 
 /** Refreshes every matches query of the tournament, here and in the calendar. */
@@ -96,6 +99,7 @@ export function useGeneratePlayoffs() {
         field_number: req.field_number,
         third_place_match: req.third_place_match,
         home_and_away: req.home_and_away,
+        ...(req.team_ids ? { team_ids: req.team_ids } : {}),
       }),
     onSuccess: (data, req) => {
       invalidateTournamentMatches(queryClient, req.tournament_id)
@@ -143,4 +147,13 @@ export async function runFixtureFollowUps(leagueId: string, tournamentId: string
     api.post(`/notifications/leagues/${leagueId}`, { league_id: leagueId, tournament_id: tournamentId, round }),
   ])
   return results.every((r) => r.status === 'fulfilled')
+}
+
+/** Standings of a tournament in table order (used to load the teams qualified from the groups). */
+export function useTournamentStandings(tournamentId: string, enabled = true) {
+  return useQuery({
+    queryKey: fixturesKeys.standings(tournamentId),
+    queryFn: ({ signal }) => api.list<StandingRow>(`/tournaments/${tournamentId}/standings`, { limit: 100 }, { signal }),
+    enabled: Boolean(tournamentId) && enabled,
+  })
 }

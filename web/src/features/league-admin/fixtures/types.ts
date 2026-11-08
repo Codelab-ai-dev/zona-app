@@ -79,6 +79,17 @@ export interface GeneratePlayoffsRequest {
   field_number: number
   third_place_match: boolean
   home_and_away: boolean
+  /** Seeds in order (1st seed first); length = num_teams. Without it the API uses the overall standings. */
+  team_ids?: string[]
+}
+
+export interface StandingRow {
+  position: number
+  team_id: string
+  team_name: string
+  points: number
+  goal_difference: number
+  goals_for: number
 }
 
 export interface Tournament {

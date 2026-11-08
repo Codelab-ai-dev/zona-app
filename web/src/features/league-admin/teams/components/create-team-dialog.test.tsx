@@ -62,7 +62,7 @@ describe('CreateTeamDialog', () => {
     const name = screen.getByLabelText('Nombre del equipo')
     expect(screen.getByText('El nombre es requerido')).toBeInTheDocument()
     expect(name).toHaveAttribute('aria-invalid', 'true')
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method !== 'GET')).toEqual([])
   })
 
   it('generates an accent-free slug from the name until the slug is edited by hand', async () => {
@@ -91,7 +91,7 @@ describe('CreateTeamDialog', () => {
     expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument()
     expect(confirm).toHaveAttribute('aria-invalid', 'true')
     expect(confirm).toHaveValue('DifferentPass456!')
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method !== 'GET')).toEqual([])
   })
 
   it('blocks a password shorter than 10 characters: no request', async () => {
@@ -104,7 +104,7 @@ describe('CreateTeamDialog', () => {
 
     expect(screen.getByText('La contraseña debe tener mínimo 10 caracteres')).toBeInTheDocument()
     expect(screen.getByLabelText(/^contraseña/i)).toHaveAttribute('aria-invalid', 'true')
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method !== 'GET')).toEqual([])
   })
 
   it('blocks an invalid email: no request', async () => {
@@ -116,7 +116,7 @@ describe('CreateTeamDialog', () => {
     await submit(user)
 
     expect(screen.getByText('Email inválido')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method !== 'GET')).toEqual([])
   })
 
   it('shows API field errors on the team step and keeps what was typed', async () => {

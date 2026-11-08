@@ -9,6 +9,7 @@ import type { PlayerStats, Standings, Suspension, Tournament } from './types'
 
 export * from './admin-api'
 export * from './finance-api'
+export * from './stats-api'
 export { competitionKeys } from './keys'
 
 const onError = (error: ApiError) => {

@@ -1,4 +1,4 @@
-import { Calendar, Plus } from 'lucide-react'
+import { Calendar, Hand, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import { QueryState, EmptyState } from '@/components/states'
 import { useLeagueTournaments } from '@/features/leagues/api'
 import { useTeamsByLeague } from './api'
 import { FixtureWizard } from './fixture-wizard'
+import { ManualRoundDialog } from './components/manual-round-dialog'
 
 interface FixturesPageProps {
   leagueId: string
@@ -26,6 +27,7 @@ interface FixturesPageProps {
  */
 export function FixturesPage({ leagueId }: FixturesPageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isManualOpen, setIsManualOpen] = useState(false)
 
   const tournaments = useLeagueTournaments(leagueId)
   const teams = useTeamsByLeague(leagueId)
@@ -66,9 +68,20 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Generar Jornadas
             </Button>
+            <Button onClick={() => setIsManualOpen(true)} className="border border-orange-500/50 bg-transparent text-orange-400 hover:bg-orange-500/20">
+              <Hand className="mr-2 h-4 w-4" aria-hidden="true" />
+              Modo Manual
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      <ManualRoundDialog
+        open={isManualOpen}
+        onOpenChange={setIsManualOpen}
+        tournaments={tournaments.data?.data ?? []}
+        getActiveTeams={getActiveTeams}
+      />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-white/10 bg-slate-900">

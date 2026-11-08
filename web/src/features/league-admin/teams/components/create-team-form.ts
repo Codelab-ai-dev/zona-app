@@ -4,6 +4,8 @@ export interface TeamData {
   name: string
   slug: string
   description: string
+  /** Tournament id, or NO_TOURNAMENT. */
+  tournamentId: string
 }
 
 export interface OwnerData {
@@ -16,7 +18,8 @@ export interface OwnerData {
 
 export type FieldErrors = Record<string, string>
 
-export const emptyTeam: TeamData = { name: '', slug: '', description: '' }
+export const NO_TOURNAMENT = 'none'
+export const emptyTeam: TeamData = { name: '', slug: '', description: '', tournamentId: NO_TOURNAMENT }
 export const emptyOwner: OwnerData = { name: '', email: '', phone: '', password: '', confirmPassword: '' }
 
 /** Lowercase, accent-free, hyphenated slug ("Las Águilas" -> "las-aguilas"). */
@@ -55,6 +58,7 @@ export function buildRequests(team: TeamData, owner: OwnerData, leagueId: string
     name: team.name.trim(),
     slug: team.slug.trim(),
     league_id: leagueId,
+    tournament_id: team.tournamentId === NO_TOURNAMENT ? undefined : team.tournamentId,
     description: team.description || undefined,
   }
   const ownerReq: CreateUserRequest = {

@@ -76,6 +76,8 @@ export interface CreateTeamRequest {
 }
 
 export interface UpdateTeamRequest {
+  /** Nil UUID clears the tournament. */
+  tournament_id?: string
   name?: string
   logo?: string
   description?: string
@@ -121,4 +123,48 @@ export interface PlayerVerification {
 export interface VerifyPlayerRequest {
   verified: boolean
   document_key?: string
+}
+
+export type VerificationStatus = 'pending' | 'verified' | 'no_document'
+
+/** Mirrors backend/internal/teams LeaguePlayerVerification (league-wide view). */
+export interface LeaguePlayerVerification {
+  player_id: string
+  name: string
+  jersey_number: number
+  position: string
+  birth_date?: string
+  team_id: string
+  team_name: string
+  status: VerificationStatus
+  document_key?: string
+  id_verified_at?: string
+}
+
+/** Mirrors backend/internal/teams VerificationSummary. */
+export interface VerificationSummary {
+  total: number
+  pending: number
+  verified: number
+  no_document: number
+}
+
+/** Mirrors backend/internal/accounts UpdateUserRequest (the fields the owner form edits). */
+export interface UpdateUserRequest {
+  name?: string
+  phone?: string
+  email?: string
+}
+
+/** Mirrors backend/internal/accounts User (GET /admin/users/{id}). */
+export interface AccountUser {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  role: string
+  league_id?: string
+  team_id?: string
+  is_active: boolean
+  created_at: string
 }

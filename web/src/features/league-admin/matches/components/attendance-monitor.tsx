@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, RefreshCw } from 'lucide-react'
+import { Users, RefreshCw, QrCode, ScanFace } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 import { useMatchAttendance, useTeamPlayers } from '../api'
@@ -33,6 +33,18 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
   }, [attendance.data?.data, homePlayers.data?.data, awayPlayers.data?.data])
 
   const totalAttendance = attendanceCounts.home + attendanceCounts.away
+
+  const teamOf = useMemo(() => {
+    const map = new Map<string, string>()
+    ;(homePlayers.data?.data ?? []).forEach((p) => map.set(p.id, match.home_team_name))
+    ;(awayPlayers.data?.data ?? []).forEach((p) => map.set(p.id, match.away_team_name))
+    return map
+  }, [homePlayers.data?.data, awayPlayers.data?.data, match.home_team_name, match.away_team_name])
+
+  const present = useMemo(
+    () => [...(attendance.data?.data ?? [])].sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+    [attendance.data?.data],
+  )
 
   return (
     <Card>
@@ -82,6 +94,36 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
             <p className="text-sm text-muted-foreground">Total de jugadores presentes</p>
             <p className="text-2xl font-bold">{totalAttendance}</p>
           </div>
+
+          {present.length > 0 && (
+            <div className="pt-2 border-t">
+              <h3 className="mb-2 text-sm font-medium">Jugadores presentes</h3>
+              <ul className="max-h-64 space-y-1 overflow-y-auto">
+                {present.map((r) => (
+                  <li key={`${r.player_id}-${r.timestamp}`} className="flex items-center justify-between gap-2 rounded border px-2 py-1.5 text-sm">
+                    <span className="min-w-0 truncate">
+                      {r.jersey_number !== undefined && <span className="mr-1 text-muted-foreground">#{r.jersey_number} </span>}
+                      {r.player_name}
+                      {teamOf.get(r.player_id) && <span className="ml-1 text-xs text-muted-foreground"> ({teamOf.get(r.player_id)})</span>}
+                    </span>
+                    <span className="flex flex-shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                      <time dateTime={r.timestamp}>
+                        {new Date(r.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                      </time>
+                      <Badge variant="outline" className="gap-1">
+                        {r.source === 'qr' ? <QrCode className="size-3" aria-hidden="true" /> : <ScanFace className="size-3" aria-hidden="true" />}
+                        {r.source === 'qr' ? 'QR' : 'Facial'}
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!attendance.isPending && present.length === 0 && (
+            <p className="text-sm text-muted-foreground">Aún no hay jugadores registrados.</p>
+          )}
 
           {attendance.isPending && (
             <p className="text-sm text-muted-foreground italic">Cargando datos de asistencia...</p>

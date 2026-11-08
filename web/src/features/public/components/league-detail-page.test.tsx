@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
-import { apiError, league, page, tournament } from './fixtures'
+import { apiError, league, matchFinished, matchScheduled, page, standingA, standingB, tournament } from './fixtures'
 import { LeagueDetailPage } from './league-detail-page'
 
 function renderPage() {
@@ -44,6 +44,20 @@ describe('LeagueDetailPage', () => {
     expect(current).toHaveTextContent('1/1/2024')
     expect(screen.getByRole('link', { name: /Torneo Viejo/ })).toHaveTextContent('Finalizado')
     expect(screen.getByRole('link', { name: /Torneo Futuro/ })).toHaveTextContent('Próximamente')
+  })
+
+  it('shows the team and match counts of each tournament card from the public endpoints', async () => {
+    mockApi({
+      'GET /leagues/slug/liga-norte': { body: league },
+      'GET /leagues/l1/tournaments': { body: { data: [tournament], page } },
+      'GET /tournaments/t1/standings': { body: { data: [standingA, standingB], page } },
+      'GET /tournaments/t1/matches': { body: { data: [matchFinished, matchScheduled, { ...matchScheduled, id: 'm3' }], page } },
+    })
+    renderPage()
+
+    const card = await screen.findByRole('link', { name: /Torneo Apertura/ })
+    await waitFor(() => expect(card).toHaveTextContent('2 equipos'))
+    expect(card).toHaveTextContent('3 partidos')
   })
 
   it('shows an empty state when the league has no tournaments', async () => {

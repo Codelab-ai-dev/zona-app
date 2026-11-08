@@ -26,7 +26,14 @@ export function useWhatsAppLinks(leagueId: string | undefined) {
 export function useCreateWhatsAppLink(leagueId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { phone_number: string; role: string; display_name?: string; preferred_language: string }) =>
+    mutationFn: (data: {
+      phone_number: string
+      role: string
+      display_name?: string
+      preferred_language: string
+      user_id?: string
+      tournament_id?: string
+    }) =>
       api.post<WhatsAppLink>(`/leagues/${leagueId}/whatsapp-links`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: whatsappKey })
@@ -45,13 +52,35 @@ export function useCreateWhatsAppLink(leagueId: string) {
 export function useUpdateWhatsAppLink(linkId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { is_active?: boolean; display_name?: string; preferred_language?: string }) =>
+    // tournament_id: the nil UUID (NO_TOURNAMENT) clears the tournament.
+    mutationFn: (data: { is_active?: boolean; display_name?: string; preferred_language?: string; tournament_id?: string }) =>
       api.put<WhatsAppLink>(`/whatsapp-links/${linkId}`, data),
-    onSuccess: () => {
+    onSuccess: (_, { is_active }) => {
       void queryClient.invalidateQueries({ queryKey: whatsappKey })
-      toast.success('Enlace actualizado correctamente')
+      toast.success(
+        is_active === undefined ? 'Enlace actualizado correctamente' : is_active ? 'Enlace activado' : 'Enlace desactivado',
+      )
     },
     onError,
+  })
+}
+
+export const NO_TOURNAMENT = '00000000-0000-0000-0000-000000000000'
+
+/** A user of the league (GET /leagues/{id}/users), to link a number to an account. */
+export interface LeagueUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  is_active: boolean
+}
+
+export function useLeagueUsers(leagueId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...competitionKeys.all, 'leagueUsers', leagueId] as const,
+    queryFn: ({ signal }) => api.list<LeagueUser>(`/leagues/${leagueId}/users`, { limit: 100 }, { signal }),
+    enabled: Boolean(leagueId) && enabled,
   })
 }
 

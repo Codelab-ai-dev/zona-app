@@ -6,19 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { QueryState, LoadingState } from '@/components/states'
 import { toast } from 'sonner'
 
 import { useLeagueTournaments } from '@/features/leagues/api'
 
-import { useTournamentMatches, useDeleteMatch, usePublishRound } from './api'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
+
+import { useTournamentMatches, useDeleteMatch } from './api'
+import { CalendarActions } from './components/calendar-actions'
+import { useRoundActions } from './use-round-actions'
 import { CalendarFilters } from './components/calendar-filters'
 import { RoundSection } from './components/round-section'
 import { MatchScheduleDialog } from './components/match-schedule-dialog'
 import { MatchResultDialog } from './components/match-result-dialog'
 import { MatchQRGenerator } from './components/match-qr-generator'
-import { AttendanceMonitor } from './components/attendance-monitor'
+import { AttendanceDialog } from './components/attendance-dialog'
 import { RefereeReportDialog } from './components/referee-report-dialog'
 import { MatchPosterGenerator } from './components/match-poster-generator'
 import type { MatchWithRelations } from './types'
@@ -42,7 +45,7 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
 
   const matches = useTournamentMatches(selectedTournamentId || undefined)
   const deleteMatch = useDeleteMatch()
-  const publishRound = usePublishRound()
+  const rounds = useRoundActions(leagueId, selectedTournamentId)
 
   const [selectedRound, setSelectedRound] = useState<number | 'all'>('all')
   const [selectedTeam, setSelectedTeam] = useState<string | 'all'>('all')
@@ -94,16 +97,6 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
     return Array.from(grouped.entries())
       .sort(([a], [b]) => ((a === -1 ? Infinity : a) - (b === -1 ? Infinity : b)))
   }, [filteredMatches])
-
-  const handlePublishRound = async (round: number) => {
-    if (!selectedTournamentId) return
-    try {
-      await publishRound.mutateAsync({ tournamentId: selectedTournamentId, round })
-      toast.success(`Jornada ${round} publicada exitosamente`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al publicar la jornada')
-    }
-  }
 
   const handleDeleteMatch = async () => {
     if (!deletingMatchId) return
@@ -168,6 +161,15 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
         </CardContent>
       </Card>
 
+      {selectedTournamentId && (
+        <CalendarActions
+          leagueId={leagueId}
+          tournamentId={selectedTournamentId}
+          tournamentName={tournamentName}
+          matches={matches.data?.data ?? []}
+        />
+      )}
+
       {/* Filters */}
       {selectedTournamentId && (
         <CalendarFilters
@@ -215,9 +217,10 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
                     key={round}
                     round={roundNum}
                     matches={roundMatches}
-                    publishing={publishRound.isPending}
+                    publishing={rounds.publishing}
                     onPoster={() => setPosterRound(roundNum)}
-                    onPublish={() => void handlePublishRound(roundNum)}
+                    onPublish={(publish) => void rounds.togglePublish(roundNum, publish)}
+                    onDeleteRound={() => rounds.setDeletingRound(roundNum)}
                     onEdit={setEditingMatch}
                     onResult={setResultMatch}
                     onDelete={(m) => setDeletingMatchId(m.id)}
@@ -233,26 +236,14 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
       </QueryState>
 
       {/* Dialogs */}
-      {editingMatch && <MatchScheduleDialog match={editingMatch} open onOpenChange={() => setEditingMatch(null)} onSaved={handleMatchSaved} />}
+      {editingMatch && <MatchScheduleDialog match={editingMatch} leagueId={leagueId} open onOpenChange={() => setEditingMatch(null)} onSaved={handleMatchSaved} />}
       {resultMatch && <MatchResultDialog match={resultMatch} leagueId={leagueId} open onOpenChange={() => setResultMatch(null)} onSaved={handleResultSaved} />}
 
       {qrMatch && (
         <MatchQRGenerator match={qrMatch} tournamentName={tournamentName} leagueSlug={leagueSlug} open onOpenChange={() => setQrMatch(null)} />
       )}
       {reportMatch && <RefereeReportDialog match={reportMatch} open onOpenChange={() => setReportMatch(null)} />}
-      {attendanceMatch && (
-        <Dialog open onOpenChange={() => setAttendanceMatch(null)}>
-          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-white/10 bg-slate-900 text-white">
-            <DialogHeader>
-              <DialogTitle>Asistencia</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                {attendanceMatch.home_team_name} vs {attendanceMatch.away_team_name}
-              </DialogDescription>
-            </DialogHeader>
-            <AttendanceMonitor match={attendanceMatch} />
-          </DialogContent>
-        </Dialog>
-      )}
+      {attendanceMatch && <AttendanceDialog match={attendanceMatch} onClose={() => setAttendanceMatch(null)} />}
       {posterRound !== null && (
         <MatchPosterGenerator
           open
@@ -260,6 +251,22 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
           matches={(matches.data?.data ?? []).filter((m) => m.round === posterRound)}
           tournamentName={tournamentName}
           initialRound={posterRound}
+        />
+      )}
+
+      {rounds.deletingRound !== null && (
+        <ConfirmDeleteDialog
+          open
+          onOpenChange={(open) => !open && rounds.setDeletingRound(null)}
+          name={`Jornada ${rounds.deletingRound}`}
+          consequences={[
+            'Todos los partidos de la jornada, incluidos los ya finalizados',
+            'Sus resultados, goles y tarjetas',
+            'La tabla de posiciones se recalcula sin esos partidos',
+          ]}
+          hint="Los demás partidos del torneo no se tocan."
+          pending={rounds.deletePending}
+          onConfirm={() => void rounds.confirmDeleteRound()}
         />
       )}
 

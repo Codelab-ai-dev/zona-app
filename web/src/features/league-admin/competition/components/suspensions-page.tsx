@@ -1,13 +1,14 @@
-import { Ban, Loader2, Plus } from 'lucide-react'
+import { Ban, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { ErrorState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useTeamsByLeague } from '@/features/league-admin/teams/api'
 
-import { useSuspensions } from '../api'
+import { useClearSuspensions, useSuspensions } from '../api'
 import type { Suspension } from '../types'
 import { SuspensionForm } from './suspension-form'
 import { SuspensionRow } from './suspension-card'
@@ -17,9 +18,13 @@ const newButton = 'backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-w
 export function SuspensionsPage({ leagueId }: { leagueId: string }) {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Suspension | null>(null)
+  const [clearOpen, setClearOpen] = useState(false)
+  const clear = useClearSuspensions(leagueId)
   const suspensions = useSuspensions(leagueId)
   const teams = useTeamsByLeague(leagueId)
   const teamNames = useMemo(() => new Map((teams.data?.data ?? []).map((t) => [t.id, t.name])), [teams.data])
+
+  const all = suspensions.data?.data ?? []
 
   return (
     <section aria-labelledby="suspensions-title" className="space-y-6">
@@ -35,10 +40,18 @@ export function SuspensionsPage({ leagueId }: { leagueId: string }) {
                 Administra las suspensiones de jugadores por tarjetas o decisiones disciplinarias
               </CardDescription>
             </div>
-            <Button onClick={() => setShowForm(true)} className={newButton}>
-              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-              Nueva Suspensión
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {(suspensions.data?.data.length ?? 0) > 0 && (
+                <Button onClick={() => setClearOpen(true)} className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0 shadow-lg">
+                  <Trash2 className="w-4 h-4 mr-2" aria-hidden="true" />
+                  Limpiar Suspensiones
+                </Button>
+              )}
+              <Button onClick={() => setShowForm(true)} className={newButton}>
+                <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                Nueva Suspensión
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -89,6 +102,20 @@ export function SuspensionsPage({ leagueId }: { leagueId: string }) {
         </CardContent>
       </Card>
 
+      <ConfirmDeleteDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        name="todas las suspensiones de la liga"
+        consequences={[
+          `Suspensiones activas (${all.filter((s) => s.status === 'active').length})`,
+          `Suspensiones completadas (${all.filter((s) => s.status === 'completed').length})`,
+          `Suspensiones canceladas (${all.filter((s) => s.status === 'cancelled').length})`,
+          `Total a eliminar: ${all.length} suspensiones, con todo el historial`,
+        ]}
+        hint="Esta acción es permanente: los registros se eliminan de la base de datos."
+        pending={clear.isPending}
+        onConfirm={() => clear.mutate(undefined, { onSuccess: () => setClearOpen(false) })}
+      />
       {showForm && <SuspensionForm leagueId={leagueId} onClose={() => setShowForm(false)} />}
       {editing && <SuspensionForm leagueId={leagueId} suspension={editing} onClose={() => setEditing(null)} />}
     </section>

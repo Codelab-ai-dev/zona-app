@@ -55,9 +55,32 @@ function EventFields({ teamName, players, minute, playerId, onMinute, onPlayer, 
   )
 }
 
-export function GoalInput({ goalType, onGoalType, ...base }: BaseProps & { goalType: GoalType; onGoalType: (t: GoalType) => void }) {
+const NO_ASSIST = 'none'
+
+export function GoalInput({
+  goalType,
+  onGoalType,
+  assistId,
+  onAssist,
+  ...base
+}: BaseProps & { goalType: GoalType; onGoalType: (t: GoalType) => void; assistId: string; onAssist: (playerId: string) => void }) {
   return (
     <EventFields {...base}>
+      <Select value={assistId || NO_ASSIST} onValueChange={(v) => onAssist(v === NO_ASSIST ? '' : v)}>
+        <SelectTrigger className="text-sm" aria-label={`Asistencia (${base.teamName})`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_ASSIST}>Sin asistencia</SelectItem>
+          {base.players
+            .filter((p) => p.id !== base.playerId)
+            .map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name} {p.jersey_number ? `#${p.jersey_number}` : ''}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
       <select
         aria-label={`Tipo de gol (${base.teamName})`}
         value={goalType}

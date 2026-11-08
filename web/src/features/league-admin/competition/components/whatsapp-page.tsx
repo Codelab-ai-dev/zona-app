@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, Plus, Trash2, User, XCircle, type LucideIcon } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, Pencil, Plus, Power, Trash2, User, XCircle, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { ErrorState, LoadingState } from '@/components/states'
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { useDeleteWhatsAppLink, useTournaments, useWhatsAppLinks } from '../api'
+import { useDeleteWhatsAppLink, useTournaments, useUpdateWhatsAppLink, useWhatsAppLinks } from '../api'
 import type { WhatsAppLink } from '../types'
 import { BroadcastDialog } from './broadcast-dialog'
 import { WhatsAppForm } from './whatsapp-form'
@@ -122,7 +122,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
                 </TableHeader>
                 <TableBody>
                   {rows.map((link) => (
-                    <WhatsAppRow key={link.id} link={link} tournamentName={tournaments.data?.data.find((t) => t.id === link.tournament_id)?.name} />
+                    <WhatsAppRow key={link.id} leagueId={leagueId} link={link} tournamentName={tournaments.data?.data.find((t) => t.id === link.tournament_id)?.name} />
                   ))}
                 </TableBody>
               </Table>
@@ -137,9 +137,11 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
   )
 }
 
-function WhatsAppRow({ link, tournamentName }: { link: WhatsAppLink; tournamentName?: string }) {
+function WhatsAppRow({ leagueId, link, tournamentName }: { leagueId: string; link: WhatsAppLink; tournamentName?: string }) {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [editing, setEditing] = useState(false)
   const deleteLink = useDeleteWhatsAppLink(link.id)
+  const toggle = useUpdateWhatsAppLink(link.id)
   const name = link.display_name || link.phone_number
 
   const handleDelete = async () => {
@@ -191,11 +193,34 @@ function WhatsAppRow({ link, tournamentName }: { link: WhatsAppLink; tournamentN
           {link.last_interaction_at ? new Date(link.last_interaction_at).toLocaleDateString('es-ES') : <span className="text-white/50">Sin interacciones</span>}
         </TableCell>
         <TableCell className="text-right">
-          <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)} disabled={deleteLink.isPending} aria-label={`Eliminar enlace de ${name}`}>
-            <Trash2 className="w-4 h-4" aria-hidden="true" />
-          </Button>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(true)}
+              aria-label={`Editar enlace de ${name}`}
+              className="backdrop-blur-md bg-blue-500/20 border-blue-300/30 text-white hover:bg-blue-500/30"
+            >
+              <Pencil className="w-4 h-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggle.mutate({ is_active: !link.is_active })}
+              disabled={toggle.isPending}
+              aria-label={`${link.is_active ? 'Desactivar' : 'Activar'} enlace de ${name}`}
+              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
+            >
+              <Power className="w-4 h-4" aria-hidden="true" />
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)} disabled={deleteLink.isPending} aria-label={`Eliminar enlace de ${name}`}>
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            </Button>
+          </div>
         </TableCell>
       </TableRow>
+
+      {editing && <WhatsAppForm leagueId={leagueId} link={link} onClose={() => setEditing(false)} />}
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent className="bg-slate-900 border-white/10 text-white">

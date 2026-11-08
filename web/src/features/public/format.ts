@@ -16,3 +16,10 @@ export function tournamentStatus(startDate: string, endDate: string, now: Date =
   if (today >= start) return 'En Curso'
   return 'Próximamente'
 }
+
+export type TournamentLayout = 'league' | 'group_knockout' | 'knockout'
+
+/** Public layout of a tournament; unknown formats (e.g. round_robin) behave as a league. */
+export function tournamentLayout(format: string | undefined): TournamentLayout {
+  return format === 'group_knockout' || format === 'knockout' ? format : 'league'
+}

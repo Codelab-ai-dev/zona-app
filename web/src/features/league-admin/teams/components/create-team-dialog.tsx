@@ -5,7 +5,9 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useLeagueTournaments } from '@/features/leagues/api'
 import { ApiError } from '@/lib/api/client'
 
 import { OwnerCreationError, useCreateTeam } from '../api'
@@ -14,6 +16,7 @@ import {
   emptyOwner,
   emptyTeam,
   mapServerFields,
+  NO_TOURNAMENT,
   slugify,
   validateOwner,
   validateTeam,
@@ -40,6 +43,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
   // True once POST /teams succeeded but the owner failed: retries skip the team.
   const [teamCreated, setTeamCreated] = useState(false)
   const createMutation = useCreateTeam()
+  const tournaments = useLeagueTournaments(leagueId).data?.data ?? []
 
   const clearError = (key: string) => setErrors((prev) => withoutError(prev, key))
 
@@ -118,6 +122,21 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
             <div>
               <Label htmlFor="description" className="mb-1.5 block text-[10px] text-gray-400 md:text-xs">Descripción</Label>
               <Textarea className="min-h-[60px] border-white/10 bg-slate-800/50 text-sm text-white placeholder:text-gray-500" id="description" placeholder="Descripción del equipo (opcional)" value={team.description} onChange={(e) => changeTeam('description', e.target.value)} rows={3} />
+            </div>
+            <div>
+              <Label htmlFor="team-tournament" className="mb-1.5 block text-[10px] text-gray-400 md:text-xs">Torneo (opcional)</Label>
+              <Select value={team.tournamentId} onValueChange={(value) => changeTeam('tournamentId', value)}>
+                <SelectTrigger id="team-tournament" className="h-9 border-white/10 bg-slate-800/50 text-sm text-white">
+                  <SelectValue placeholder="Sin torneo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_TOURNAMENT}>Sin torneo</SelectItem>
+                  {tournaments.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.tournament_id && <p className="mt-1 text-xs text-red-400">{errors.tournament_id}</p>}
             </div>
             <Button onClick={handleContinue} className="h-9 w-full bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
               Continuar

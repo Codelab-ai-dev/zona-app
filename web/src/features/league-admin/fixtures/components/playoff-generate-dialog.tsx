@@ -11,9 +11,13 @@ import type { Tournament } from '@/features/leagues/types'
 import { ApiError } from '@/lib/api/client'
 
 import { useGeneratePlayoffs } from '../api'
+import { usePlayoffSeeds } from '../use-playoff-seeds'
 import type { GeneratePlayoffsRequest } from '../types'
+import { PlayoffPreview } from './playoff-preview'
+import { PlayoffSeeds } from './playoff-seeds'
 
 interface PlayoffGenerateDialogProps {
+  leagueId: string
   open: boolean
   onOpenChange: (open: boolean) => void
   tournaments: Tournament[]
@@ -25,6 +29,7 @@ interface PlayoffGenerateDialogProps {
 
 /** Form that asks the API to generate the playoff bracket. */
 export function PlayoffGenerateDialog({
+  leagueId,
   open,
   onOpenChange,
   tournaments,
@@ -40,8 +45,16 @@ export function PlayoffGenerateDialog({
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(true)
   const [homeAndAway, setHomeAndAway] = useState(false)
 
+  const [previewing, setPreviewing] = useState(false)
   const generatePlayoffs = useGeneratePlayoffs()
-
+  const tournament = tournaments.find((t) => t.id === tournamentId)
+  const isGroups = tournament?.tournament_format === 'group_knockout'
+  const n = parseInt(numTeams, 10) as 4 | 8
+  const seeds = usePlayoffSeeds(leagueId, tournament, n)
+  const resetSeeds = () => {
+    seeds.clear()
+    setPreviewing(false)
+  }
   const [errors, setErrors] = useState<Record<string, string>>({})
   const clearError = (field: string) =>
     setErrors((prev) => {
@@ -63,6 +76,16 @@ export function PlayoffGenerateDialog({
 
   const handleGenerate = async () => {
     if (!tournamentId) return
+    if (seeds.chosen > 0 && (!seeds.complete || seeds.hasDuplicates)) {
+      setErrors({ team_ids: `Elige los ${n} equipos o deja todos los lugares sin elegir.` })
+      return
+    }
+    // Manually seeded brackets are reviewed before anything is created.
+    if (seeds.complete && !previewing) {
+      setErrors({})
+      setPreviewing(true)
+      return
+    }
 
     const req: GeneratePlayoffsRequest = {
       tournament_id: tournamentId,
@@ -72,13 +95,16 @@ export function PlayoffGenerateDialog({
       field_number: parseInt(fieldNumber, 10) || 0,
       third_place_match: thirdPlaceMatch,
       home_and_away: homeAndAway,
+      ...(seeds.complete ? { team_ids: seeds.seedList } : {}),
     }
 
     try {
       await generatePlayoffs.mutateAsync(req)
       setErrors({})
+      resetSeeds()
       onOpenChange(false)
     } catch (err) {
+      setPreviewing(false)
       if (err instanceof ApiError && err.isValidation) setErrors(err.fields)
     }
   }
@@ -94,12 +120,26 @@ export function PlayoffGenerateDialog({
           <DialogDescription className="text-white/80 drop-shadow">{description}</DialogDescription>
         </DialogHeader>
 
+        {previewing ? (
+          <PlayoffPreview
+            numTeams={n}
+            seedNames={seeds.seedList.map(seeds.teamName)}
+            startDate={startDate}
+            startTime={startTime}
+            field={parseInt(fieldNumber, 10) || 1}
+            thirdPlace={thirdPlaceMatch}
+            homeAndAway={homeAndAway}
+            pending={generatePlayoffs.isPending}
+            onBack={() => setPreviewing(false)}
+            onConfirm={() => void handleGenerate()}
+          />
+        ) : (
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="tournament-select" className="text-white/90 drop-shadow">
               Torneo
             </Label>
-            <Select value={tournamentId} onValueChange={onTournamentChange}>
+            <Select value={tournamentId} onValueChange={(id) => { resetSeeds(); onTournamentChange(id) }}>
               <SelectTrigger
                 id="tournament-select"
                 className="w-full border-white/30 bg-white/10 text-white backdrop-blur-md"
@@ -123,7 +163,7 @@ export function PlayoffGenerateDialog({
               <Label htmlFor="num-teams" className="text-white/90 drop-shadow">
                 Equipos
               </Label>
-              <Select value={numTeams} onValueChange={(v) => setNumTeams(v as '4' | '8')}>
+              <Select value={numTeams} onValueChange={(v) => { setNumTeams(v as '4' | '8'); resetSeeds() }}>
                 <SelectTrigger
                   id="num-teams"
                   className="w-full border-white/30 bg-white/10 text-white backdrop-blur-md"
@@ -221,6 +261,22 @@ export function PlayoffGenerateDialog({
             </div>
           </div>
 
+          {tournamentId && (
+            <PlayoffSeeds
+              numTeams={n}
+              seeds={seeds.seedList}
+              teams={seeds.teams}
+              error={errors.team_ids}
+              onLoadQualified={isGroups ? () => void seeds.loadQualified(() => setErrors({})) : undefined}
+              loadingQualified={seeds.loadingQualified}
+              onChange={(i, id) => {
+                seeds.setSeed(i, id)
+                clearError('team_ids')
+              }}
+              onClear={resetSeeds}
+            />
+          )}
+
           <div className="flex gap-2 pt-4">
             <Button
               onClick={() => onOpenChange(false)}
@@ -233,10 +289,11 @@ export function PlayoffGenerateDialog({
               disabled={generatePlayoffs.isPending || !tournamentId || !startDate}
               className="flex-1 bg-green-500 text-white hover:bg-green-600"
             >
-              {generatePlayoffs.isPending ? 'Generando…' : 'Generar'}
+              {generatePlayoffs.isPending ? 'Generando…' : seeds.complete ? 'Vista previa' : 'Generar'}
             </Button>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   )

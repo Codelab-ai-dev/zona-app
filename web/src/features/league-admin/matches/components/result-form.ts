@@ -8,6 +8,8 @@ export interface FormGoal {
   player_id: string
   minute: number
   goal_type: GoalType
+  /** '' = no assist. */
+  assist_player_id: string
 }
 
 export interface FormCard {
@@ -49,6 +51,7 @@ export function buildResultRequest(match: MatchWithRelations, form: ResultFormSt
       team_id: teamOf(g.side),
       minute: g.minute,
       goal_type: g.goal_type,
+      ...(g.assist_player_id ? { assist_player_id: g.assist_player_id } : {}),
     })),
     cards: [...form.cards].sort(byMinute).map((c) => ({
       player_id: c.player_id,
@@ -59,4 +62,31 @@ export function buildResultRequest(match: MatchWithRelations, form: ResultFormSt
   }
   if (observations) data.observations = observations
   return data
+}
+
+export const EMPTY_FORM: ResultFormState = { homeScore: 0, awayScore: 0, goals: [], cards: [], observations: '' }
+
+/** Prefills the form from a stored result (goals/cards come with GET /matches/{id}). */
+export function formFromMatch(match: MatchWithRelations, observations = ''): ResultFormState {
+  const sideOf = (teamId: string): Side => (teamId === match.home_team_id ? 'home' : 'away')
+  return {
+    homeScore: match.home_score,
+    awayScore: match.away_score,
+    observations,
+    goals: (match.goals ?? []).map((g) => ({
+      id: g.id,
+      side: sideOf(g.team_id),
+      player_id: g.player_id,
+      minute: g.minute,
+      goal_type: g.goal_type,
+      assist_player_id: g.assist_player_id ?? '',
+    })),
+    cards: (match.cards ?? []).map((c) => ({
+      id: c.id,
+      side: sideOf(c.team_id),
+      player_id: c.player_id,
+      minute: c.minute,
+      card_type: c.card_type,
+    })),
+  }
 }

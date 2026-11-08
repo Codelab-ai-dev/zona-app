@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { ErrorState, LoadingState } from '@/components/states'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { useTransactions } from '../api'
 import { formatMoney } from '../money'
+import { FinanceFilters, noFilters, type TransactionFilterState } from './finance-filters'
 import { TransactionStatusBadge } from './finance-status-badge'
 import { TransactionActions } from './transaction-actions'
 import { transactionTypeLabel } from './transaction-types'
@@ -17,7 +18,26 @@ const outlineButton = 'backdrop-blur-md bg-white/10 border-white/20 text-white h
 
 export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: string; teamNames: Map<string, string>; onAdd: () => void }) {
   const [page, setPage] = useState(0)
-  const transactions = useTransactions(leagueId, { limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+  const [filters, setFilters] = useState<TransactionFilterState>(noFilters)
+  const transactions = useTransactions(leagueId, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, { status: filters.status, transaction_type: filters.type })
+
+  // The API has no text search: filter the loaded page by description, team and notes.
+  const search = filters.search.trim().toLowerCase()
+  const rows = useMemo(
+    () =>
+      (transactions.data?.data ?? []).filter(
+        (tx) =>
+          !search ||
+          [tx.description, tx.notes ?? '', (tx.team_id && teamNames.get(tx.team_id)) || ''].some((text) => text.toLowerCase().includes(search)),
+      ),
+    [transactions.data, search, teamNames],
+  )
+  const filtered = filters.status !== 'all' || filters.type !== 'all' || search !== ''
+  const changeFilters = (next: TransactionFilterState) => {
+    // Status and type are server-side: they change the result set, so go back to the first page.
+    if (next.status !== filters.status || next.type !== filters.type) setPage(0)
+    setFilters(next)
+  }
 
   return (
     <Card className="backdrop-blur-xl bg-white/10 border-white/20">
@@ -31,15 +51,21 @@ export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: 
           Nuevo Cargo
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <FinanceFilters value={filters} onChange={changeFilters} />
         {transactions.isPending ? (
           <LoadingState label="Cargando transacciones…" />
         ) : transactions.isError ? (
           <ErrorState error={transactions.error} onRetry={() => void transactions.refetch()} />
-        ) : transactions.data.data.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="text-center text-white/60 py-8">
-            <p className="font-medium text-white/80">Sin transacciones</p>
-            <p className="text-sm">No hay transacciones registradas</p>
+            <p className="font-medium text-white/80">{filtered ? 'Sin resultados' : 'Sin transacciones'}</p>
+            <p className="text-sm">{filtered ? 'Ninguna transacción coincide con los filtros' : 'No hay transacciones registradas'}</p>
+            {filtered && (
+              <Button variant="ghost" size="sm" onClick={() => changeFilters(noFilters)} className="mt-2 text-white/80 hover:text-white hover:bg-white/10">
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -57,7 +83,7 @@ export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.data.data.map((tx) => (
+                {rows.map((tx) => (
                   <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
                     <TableCell className="text-white/80">{new Date(tx.transaction_date).toLocaleDateString('es-ES')}</TableCell>
                     <TableCell className="text-white font-medium max-w-[200px] truncate">{tx.description}</TableCell>

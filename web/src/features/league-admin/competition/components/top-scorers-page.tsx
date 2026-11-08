@@ -1,15 +1,18 @@
-import { Loader2, Target, Trophy } from 'lucide-react'
+import { Loader2, Plus, Target, Trophy } from 'lucide-react'
 import { useState } from 'react'
 
 import { ErrorState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { useDiscipline, useTopScorers, useTournaments } from '../api'
+import { useDiscipline, useManualStats, useTopScorers, useTournaments, type ManualStats } from '../api'
 import { DisciplineTable } from './discipline-table'
+import { ManualStatsDialog } from './manual-stats-dialog'
+import { ManualStatsList } from './manual-stats-list'
 import { ScorersPodium } from './scorers-podium'
 
 type ViewMode = 'scorers' | 'discipline'
@@ -32,10 +35,12 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
   const tournaments = useTournaments(leagueId)
   const [chosen, setChosen] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('scorers')
+  const [dialog, setDialog] = useState<{ editing?: ManualStats } | null>(null)
 
   const list = tournaments.data?.data ?? []
   const selectedTournament = chosen || (list.find((t) => t.is_active) ?? list[0])?.id || ''
   const scorers = useTopScorers(viewMode === 'scorers' ? selectedTournament || undefined : undefined)
+  const manual = useManualStats(selectedTournament || undefined)
   const discipline = useDiscipline(viewMode === 'discipline' ? selectedTournament || undefined : undefined)
 
   if (tournaments.isPending) {
@@ -97,6 +102,15 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
               </SelectContent>
             </Select>
           </div>
+          {viewMode === 'scorers' && selectedTournament && (
+            <Button
+              onClick={() => setDialog({})}
+              className="sm:self-end h-9 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+            >
+              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+              Agregar Goles
+            </Button>
+          )}
         </div>
       </div>
 
@@ -179,6 +193,19 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
           </Card>
           {rows.length >= 3 && <ScorersPodium scorers={rows} />}
         </>
+      )}
+
+      {viewMode === 'scorers' && selectedTournament && (manual.data?.data.length ?? 0) > 0 && (
+        <ManualStatsList tournamentId={selectedTournament} entries={manual.data?.data ?? []} onEdit={(entry) => setDialog({ editing: entry })} />
+      )}
+      {dialog && selectedTournament && (
+        <ManualStatsDialog
+          leagueId={leagueId}
+          tournamentId={selectedTournament}
+          entries={manual.data?.data ?? []}
+          editing={dialog.editing}
+          onClose={() => setDialog(null)}
+        />
       )}
     </section>
   )

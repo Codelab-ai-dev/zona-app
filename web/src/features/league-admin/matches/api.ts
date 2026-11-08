@@ -9,6 +9,9 @@ import type {
   PostRefereeReportRequest,
   TriggerEmbeddingRequest,
   AttendanceRecord,
+  BulkCreateMatchesRequest,
+  DeleteMatchesResponse,
+  TeamSummary,
 } from './types'
 
 export interface Player {
@@ -134,12 +137,12 @@ export function usePublishMatch() {
   })
 }
 
-/** Publish all matches in a round (POST /tournaments/{tournamentID}/rounds/{round}/publish). */
+/** Publish or unpublish all matches in a round (POST /tournaments/{tournamentID}/rounds/{round}/publish). */
 export function usePublishRound() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ tournamentId, round }: { tournamentId: string; round: number }) =>
-      api.post(`/tournaments/${tournamentId}/rounds/${round}/publish`, { is_published: true }),
+    mutationFn: async ({ tournamentId, round, isPublished = true }: { tournamentId: string; round: number; isPublished?: boolean }) =>
+      api.post(`/tournaments/${tournamentId}/rounds/${round}/publish`, { is_published: isPublished }),
     onSuccess: (_, { tournamentId }) => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.byTournament(tournamentId) })
     },
@@ -169,5 +172,45 @@ export function useTriggerEmbedding() {
 export function usePostMatchFinalizedNotification() {
   return useMutation({
     mutationFn: (matchId: string) => api.post(`/notifications/matches/${matchId}/finalized`, {}),
+  })
+}
+
+/**
+ * Delete the matches of a tournament, optionally one round or one phase
+ * (DELETE /tournaments/{id}/matches?round=N | ?phase=regular|playoffs). Finished
+ * matches go too and the API rebuilds the standings.
+ */
+export function useDeleteTournamentMatches() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ tournamentId, round, phase }: { tournamentId: string; round?: number; phase?: 'regular' | 'playoffs' }) =>
+      api.delete<DeleteMatchesResponse>(`/tournaments/${tournamentId}/matches`, {
+        query: { round, phase },
+      }),
+    onSuccess: () => {
+      // Matches, standings, stats and fixtures views all change.
+      void queryClient.invalidateQueries()
+    },
+  })
+}
+
+/** Create several matches at once (POST /tournaments/{id}/matches/bulk). */
+export function useBulkCreateMatches() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ tournamentId, matches }: { tournamentId: string; matches: BulkCreateMatchesRequest['matches'] }) =>
+      api.post<unknown[]>(`/tournaments/${tournamentId}/matches/bulk`, { tournament_id: tournamentId, matches }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries()
+    },
+  })
+}
+
+/** Teams of a league (id, name, tournament, active flag), used to analyse a calendar. */
+export function useLeagueTeams(leagueId: string | undefined) {
+  return useQuery({
+    queryKey: [...teamKeys.all, 'league', leagueId ?? ''] as const,
+    queryFn: ({ signal }) => api.list<TeamSummary>('/teams', { limit: 100 }, { signal, query: { league_id: leagueId } }),
+    enabled: Boolean(leagueId),
   })
 }

@@ -14,10 +14,10 @@ function signed(n: number): string {
   return n > 0 ? `+${n}` : String(n)
 }
 
-export function StandingsTable({ standings }: { standings: Standing[] }) {
+export function StandingsTable({ standings, label = 'Tabla de posiciones', advancing = 0 }: { standings: Standing[]; label?: string; advancing?: number }) {
   return (
     <div className={`${panelClass} overflow-x-auto p-2 md:p-4`}>
-        <Table className="text-white" aria-label="Tabla de posiciones">
+        <Table className="text-white" aria-label={label}>
           <TableHeader className="[&_th]:h-9 [&_th]:text-xs [&_th]:font-medium [&_th]:text-gray-500">
             <TableRow className="border-white/10 hover:bg-transparent">
               <TableHead scope="col" className="w-12 text-center">#</TableHead>
@@ -35,7 +35,10 @@ export function StandingsTable({ standings }: { standings: Standing[] }) {
           <TableBody>
             {standings.map((s) => (
               <TableRow key={s.team_id} className="border-white/5 hover:bg-white/5">
-                <TableCell className="text-center font-bold text-white">{s.position}</TableCell>
+                <TableCell className={`text-center font-bold text-white ${s.position <= advancing ? 'border-l-2 border-green-500' : ''}`}>
+                  {s.position}
+                  {s.position <= advancing && <span className="sr-only"> (clasifica)</span>}
+                </TableCell>
                 <TableCell>
                   <Link to={`/equipos/${s.team_id}`} className="flex items-center gap-2 text-white hover:text-green-400 hover:underline">
                     <Avatar className="size-6 shrink-0 border border-white/10 md:size-8">

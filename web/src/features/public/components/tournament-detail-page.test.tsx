@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
 import {
-  apiError, carded, league, matchFinished, matchScheduled, page, scorer, standingA, standingB, tournament,
+  apiError, carded, league, team, team2, matchFinished, matchScheduled, page, scorer, standingA, standingB, tournament,
 } from './fixtures'
 import { TournamentDetailPage } from './tournament-detail-page'
 
@@ -18,6 +18,7 @@ function rowAt(rows: HTMLElement[], i: number): HTMLElement {
 const handlers = {
   'GET /leagues/slug/liga-norte': { body: league },
   'GET /tournaments/t1': { body: tournament },
+  'GET /teams': { body: { data: [team, team2], page } },
   'GET /tournaments/t1/standings': { body: { data: [standingA, standingB], page } },
   'GET /tournaments/t1/matches': { body: { data: [matchFinished, matchScheduled], page } },
   'GET /tournaments/t1/top-scorers': { body: { data: [scorer], page } },
@@ -74,11 +75,14 @@ describe('TournamentDetailPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Partidos' }))
     // Names come from standings because match payloads carry only team ids.
-    expect(await screen.findByText('Tigres FC 3, Leones United 1. Finalizado. 1/2/2024')).toBeInTheDocument()
-    expect(screen.getByText('Leones United contra Tigres FC. Programado. 8/2/2024')).toBeInTheDocument()
-    expect(screen.getByText('Jornada 5')).toBeInTheDocument()
-    expect(screen.getByText('20:30')).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect((await screen.findAllByText('Tigres FC 3, Leones United 1. Finalizado. 1/2/2024')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Leones United contra Tigres FC. Programado. 8/2/2024').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Jornada 5').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('20:30').length).toBeGreaterThan(0)
+    // Próximos (1) + Resultados Recientes (1) + Todos los partidos (2).
+    expect(screen.getByRole('region', { name: 'Próximos Partidos' })).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Resultados Recientes' })).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(screen.getByRole('region', { name: 'Todos los partidos' })).getAllByRole('listitem')).toHaveLength(2)
 
     await user.click(screen.getByRole('tab', { name: 'Goleadores' }))
     const scorers = await screen.findByRole('table', { name: 'Tabla de goleadores' })
@@ -92,7 +96,7 @@ describe('TournamentDetailPage', () => {
       'Luis Gómez', 'Leones United', '3', '1', '5',
     ])
 
-    await user.click(screen.getByRole('tab', { name: 'Tabla' }))
+    await user.click(screen.getByRole('tab', { name: 'Posiciones' }))
     expect(await screen.findByRole('table', { name: 'Tabla de posiciones' })).toBeInTheDocument()
   })
 
@@ -101,7 +105,7 @@ describe('TournamentDetailPage', () => {
     const { user } = renderPage()
     await screen.findByRole('table', { name: 'Tabla de posiciones' })
 
-    screen.getByRole('tab', { name: 'Tabla' }).focus()
+    screen.getByRole('tab', { name: 'Posiciones' }).focus()
     await user.keyboard('{ArrowRight}')
     expect(screen.getByRole('tab', { name: 'Partidos' })).toHaveAttribute('aria-selected', 'true')
   })

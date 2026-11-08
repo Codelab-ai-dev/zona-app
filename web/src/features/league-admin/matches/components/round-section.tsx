@@ -1,4 +1,4 @@
-import { Eye, EyeOff, ImageDown, Send, Trophy } from 'lucide-react'
+import { Eye, EyeOff, ImageDown, Send, Trash, Trophy } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,9 @@ interface RoundSectionProps {
   matches: MatchWithRelations[]
   publishing: boolean
   onPoster: () => void
-  onPublish: () => void
+  /** Publishes the round, or hides it again when it is already published. */
+  onPublish: (publish: boolean) => void
+  onDeleteRound: () => void
   onEdit: (match: MatchWithRelations) => void
   onResult: (match: MatchWithRelations) => void
   onDelete: (match: MatchWithRelations) => void
@@ -28,6 +30,7 @@ export function RoundSection({
   publishing,
   onPoster,
   onPublish,
+  onDeleteRound,
   onEdit,
   onResult,
   onDelete,
@@ -73,7 +76,7 @@ export function RoundSection({
               </Button>
               <Button
                 size="sm"
-                onClick={onPublish}
+                onClick={() => onPublish(!isRoundPublished)}
                 disabled={publishing || matches.length === 0}
                 className={
                   isRoundPublished
@@ -82,13 +85,25 @@ export function RoundSection({
                 }
               >
                 {isRoundPublished ? (
-                  'Publicada'
+                  <>
+                    <EyeOff className="mr-1 h-3 w-3" aria-hidden="true" />
+                    Despublicar
+                  </>
                 ) : (
                   <>
                     <Send className="mr-1 h-3 w-3" aria-hidden="true" />
                     Publicar jornada
                   </>
                 )}
+              </Button>
+              <Button
+                size="sm"
+                onClick={onDeleteRound}
+                title="Eliminar jornada"
+                className="h-7 border border-red-500/50 bg-transparent text-xs text-red-400 hover:bg-red-500/20"
+              >
+                <Trash className="h-3 w-3" aria-hidden="true" />
+                <span className="sr-only">Eliminar jornada</span>
               </Button>
             </>
           )}

@@ -71,7 +71,7 @@ function MatchCard({ match, teams }: { match: Match; teams: TeamLookup }) {
                 <span className="w-8 text-center text-2xl font-bold text-white">{match.away_score}</span>
               </div>
             ) : (
-              <div className="text-sm text-gray-400">{match.match_time || 'Por definir'}</div>
+              <div className="text-sm text-gray-400">{match.match_time ? match.match_time.slice(0, 5) : 'Por definir'}</div>
             )}
             <Badge className={`border-0 text-[10px] ${BADGE[match.status]}`}>{STATUS_LABEL[match.status]}</Badge>
           </div>

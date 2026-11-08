@@ -23,7 +23,7 @@ const player = (over: Partial<PlayerStats> = {}): PlayerStats => ({
   ...over,
 })
 
-const base = { ...mineOne, 'GET /leagues/league-1/tournaments': list([tournament()]) }
+const base = { ...mineOne, 'GET /leagues/league-1/tournaments': list([tournament()]), 'GET /tournaments/tour-1/manual-stats': list([]) }
 const scorers = 'GET /tournaments/tour-1/top-scorers'
 const discipline = 'GET /tournaments/tour-1/discipline'
 

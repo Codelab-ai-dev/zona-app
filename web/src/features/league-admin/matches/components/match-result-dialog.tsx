@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { AlertCircle, Plus } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -12,10 +12,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError } from '@/lib/api/client'
 
-import { usePostMatchFinalizedNotification, usePostMatchResult, useTeamPlayers, useTriggerEmbedding } from '../api'
+import {
+  useMatchById,
+  useMatchRefereeReport,
+  usePostMatchFinalizedNotification,
+  usePostMatchResult,
+  useTeamPlayers,
+  useTriggerEmbedding,
+} from '../api'
 import type { MatchWithRelations } from '../types'
-import { CardInput, GoalInput } from './result-event-inputs'
-import { buildResultRequest, hasUnpickedPlayer, type FormCard, type FormGoal, type ResultFormState, type Side } from './result-form'
+import { ResultEventsTabs } from './result-events-tabs'
+import { buildResultRequest, EMPTY_FORM, formFromMatch, hasUnpickedPlayer, type ResultFormState } from './result-form'
 
 interface MatchResultDialogProps {
   match: MatchWithRelations
@@ -25,10 +32,52 @@ interface MatchResultDialogProps {
   onSaved: (matchId: string) => void
 }
 
-const SIDES: Side[] = ['home', 'away']
+/**
+ * Dialog to enter or edit a match result (score, goals with assist, cards,
+ * observations). A finished match is prefilled from its stored result.
+ */
+export function MatchResultDialog(props: MatchResultDialogProps) {
+  const { match, open, onOpenChange } = props
+  const isEdit = match.status === 'finished'
+  const detail = useMatchById(isEdit ? match.id : undefined)
+  const report = useMatchRefereeReport(isEdit ? match.id : undefined)
 
-/** Dialog to enter match result (score, goals, cards, observations). */
-export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved }: MatchResultDialogProps) {
+  if (!isEdit) return <ResultDialogBody {...props} initial={EMPTY_FORM} isEdit={false} />
+  if (detail.isPending || report.isPending || detail.isError) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Marcador</DialogTitle>
+            <DialogDescription>
+              {match.home_team_name} vs {match.away_team_name}
+            </DialogDescription>
+          </DialogHeader>
+          {detail.isError ? (
+            <div role="alert" className="space-y-3 text-sm text-destructive">
+              <p>No se pudo cargar el resultado actual: {detail.error.message}. Para no perder goles ni tarjetas, no se puede editar.</p>
+              <Button variant="outline" onClick={() => void detail.refetch()}>Reintentar</Button>
+            </div>
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">Cargando resultado actual…</p>
+          )}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+  const initial = formFromMatch({ ...match, ...detail.data }, report.data?.general_observations ?? '')
+  return <ResultDialogBody {...props} initial={initial} isEdit />
+}
+
+function ResultDialogBody({
+  match,
+  leagueId,
+  open,
+  onOpenChange,
+  onSaved,
+  initial,
+  isEdit,
+}: MatchResultDialogProps & { initial: ResultFormState; isEdit: boolean }) {
   const postResult = usePostMatchResult()
   const triggerEmbedding = useTriggerEmbedding()
   const notifyFinalized = usePostMatchFinalizedNotification()
@@ -38,13 +87,8 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
   const rosters = { home: homePlayers.data?.data ?? [], away: awayPlayers.data?.data ?? [] }
   const teamNames = { home: match.home_team_name, away: match.away_team_name }
 
-  const [form, setForm] = useState<ResultFormState>({ homeScore: 0, awayScore: 0, goals: [], cards: [], observations: '' })
+  const [form, setForm] = useState<ResultFormState>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const patchGoal = (id: string, patch: Partial<FormGoal>) =>
-    setForm((f) => ({ ...f, goals: f.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) }))
-  const patchCard = (id: string, patch: Partial<FormCard>) =>
-    setForm((f) => ({ ...f, cards: f.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) }))
 
   const handlePostResult = async () => {
     setErrors({})
@@ -64,7 +108,7 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
       return
     }
 
-    toast.success('Resultado registrado exitosamente')
+    toast.success(isEdit ? 'Marcador actualizado exitosamente' : 'Resultado registrado exitosamente')
     // The result is saved; follow-ups failing must not undo or hide that.
     const followUps = await Promise.allSettled([
       triggerEmbedding.mutateAsync({
@@ -73,7 +117,8 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
         tournament_id: match.tournament_id,
         match_id: match.id,
       }),
-      notifyFinalized.mutateAsync(match.id),
+      // A correction refreshes the knowledge base but doesn't announce the match again.
+      isEdit ? Promise.resolve() : notifyFinalized.mutateAsync(match.id),
     ])
     if (followUps.some((r) => r.status === 'rejected')) {
       toast.warning('El resultado se guardó, pero no se pudo actualizar el conocimiento o enviar la notificación del partido.')
@@ -87,7 +132,7 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Ingresar resultado</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar Marcador' : 'Ingresar resultado'}</DialogTitle>
           <DialogDescription>
             {teamNames.home} vs {teamNames.away}
           </DialogDescription>
@@ -95,7 +140,7 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
 
         <Alert className="mb-4">
           <AlertCircle className="size-4" aria-hidden="true" />
-          <AlertDescription>Al guardar, se reemplazará completamente el resultado anterior (si existe).</AlertDescription>
+          <AlertDescription>Al guardar, se reemplazará completamente el resultado anterior (si existe) y la tabla de posiciones se recalcula.</AlertDescription>
         </Alert>
 
         <Tabs defaultValue="score" className="w-full">
@@ -140,77 +185,7 @@ export function MatchResultDialog({ match, leagueId, open, onOpenChange, onSaved
             </div>
           </TabsContent>
 
-          <TabsContent value="goals" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {SIDES.map((side) => (
-                <div key={side} className="space-y-2">
-                  <h3 className="font-semibold text-sm">{teamNames[side]}</h3>
-                  {form.goals
-                    .filter((g) => g.side === side)
-                    .map((goal) => (
-                      <GoalInput
-                        key={goal.id}
-                        teamName={teamNames[side]}
-                        players={rosters[side]}
-                        minute={goal.minute}
-                        playerId={goal.player_id}
-                        goalType={goal.goal_type}
-                        onMinute={(minute) => patchGoal(goal.id, { minute })}
-                        onPlayer={(player_id) => patchGoal(goal.id, { player_id })}
-                        onGoalType={(goal_type) => patchGoal(goal.id, { goal_type })}
-                        onRemove={() => setForm((f) => ({ ...f, goals: f.goals.filter((g) => g.id !== goal.id) }))}
-                      />
-                    ))}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() =>
-                      setForm((f) => ({ ...f, goals: [...f.goals, { id: crypto.randomUUID(), side, player_id: '', minute: 1, goal_type: 'normal' }] }))
-                    }
-                  >
-                    <Plus className="size-3 mr-1" aria-hidden="true" /> Agregar gol ({teamNames[side]})
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cards" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {SIDES.map((side) => (
-                <div key={side} className="space-y-2">
-                  <h3 className="font-semibold text-sm">{teamNames[side]}</h3>
-                  {form.cards
-                    .filter((c) => c.side === side)
-                    .map((card) => (
-                      <CardInput
-                        key={card.id}
-                        teamName={teamNames[side]}
-                        players={rosters[side]}
-                        minute={card.minute}
-                        playerId={card.player_id}
-                        cardType={card.card_type}
-                        onMinute={(minute) => patchCard(card.id, { minute })}
-                        onPlayer={(player_id) => patchCard(card.id, { player_id })}
-                        onCardType={(card_type) => patchCard(card.id, { card_type })}
-                        onRemove={() => setForm((f) => ({ ...f, cards: f.cards.filter((c) => c.id !== card.id) }))}
-                      />
-                    ))}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() =>
-                      setForm((f) => ({ ...f, cards: [...f.cards, { id: crypto.randomUUID(), side, player_id: '', minute: 1, card_type: 'yellow' }] }))
-                    }
-                  >
-                    <Plus className="size-3 mr-1" aria-hidden="true" /> Agregar tarjeta ({teamNames[side]})
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
+          <ResultEventsTabs form={form} setForm={setForm} teamNames={teamNames} rosters={rosters} />
 
           <TabsContent value="observations" className="space-y-4">
             <div>

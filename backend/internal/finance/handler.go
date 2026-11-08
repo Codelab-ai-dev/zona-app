@@ -353,7 +353,11 @@ func (h *Handler) listTeamBalances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.List(w, balances, page)
+	// A league has few teams: page in memory so limit/offset are honoured.
+	total := len(balances)
+	start := min(page.Offset, total)
+	end := min(start+page.Limit, total)
+	httpx.List(w, balances[start:end], page.WithTotal(total))
 }
 
 func (h *Handler) getLeagueSummary(w http.ResponseWriter, r *http.Request) {

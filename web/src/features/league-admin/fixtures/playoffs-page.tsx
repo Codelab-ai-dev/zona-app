@@ -70,6 +70,7 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
       </div>
 
       <PlayoffGenerateDialog
+        leagueId={leagueId}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         tournaments={tournamentList}

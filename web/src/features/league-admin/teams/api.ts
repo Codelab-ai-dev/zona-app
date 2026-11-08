@@ -9,8 +9,10 @@ import type {
   PlayerRegistrationRequest,
   QRBatchUpdateRequest,
   ReviewPlayerRegistrationRequest,
+  AccountUser,
   Team,
   UpdateTeamRequest,
+  UpdateUserRequest,
 } from './types'
 
 /** Query keys for teams feature. */
@@ -102,6 +104,25 @@ export function useUpdateTeam() {
       queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
       queryClient.invalidateQueries({ queryKey: teamsKeys.byId(params.teamId) })
     },
+  })
+}
+
+/** Owner account (GET /admin/users/{id}); 403 for users the admin cannot manage. */
+export function useOwnerUser(userId: string) {
+  return useQuery({
+    queryKey: [...teamsKeys.all, 'owner', userId],
+    queryFn: ({ signal }) => api.get<AccountUser>(`/admin/users/${userId}`, { signal }),
+    retry: false,
+  })
+}
+
+/** Edit a team owner's account (league admins may edit team_owner users of their league). */
+export function useUpdateOwner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { userId: string; user: UpdateUserRequest }) =>
+      api.patch(`/admin/users/${params.userId}`, params.user),
+    onSuccess: (_, params) => queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'owner', params.userId] }),
   })
 }
 

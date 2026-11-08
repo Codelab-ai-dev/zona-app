@@ -1,4 +1,4 @@
-import { ArrowRight, Calendar, Trophy } from 'lucide-react'
+import { ArrowRight, Calendar, Trophy, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 import { EmptyState, QueryState } from '@/components/states'
@@ -8,7 +8,7 @@ import { useLeagueBySlug } from '@/features/leagues/api'
 import { initials } from '@/features/leagues/leagues-page'
 import type { Tournament } from '@/features/leagues/types'
 
-import { useTournamentsByLeague } from '../api'
+import { useStandings, useTournamentMatches, useTournamentsByLeague } from '../api'
 import { formatDate, tournamentStatus, type TournamentStatus } from '../format'
 import { HeroCard, PublicPage } from './public-shell'
 
@@ -93,6 +93,9 @@ export function LeagueDetailPage() {
 
 function TournamentCard({ tournament, leagueSlug }: { tournament: Tournament; leagueSlug: string }) {
   const status = tournamentStatus(tournament.start_date, tournament.end_date)
+  // Counts come from the public endpoints (same cache as the tournament page); matches are only the published ones.
+  const teamsCount = useStandings(tournament.id).data?.data.length
+  const matchesCount = useTournamentMatches(tournament.id).data?.data.length
   return (
     <Link
       to={`/liga/${leagueSlug}/torneo/${tournament.id}`}
@@ -109,14 +112,28 @@ function TournamentCard({ tournament, leagueSlug }: { tournament: Tournament; le
           </div>
           <Badge className={`shrink-0 text-xs ${STATUS_CLASS[status]}`}>{status}</Badge>
         </div>
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {teamsCount !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <span className="rounded bg-blue-500/20 p-1"><Users className="size-3 text-blue-400" aria-hidden="true" /></span>
+              <span className="text-sm text-gray-400">{teamsCount}<span className="sr-only"> equipos</span></span>
+            </div>
+          )}
+          {matchesCount !== undefined && (
+            <div className="flex items-center gap-1.5">
+              <span className="rounded bg-purple-500/20 p-1"><Trophy className="size-3 text-purple-400" aria-hidden="true" /></span>
+              <span className="text-sm text-gray-400">{matchesCount}<span className="sr-only"> partidos</span></span>
+            </div>
+          )}
         {tournament.tournament_format && (
-          <div className="mb-4 flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span className="rounded bg-orange-500/20 p-1">
               <Calendar className="size-3 text-orange-400" aria-hidden="true" />
             </span>
             <span className="text-sm text-gray-400">{FORMAT_LABEL[tournament.tournament_format] ?? tournament.tournament_format}</span>
           </div>
         )}
+        </div>
         <span className="flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-green-500/25 transition-all duration-300 group-hover:from-green-600 group-hover:to-emerald-700">
           Ver Torneo
           <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" aria-hidden="true" />

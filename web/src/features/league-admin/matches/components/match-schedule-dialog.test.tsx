@@ -82,3 +82,49 @@ describe('MatchScheduleDialog', () => {
     }
   })
 })
+
+describe('MatchScheduleDialog editing the teams', () => {
+  const teams = [
+    { id: 'team-1', name: 'Tigres FC', tournament_id: 'tour-1', is_active: true },
+    { id: 'team-2', name: 'Leones United', tournament_id: 'tour-1', is_active: true },
+    { id: 'team-3', name: 'Águilas SC', tournament_id: 'tour-1', is_active: true },
+    { id: 'team-9', name: 'Otro Torneo', tournament_id: 'tour-2', is_active: true },
+  ]
+  const render = (match = match1, extra: Parameters<typeof mockApi>[0] = {}) => {
+    const fetchMock = mockApi({ 'GET /teams': { body: { data: teams, page: { limit: 100, offset: 0 } } }, ...extra })
+    return { fetchMock, ...renderWithProviders(<MatchScheduleDialog match={match} leagueId="league-1" open onOpenChange={() => {}} onSaved={() => {}} />) }
+  }
+
+  it('changes the away team of a scheduled match and sends only the changed team', async () => {
+    const { fetchMock, user } = render(match1, { 'PATCH /matches/match-1/schedule': { body: match1 } })
+
+    await user.click(await screen.findByRole('combobox', { name: 'Visitante' }))
+    expect((await screen.findAllByRole('option')).map((o) => o.textContent)).toEqual(['Tigres FC', 'Leones United', 'Águilas SC'])
+    await user.click(screen.getByRole('option', { name: 'Águilas SC' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(await screen.findByText('Programación actualizada exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /matches/match-1/schedule')).toEqual([
+      { away_team_id: 'team-3', field_number: 1, round: 1 },
+    ])
+  })
+
+  it('shows the 422 next to the team select and keeps the choice', async () => {
+    const { user } = render(match1, {
+      'PATCH /matches/match-1/schedule': validationError({ away_team_id: 'debe ser distinto del local' }),
+    })
+    await user.click(await screen.findByRole('combobox', { name: 'Visitante' }))
+    await user.click(await screen.findByRole('option', { name: 'Tigres FC' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    const select = screen.getByRole('combobox', { name: 'Visitante' })
+    expect(await screen.findByText('debe ser distinto del local', { selector: 'p' })).toBeInTheDocument()
+    expect(select).toHaveAttribute('aria-invalid', 'true')
+    expect(select).toHaveTextContent('Tigres FC')
+  })
+
+  it('does not offer team selects for matches that are not scheduled', () => {
+    render({ ...match1, status: 'finished' })
+    expect(screen.queryByRole('combobox', { name: 'Local' })).not.toBeInTheDocument()
+  })
+})

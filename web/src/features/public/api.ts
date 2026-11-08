@@ -51,11 +51,24 @@ export function useStandings(tournamentId: string | undefined) {
   })
 }
 
-/** Get tournament matches. */
+/** Max page size accepted by the API (backend httpx.MaxPageLimit). */
+const PAGE_LIMIT = 100
+
+/**
+ * Get every visible match of a tournament. The API caps pages at 100 and a
+ * double round robin easily exceeds that, so keep reading until a short page.
+ */
 export function useTournamentMatches(tournamentId: string | undefined) {
   return useQuery({
     queryKey: publicKeys.matches(tournamentId ?? ''),
-    queryFn: ({ signal }) => api.list<Match>(`/tournaments/${tournamentId}/matches`, { limit: 100 }, { signal }),
+    queryFn: async ({ signal }) => {
+      const all: Match[] = []
+      for (let offset = 0; ; offset += PAGE_LIMIT) {
+        const res = await api.list<Match>(`/tournaments/${tournamentId}/matches`, { limit: PAGE_LIMIT, offset }, { signal })
+        all.push(...res.data)
+        if (res.data.length < PAGE_LIMIT) return { data: all, page: { limit: all.length, offset: 0 } }
+      }
+    },
     enabled: Boolean(tournamentId),
   })
 }

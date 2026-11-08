@@ -7,19 +7,30 @@ import { Label } from '@/components/ui/label'
 import { ApiError } from '@/lib/api/client'
 import { toast } from 'sonner'
 
-import { useUpdateMatchSchedule } from '../api'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+import { useLeagueTeams, useUpdateMatchSchedule } from '../api'
 import type { MatchWithRelations, UpdateMatchScheduleRequest } from '../types'
 
 interface MatchScheduleDialogProps {
   match: MatchWithRelations
+  /** Enables changing the teams of a scheduled match (the teams come from this league). */
+  leagueId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }
 
 /** Dialog to edit match schedule (date, time, field, round). */
-export function MatchScheduleDialog({ match, open, onOpenChange, onSaved }: MatchScheduleDialogProps) {
+export function MatchScheduleDialog({ match, leagueId, open, onOpenChange, onSaved }: MatchScheduleDialogProps) {
   const updateSchedule = useUpdateMatchSchedule()
+  const canEditTeams = match.status === 'scheduled' && Boolean(leagueId)
+  const leagueTeams = useLeagueTeams(canEditTeams ? leagueId : undefined)
+  const teamOptions = (leagueTeams.data?.data ?? []).filter(
+    (t) => t.id === match.home_team_id || t.id === match.away_team_id || (t.is_active && t.tournament_id === match.tournament_id),
+  )
+  const [homeTeam, setHomeTeam] = useState(match.home_team_id)
+  const [awayTeam, setAwayTeam] = useState(match.away_team_id)
 
   // Parse initial values
   const initialDate = useMemo(() => {
@@ -55,6 +66,8 @@ export function MatchScheduleDialog({ match, open, onOpenChange, onSaved }: Matc
           }
         }
       }
+      if (canEditTeams && homeTeam !== match.home_team_id) data.home_team_id = homeTeam
+      if (canEditTeams && awayTeam !== match.away_team_id) data.away_team_id = awayTeam
       if (field && Number(field) > 0) {
         data.field_number = Number(field)
       }
@@ -88,6 +101,30 @@ export function MatchScheduleDialog({ match, open, onOpenChange, onSaved }: Matc
         </DialogHeader>
 
         <div className="space-y-4">
+          {canEditTeams && (
+            <div className="grid grid-cols-2 gap-3">
+              {([['home', 'Local', homeTeam, setHomeTeam, 'home_team_id'], ['away', 'Visitante', awayTeam, setAwayTeam, 'away_team_id']] as const).map(
+                ([key, label, value, setValue, errKey]) => (
+                  <div key={key}>
+                    <Label htmlFor={`${key}-team`}>{label}</Label>
+                    <Select value={value} onValueChange={setValue} disabled={updateSchedule.isPending}>
+                      <SelectTrigger id={`${key}-team`} className="w-full" aria-invalid={!!errors[errKey]} aria-describedby={errors[errKey] ? `${key}-team-error` : undefined}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teamOptions.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors[errKey] && (
+                      <p id={`${key}-team-error`} className="mt-1 text-sm text-destructive">{errors[errKey]}</p>
+                    )}
+                  </div>
+                ),
+              )}
+            </div>
+          )}
           <div>
             <Label htmlFor="date">Fecha</Label>
             <Input
