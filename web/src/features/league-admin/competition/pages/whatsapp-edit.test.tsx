@@ -24,14 +24,14 @@ describe('WhatsApp: create with tournament, language and user', () => {
     await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
     await user.click(screen.getByLabelText('Usuario (opcional)'))
     await user.click(await screen.findByRole('option', { name: /Ana Pérez/ }))
-    await user.type(screen.getByLabelText('Número de Teléfono'), '5215512345678')
-    await user.click(screen.getByLabelText('Torneo'))
+    await user.type(screen.getByLabelText('Número de WhatsApp'), '5215512345678')
+    await user.click(screen.getByLabelText('Torneo Activo'))
     await user.click(await screen.findByRole('option', { name: 'Clausura' }))
     await user.click(screen.getByLabelText('Idioma Preferido'))
     await user.click(await screen.findByRole('option', { name: 'English' }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear Vínculo' }))
 
-    expect(await screen.findByText('Enlace de WhatsApp creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Vínculo de WhatsApp creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, createRoute)).toEqual([
       {
         phone_number: '5215512345678',
@@ -53,14 +53,14 @@ describe('WhatsApp: create with tournament, language and user', () => {
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
     await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
-    await user.type(screen.getByLabelText('Número de Teléfono'), '5215512345678')
-    await user.click(screen.getByLabelText('Torneo'))
+    await user.type(screen.getByLabelText('Número de WhatsApp'), '5215512345678')
+    await user.click(screen.getByLabelText('Torneo Activo'))
     await user.click(await screen.findByRole('option', { name: /Apertura 2026/ }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear Vínculo' }))
 
     expect(await screen.findByText('el torneo no pertenece a la liga')).toBeInTheDocument()
-    expect(screen.getByLabelText('Torneo')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByLabelText('Número de Teléfono')).toHaveValue('5215512345678')
+    expect(screen.getByLabelText('Torneo Activo')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Número de WhatsApp')).toHaveValue('5215512345678')
   })
 })
 
@@ -69,18 +69,18 @@ describe('WhatsApp: edit and activate/deactivate', () => {
     const fetchMock = mockApi({ ...base, [linksRoute]: list([whatsappLink()]), [putRoute]: { body: whatsappLink() } })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Editar enlace de TESORERIA' }))
-    expect(screen.getByLabelText('Número de Teléfono')).toBeDisabled()
-    const name = screen.getByLabelText('Nombre (opcional)')
+    await user.click(await screen.findByRole('button', { name: 'Editar vínculo de TESORERIA' }))
+    expect(screen.getByLabelText('Número de WhatsApp')).toBeEnabled()
+    const name = screen.getByLabelText('Nombre para Mostrar (Opcional)')
     await user.clear(name)
     await user.type(name, 'presidencia')
-    await user.click(screen.getByLabelText('Torneo'))
+    await user.click(screen.getByLabelText('Torneo Activo'))
     await user.click(await screen.findByRole('option', { name: /Apertura 2026/ }))
     await user.click(screen.getByLabelText('Idioma Preferido'))
     await user.click(await screen.findByRole('option', { name: 'English' }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Vínculo' }))
 
-    expect(await screen.findByText('Enlace actualizado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Vínculo actualizado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, putRoute)).toEqual([
       { display_name: 'PRESIDENCIA', preferred_language: 'en', tournament_id: 'tour-1' },
     ])
@@ -91,12 +91,12 @@ describe('WhatsApp: edit and activate/deactivate', () => {
     const fetchMock = mockApi({ ...base, [linksRoute]: list([whatsappLink({ tournament_id: 'tour-1' })]), [putRoute]: { body: whatsappLink() } })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Editar enlace de TESORERIA' }))
-    await user.click(screen.getByLabelText('Torneo'))
+    await user.click(await screen.findByRole('button', { name: 'Editar vínculo de TESORERIA' }))
+    await user.click(screen.getByLabelText('Torneo Activo'))
     await user.click(await screen.findByRole('option', { name: 'Sin torneo' }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Vínculo' }))
 
-    await screen.findByText('Enlace actualizado correctamente')
+    await screen.findByText('Vínculo actualizado exitosamente')
     expect(requestsTo(fetchMock, putRoute)).toEqual([
       expect.objectContaining({ tournament_id: '00000000-0000-0000-0000-000000000000' }),
     ])
@@ -106,11 +106,11 @@ describe('WhatsApp: edit and activate/deactivate', () => {
     mockApi({ ...base, [linksRoute]: list([whatsappLink()]), [putRoute]: apiError(403, 'forbidden', 'No tienes permiso') })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Editar enlace de TESORERIA' }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Editar vínculo de TESORERIA' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Vínculo' }))
 
     expect((await screen.findAllByText('No tienes permiso')).length).toBeGreaterThan(0)
-    expect(screen.getByLabelText('Nombre (opcional)')).toHaveValue('TESORERIA')
+    expect(screen.getByLabelText('Nombre para Mostrar (Opcional)')).toHaveValue('TESORERIA')
   })
 
   it('deactivates and activates a link with PUT is_active', async () => {
@@ -122,12 +122,43 @@ describe('WhatsApp: edit and activate/deactivate', () => {
     })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Desactivar enlace de TESORERIA' }))
-    expect(await screen.findByText('Enlace desactivado')).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Desactivar vínculo de TESORERIA' }))
+    expect(await screen.findByText('Vínculo desactivado')).toBeInTheDocument()
     expect(requestsTo(fetchMock, putRoute)).toEqual([{ is_active: false }])
 
-    await user.click(screen.getByRole('button', { name: 'Activar enlace de ARBITROS' }))
-    expect(await screen.findByText('Enlace activado')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Activar vínculo de ARBITROS' }))
+    expect(await screen.findByText('Vínculo activado')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'PUT /whatsapp-links/wa-2')).toEqual([{ is_active: true }])
+  })
+})
+
+describe('WhatsApp: change the phone of a link', () => {
+  it('sends the normalised phone only when it changed', async () => {
+    const fetchMock = mockApi({ ...base, [linksRoute]: list([whatsappLink()]), [putRoute]: { body: whatsappLink() } })
+    const { user } = renderWithProviders(<WhatsAppPageComponent />)
+
+    await user.click(await screen.findByRole('button', { name: 'Editar vínculo de TESORERIA' }))
+    const phone = screen.getByLabelText('Número de WhatsApp')
+    await user.clear(phone)
+    await user.type(phone, '+52 (55) 9999-0000')
+    await user.click(screen.getByRole('button', { name: 'Actualizar Vínculo' }))
+
+    expect(await screen.findByText('Vínculo actualizado exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, putRoute)).toEqual([expect.objectContaining({ phone_number: '525599990000' })])
+  })
+
+  it('shows the 409 next to the phone field and keeps the typed value', async () => {
+    mockApi({ ...base, [linksRoute]: list([whatsappLink()]), [putRoute]: apiError(409, 'conflict', 'El recurso ya existe') })
+    const { user } = renderWithProviders(<WhatsAppPageComponent />)
+
+    await user.click(await screen.findByRole('button', { name: 'Editar vínculo de TESORERIA' }))
+    const phone = screen.getByLabelText('Número de WhatsApp')
+    await user.clear(phone)
+    await user.type(phone, '5215599990000')
+    await user.click(screen.getByRole('button', { name: 'Actualizar Vínculo' }))
+
+    expect(await screen.findByText('Este número de teléfono ya está vinculado')).toBeInTheDocument()
+    expect(phone).toHaveAttribute('aria-invalid', 'true')
+    expect(phone).toHaveValue('5215599990000')
   })
 })

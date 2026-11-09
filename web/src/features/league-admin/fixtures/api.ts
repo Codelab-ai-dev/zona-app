@@ -70,10 +70,14 @@ export function useGenerateFixtures() {
       api.post<GenerateFixturesResponse>(`/tournaments/${req.tournament_id}/fixtures/generate`, {
         tournament_id: req.tournament_id,
         teams: req.teams,
+        groups: req.groups,
         is_double_round: req.is_double_round,
         schedule: req.schedule,
+        dry_run: req.dry_run,
       }),
     onSuccess: (data, req) => {
+      // A preview saves nothing: no refresh and no toast.
+      if (req.dry_run) return
       invalidateTournamentMatches(queryClient, req.tournament_id)
       queryClient.invalidateQueries({ queryKey: fixturesKeys.duplicates(req.tournament_id) })
       toast.success(`Se generaron ${data.matches.length} partidos en ${data.rounds} jornadas`)

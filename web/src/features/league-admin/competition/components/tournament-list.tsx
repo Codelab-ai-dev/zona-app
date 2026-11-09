@@ -1,8 +1,18 @@
 import { Calendar, Edit, Loader2, Lock, Plus, ShieldCheck, Trash2, Trophy, Unlock, UserCheck, Users } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { ErrorState, LoadingState } from '@/components/states'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,7 +21,9 @@ import { useDeleteTournament, useTournaments, useUpdateTournament } from '../api
 import type { Tournament } from '../types'
 import { TournamentForm } from './tournament-form'
 
-const formatDate = (value: string) => new Date(value).toLocaleDateString('es-ES')
+/** Long date as in the original ("7 de noviembre de 2026"); date-only values are read as local days. */
+const formatDate = (value: string) =>
+  new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
 const glassButton = 'backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20'
 export const formatLabel: Record<Tournament['tournament_format'], string> = {
   league: '🏆 Liga',
@@ -65,7 +77,13 @@ export function TournamentList({ leagueId }: { leagueId: string }) {
 
 function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leagueId: string }) {
   const [showEdit, setShowEdit] = useState(false)
-  const update = useUpdateTournament(tournament.id)
+  const lastChange = useRef<'status' | 'registration'>('status')
+  const update = useUpdateTournament(tournament.id, (t) =>
+    lastChange.current === 'status'
+      ? `Torneo ${t.is_active ? 'activado' : 'desactivado'} exitosamente`
+      : `Registros ${t.registration_open ? 'abiertos' : 'cerrados'} exitosamente`,
+  )
+  const [confirmRegistration, setConfirmRegistration] = useState(false)
   const remove = useDeleteTournament()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -125,14 +143,17 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
               <Edit className="w-4 h-4 mr-1" aria-hidden="true" />
               Editar
             </Button>
-            <Button className={glassButton} size="sm" disabled={update.isPending} onClick={() => update.mutate({ is_active: !tournament.is_active })}>
+            <Button className={glassButton} size="sm" disabled={update.isPending} onClick={() => {
+                lastChange.current = 'status'
+                update.mutate({ is_active: !tournament.is_active })
+              }}>
               {update.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" aria-hidden="true" />}
               {tournament.is_active ? 'Desactivar' : 'Activar'}
             </Button>
             <Button
               size="sm"
               disabled={update.isPending}
-              onClick={() => update.mutate({ registration_open: !tournament.registration_open })}
+              onClick={() => setConfirmRegistration(true)}
               className={
                 tournament.registration_open
                   ? 'backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0'
@@ -154,6 +175,32 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
         </CardContent>
       </Card>
 
+      <AlertDialog open={confirmRegistration} onOpenChange={setConfirmRegistration}>
+        <AlertDialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white text-sm md:text-base">
+              {tournament.registration_open ? 'Cerrar' : 'Abrir'} registros
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              ¿Estás seguro de que quieres {tournament.registration_open ? 'cerrar' : 'abrir'} los registros de jugadores para "{tournament.name}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2">
+            <AlertDialogCancel className="flex-1 h-9 bg-slate-800/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700/50 text-xs md:text-sm">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
+              onClick={() => {
+                lastChange.current = 'registration'
+                update.mutate({ registration_open: !tournament.registration_open })
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {showEdit && <TournamentForm leagueId={leagueId} tournament={tournament} onClose={() => setShowEdit(false)} />}
       <ConfirmDeleteDialog
         open={confirmDelete}

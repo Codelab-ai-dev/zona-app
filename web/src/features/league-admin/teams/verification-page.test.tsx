@@ -50,9 +50,38 @@ describe('VerificationPage', () => {
     expect(screen.getByText('Pendientes').previousElementSibling).toHaveTextContent('3')
     expect(screen.getByText('Verificados').previousElementSibling).toHaveTextContent('5')
     expect(screen.getAllByText('Sin INE')[0]?.previousElementSibling).toHaveTextContent('2')
-    expect(screen.getByText('24 años')).toBeInTheDocument()
-    expect(screen.getByText('Cumple edad')).toBeInTheDocument()
-    expect(screen.getByText('No cumple edad')).toBeInTheDocument()
+    expect(screen.getByText(/^24 años/)).toHaveTextContent('24 años (cumple la edad del torneo)')
+    expect(screen.getByText(/^13 años/)).toHaveTextContent('13 años (no cumple la edad del torneo)')
+  })
+
+  it('starts on the pending filter like the original and shows the team avatar', async () => {
+    const fetchMock = mockApi({
+      ...base([row({ status: 'pending', document_key: KEY })]),
+      'GET /teams': page([team('team-1', 'Los Campeones', { tournament_id: 'tour-1', logo: 'https://cdn/logo.png' })]),
+    })
+    renderWithProviders(<VerificationPage />)
+
+    await screen.findByText('Juan Pérez')
+    expect(screen.getByRole('combobox', { name: 'Estado' })).toHaveTextContent('Pendientes de verificar')
+    const listCalls = fetchMock.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('/players/verification?'))
+    expect(listCalls.every((u) => u.includes('status=pending'))).toBe(true)
+    // The team avatar falls back to its initial until the logo image loads.
+    expect(screen.getByText('L', { selector: '[data-slot="avatar-fallback"]' })).toBeInTheDocument()
+  })
+
+  it('filters to age-validated tournaments by default and the toggle shows everyone', async () => {
+    const fetchMock = mockApi(base([]))
+    const { user } = renderWithProviders(<VerificationPage />)
+
+    expect(await screen.findByText(/desactiva «Solo torneos con validación de edad»/)).toBeInTheDocument()
+    const calls = () => fetchMock.mock.calls.map(([u]) => String(u)).filter((u) => u.includes('/players/verification'))
+    expect(calls().every((u) => u.includes('age_validation=true'))).toBe(true)
+
+    await user.click(screen.getByRole('switch', { name: 'Solo torneos con validación de edad' }))
+
+    await screen.findByText('No hay jugadores en esta categoría')
+    expect(calls().some((u) => !u.includes('age_validation'))).toBe(true)
+    expect(calls().filter((u) => u.includes('/summary')).some((u) => !u.includes('age_validation'))).toBe(true)
   })
 
   it('shows the API error with retry when the list fails', async () => {

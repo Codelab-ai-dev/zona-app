@@ -1,29 +1,45 @@
-import { useState } from 'react'
-
-import { EmptyState, QueryState } from '@/components/states'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EmptyState, ErrorState, LoadingState, QueryState } from '@/components/states'
 import { useLeagueTournaments } from '@/features/leagues/api'
 
-import { usePlayerRegistrationRequests, useReviewPlayerRegistration } from './api'
+import { useLeagueRegistrationRequests, useLeagueUserNames, useReviewPlayerRegistration, useTeamsByLeague } from './api'
 import { LeaguePicker } from './components/league-picker'
 import { RequestsTable } from './components/requests-table'
 import { useSelectedLeague } from './use-selected-league'
 
+function LeagueRequests({ leagueId, tournamentIds }: { leagueId: string; tournamentIds: string[] }) {
+  const { requests, isPending, error, refetch } = useLeagueRegistrationRequests(tournamentIds)
+  const teams = useTeamsByLeague(leagueId).data?.data ?? []
+  const review = useReviewPlayerRegistration()
+  const userNames = useLeagueUserNames(leagueId).data
+  const teamNames = Object.fromEntries(teams.map((t) => [t.id, t.name]))
+
+  if (isPending) return <LoadingState label="Cargando solicitudes..." />
+  if (error) return <ErrorState error={error} onRetry={refetch} />
+  return (
+    <RequestsTable
+      requests={requests}
+      teamNames={teamNames}
+      userNames={userNames}
+      isPending={review.isPending}
+      onReview={(requestId, status, notes) =>
+        review.mutateAsync({ requestId, review: { status, review_notes: notes } }).then(
+          () => true,
+          () => false,
+        )
+      }
+    />
+  )
+}
+
 export function RequestsPage() {
   const { leaguesQuery, leagueId, setLeagueId } = useSelectedLeague()
-  // The tournament choice belongs to a league: switching league clears it.
-  const [choice, setChoice] = useState({ leagueId: '', tournamentId: '' })
-  const tournamentId = choice.leagueId === leagueId ? choice.tournamentId : ''
   const tournamentsQuery = useLeagueTournaments(leagueId)
-  const requestsQuery = usePlayerRegistrationRequests(tournamentId)
-  const reviewMutation = useReviewPlayerRegistration()
 
   return (
     <div className="space-y-6 py-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Solicitudes de Registros</h1>
-        <p className="text-gray-400">Aprueba o rechaza solicitudes de jugadores</p>
+        <h1 className="text-2xl font-bold text-white">Solicitudes de Jugadores Excepcionales</h1>
+        <p className="text-gray-400">Revisa y aprueba solicitudes de registro fuera del periodo normal</p>
       </div>
 
       <QueryState
@@ -39,47 +55,10 @@ export function RequestsPage() {
             <QueryState
               query={tournamentsQuery}
               isEmpty={(data) => data.data.length === 0}
-              loadingLabel="Cargando torneos…"
+              loadingLabel="Cargando solicitudes..."
               empty={<EmptyState title="No hay torneos" description="Esta liga aún no tiene torneos" />}
             >
-              {(res) => (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="tournament" className="text-gray-400">Torneo</Label>
-                    <Select value={tournamentId} onValueChange={(id) => setChoice({ leagueId, tournamentId: id })}>
-                      <SelectTrigger id="tournament" className="w-full border-white/10 bg-slate-800/50 text-white sm:w-72">
-                        <SelectValue placeholder="Selecciona un torneo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {res.data.map((tournament) => (
-                          <SelectItem key={tournament.id} value={tournament.id}>
-                            {tournament.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {tournamentId && (
-                    <QueryState
-                      query={requestsQuery}
-                      isEmpty={(data) => data.data.length === 0}
-                      loadingLabel="Cargando solicitudes…"
-                      empty={<EmptyState title="No hay solicitudes" description="Este torneo no tiene solicitudes" />}
-                    >
-                      {(requestsRes) => (
-                        <RequestsTable
-                          requests={requestsRes.data}
-                          isPending={reviewMutation.isPending}
-                          onReview={(requestId, status, notes) =>
-                            reviewMutation.mutate({ requestId, review: { status, review_notes: notes } })
-                          }
-                        />
-                      )}
-                    </QueryState>
-                  )}
-                </div>
-              )}
+              {(res) => <LeagueRequests leagueId={leagueId} tournamentIds={res.data.map((t) => t.id)} />}
             </QueryState>
           </div>
         )}

@@ -81,6 +81,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
         onOpenChange={setIsManualOpen}
         tournaments={tournaments.data?.data ?? []}
         getActiveTeams={getActiveTeams}
+        leagueId={leagueId}
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -467,9 +467,10 @@ func (r *PGRepository) RegisterPayment(ctx context.Context, transactionID uuid.U
 		return nil, fmt.Errorf("transaction not found")
 	}
 
-	// Call register_payment SQL function
+	// Call register_payment SQL function; read its row with the shared column
+	// list (aliased like the table so the player subqueries resolve).
 	row := r.db.QueryRow(ctx, `
-		SELECT * FROM public.register_payment($1, $2, $3, $4, $5)
+		SELECT `+transactionCols+` FROM public.register_payment($1, $2, $3, $4, $5) AS finance_transactions
 	`, transactionID, string(req.Amount), string(req.PaymentMethod), req.PaymentReference, paidBy)
 	return scanTransaction(row)
 }

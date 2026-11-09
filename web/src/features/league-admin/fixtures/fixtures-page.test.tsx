@@ -144,31 +144,25 @@ describe('FixturesPage', () => {
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Torneo A')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
 
     expect(await screen.findByText(/Fixtures generados correctamente/)).toBeInTheDocument()
     expect(screen.getByText('Se generaron 3 partidos en 3 jornadas.')).toBeInTheDocument()
-    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toEqual([
-      {
-        tournament_id: 'tour-1',
-        teams: [
-          { id: 'team-1', name: 'Equipo 1' },
-          { id: 'team-2', name: 'Equipo 2' },
-        ],
-        is_double_round: true,
-        schedule: {
-          start_date: '2024-02-03',
-          end_date: '2024-05-01',
-          match_days: ['saturday', 'sunday'],
-          start_time: '09:30',
-          end_time: '20:00',
-          fields_available: 2,
-          half_minutes: 25,
-          halftime_break_minutes: 5,
-          break_between_matches: 10,
-        },
-      },
-    ])
+    const schedule = {
+      start_date: '2024-02-03',
+      end_date: '2024-05-01',
+      match_days: ['saturday', 'sunday'],
+      start_time: '09:30',
+      end_time: '20:00',
+      fields_available: 2,
+      half_minutes: 25,
+      halftime_break_minutes: 5,
+      break_between_matches: 10,
+    }
+    const sent = { tournament_id: 'tour-1', teams: [{ id: 'team-1', name: 'Equipo 1' }, { id: 'team-2', name: 'Equipo 2' }], is_double_round: true, schedule }
+    // First the preview (dry_run), then the same request without it.
+    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toEqual([{ ...sent, dry_run: true }, sent])
     expect(requestsTo(fetchMock, 'POST /knowledge/triggers')).toEqual([
       { trigger_type: 'jornada_update', league_id: 'league-1', tournament_id: 'tour-1', round: 1 },
     ])
@@ -195,7 +189,8 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
     await screen.findByText(/Fixtures generados correctamente/)
 
     const [body] = requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate') as Array<{
@@ -228,7 +223,7 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
 
     const input = await screen.findByLabelText('Fecha de inicio')
     expect(screen.getByText('debe tener formato AAAA-MM-DD')).toBeInTheDocument()
@@ -256,7 +251,7 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('la jornada 2 no cabe antes de la fecha de fin')
@@ -275,7 +270,8 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
 
     expect(await screen.findByText(/no se pudo notificar o actualizar la base de conocimiento/)).toBeInTheDocument()
     expect(screen.getByText(/Fixtures generados correctamente/)).toBeInTheDocument()
@@ -295,7 +291,8 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
     await screen.findByText(/Fixtures generados correctamente/)
 
     expect(client.getQueryState(['matches', 'tournament', 'tour-1'])?.isInvalidated).toBe(true)
@@ -321,12 +318,149 @@ describe('FixturesPage', () => {
     await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
     await next(user)
     await next(user)
-    await user.click(screen.getByRole('button', { name: 'Generar Fixtures' }))
+    await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
     expect(await screen.findByText('Partidos duplicados encontrados')).toBeInTheDocument()
-    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toHaveLength(0)
+    // Only the preview was requested so far.
+    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toHaveLength(1)
 
     await user.click(screen.getByRole('button', { name: 'Generar de todas formas' }))
     expect(await screen.findByText(/Fixtures generados correctamente/)).toBeInTheDocument()
-    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toHaveLength(1)
+    expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate')).toHaveLength(2)
+  })
+
+  it('offers quick day selections and shows the configuration summary before generating', async () => {
+    mockApi(base)
+    const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+    await goToSchedule(user)
+
+    await user.click(screen.getByRole('button', { name: 'Fines de semana' }))
+    expect(screen.getByRole('checkbox', { name: 'Sábado' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Domingo' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Lunes' })).not.toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Todos los días' }))
+    expect(screen.getByRole('checkbox', { name: 'Lunes' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Fines de semana' }))
+
+    await next(user)
+    await next(user)
+    const summary = await screen.findByRole('region', { name: 'Resumen de Configuración' })
+    expect(summary).toHaveTextContent('Jornadas: 1')
+    expect(summary).toHaveTextContent('Partidos total: 1')
+    expect(summary).toHaveTextContent('Días por semana: 2')
+    expect(summary).toHaveTextContent('Duración del partido: 20min + 10min + 20min = 50min')
+    expect(summary).toHaveTextContent('Total por espacio: 65min')
+  })
+
+  describe('Vista Previa', () => {
+    const generated = (i: number, round: number) => ({
+      tournament_id: 'tour-1', home_team_id: 'team-1', away_team_id: 'team-2', match_date: `2024-02-0${i}T00:00:00Z`,
+      match_time: '09:30', field_number: 2, round,
+    })
+    const handlers = {
+      ...base,
+      'POST /tournaments/tour-1/fixtures/generate': { status: 200, body: { matches: [generated(3, 1), generated(10, 2)], rounds: 2, dry_run: true } },
+      'POST /knowledge/triggers': { body: {} },
+      'POST /notifications/leagues/league-1': { body: {} },
+    }
+    const toPreview = async (user: User) => {
+      await goToSchedule(user)
+      await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
+      await next(user)
+      await next(user)
+      await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+      await screen.findByText('Vista Previa del Calendario')
+    }
+
+    it('shows rounds with team names, date, time and field, and Volver saves nothing', async () => {
+      const fetchMock = mockApi(handlers)
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await toPreview(user)
+
+      const round1 = screen.getByRole('region', { name: 'Jornada 1' })
+      expect(round1).toHaveTextContent('Equipo 1 vs Equipo 2')
+      expect(round1).toHaveTextContent('09:30')
+      expect(round1).toHaveTextContent('Cancha 2')
+      expect(screen.getByRole('region', { name: 'Jornada 2' })).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Volver' }))
+      expect(await screen.findByRole('button', { name: 'Generar Vista Previa' })).toBeInTheDocument()
+      const bodies = requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate') as Array<{ dry_run?: boolean }>
+      expect(bodies).toHaveLength(1)
+      expect(bodies[0]?.dry_run).toBe(true)
+      expect(screen.queryByText(/Fixtures generados correctamente/)).not.toBeInTheDocument()
+    })
+
+    it('Guardar Calendario sends the same request without dry_run', async () => {
+      const fetchMock = mockApi(handlers)
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await toPreview(user)
+      await user.click(screen.getByRole('button', { name: 'Guardar Calendario' }))
+
+      expect(await screen.findByText(/Fixtures generados correctamente/)).toBeInTheDocument()
+      const [dry, real] = requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate') as Array<Record<string, unknown>>
+      expect(dry).toEqual({ ...real, dry_run: true })
+      expect(real).not.toHaveProperty('dry_run')
+    })
+  })
+
+  describe('group stage', () => {
+    const groupTournament = { ...tournament, tournament_format: 'group_knockout', number_of_groups: 2 }
+    const grouped = (n: number, group?: string) => ({ ...teams[0]!, id: `team-${n}`, name: `Equipo ${n}`, tournament_id: 'tour-1', ...(group ? { group_name: group } : {}) })
+    const groupBase = (list: unknown[]) => ({
+      ...base,
+      'GET /leagues/league-1/tournaments': { body: { data: [groupTournament], page } },
+      'GET /teams': { body: { data: list, page } },
+      'POST /tournaments/tour-1/fixtures/generate': { status: 200, body: { matches: [], rounds: 3, dry_run: true } },
+    })
+    const open = async (user: User) => {
+      await user.click(screen.getByRole('button', { name: /generar jornadas/i }))
+      await user.click(await screen.findByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Torneo A' }))
+    }
+
+    it('blocks while a team has no group and links to Grupos', async () => {
+      mockApi(groupBase([grouped(1, 'A'), grouped(2, 'A'), grouped(3, 'B'), grouped(4)]))
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await open(user)
+
+      expect(await screen.findByText(/no tiene grupo: Equipo 4/)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Ir a Grupos' })).toHaveAttribute('href', '/liga-admin/grupos')
+      expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    })
+
+    it('previews with the chosen groups only, then saves them', async () => {
+      const fetchMock = mockApi(groupBase([grouped(1, 'A'), grouped(2, 'A'), grouped(3, 'B'), grouped(4, 'B')]))
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await open(user)
+
+      expect(await screen.findByText('Seleccionar Grupos (2 de 2)')).toBeInTheDocument()
+      await user.click(screen.getByLabelText(/Grupo B/))
+      expect(screen.getByText('Seleccionar Grupos (1 de 2)')).toBeInTheDocument()
+      await next(user)
+      await user.type(screen.getByLabelText('Fecha de inicio'), '2024-02-03')
+      await next(user)
+      await next(user)
+      await user.click(screen.getByRole('button', { name: 'Generar Vista Previa' }))
+      await user.click(await screen.findByRole('button', { name: 'Guardar Calendario' }))
+      await screen.findByText(/Fixtures generados correctamente/)
+
+      const groups = [{ name: 'A', teams: [{ id: 'team-1', name: 'Equipo 1' }, { id: 'team-2', name: 'Equipo 2' }] }]
+      const [dry, real] = requestsTo(fetchMock, 'POST /tournaments/tour-1/fixtures/generate') as Array<Record<string, unknown>>
+      expect(dry).toMatchObject({ tournament_id: 'tour-1', groups, dry_run: true })
+      expect(dry).not.toHaveProperty('teams')
+      expect(real).toMatchObject({ groups })
+      expect(real).not.toHaveProperty('dry_run')
+    })
+
+    it('blocks a selected group with fewer than 2 teams', async () => {
+      mockApi(groupBase([grouped(1, 'A'), grouped(2, 'A'), grouped(3, 'B')]))
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await open(user)
+      await screen.findByText('Seleccionar Grupos (1 de 2)')
+      await user.click(screen.getByLabelText(/Grupo B/))
+      expect(screen.getByText(/Cada grupo necesita al menos 2 equipos: revisa Grupo B/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    })
   })
 })

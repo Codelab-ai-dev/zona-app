@@ -6,12 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { useMyLeagues } from '@/features/leagues/api'
 import { CalendarPage } from './calendar-page'
+import { ResultsPage } from './results-page'
 
 /**
  * Wrapper that loads user's leagues via useMyLeagues() and lets them select one
  * for the calendar. If no leagues, show EmptyState.
  */
 export function MatchesLayoutPage() {
+  return <LeagueScope>{(leagueId, leagueSlug) => <CalendarPage leagueId={leagueId} leagueSlug={leagueSlug} />}</LeagueScope>
+}
+
+/** "Resultados" tab: same league selection, result entry list. */
+export function ResultsLayoutPage() {
+  return <LeagueScope>{(leagueId) => <ResultsPage leagueId={leagueId} />}</LeagueScope>
+}
+
+function LeagueScope({ children }: { children: (leagueId: string, leagueSlug?: string) => React.ReactNode }) {
   const leagues = useMyLeagues()
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('')
 
@@ -54,7 +64,7 @@ export function MatchesLayoutPage() {
                 </CardContent>
               </Card>
             )}
-            {leagueToUse && <CalendarPage leagueId={leagueToUse} leagueSlug={leagueSlug} />}
+            {leagueToUse && children(leagueToUse, leagueSlug)}
           </>
         )
       }}

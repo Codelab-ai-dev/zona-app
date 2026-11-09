@@ -1,5 +1,6 @@
 import { AlertCircle, Edit, Loader2, ShieldCheck, Trophy, UserCheck } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -51,9 +52,9 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
     start_date: tournament?.start_date.slice(0, 10) ?? '',
     end_date: tournament?.end_date.slice(0, 10) ?? '',
     max_players: str(tournament?.max_players),
-    max_coaching_staff: str(tournament?.max_coaching_staff),
+    max_coaching_staff: tournament ? str(tournament.max_coaching_staff) || '10' : '10',
     tournament_format: tournament?.tournament_format ?? ('league' as Format),
-    rounds_per_season: tournament?.rounds_per_season ?? 1,
+    rounds_per_season: tournament?.rounds_per_season ?? 2,
     number_of_groups: str(tournament?.number_of_groups) || '4',
     teams_advancing_per_group: str(tournament?.teams_advancing_per_group) || '2',
     has_third_place_match: tournament?.has_third_place_match ?? false,
@@ -61,7 +62,7 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
     min_age: str(tournament?.min_age),
     max_age: str(tournament?.max_age),
     age_reference_date: tournament?.age_reference_date?.slice(0, 10) ?? '',
-    age_exception_count: str(tournament?.age_exception_count),
+    age_exception_count: str(tournament?.age_exception_count) || '0',
     age_exception_min_age: str(tournament?.age_exception_min_age),
     age_exception_max_age: str(tournament?.age_exception_max_age),
     id_document_required: tournament?.id_document_required ?? false,
@@ -118,6 +119,10 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
+    if (!form.name.trim() || !form.start_date || !form.end_date) {
+      toast.error('Por favor completa todos los campos requeridos')
+      return
+    }
     try {
       if (tournament) await update.mutateAsync(payload())
       else await create.mutateAsync({ ...payload(), league_id: leagueId })
@@ -149,7 +154,7 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
             </Alert>
           ) : null}
           <Field id="name" label="Nombre del Torneo" error={errors.name}>
-            <Input {...text('name')} placeholder="Ej: Apertura 2026" className={inputClass} />
+            <Input {...text('name')} placeholder="Temporada 2026 - Apertura" className={inputClass} />
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field id="start_date" label="Fecha de Inicio" error={errors.start_date}>
@@ -164,7 +169,7 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
               <Input {...text('max_players')} type="number" min="1" placeholder="Sin límite" className={inputClass} />
             </Field>
             <Field id="max_coaching_staff" label="Límite Cuerpo Técnico" error={errors.max_coaching_staff}>
-              <Input {...text('max_coaching_staff')} type="number" min="1" placeholder="Sin límite" className={inputClass} />
+              <Input {...text('max_coaching_staff')} type="number" min="1" max="20" placeholder="10" className={inputClass} />
             </Field>
           </div>
           <Field id="tournament_format" label="Formato del Torneo">
@@ -259,13 +264,13 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
                 </Field>
                 <div className="grid grid-cols-3 gap-2">
                   <Field id="age_exception_count" label="Excepciones">
-                    <Input {...text('age_exception_count')} type="number" min="0" placeholder="0" className={inputClass} />
+                    <Input {...text('age_exception_count')} type="number" min="0" max="10" placeholder="0" className={inputClass} />
                   </Field>
                   <Field id="age_exception_min_age" label="Edad Mín. Exc.">
-                    <Input {...text('age_exception_min_age')} type="number" min="1" max="99" className={inputClass} />
+                    <Input {...text('age_exception_min_age')} type="number" min="1" max="99" placeholder="Ej: 37" className={inputClass} />
                   </Field>
                   <Field id="age_exception_max_age" label="Edad Máx. Exc.">
-                    <Input {...text('age_exception_max_age')} type="number" min="1" max="99" className={inputClass} />
+                    <Input {...text('age_exception_max_age')} type="number" min="1" max="99" placeholder="Sin límite" className={inputClass} />
                   </Field>
                 </div>
                 <p className="text-[10px] text-gray-500">Número de jugadores que pueden registrarse fuera del rango de edad principal</p>
@@ -275,7 +280,7 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
               <Switch id="id_document_required" checked={form.id_document_required} onCheckedChange={(c) => set('id_document_required', c)} />
               <Label htmlFor="id_document_required" className="cursor-pointer text-gray-300 text-xs md:text-sm flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-green-400" aria-hidden="true" />
-                Requerir INE a los jugadores
+                Requerir INE para registro
               </Label>
             </div>
           </div>
@@ -284,10 +289,10 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
             {isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
-                Guardando…
+                {tournament ? 'Actualizando…' : 'Creando…'}
               </>
             ) : tournament ? (
-              'Guardar Cambios'
+              'Actualizar Torneo'
             ) : (
               'Crear Torneo'
             )}

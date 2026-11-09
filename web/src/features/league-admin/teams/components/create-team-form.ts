@@ -12,15 +12,13 @@ export interface OwnerData {
   name: string
   email: string
   phone: string
-  password: string
-  confirmPassword: string
 }
 
 export type FieldErrors = Record<string, string>
 
 export const NO_TOURNAMENT = 'none'
 export const emptyTeam: TeamData = { name: '', slug: '', description: '', tournamentId: NO_TOURNAMENT }
-export const emptyOwner: OwnerData = { name: '', email: '', phone: '', password: '', confirmPassword: '' }
+export const emptyOwner: OwnerData = { name: '', email: '', phone: '' }
 
 /** Lowercase, accent-free, hyphenated slug ("Las Águilas" -> "las-aguilas"). */
 export function slugify(name: string): string {
@@ -34,10 +32,10 @@ export function slugify(name: string): string {
     .replace(/-+/g, '-')
 }
 
+/** Name is required; the slug may stay empty (it is generated from the name). */
 export function validateTeam(team: TeamData): FieldErrors {
   const errors: FieldErrors = {}
   if (!team.name.trim()) errors.name = 'El nombre es requerido'
-  if (!team.slug.trim()) errors.slug = 'El slug es requerido'
   return errors
 }
 
@@ -46,17 +44,21 @@ export function validateOwner(owner: OwnerData): FieldErrors {
   if (!owner.name.trim()) errors.ownerName = 'El nombre del propietario es requerido'
   if (!owner.email.trim()) errors.email = 'El email es requerido'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner.email)) errors.email = 'Email inválido'
-  if (!owner.password) errors.password = 'La contraseña es requerida'
-  else if (owner.password.length < 10) errors.password = 'La contraseña debe tener mínimo 10 caracteres'
-  if (!owner.confirmPassword) errors.confirmPassword = 'La confirmación es requerida'
-  else if (owner.password !== owner.confirmPassword) errors.confirmPassword = 'Las contraseñas no coinciden'
   return errors
 }
 
-export function buildRequests(team: TeamData, owner: OwnerData, leagueId: string) {
+const PASSWORD_CHARS = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*'
+
+/** Temporary owner password (12 characters, cryptographically random). */
+export function generatePassword(length = 12): string {
+  const values = crypto.getRandomValues(new Uint32Array(length))
+  return Array.from(values, (v) => PASSWORD_CHARS[v % PASSWORD_CHARS.length]).join('')
+}
+
+export function buildRequests(team: TeamData, owner: OwnerData, password: string, leagueId: string) {
   const teamReq: CreateTeamRequest = {
     name: team.name.trim(),
-    slug: team.slug.trim(),
+    slug: team.slug.trim() || slugify(team.name),
     league_id: leagueId,
     tournament_id: team.tournamentId === NO_TOURNAMENT ? undefined : team.tournamentId,
     description: team.description || undefined,
@@ -64,7 +66,7 @@ export function buildRequests(team: TeamData, owner: OwnerData, leagueId: string
   const ownerReq: CreateUserRequest = {
     name: owner.name.trim(),
     email: owner.email.trim(),
-    password: owner.password,
+    password,
     phone: owner.phone || undefined,
     role: 'team_owner',
     league_id: leagueId,

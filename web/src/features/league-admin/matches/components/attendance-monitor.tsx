@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { toast } from 'sonner'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +8,10 @@ import { Button } from '@/components/ui/button'
 
 import { useMatchAttendance, useTeamPlayers } from '../api'
 import type { MatchWithRelations } from '../types'
+
+const confidenceColor = (c: number) => (c >= 0.9 ? 'bg-green-500' : c >= 0.8 ? 'bg-blue-500' : c >= 0.7 ? 'bg-yellow-500' : 'bg-red-500')
+const pct = (n: number) => `${(n * 100).toFixed(1)}%`
+const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
 interface AttendanceMonitorProps {
   match: MatchWithRelations
@@ -32,6 +37,15 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
     return { home, away }
   }, [attendance.data?.data, homePlayers.data?.data, awayPlayers.data?.data])
 
+  // The original toasted every new check-in; here the polling brings it in.
+  const seen = useRef<number | null>(null)
+  const count = attendance.data?.data.length
+  useEffect(() => {
+    if (count === undefined) return
+    if (seen.current !== null && count > seen.current) toast.success('Nueva asistencia registrada')
+    seen.current = count
+  }, [count])
+
   const totalAttendance = attendanceCounts.home + attendanceCounts.away
 
   const teamOf = useMemo(() => {
@@ -53,7 +67,11 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
           <CardTitle className="flex items-center gap-2">
             <Users className="size-5" aria-hidden="true" />
             Monitoreo de Asistencias
+            <Badge variant="outline" className="ml-2">{count ?? 0} registros</Badge>
           </CardTitle>
+          {attendance.dataUpdatedAt > 0 && (
+            <span className="text-sm text-muted-foreground">Actualizado: {timeOf(new Date(attendance.dataUpdatedAt).toISOString())}</span>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -107,13 +125,26 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
                       {teamOf.get(r.player_id) && <span className="ml-1 text-xs text-muted-foreground"> ({teamOf.get(r.player_id)})</span>}
                     </span>
                     <span className="flex flex-shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                      <time dateTime={r.timestamp}>
-                        {new Date(r.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                      </time>
+                      <time dateTime={r.timestamp}>{timeOf(r.timestamp)}</time>
                       <Badge variant="outline" className="gap-1">
                         {r.source === 'qr' ? <QrCode className="size-3" aria-hidden="true" /> : <ScanFace className="size-3" aria-hidden="true" />}
                         {r.source === 'qr' ? 'QR' : 'Facial'}
                       </Badge>
+                      {r.source === 'facial' && (
+                        <>
+                          <Badge variant="outline">{r.recognition_mode === 'quick' ? 'Rápido' : 'Verificado'}</Badge>
+                          <span className="text-right">
+                            <span className="block font-medium">Confianza: {pct(r.confidence_score)}</span>
+                            <span className="block">Similitud: {pct(r.similarity_score)}</span>
+                          </span>
+                          <span
+                            role="img"
+                            aria-label={`Nivel de confianza ${pct(r.confidence_score)}`}
+                            title={`Confianza: ${pct(r.confidence_score)}`}
+                            className={`h-8 w-3 rounded-full ${confidenceColor(r.confidence_score)}`}
+                          />
+                        </>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -122,7 +153,7 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
           )}
 
           {!attendance.isPending && present.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aún no hay jugadores registrados.</p>
+            <p className="text-sm text-muted-foreground">No hay asistencias registradas</p>
           )}
 
           {attendance.isPending && (

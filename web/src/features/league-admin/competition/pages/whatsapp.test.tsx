@@ -42,12 +42,12 @@ describe('WhatsApp page: links', () => {
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
     await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
-    await user.type(screen.getByLabelText('Número de Teléfono'), '5215512345678')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.type(screen.getByLabelText('Número de WhatsApp'), '5215512345678')
+    await user.click(screen.getByRole('button', { name: 'Crear Vínculo' }))
 
-    expect(await screen.findByText('Enlace de WhatsApp creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Vínculo de WhatsApp creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /leagues/league-1/whatsapp-links')).toEqual([
-      { phone_number: '5215512345678', role: 'team_owner', display_name: '', preferred_language: 'es' },
+      { phone_number: '5215512345678', role: 'team_owner', preferred_language: 'es' },
     ])
     expect(requestsTo(fetchMock, linksRoute).length).toBeGreaterThanOrEqual(2)
   })
@@ -60,11 +60,11 @@ describe('WhatsApp page: links', () => {
     })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Eliminar enlace de TESORERIA' }))
+    await user.click(await screen.findByRole('button', { name: 'Eliminar vínculo de TESORERIA' }))
     expect(requestsTo(fetchMock, 'DELETE /whatsapp-links/wa-1')).toEqual([])
     await user.click(screen.getByRole('button', { name: 'Sí, eliminar' }))
 
-    expect(await screen.findByText('Enlace eliminado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Vínculo eliminado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'DELETE /whatsapp-links/wa-1')).toHaveLength(1)
   })
 
@@ -72,7 +72,7 @@ describe('WhatsApp page: links', () => {
     const fetchMock = mockApi({ ...mineOne, [linksRoute]: list([whatsappLink()]) })
     const { user } = renderWithProviders(<WhatsAppPageComponent />)
 
-    await user.click(await screen.findByRole('button', { name: 'Eliminar enlace de TESORERIA' }))
+    await user.click(await screen.findByRole('button', { name: 'Eliminar vínculo de TESORERIA' }))
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()

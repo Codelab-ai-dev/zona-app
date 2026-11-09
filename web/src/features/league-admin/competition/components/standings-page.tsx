@@ -173,10 +173,11 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                         </TableCell>
                         <TableCell className="text-center px-1">
                           <div className="flex flex-col items-center">
-                            <span className="font-bold text-white text-sm md:text-base">{team.points}</span>
+                            <span className="font-bold text-white text-sm md:text-base">{team.points + team.points_adjustment}</span>
                             {hasAdjustment && (
                               <span className="text-[8px] md:text-[10px] text-gray-500">
-                                ({team.points_adjustment > 0 ? '+' : ''}
+                                ({team.points}
+                                {team.points_adjustment >= 0 ? '+' : ''}
                                 {team.points_adjustment})
                               </span>
                             )}

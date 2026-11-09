@@ -15,6 +15,8 @@ export interface VerificationFilters {
   status: VerificationStatus | ''
   teamId: string
   q: string
+  /** Only players of tournaments with age validation (the original's behaviour). */
+  ageOnly: boolean
   limit: number
   offset: number
 }
@@ -24,7 +26,7 @@ const leagueRoot = (leagueId: string) => [...teamsKeys.all, 'league-verification
 export const verificationKeys = {
   league: leagueRoot,
   list: (leagueId: string, filters: VerificationFilters) => [...leagueRoot(leagueId), 'list', filters] as const,
-  summary: (leagueId: string) => [...leagueRoot(leagueId), 'summary'] as const,
+  summary: (leagueId: string, ageOnly: boolean) => [...leagueRoot(leagueId), 'summary', ageOnly] as const,
 }
 
 /** League-wide verification list (GET /leagues/{id}/players/verification). */
@@ -35,7 +37,7 @@ export function useLeagueVerification(leagueId: string, filters: VerificationFil
       api.list<LeaguePlayerVerification>(
         `/leagues/${leagueId}/players/verification`,
         { limit: filters.limit, offset: filters.offset },
-        { query: { status: filters.status, team_id: filters.teamId, q: filters.q }, signal },
+        { query: { status: filters.status, team_id: filters.teamId, q: filters.q, age_validation: filters.ageOnly ? 'true' : '' }, signal },
       ),
     enabled: Boolean(leagueId),
     placeholderData: keepPreviousData,
@@ -43,10 +45,10 @@ export function useLeagueVerification(leagueId: string, filters: VerificationFil
 }
 
 /** Counters of the league (GET /leagues/{id}/players/verification/summary). */
-export function useVerificationSummary(leagueId: string) {
+export function useVerificationSummary(leagueId: string, ageOnly: boolean) {
   return useQuery({
-    queryKey: verificationKeys.summary(leagueId),
-    queryFn: ({ signal }) => api.get<VerificationSummary>(`/leagues/${leagueId}/players/verification/summary`, { signal }),
+    queryKey: verificationKeys.summary(leagueId, ageOnly),
+    queryFn: ({ signal }) => api.get<VerificationSummary>(`/leagues/${leagueId}/players/verification/summary`, { query: { age_validation: ageOnly ? 'true' : '' }, signal }),
     enabled: Boolean(leagueId),
   })
 }

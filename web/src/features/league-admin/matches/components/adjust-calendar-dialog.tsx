@@ -1,7 +1,8 @@
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Settings, Users } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ApiError } from '@/lib/api/client'
@@ -9,6 +10,7 @@ import { ApiError } from '@/lib/api/client'
 import { useBulkCreateMatches } from '../api'
 import { analyzeCalendar, buildMissingMatches } from '../calendar-analysis'
 import type { MatchWithRelations, TeamSummary } from '../types'
+import { useRegenerateCalendar } from '../use-regenerate-calendar'
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
@@ -16,6 +18,7 @@ interface AdjustCalendarDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   tournamentId: string
+  leagueId?: string
   /** Teams of the tournament (active or not). */
   teams: TeamSummary[]
   matches: MatchWithRelations[]
@@ -25,8 +28,14 @@ interface AdjustCalendarDialogProps {
  * "Ajustar Calendario": compares the active teams with the round-robin
  * already scheduled and creates the missing matches in new rounds.
  */
-export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, teams, matches }: AdjustCalendarDialogProps) {
+export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, leagueId, teams, matches }: AdjustCalendarDialogProps) {
   const bulkCreate = useBulkCreateMatches()
+  const [confirmRegen, setConfirmRegen] = useState(false)
+  const regen = useRegenerateCalendar(leagueId, tournamentId, teams, matches, () => {
+    setConfirmRegen(false)
+    onOpenChange(false)
+  })
+  const scheduledCount = regen.plan.scheduled.length
   const analysis = useMemo(() => analyzeCalendar(teams, matches), [teams, matches])
   const missing = analysis.missingPairs.length
   const rounds = missing > 0 ? new Set(buildMissingMatches(analysis, matches).map((m) => m.round)).size : 0
@@ -54,7 +63,7 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, teams, 
   }[tone]
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !bulkCreate.isPending && onOpenChange(next)}>
+    <Dialog open={open} onOpenChange={(next) => !bulkCreate.isPending && !regen.pending && onOpenChange(next)}>
       <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-y-auto border-white/10 bg-slate-900 md:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm text-white md:text-base">
@@ -144,6 +153,27 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, teams, 
             </p>
           )}
 
+          {scheduledCount > 0 && (
+            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+              <p className="text-[10px] text-red-400 md:text-xs">
+                <strong>Regenerar:</strong> elimina los {scheduledCount} partidos programados de la fase regular y vuelve a crear los
+                enfrentamientos pendientes de los {analysis.activeTeams.length} equipos activos ({regen.newMatches.length} partidos en jornadas nuevas
+                {regen.plan.analysis.lastRound > 0 ? ` desde la jornada ${regen.plan.analysis.lastRound + 1}` : ''}). Los partidos finalizados, en juego y
+                cancelados se mantienen.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmRegen(true)}
+                disabled={regen.pending || bulkCreate.isPending}
+                className="mt-2 h-8 border-red-500/40 bg-transparent text-xs text-red-400 hover:bg-red-500/20"
+              >
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                Regenerar calendario
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-2 pt-2">
             <Button
               variant="outline"
@@ -168,6 +198,21 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, teams, 
           </div>
         </div>
       </DialogContent>
+      {confirmRegen && (
+        <ConfirmDeleteDialog
+          open
+          onOpenChange={(next) => !next && setConfirmRegen(false)}
+          name={`${scheduledCount} partidos programados`}
+          consequences={[
+            `${scheduledCount} partidos programados de la fase regular (incluye los que armaste a mano)`,
+            `Se crean ${regen.newMatches.length} partidos nuevos con los equipos activos`,
+            'Los partidos finalizados, en juego y cancelados no se tocan',
+          ]}
+          hint="Si solo faltan enfrentamientos, usa Crear partidos faltantes: no elimina nada."
+          pending={regen.pending}
+          onConfirm={() => void regen.regenerate()}
+        />
+      )}
     </Dialog>
   )
 }

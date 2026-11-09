@@ -79,6 +79,8 @@ export interface UpdateTeamRequest {
   /** Nil UUID clears the tournament. */
   tournament_id?: string
   name?: string
+  /** Public URL slug (unique in the league). */
+  slug?: string
   logo?: string
   description?: string
   group_name?: string

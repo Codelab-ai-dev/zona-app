@@ -35,13 +35,14 @@ export function useCreateTournament() {
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournaments(data.league_id) })
       void queryClient.invalidateQueries({ queryKey: leagueKeys.all })
-      toast.success('Torneo creado correctamente')
+      toast.success(`Torneo "${data.name}" creado exitosamente`)
     },
     onError,
   })
 }
 
-export function useUpdateTournament(tournamentId: string) {
+/** `message` builds the success toast from the updated tournament (default: generic update text). */
+export function useUpdateTournament(tournamentId: string, message?: (updated: Tournament) => string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: TournamentInput) => api.patch<Tournament>(`/tournaments/${tournamentId}`, data),
@@ -49,7 +50,7 @@ export function useUpdateTournament(tournamentId: string) {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournament(tournamentId) })
       void queryClient.invalidateQueries({ queryKey: competitionKeys.tournaments(data.league_id) })
       void queryClient.invalidateQueries({ queryKey: leagueKeys.all })
-      toast.success('Torneo actualizado correctamente')
+      toast.success(message ? message(data) : `Torneo "${data.name}" actualizado exitosamente`)
     },
     onError,
   })
@@ -137,7 +138,7 @@ export function useCreateSuspension() {
     }) => api.post<Suspension>('/suspensions', data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: suspensionsKey })
-      toast.success('Suspensión creada correctamente')
+      toast.success('Suspensión creada exitosamente')
     },
     onError,
   })
@@ -150,7 +151,7 @@ export function useUpdateSuspension(suspensionId: string) {
       api.put<Suspension>(`/suspensions/${suspensionId}`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: suspensionsKey })
-      toast.success('Suspensión actualizada correctamente')
+      toast.success('Suspensión actualizada exitosamente')
     },
     onError,
   })
@@ -162,7 +163,7 @@ export function useCancelSuspension(suspensionId: string) {
     mutationFn: () => api.post<Suspension>(`/suspensions/${suspensionId}/cancel`, {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: suspensionsKey })
-      toast.success('Suspensión cancelada correctamente')
+      toast.success('Suspensión cancelada exitosamente')
     },
     onError,
   })
@@ -174,7 +175,7 @@ export function useCompleteSuspension(suspensionId: string) {
     mutationFn: () => api.post<Suspension>(`/suspensions/${suspensionId}/complete`, {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: suspensionsKey })
-      toast.success('Suspensión completada correctamente')
+      toast.success('Suspensión completada exitosamente')
     },
     onError,
   })

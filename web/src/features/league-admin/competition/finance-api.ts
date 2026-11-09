@@ -25,13 +25,26 @@ export function useFinanceConfig(leagueId: string | undefined) {
   })
 }
 
+/** Currency of the league's finance config (MXN until it loads or when there is none). */
+export function useCurrency(leagueId: string | undefined): string {
+  return useFinanceConfig(leagueId).data?.currency || 'MXN'
+}
+
+/**
+ * Body of PUT /leagues/{id}/finance/config (unknown fields such as `name` are rejected by the API;
+ * `currency` is one of MXN, USD, EUR, COP, ARS, CLP, PEN). Amounts are decimal strings.
+ */
+export type UpdateConfigInput = Partial<
+  Omit<FinanceConfig, 'id' | 'league_id' | 'tournament_id' | 'name' | 'is_active' | 'created_by' | 'updated_by' | 'created_at' | 'updated_at'>
+>
+
 export function useUpdateFinanceConfig(leagueId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: Partial<FinanceConfig>) => api.put<FinanceConfig>(`/leagues/${leagueId}/finance/config`, data),
+    mutationFn: (data: UpdateConfigInput) => api.put<FinanceConfig>(`/leagues/${leagueId}/finance/config`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: competitionKeys.financeConfig(leagueId) })
-      toast.success('Configuración financiera actualizada correctamente')
+      toast.success('Configuración actualizada exitosamente')
     },
     onError,
   })
@@ -41,6 +54,8 @@ export function useUpdateFinanceConfig(leagueId: string) {
 export interface TransactionFilters {
   status?: string
   transaction_type?: string
+  /** Server-side text search (description, notes, team and player name; max 100 chars). */
+  q?: string
 }
 
 const activeFilters = (filters: TransactionFilters) =>
@@ -56,6 +71,16 @@ export function useTransactions(
     queryKey: competitionKeys.transactions(leagueId ?? '', page, query),
     queryFn: ({ signal }) => api.list<Transaction>(`/leagues/${leagueId}/finance/transactions`, page, { signal, query }),
     enabled: Boolean(leagueId),
+  })
+}
+
+/** How many transactions have `status` (reads `page.total` of a one-row page). */
+export function useTransactionCount(leagueId: string, status: string) {
+  return useQuery({
+    queryKey: competitionKeys.transactions(leagueId, { limit: 1, offset: 0 }, { status }),
+    queryFn: ({ signal }) =>
+      api.list<Transaction>(`/leagues/${leagueId}/finance/transactions`, { limit: 1, offset: 0 }, { signal, query: { status } }),
+    select: (res) => res.page.total ?? 0,
   })
 }
 
@@ -84,6 +109,10 @@ export interface CreateTransactionInput {
   is_income: boolean
   team_id?: string
   notes?: string
+  /** YYYY-MM-DD: when the payment is due (charges only). */
+  due_date?: string
+  /** YYYY-MM-DD: defaults to today on the API. */
+  transaction_date?: string
 }
 
 export function useCreateTransaction(leagueId: string) {
@@ -93,7 +122,7 @@ export function useCreateTransaction(leagueId: string) {
       api.post<Transaction>(`/leagues/${leagueId}/finance/transactions`, data),
     onSuccess: () => {
       invalidateFinance(queryClient)
-      toast.success('Movimiento creado correctamente')
+      toast.success('Transacción creada exitosamente')
     },
     onError,
   })
@@ -104,9 +133,9 @@ export function useRegisterPayment(leagueId: string, transactionId: string) {
   return useMutation({
     mutationFn: (data: { amount: string; payment_method: string; payment_reference?: string }) =>
       api.post<Transaction>(`/leagues/${leagueId}/finance/transactions/${transactionId}/pay`, data),
-    onSuccess: () => {
+    onSuccess: (transaction) => {
       invalidateFinance(queryClient)
-      toast.success('Pago registrado correctamente')
+      toast.success(transaction.status === 'paid' ? 'Pago completo registrado exitosamente' : 'Pago parcial registrado exitosamente')
     },
     onError,
   })

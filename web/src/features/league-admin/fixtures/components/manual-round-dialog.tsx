@@ -1,4 +1,4 @@
-import { Hand, Plus, Trash2 } from 'lucide-react'
+import { Calendar, Hand, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -12,6 +12,7 @@ import type { Tournament } from '@/features/leagues/types'
 import { ApiError } from '@/lib/api/client'
 
 import { useTournamentMatches } from '../api'
+import { EditRoundPanel } from './edit-round-panel'
 
 interface ManualRow {
   id: string
@@ -27,6 +28,7 @@ interface ManualRoundDialogProps {
   onOpenChange: (open: boolean) => void
   tournaments: Tournament[]
   getActiveTeams: (tournamentId?: string) => Array<{ id: string; name: string }>
+  leagueId: string
 }
 
 const newRow = (prev?: ManualRow): ManualRow => ({
@@ -41,7 +43,8 @@ const newRow = (prev?: ManualRow): ManualRow => ({
 const SELECT = 'h-9 w-full border-white/10 bg-slate-800/50 text-xs text-white'
 
 /** "Modo Manual": builds one round by hand (teams, date, time, field) and creates it in one request. */
-export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTeams }: ManualRoundDialogProps) {
+export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTeams, leagueId }: ManualRoundDialogProps) {
+  const [action, setAction] = useState<'create' | 'edit'>('create')
   const [tournamentId, setTournamentId] = useState('')
   const [round, setRound] = useState('')
   const [rows, setRows] = useState<ManualRow[]>([newRow()])
@@ -51,6 +54,8 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
   const bulkCreate = useBulkCreateMatches()
   const teams = getActiveTeams(tournamentId)
   const existingRounds = new Set((existing.data?.data ?? []).map((m) => m.round))
+  const hasRounds = (existing.data?.data ?? []).some((m) => m.phase === 'regular' && m.round !== undefined)
+  const editing = action === 'edit' && hasRounds
   const nextRound = Math.max(0, ...(existing.data?.data ?? []).map((m) => m.round ?? 0)) + 1
   const roundNumber = Number(round || nextRound)
 
@@ -139,17 +144,43 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
             </div>
           </div>
 
-          {tournamentId && existingRounds.has(roundNumber) && (
+          {tournamentId && hasRounds && (
+            <div className="rounded-xl border border-white/10 bg-slate-800/50 p-3">
+              <p className="mb-2 block text-[10px] uppercase tracking-wide text-gray-500">Acción</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" aria-pressed={!editing} variant={editing ? 'outline' : 'default'} onClick={() => setAction('create')} className={`h-10 gap-2 ${editing ? 'border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white' : 'border-0 bg-green-500 text-white hover:bg-green-600'}`}>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-xs font-medium">Crear Nueva</span>
+                </Button>
+                <Button type="button" aria-pressed={editing} variant={editing ? 'default' : 'outline'} onClick={() => setAction('edit')} className={`h-10 gap-2 ${editing ? 'border-0 bg-orange-500 text-white hover:bg-orange-600' : 'border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white'}`}>
+                  <Calendar className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-xs font-medium">Editar Anterior</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {editing && (
+            <EditRoundPanel
+              leagueId={leagueId}
+              tournamentId={tournamentId}
+              matches={existing.data?.data ?? []}
+              teams={teams}
+              onDone={() => onOpenChange(false)}
+            />
+          )}
+
+          {!editing && tournamentId && existingRounds.has(roundNumber) && (
             <p className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-2 text-xs text-yellow-400">
               La jornada {roundNumber} ya existe: los partidos se agregarán a ella.
             </p>
           )}
 
-          {tournamentId && teams.length < 2 && (
+          {!editing && tournamentId && teams.length < 2 && (
             <p className="text-xs text-gray-400">Este torneo necesita al menos 2 equipos activos.</p>
           )}
 
-          {tournamentId && (
+          {!editing && tournamentId && (
             <ul className="space-y-3">
               {rows.map((r, i) => (
                 <li key={r.id} className="space-y-2 rounded-lg border border-white/5 bg-slate-700/30 p-3">
@@ -185,14 +216,14 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
             </ul>
           )}
 
-          {tournamentId && (
+          {!editing && tournamentId && (
             <Button type="button" variant="outline" size="sm" onClick={() => setRows((x) => [...x, newRow(x[x.length - 1])])} className="w-full border-white/10 bg-slate-800/50 text-gray-300 hover:text-white">
               <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
               Agregar partido
             </Button>
           )}
 
-          {errors.length > 0 && (
+          {!editing && errors.length > 0 && (
             <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
               <ul className="list-inside list-disc space-y-1">
                 {errors.map((e) => (
@@ -202,14 +233,14 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          {!editing && <div className="flex gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={bulkCreate.isPending} className="h-9 flex-1 border-white/10 bg-slate-800/50 text-xs text-gray-400 hover:text-white">
               Cancelar
             </Button>
             <Button onClick={() => void handleSave()} disabled={bulkCreate.isPending || !tournamentId} className="h-9 flex-1 bg-green-500 text-xs text-white hover:bg-green-600">
               {bulkCreate.isPending ? 'Creando…' : 'Crear jornada'}
             </Button>
-          </div>
+          </div>}
         </div>
       </DialogContent>
     </Dialog>

@@ -18,15 +18,12 @@ describe('create team with a tournament', () => {
     })
     const { user } = renderWithProviders(<CreateTeamDialog open onOpenChange={() => {}} leagueId="league-1" />)
 
-    await user.type(screen.getByLabelText('Nombre del equipo'), 'Tigres')
+    await user.type(screen.getByLabelText('Nombre del Equipo *'), 'Tigres')
     await user.click(screen.getByRole('combobox', { name: /torneo/i }))
     await user.click(await screen.findByRole('option', { name: 'Apertura' }))
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    await user.type(await screen.findByLabelText('Nombre del propietario'), 'Ana')
-    await user.type(screen.getByLabelText('Email'), 'ana@example.com')
-    await user.type(screen.getByLabelText(/^contraseña/i), 'SecurePass123!')
-    await user.type(screen.getByLabelText('Confirmar contraseña'), 'SecurePass123!')
-    await user.click(screen.getByRole('button', { name: 'Crear equipo y propietario' }))
+    await user.type(screen.getByLabelText('Nombre Completo *'), 'Ana')
+    await user.type(screen.getByLabelText('Email *'), 'ana@example.com')
+    await user.click(screen.getByRole('button', { name: 'Crear Equipo' }))
 
     expect(await screen.findByText('Equipo creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /teams')).toEqual([
@@ -46,16 +43,56 @@ describe('edit team tournament and owner', () => {
     const fetchMock = mockApi({ ...reads, 'PATCH /teams/team-1': { body: t }, 'PATCH /admin/users/owner-team-1': { body: owner } })
     const { user } = open()
 
-    await waitFor(() => expect(screen.getByLabelText('Email del propietario')).toHaveValue('juan@example.com'))
-    expect(screen.getByLabelText('Nombre del propietario')).toHaveValue('JUAN PEREZ')
-    const phone = screen.getByLabelText('Teléfono del propietario')
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('juan@example.com'))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('JUAN PEREZ')
+    const phone = screen.getByLabelText('Teléfono')
     await user.clear(phone)
     await user.type(phone, '5512345678')
-    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
 
     expect(await screen.findByText('Equipo actualizado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'PATCH /admin/users/owner-team-1')).toEqual([{ phone: '5512345678' }])
     expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([{ name: 'Los Campeones' }])
+  })
+
+  it('clears the description by sending an empty string and uploads a new logo', async () => {
+    const withDescription = team('team-1', 'Los Campeones', { tournament_id: 'tour-1', description: 'Del barrio' })
+    const fetchMock = mockApi({
+      ...reads,
+      'POST /storage/objects': { status: 201, body: { key: 'team/team-1/l.png', url: 'https://cdn/l.png', is_public: true } },
+      'PATCH /teams/team-1': { body: withDescription },
+    })
+    const { user } = renderWithProviders(<EditTeamDialog team={withDescription} open onOpenChange={() => {}} />)
+
+    await user.clear(screen.getByLabelText('Descripción'))
+    await user.upload(screen.getByLabelText('Logo del equipo'), new File(['x'], 'l.png', { type: 'image/png' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
+
+    expect(await screen.findByText('Equipo actualizado exitosamente')).toBeInTheDocument()
+    const [form] = requestsTo(fetchMock, 'POST /storage/objects') as FormData[]
+    expect(form?.get('scope_id')).toBe('team-1')
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([
+      { name: 'Los Campeones', description: '', logo: 'https://cdn/l.png' },
+    ])
+  })
+
+  it('changes the URL (slug) only when edited and shows the duplicate error on 422', async () => {
+    const fetchMock = mockApi({
+      ...reads,
+      'PATCH /teams/team-1': { status: 422, body: { error: { code: 'validation_error', message: 'Datos inválidos', fields: { slug: 'ya existe un equipo con esa URL en la liga' } } } },
+    })
+    const { user } = open()
+
+    const slug = screen.getByLabelText('URL Personalizada')
+    expect(slug).toHaveValue('los-campeones')
+    await user.clear(slug)
+    await user.type(slug, 'Campeones-FC')
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
+
+    expect(await screen.findByText('ya existe un equipo con esa URL en la liga')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([{ name: 'Los Campeones', slug: 'campeones-fc' }])
+    expect(slug).toHaveAttribute('aria-invalid', 'true')
+    expect(slug).toHaveValue('campeones-fc')
   })
 
   it('clears the tournament with the nil UUID', async () => {
@@ -63,8 +100,8 @@ describe('edit team tournament and owner', () => {
     const { user } = open()
 
     await user.click(screen.getByRole('combobox', { name: 'Torneo' }))
-    await user.click(await screen.findByRole('option', { name: 'Sin torneo' }))
-    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(await screen.findByRole('option', { name: 'Sin torneo asignado' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
 
     expect(await screen.findByText('Equipo actualizado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'PATCH /teams/team-1')).toEqual([
@@ -79,7 +116,7 @@ describe('edit team tournament and owner', () => {
     })
     const { user } = open()
 
-    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
     expect(await screen.findByText('Datos inválidos')).toBeInTheDocument()
   })
 
@@ -92,7 +129,7 @@ describe('edit team tournament and owner', () => {
     const { user } = open()
 
     expect(await screen.findByText(/no se pudieron cargar los datos actuales/i)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
     expect(await screen.findByText('Equipo actualizado exitosamente')).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([u, init]) => String(u).includes('/admin/users') && init?.method === 'PATCH')).toBe(false)
   })
@@ -105,11 +142,11 @@ describe('edit team tournament and owner', () => {
     })
     const { user } = open()
 
-    await waitFor(() => expect(screen.getByLabelText('Email del propietario')).toHaveValue('juan@example.com'))
-    const email = screen.getByLabelText('Email del propietario')
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('juan@example.com'))
+    const email = screen.getByLabelText('Email')
     await user.clear(email)
     await user.type(email, 'malo')
-    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Equipo' }))
 
     expect(await screen.findByText('El formato del email no es válido')).toBeInTheDocument()
     expect(email).toHaveAttribute('aria-invalid', 'true')

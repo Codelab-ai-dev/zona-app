@@ -16,7 +16,8 @@ describe('Standings page', () => {
 
     expect(await screen.findByText('Tigres')).toBeInTheDocument()
     expect(screen.getByText('Leones')).toBeInTheDocument()
-    expect(screen.getByText('(-3)')).toBeInTheDocument()
+    expect(screen.getByText('6')).toBeInTheDocument()
+    expect(screen.getByText('(9-3)')).toBeInTheDocument()
   })
 
   it('shows the empty state when the tournament has no teams', async () => {
@@ -54,7 +55,7 @@ describe('Standings page', () => {
     const points = screen.getByLabelText('Ajuste de Puntos')
     await user.clear(points)
     await user.type(points, '-3')
-    expect(screen.getByText('Nuevo total: 9 puntos')).toBeInTheDocument()
+    expect(screen.getByText('Puntos totales:').nextSibling).toHaveTextContent('9')
     await user.type(screen.getByLabelText('Motivo'), 'alineación indebida')
     await user.click(screen.getByRole('button', { name: 'Ajustar' }))
 
@@ -63,6 +64,31 @@ describe('Standings page', () => {
       { team_id: 'team-1', tournament_id: 'tour-1', points_adjustment: -3, adjustment_reason: 'ALINEACIÓN INDEBIDA' },
     ])
     expect(requestsTo(fetchMock, table).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('starts from the current adjustment and removes it by saving 0', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      ...tournaments,
+      [table]: list([standing({ points_adjustment: -3, adjustment_reason: 'Alineación indebida' })]),
+      'POST /standings/adjust': { status: 204 },
+    })
+    const { user } = renderWithProviders(<StandingsPageComponent />)
+
+    await user.click(await screen.findByRole('button', { name: 'Ajustar puntos de Tigres' }))
+    const points = screen.getByLabelText('Ajuste de Puntos')
+    expect(points).toHaveValue(-3)
+    expect(screen.getByLabelText('Motivo')).toHaveValue('Alineación indebida')
+    expect(screen.getByText('Puntos totales:').nextSibling).toHaveTextContent('9')
+    await user.clear(points)
+    await user.type(points, '0')
+    await user.clear(screen.getByLabelText('Motivo'))
+    await user.click(screen.getByRole('button', { name: 'Ajustar' }))
+
+    expect(await screen.findByText('Puntos ajustados correctamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /standings/adjust')).toEqual([
+      { team_id: 'team-1', tournament_id: 'tour-1', points_adjustment: 0, adjustment_reason: 'Ajuste retirado' },
+    ])
   })
 
   it('blocks an adjustment without a reason and sends nothing', async () => {

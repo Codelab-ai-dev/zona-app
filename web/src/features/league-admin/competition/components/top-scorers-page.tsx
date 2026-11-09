@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 import { useDiscipline, useManualStats, useTopScorers, useTournaments, type ManualStats } from '../api'
+import type { PlayerStats } from '../types'
 import { DisciplineTable } from './discipline-table'
 import { ManualStatsDialog } from './manual-stats-dialog'
 import { ManualStatsList } from './manual-stats-list'
+import { ScorerEditDialog } from './scorer-edit-dialog'
 import { ScorersPodium } from './scorers-podium'
 
 type ViewMode = 'scorers' | 'discipline'
@@ -36,6 +38,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
   const [chosen, setChosen] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('scorers')
   const [dialog, setDialog] = useState<{ editing?: ManualStats } | null>(null)
+  const [editingScorer, setEditingScorer] = useState<PlayerStats | null>(null)
 
   const list = tournaments.data?.data ?? []
   const selectedTournament = chosen || (list.find((t) => t.is_active) ?? list[0])?.id || ''
@@ -53,7 +56,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
   }
   if (tournaments.isError) return <ErrorState error={tournaments.error} onRetry={() => void tournaments.refetch()} />
 
-  const title = viewMode === 'scorers' ? 'Tabla de Goleadores' : 'Tabla de Disciplina'
+  const title = viewMode === 'scorers' ? 'Tabla de Goleadores' : 'Disciplina'
   const query = viewMode === 'scorers' ? scorers : discipline
   const rows = query.data?.data ?? []
 
@@ -124,7 +127,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
         <div role="status" className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin mr-3 text-white" aria-hidden="true" />
           <span className="text-base sm:text-lg text-white drop-shadow">
-            {viewMode === 'scorers' ? 'Cargando goleadores…' : 'Cargando disciplina…'}
+            {viewMode === 'scorers' ? 'Cargando goleadores...' : 'Cargando datos disciplinarios...'}
           </span>
         </div>
       ) : query.isError ? (
@@ -133,7 +136,14 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
         <Card className={glass}>
           <CardContent className="text-center py-12">
             <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-white/50 mb-4" aria-hidden="true" />
-            <p className="text-white/80 drop-shadow">No hay jugadores en este torneo</p>
+            {viewMode === 'discipline' ? (
+              <>
+                <h3 className="text-base sm:text-lg font-medium text-white drop-shadow-lg mb-2">No hay registros disciplinarios</h3>
+                <p className="text-white/80 drop-shadow">No se han registrado tarjetas en partidos de este torneo.</p>
+              </>
+            ) : (
+              <p className="text-white/80 drop-shadow">No hay goles registrados en este torneo todavía</p>
+            )}
           </CardContent>
         </Card>
       ) : viewMode === 'discipline' ? (
@@ -161,6 +171,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
                       <TableHead className="text-center text-white/90">Goles</TableHead>
                       <TableHead className="text-center text-white/90">Asistencias</TableHead>
                       <TableHead className="text-center text-white/90">Promedio</TableHead>
+                      <TableHead className="text-center text-white/90">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -184,6 +195,17 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
                         <TableCell className="text-center text-sm text-white/70">
                           {scorer.matches_played > 0 ? (scorer.goals / scorer.matches_played).toFixed(2) : '0.00'}
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingScorer(scorer)}
+                            aria-label={`Editar estadísticas de ${scorer.player_name}`}
+                            className="text-white/70 hover:text-white hover:bg-white/10"
+                          >
+                            Editar
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -197,6 +219,14 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
 
       {viewMode === 'scorers' && selectedTournament && (manual.data?.data.length ?? 0) > 0 && (
         <ManualStatsList tournamentId={selectedTournament} entries={manual.data?.data ?? []} onEdit={(entry) => setDialog({ editing: entry })} />
+      )}
+      {editingScorer && selectedTournament && (
+        <ScorerEditDialog
+          scorer={editingScorer}
+          manual={manual.data?.data.find((m) => m.player_id === editingScorer.player_id)}
+          tournamentId={selectedTournament}
+          onClose={() => setEditingScorer(null)}
+        />
       )}
       {dialog && selectedTournament && (
         <ManualStatsDialog

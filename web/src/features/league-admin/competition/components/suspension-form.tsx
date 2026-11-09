@@ -26,18 +26,20 @@ import { ApiError } from '@/lib/api/client'
 
 import { useCreateSuspension, useUpdateSuspension } from '../api'
 import type { Suspension } from '../types'
+import { SuspensionSummary } from './suspension-summary'
 
 interface SuspensionFormProps {
   leagueId: string
   suspension?: Suspension
+  teamName?: string
   onClose: () => void
 }
 
-export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionFormProps) {
+export function SuspensionForm({ leagueId, suspension, teamName, onClose }: SuspensionFormProps) {
   const [formData, setFormData] = useState({
     player_id: suspension?.player_id ?? '',
     team_id: suspension?.team_id ?? '',
-    suspension_type: suspension?.suspension_type ?? 'red_card',
+    suspension_type: suspension?.suspension_type ?? 'disciplinary_committee',
     reason: suspension?.reason ?? '',
     matches_to_serve: suspension?.matches_to_serve ?? 1,
     notes: suspension?.notes ?? '',
@@ -103,7 +105,7 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
             {suspension ? 'Editar Suspensión' : 'Nueva Suspensión'}
           </DialogTitle>
           <DialogDescription className="text-gray-400 text-xs md:text-sm">
-            {suspension ? 'Actualiza los detalles de la suspensión' : 'Registra una nueva suspensión de jugador'}
+            {suspension ? 'Modifica el número de partidos de suspensión' : 'Crea una suspensión para un jugador por decisión disciplinaria'}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,6 +122,8 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
               </AlertDescription>
             </Alert>
           ) : null}
+
+          {suspension && <SuspensionSummary suspension={suspension} teamName={teamName} />}
 
           {!suspension && (
             <>
@@ -194,9 +198,9 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-white/10 max-h-60">
-                    <SelectItem value="red_card">Tarjeta Roja</SelectItem>
-                    <SelectItem value="yellow_accumulation">Acumulación de Amarillas</SelectItem>
                     <SelectItem value="disciplinary_committee">Comité Disciplinario</SelectItem>
+                    <SelectItem value="yellow_accumulation">Acumulación de Amarillas</SelectItem>
+                    <SelectItem value="red_card">Tarjeta Roja</SelectItem>
                     <SelectItem value="other">Otro</SelectItem>
                   </SelectContent>
                 </Select>
@@ -204,12 +208,13 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
 
               <div className="space-y-2">
                 <Label htmlFor="reason" className="text-[10px] text-gray-500 uppercase tracking-wide">Motivo</Label>
-                <Input
-                  className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
+                <Textarea
+                  className="bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
                   id="reason"
+                  rows={3}
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  placeholder="Motivo de la suspensión"
+                  placeholder="Describe el motivo de la suspensión..."
                   aria-invalid={!!errors.reason}
                   aria-describedby={errors.reason ? 'reason-error' : undefined}
                   disabled={isPending}
@@ -224,18 +229,24 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="matches_to_serve" className="text-[10px] text-gray-500 uppercase tracking-wide">Jornadas a Suspender</Label>
+            <Label htmlFor="matches_to_serve" className="text-[10px] text-gray-500 uppercase tracking-wide">Número de Partidos a Cumplir</Label>
             <Input
                   className="h-10 bg-slate-800/50 border-white/10 text-white placeholder:text-gray-500 text-sm"
               id="matches_to_serve"
               type="number"
               min="1"
+              max="20"
               value={formData.matches_to_serve}
               onChange={(e) => setFormData({ ...formData, matches_to_serve: parseInt(e.target.value, 10) })}
               aria-invalid={!!errors.matches_to_serve}
               aria-describedby={errors.matches_to_serve ? 'matches-error' : undefined}
               disabled={isPending}
             />
+            {suspension && (
+              <p className="text-xs text-gray-400">
+                Partidos restantes: {Math.max(0, (Number.isFinite(formData.matches_to_serve) ? formData.matches_to_serve : 0) - suspension.matches_served)}
+              </p>
+            )}
             {errors.matches_to_serve && (
               <p id="matches-error" className="text-xs text-red-400">
                 {errors.matches_to_serve}
@@ -260,9 +271,11 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
             <div className="flex gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div className="text-xs text-yellow-300/90">
-                <p className="font-medium">Nota importante:</p>
+                <p className="font-medium">{suspension ? 'Nota:' : 'Nota importante:'}</p>
                 <p className="mt-1 text-yellow-300/70">
-                  El jugador no podrá registrar asistencia en los próximos {Number.isFinite(formData.matches_to_serve) ? formData.matches_to_serve : 1} partido(s) de su equipo.
+                  {suspension
+                    ? `Al modificar el número de partidos, se actualizará el total de partidos a cumplir. Los partidos ya cumplidos (${suspension.matches_served}) no se modificarán.`
+                    : `El jugador no podrá registrar asistencia en los próximos ${Number.isFinite(formData.matches_to_serve) ? formData.matches_to_serve : 1} partido(s) de su equipo.`}
                 </p>
               </div>
             </div>
@@ -273,7 +286,7 @@ export function SuspensionForm({ leagueId, suspension, onClose }: SuspensionForm
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending} className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm">
-              {isPending ? 'Guardando…' : 'Guardar'}
+              {isPending ? (suspension ? 'Guardando…' : 'Creando…') : suspension ? 'Guardar Cambios' : 'Crear Suspensión'}
             </Button>
           </DialogFooter>
         </form>

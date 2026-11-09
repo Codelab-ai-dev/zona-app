@@ -34,6 +34,18 @@ export function hasUnpickedPlayer(form: ResultFormState): boolean {
 }
 
 /**
+ * Teams whose registered goals exceed their score (the original blocked saving).
+ * An own goal is credited to the other team.
+ */
+export function goalsExceedingScore(form: ResultFormState): Side[] {
+  const credited = (side: Side) =>
+    form.goals.filter((g) => (g.goal_type === 'own_goal' ? g.side !== side : g.side === side)).length
+  const score = (side: Side) => (side === 'home' ? form.homeScore : form.awayScore)
+  // A negative score is the API's 422 to report, not this check's.
+  return (['home', 'away'] as const).filter((side) => score(side) >= 0 && credited(side) > score(side))
+}
+
+/**
  * Builds the exact PostMatchResultRequest the Go API expects: team_id derived
  * from the roster the player was picked from, events in ascending minute order
  * (the API rejects unordered lists).

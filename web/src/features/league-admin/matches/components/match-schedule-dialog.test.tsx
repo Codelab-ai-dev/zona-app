@@ -109,6 +109,22 @@ describe('MatchScheduleDialog editing the teams', () => {
     ])
   })
 
+  it('refreshes the round knowledge and notifies after saving the schedule, like the original', async () => {
+    const { fetchMock, user } = render(match1, {
+      'PATCH /matches/match-1/schedule': { body: match1 },
+      'POST /knowledge/triggers': { status: 204 },
+      'POST /notifications/leagues/league-1': { status: 204 },
+    })
+    await user.click(await screen.findByRole('button', { name: 'Guardar' }))
+
+    await screen.findByText('Programación actualizada exitosamente')
+    await vi.waitFor(() => expect(requestsTo(fetchMock, 'POST /notifications/leagues/league-1')).toHaveLength(1))
+    expect(requestsTo(fetchMock, 'POST /notifications/leagues/league-1')).toEqual([{ league_id: 'league-1', tournament_id: 'tour-1', round: 1 }])
+    expect(requestsTo(fetchMock, 'POST /knowledge/triggers')).toEqual([
+      { trigger_type: 'jornada_update', league_id: 'league-1', tournament_id: 'tour-1', round: 1 },
+    ])
+  })
+
   it('shows the 422 next to the team select and keeps the choice', async () => {
     const { user } = render(match1, {
       'PATCH /matches/match-1/schedule': validationError({ away_team_id: 'debe ser distinto del local' }),

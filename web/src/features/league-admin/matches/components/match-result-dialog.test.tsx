@@ -90,6 +90,8 @@ describe('MatchResultDialog', () => {
     const { fetchMock, user } = setup()
     await screen.findByLabelText('Goles Tigres FC')
 
+    await setScore(user, 'Goles Tigres FC', '1')
+    await setScore(user, 'Goles Leones United', '1')
     await addEvent(user, 'Goles', 'Agregar gol (Leones United)', 'Leones United', 'Carlos Díaz', '60')
     await addEvent(user, 'Goles', 'Agregar gol (Tigres FC)', 'Tigres FC', 'Beto Ruiz', '20')
     await user.selectOptions(screen.getByLabelText('Tipo de gol (Tigres FC)'), 'penalty')
@@ -98,8 +100,8 @@ describe('MatchResultDialog', () => {
     await screen.findByText('Resultado registrado exitosamente')
     expect(requestsTo(fetchMock, 'POST /matches/match-1/result')).toEqual([
       {
-        home_score: 0,
-        away_score: 0,
+        home_score: 1,
+        away_score: 1,
         goals: [
           { player_id: 'p-home-2', team_id: 'team-1', minute: 20, goal_type: 'penalty' },
           { player_id: 'p-away-1', team_id: 'team-2', minute: 60, goal_type: 'normal' },
@@ -107,6 +109,16 @@ describe('MatchResultDialog', () => {
         cards: [],
       },
     ])
+  })
+
+  it('does not post while the registered goals exceed the score, and says which team', async () => {
+    const { fetchMock, user } = setup()
+    await screen.findByLabelText('Goles Tigres FC')
+    await addEvent(user, 'Goles', 'Agregar gol (Tigres FC)', 'Tigres FC', 'Ana Pérez', '12')
+    await user.click(screen.getByRole('button', { name: 'Guardar resultado' }))
+
+    expect(await screen.findByText('Los goles registrados del local (1) exceden el marcador (0)', { selector: 'li' })).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /matches/match-1/result')).toHaveLength(0)
   })
 
   it('does not post while a goal has no player picked', async () => {

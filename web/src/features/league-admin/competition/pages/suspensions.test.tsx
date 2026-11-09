@@ -60,18 +60,18 @@ describe('Suspensions page', () => {
     await user.click(screen.getByLabelText('Jugador'))
     await user.click(await screen.findByRole('option', { name: /Carlos Ruiz/ }))
     await user.type(screen.getByLabelText('Motivo'), 'agresión al árbitro')
-    const matches = screen.getByLabelText('Jornadas a Suspender')
+    const matches = screen.getByLabelText('Número de Partidos a Cumplir')
     await user.clear(matches)
     await user.type(matches, '3')
     await user.type(screen.getByLabelText('Notas'), 'ver video')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^(Crear Suspensión|Guardar Cambios)$/ }))
 
-    expect(await screen.findByText('Suspensión creada correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Suspensión creada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /suspensions')).toEqual([
       {
         player_id: 'player-1',
         team_id: 'team-1',
-        suspension_type: 'red_card',
+        suspension_type: 'disciplinary_committee',
         reason: 'AGRESIÓN AL ÁRBITRO',
         matches_to_serve: 3,
         notes: 'VER VIDEO',
@@ -85,7 +85,7 @@ describe('Suspensions page', () => {
     const { user } = renderWithProviders(<SuspensionsPageComponent />)
 
     await user.click(await screen.findByRole('button', { name: /nueva suspensión/i }))
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^(Crear Suspensión|Guardar Cambios)$/ }))
 
     expect(await screen.findByText('El motivo es obligatorio')).toBeInTheDocument()
     expect(screen.getByLabelText('Equipo')).toHaveAttribute('aria-invalid', 'true')
@@ -110,10 +110,10 @@ describe('Suspensions page', () => {
     await user.click(screen.getByLabelText('Jugador'))
     await user.click(await screen.findByRole('option', { name: /Carlos Ruiz/ }))
     await user.type(screen.getByLabelText('Motivo'), 'x')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^(Crear Suspensión|Guardar Cambios)$/ }))
 
     expect(await screen.findByText('debe ser mayor a 0')).toBeInTheDocument()
-    expect(screen.getByLabelText('Jornadas a Suspender')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Número de Partidos a Cumplir')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByLabelText('Motivo')).toHaveValue('X')
   })
 
@@ -126,13 +126,16 @@ describe('Suspensions page', () => {
     const { user } = renderWithProviders(<SuspensionsPageComponent />)
 
     await user.click(await screen.findByRole('button', { name: 'Editar' }))
-    const matches = screen.getByLabelText('Jornadas a Suspender')
+    const matches = screen.getByLabelText('Número de Partidos a Cumplir')
     expect(matches).toHaveValue(3)
+    expect(screen.getByText('Partidos restantes: 2')).toBeInTheDocument()
+    expect(screen.getByText('Partidos cumplidos')).toBeInTheDocument()
     await user.clear(matches)
     await user.type(matches, '5')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(screen.getByText('Partidos restantes: 4')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^(Crear Suspensión|Guardar Cambios)$/ }))
 
-    expect(await screen.findByText('Suspensión actualizada correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Suspensión actualizada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'PUT /suspensions/susp-1')).toEqual([{ matches_to_serve: 5, notes: 'Revisar video' }])
   })
 
@@ -149,7 +152,7 @@ describe('Suspensions page', () => {
     expect(screen.getByRole('alertdialog')).toHaveTextContent('Cancelar Suspensión')
     await user.click(screen.getByRole('button', { name: 'Sí, cancelar' }))
 
-    expect(await screen.findByText('Suspensión cancelada correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Suspensión cancelada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /suspensions/susp-1/cancel')).toEqual([{}])
   })
 
@@ -176,7 +179,7 @@ describe('Suspensions page', () => {
     expect(screen.getByRole('alertdialog')).toHaveTextContent('Completar Suspensión')
     await user.click(screen.getByRole('button', { name: 'Sí, completar' }))
 
-    expect(await screen.findByText('Suspensión completada correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Suspensión completada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /suspensions/susp-1/complete')).toEqual([{}])
   })
 

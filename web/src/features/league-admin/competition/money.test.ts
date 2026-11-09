@@ -34,3 +34,25 @@ describe('money', () => {
     expect(formatMoney(undefined)).toMatch(/0\.00/)
   })
 })
+
+describe('money: config amounts and totals', () => {
+  it('accepts zero (and numbers from the API) for config amounts', async () => {
+    const { validateNonNegativeAmount } = await import('./money')
+    expect(validateNonNegativeAmount('0')).toEqual({ ok: true, value: '0.00' })
+    expect(validateNonNegativeAmount(0)).toEqual({ ok: true, value: '0.00' })
+    expect(validateNonNegativeAmount('0.00')).toEqual({ ok: true, value: '0.00' })
+    expect(validateNonNegativeAmount(50)).toEqual({ ok: true, value: '50.00' })
+    expect(validateNonNegativeAmount('12.345')).toEqual({ ok: false, error: 'Máximo 2 decimales' })
+    expect(validateNonNegativeAmount('-1')).toEqual({ ok: false, error: 'Ingresa un monto válido' })
+    expect(validateNonNegativeAmount('')).toEqual({ ok: false, error: 'Ingresa un monto' })
+  })
+
+  it('sums in cents and formats in the league currency', async () => {
+    const { sumAmounts, absAmount } = await import('./money')
+    expect(sumAmounts(['0.10', '0.20', 300.5])).toBe('300.80')
+    expect(sumAmounts(['-5.00', '2.50'])).toBe('-2.50')
+    expect(absAmount('-12.50')).toBe('12.50')
+    expect(formatMoney('1500.5', 'USD')).toMatch(/1,500\.50/)
+    expect(formatMoney('10', 'MXN')).toBe('$10.00')
+  })
+})

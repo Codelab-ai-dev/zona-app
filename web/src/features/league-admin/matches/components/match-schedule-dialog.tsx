@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+import { runFixtureFollowUps } from '@/features/league-admin/fixtures/api'
 import { useLeagueTeams, useUpdateMatchSchedule } from '../api'
 import type { MatchWithRelations, UpdateMatchScheduleRequest } from '../types'
 
@@ -77,6 +78,12 @@ export function MatchScheduleDialog({ match, leagueId, open, onOpenChange, onSav
 
       await updateSchedule.mutateAsync({ matchId: match.id, data })
       toast.success('Programación actualizada exitosamente')
+      // Like the original: refresh the round's knowledge and notify. A failure never undoes the save.
+      const notifyRound = data.round ?? match.round
+      if (leagueId && notifyRound) {
+        const ok = await runFixtureFollowUps(leagueId, match.tournament_id, notifyRound)
+        if (!ok) toast.warning('El partido se actualizó, pero no se pudo notificar por WhatsApp o actualizar la base de conocimiento')
+      }
       onSaved()
     } catch (err) {
       if (err instanceof ApiError) {

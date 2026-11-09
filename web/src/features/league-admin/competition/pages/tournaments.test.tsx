@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
@@ -48,7 +48,7 @@ describe('Tournaments page', () => {
     await user.type(screen.getByLabelText('Fecha de Fin'), '2026-05-30')
     await user.click(screen.getByRole('button', { name: 'Crear Torneo' }))
 
-    expect(await screen.findByText('Torneo creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Torneo "COPA PRIMAVERA" creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /tournaments')).toEqual([
       {
         league_id: 'league-1',
@@ -56,7 +56,8 @@ describe('Tournaments page', () => {
         start_date: '2026-03-01',
         end_date: '2026-05-30',
         tournament_format: 'league',
-        rounds_per_season: 1,
+        max_coaching_staff: 10,
+        rounds_per_season: 2,
         is_active: true,
       },
     ])
@@ -74,6 +75,8 @@ describe('Tournaments page', () => {
 
     await user.click(await screen.findByRole('button', { name: /nuevo torneo/i }))
     await user.type(screen.getByLabelText('Nombre del Torneo'), 'Copa')
+    await user.type(screen.getByLabelText('Fecha de Inicio'), '2026-03-01')
+    await user.type(screen.getByLabelText('Fecha de Fin'), '2026-05-30')
     await user.click(screen.getByRole('button', { name: 'Crear Torneo' }))
 
     const name = screen.getByLabelText('Nombre del Torneo')
@@ -97,18 +100,67 @@ describe('Tournaments page', () => {
     expect(screen.getByLabelText('Fecha de Inicio')).toHaveValue('2026-02-01')
     await user.clear(name)
     await user.type(name, 'Apertura 2027')
-    await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar Torneo' }))
 
-    expect(await screen.findByText('Torneo actualizado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Torneo "APERTURA 2027" actualizado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'PATCH /tournaments/tour-1')).toEqual([
       {
         name: 'APERTURA 2027',
         start_date: '2026-02-01',
         end_date: '2026-06-30',
+        max_coaching_staff: 10,
         tournament_format: 'league',
         rounds_per_season: 2,
         is_active: true,
       },
     ])
+  })
+
+  it('asks before closing registrations and sends nothing when cancelled', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      [listRoute]: list([tournament()]),
+      'PATCH /tournaments/tour-1': { body: tournament({ registration_open: false }) },
+    })
+    const { user } = renderWithProviders(<TournamentsPage />)
+
+    await user.click(await screen.findByRole('button', { name: /cerrar registros/i }))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(
+      within(dialog).getByText('¿Estás seguro de que quieres cerrar los registros de jugadores para "Apertura 2026"?'),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+    expect(requestsTo(fetchMock, 'PATCH /tournaments/tour-1')).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: /cerrar registros/i }))
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Confirmar' }))
+
+    expect(await screen.findByText('Registros cerrados exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /tournaments/tour-1')).toEqual([{ registration_open: false }])
+  })
+
+  it('deactivates a tournament and reports it', async () => {
+    const fetchMock = mockApi({
+      ...mineOne,
+      [listRoute]: list([tournament()]),
+      'PATCH /tournaments/tour-1': { body: tournament({ is_active: false }) },
+    })
+    const { user } = renderWithProviders(<TournamentsPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
+
+    expect(await screen.findByText('Torneo desactivado exitosamente')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'PATCH /tournaments/tour-1')).toEqual([{ is_active: false }])
+  })
+
+  it('requires name and dates before sending anything', async () => {
+    const fetchMock = mockApi({ ...mineOne, [listRoute]: list([]), 'POST /tournaments': { status: 201, body: tournament() } })
+    const { user } = renderWithProviders(<TournamentsPage />)
+
+    await user.click(await screen.findByRole('button', { name: /nuevo torneo/i }))
+    await user.click(screen.getByRole('button', { name: 'Crear Torneo' }))
+
+    expect(await screen.findByText('Por favor completa todos los campos requeridos')).toBeInTheDocument()
+    expect(requestsTo(fetchMock, 'POST /tournaments')).toHaveLength(0)
   })
 })

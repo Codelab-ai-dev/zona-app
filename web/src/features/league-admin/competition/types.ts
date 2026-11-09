@@ -139,6 +139,8 @@ export interface Transaction {
   tournament_id?: string
   team_id?: string
   player_id?: string
+  player_name?: string
+  player_number?: number
   match_id?: string
   transaction_type: string
   description: string

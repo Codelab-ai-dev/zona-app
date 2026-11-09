@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useLeagueTournaments } from '@/features/leagues/api'
 
-import { useTeamsByLeague } from './api'
+import { useLeagueUserNames, useTeamsByLeague } from './api'
 import { CreateTeamDialog } from './components/create-team-dialog'
 import { LeaguePicker } from './components/league-picker'
 import { TeamsTable } from './components/teams-table'
@@ -26,10 +26,10 @@ function EmptyTeams({ total }: { total: number }) {
     <div className="py-12 text-center">
       <Shield className="mx-auto mb-4 h-12 w-12 text-white/50 drop-shadow" aria-hidden="true" />
       <h3 className="mb-2 text-base font-medium text-white drop-shadow-lg sm:text-lg">
-        {total === 0 ? 'No hay equipos' : 'No hay equipos en este torneo'}
+        {total === 0 ? 'No hay equipos registrados' : 'No hay equipos en este torneo'}
       </h3>
       <p className="text-white/80 drop-shadow">
-        {total === 0 ? 'Crea el primer equipo de la liga' : 'Selecciona otro torneo o agrega equipos a este torneo'}
+        {total === 0 ? 'Los equipos aparecerán aquí cuando se registren en tu liga' : 'Selecciona otro torneo o agrega equipos a este torneo'}
       </p>
     </div>
   )
@@ -40,6 +40,7 @@ export function TeamsListPage() {
   const [filter, setFilter] = useState('all')
   const { leaguesQuery, leagueId, setLeagueId } = useSelectedLeague()
   const teamsQuery = useTeamsByLeague(leagueId)
+  const ownerNames = useLeagueUserNames(leagueId).data
   const tournaments = useLeagueTournaments(leagueId).data?.data ?? []
   const tournamentNames = Object.fromEntries(tournaments.map((t) => [t.id, t.name]))
 
@@ -96,7 +97,7 @@ export function TeamsListPage() {
                         {shown.length} equipo{shown.length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    {shown.length === 0 ? <EmptyTeams total={res.data.length} /> : <TeamsTable teams={shown} tournamentNames={tournamentNames} />}
+                    {shown.length === 0 ? <EmptyTeams total={res.data.length} /> : <TeamsTable teams={shown} tournamentNames={tournamentNames} ownerNames={ownerNames} />}
                   </>
                 )
               }}

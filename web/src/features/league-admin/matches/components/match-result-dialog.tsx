@@ -22,7 +22,7 @@ import {
 } from '../api'
 import type { MatchWithRelations } from '../types'
 import { ResultEventsTabs } from './result-events-tabs'
-import { buildResultRequest, EMPTY_FORM, formFromMatch, hasUnpickedPlayer, type ResultFormState } from './result-form'
+import { buildResultRequest, EMPTY_FORM, formFromMatch, goalsExceedingScore, hasUnpickedPlayer, type ResultFormState } from './result-form'
 
 interface MatchResultDialogProps {
   match: MatchWithRelations
@@ -96,6 +96,17 @@ function ResultDialogBody({
       setErrors({ player_id: 'Selecciona el jugador de cada gol y tarjeta.' })
       return
     }
+    const exceeding = goalsExceedingScore(form)
+    if (exceeding.length > 0) {
+      const msgs = exceeding.map((side) => {
+        const goals = form.goals.filter((g) => (g.goal_type === 'own_goal' ? g.side !== side : g.side === side)).length
+        const score = side === 'home' ? form.homeScore : form.awayScore
+        return `Los goles registrados del ${side === 'home' ? 'local' : 'visitante'} (${goals}) exceden el marcador (${score})`
+      })
+      setErrors({ goals: msgs.join('. ') })
+      toast.error(msgs[0] ?? '')
+      return
+    }
     try {
       await postResult.mutateAsync({ matchId: match.id, data: buildResultRequest(match, form) })
     } catch (err) {
@@ -117,8 +128,12 @@ function ResultDialogBody({
         tournament_id: match.tournament_id,
         match_id: match.id,
       }),
-      // A correction refreshes the knowledge base but doesn't announce the match again.
-      isEdit ? Promise.resolve() : notifyFinalized.mutateAsync(match.id),
+      // The original also re-sent the result notification after editing a score.
+      notifyFinalized.mutateAsync(match.id),
+      // Standings changed (the API recalculates them): refresh their knowledge too.
+      isEdit
+        ? triggerEmbedding.mutateAsync({ trigger_type: 'standings_update', league_id: leagueId, tournament_id: match.tournament_id })
+        : Promise.resolve(),
     ])
     if (followUps.some((r) => r.status === 'rejected')) {
       toast.warning('El resultado se guardó, pero no se pudo actualizar el conocimiento o enviar la notificación del partido.')
@@ -185,7 +200,7 @@ function ResultDialogBody({
             </div>
           </TabsContent>
 
-          <ResultEventsTabs form={form} setForm={setForm} teamNames={teamNames} rosters={rosters} />
+          <ResultEventsTabs form={form} setForm={setForm} teamNames={teamNames} rosters={rosters} rostersLoading={homePlayers.isPending || awayPlayers.isPending} />
 
           <TabsContent value="observations" className="space-y-4">
             <div>
@@ -197,7 +212,9 @@ function ResultDialogBody({
                 onChange={(e) => setForm({ ...form, observations: e.target.value })}
                 disabled={pending}
                 className="mt-2 min-h-32"
+                maxLength={500}
               />
+              <p className="mt-1 text-right text-xs text-muted-foreground">{form.observations.length}/500 caracteres</p>
             </div>
           </TabsContent>
         </Tabs>

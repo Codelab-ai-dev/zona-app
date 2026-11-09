@@ -1,8 +1,10 @@
 /** Shared API fixtures for the competition tests (shapes mirror the Go JSON). */
-import type { League, Standings, Suspension, Tournament, Transaction, WhatsAppLink } from './types'
+import type { FinanceConfig, League, Standings, Suspension, Tournament, Transaction, WhatsAppLink } from './types'
 
 export const page = (total: number) => ({ limit: 100, offset: 0, total })
-export const list = <T,>(data: T[]) => ({ body: { data, page: page(data.length) } })
+export const list = <T,>(data: T[], total?: number) => ({
+  body: { data, page: total === undefined ? page(data.length) : { ...page(data.length), total } },
+})
 
 export const league = (over: Partial<League> = {}): League => ({
   id: 'league-1',
@@ -119,4 +121,34 @@ export const summary = {
   total_transactions: 12,
   overdue_transactions: 2,
   total_card_fines: 1,
+}
+
+/** The league's finance config as the API sends it (amounts are decimal strings in the types; the API may also send numbers). */
+export const financeConfig: FinanceConfig = {
+  id: 'cfg-1',
+  league_id: 'league-1',
+  name: 'default',
+  team_registration_fee: '0.00',
+  player_registration_fee: '0.00',
+  late_registration_surcharge: '0.00',
+  yellow_card_fine: '50.00',
+  red_card_fine: '150.00',
+  double_yellow_fine: '100.00',
+  absence_fine: '500.00',
+  late_arrival_fine: '100.00',
+  misconduct_fine: '200.00',
+  uniform_violation_fine: '100.00',
+  referee_fee_per_match: '300.00',
+  assistant_referee_fee: '150.00',
+  field_rental_per_match: '0.00',
+  currency: 'MXN',
+  payment_due_days: 7,
+  auto_generate_fines: true,
+  auto_generate_referee_fees: false,
+  notify_on_new_charge: true,
+  notify_on_overdue: true,
+  overdue_grace_days: 3,
+  is_active: true,
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
 }

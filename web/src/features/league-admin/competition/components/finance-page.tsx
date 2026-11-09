@@ -4,19 +4,30 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTeamsByLeague } from '@/features/league-admin/teams/api'
+import { useMyLeagues } from '@/features/leagues/api'
 import { ApiError } from '@/lib/api/client'
 
-import { useFinanceConfig, useLeagueSummary, useTeamBalances, useTransactions } from '../api'
+import { useCurrency, useFinanceConfig, useLeagueSummary, useTeamBalances, useTransactionCount, useTransactions } from '../api'
 import { FinanceBalances } from './finance-balances'
 import { FinanceConfigDialog } from './finance-config-dialog'
+import { FinanceDisabled } from './finance-disabled'
 import { FinanceOverview } from './finance-overview'
+import { FinanceSkeleton } from './finance-skeleton'
 import { FinanceStats } from './finance-stats'
 import { FinanceTransactions } from './finance-transactions'
 import { NewTransactionDialog } from './new-transaction-dialog'
 
 const tabClass = 'data-[state=active]:bg-white/20 text-white/70 data-[state=active]:text-white'
 
+/** Finance dashboard; a league without the "finance" feature sees the "Módulo no activado" notice instead. */
 export function FinancePage({ leagueId }: { leagueId: string }) {
+  const leagues = useMyLeagues()
+  const features = leagues.data?.data.find((l) => l.id === leagueId)?.features
+  if (features && features.finance === false) return <FinanceDisabled />
+  return <FinanceDashboard leagueId={leagueId} />
+}
+
+function FinanceDashboard({ leagueId }: { leagueId: string }) {
   const [tab, setTab] = useState('overview')
   const [creating, setCreating] = useState(false)
   const [configuring, setConfiguring] = useState(false)
@@ -25,12 +36,16 @@ export function FinancePage({ leagueId }: { leagueId: string }) {
   const balances = useTeamBalances(leagueId, { limit: 100, offset: 0 })
   const config = useFinanceConfig(leagueId)
   const recent = useTransactions(leagueId, { limit: 5, offset: 0 })
+  const currency = useCurrency(leagueId)
+  const pendingCount = useTransactionCount(leagueId, 'pending')
   const teams = useTeamsByLeague(leagueId)
   const teamNames = useMemo(() => new Map((teams.data?.data ?? []).map((t) => [t.id, t.name])), [teams.data])
 
   // A league without finance data yet answers 404 on summary/config: that is "not configured", not a failure.
   const notConfigured = summary.error instanceof ApiError && summary.error.status === 404
   const summaryFailed = summary.isError && !notConfigured
+
+  if (summary.isPending || balances.isPending || recent.isPending) return <FinanceSkeleton />
 
   return (
     <section aria-labelledby="finance-title" className="space-y-6">
@@ -64,7 +79,7 @@ export function FinancePage({ leagueId }: { leagueId: string }) {
         </p>
       )}
 
-      <FinanceStats summary={summary.data} balances={balances.data?.data ?? []} />
+      <FinanceStats summary={summary.data} balances={balances.data?.data ?? []} currency={currency} pendingCount={pendingCount.data ?? 0} />
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="backdrop-blur-md bg-white/10 border border-white/20">
@@ -79,6 +94,7 @@ export function FinancePage({ leagueId }: { leagueId: string }) {
             teamNames={teamNames}
             overdueCount={summary.data?.overdue_transactions ?? 0}
             totalOverdue={summary.data?.total_overdue}
+            currency={currency}
             onTab={setTab}
           />
         </TabsContent>

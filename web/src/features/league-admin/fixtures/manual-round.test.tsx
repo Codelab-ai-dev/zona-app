@@ -101,4 +101,72 @@ describe('Modo Manual', () => {
     expect(screen.getByRole('combobox', { name: 'Local (partido 1)' })).toHaveTextContent('Equipo 1')
     expect(screen.getByLabelText('Fecha (partido 1)')).toHaveValue('2024-03-02')
   })
+
+  describe('Editar Anterior', () => {
+    const second = { ...existing, id: 'm2', home_team_id: 'team-3', away_team_id: 'team-4', match_date: '2024-02-03T00:00:00Z', match_time: '09:00' }
+    const editBase = {
+      ...base,
+      'GET /tournaments/tour-1/matches': { body: { data: [{ ...existing, match_time: '08:00' }, second], page: { limit: 1000, offset: 0 } } },
+      'PATCH /matches/m1/schedule': { body: existing },
+      'DELETE /matches/m2': { status: 204 },
+      'POST /knowledge/triggers': { status: 204 },
+    }
+    const openEdit = async (user: User) => {
+      await openManual(user)
+      await user.click(await screen.findByRole('button', { name: 'Editar Anterior' }))
+      await user.click(await screen.findByRole('button', { name: 'Editar jornada 3' }))
+    }
+
+    it('updates a changed match, deletes a removed one and creates the added one in that round', async () => {
+      const fetchMock = mockApi(editBase)
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await openEdit(user)
+
+      expect(await screen.findByRole('heading', { name: 'Editando Jornada 3' })).toBeInTheDocument()
+      await pick(user, 'Visitante (partido 1)', 'Equipo 3')
+      fireEvent.change(screen.getByLabelText('Hora (partido 1)'), { target: { value: '10:30' } })
+      await user.click(screen.getByRole('button', { name: 'Quitar partido 2' }))
+      await user.click(screen.getByRole('button', { name: 'Agregar Partido' }))
+      await pick(user, 'Local (partido 2)', 'Equipo 2')
+      await pick(user, 'Visitante (partido 2)', 'Equipo 4')
+      await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
+
+      expect(await screen.findByText('Jornada 3 actualizada exitosamente')).toBeInTheDocument()
+      expect(requestsTo(fetchMock, 'PATCH /matches/m1/schedule')).toEqual([
+        { away_team_id: 'team-3', match_date: '2024-02-03T10:30:00Z', match_time: '10:30' },
+      ])
+      expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE').map(([u]) => String(u))).toEqual([expect.stringContaining('/matches/m2')])
+      expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/matches/bulk')).toEqual([
+        {
+          tournament_id: 'tour-1',
+          matches: [{ home_team_id: 'team-2', away_team_id: 'team-4', match_date: '2024-02-03T10:30:00Z', match_time: '10:30', round: 3, field_number: 1 }],
+        },
+      ])
+      expect(requestsTo(fetchMock, 'POST /knowledge/triggers')).toEqual([
+        { trigger_type: 'jornada_update', league_id: 'league-1', tournament_id: 'tour-1', round: 3 },
+      ])
+    })
+
+    it('keeps the edits and shows the API message when saving fails', async () => {
+      mockApi({ ...editBase, 'PATCH /matches/m1/schedule': { status: 409, body: { error: { code: 'conflict', message: 'Cancha ocupada' } } } })
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await openEdit(user)
+      await pick(user, 'Visitante (partido 1)', 'Equipo 3')
+      await user.click(screen.getByRole('button', { name: 'Guardar Cambios' }))
+
+      expect(await screen.findByText(/Cancha ocupada/)).toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: 'Visitante (partido 1)' })).toHaveTextContent('Equipo 3')
+    })
+
+    it('sends nothing when the edit is cancelled', async () => {
+      const fetchMock = mockApi(editBase)
+      const { user } = renderWithProviders(<FixturesPage leagueId="league-1" />)
+      await openEdit(user)
+      await user.click(screen.getByRole('button', { name: 'Quitar partido 2' }))
+      await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+      expect(await screen.findByText('Seleccionar Jornada a Editar')).toBeInTheDocument()
+      expect(fetchMock.mock.calls.filter(([, init]) => init?.method && init.method !== 'GET')).toHaveLength(0)
+    })
+  })
 })

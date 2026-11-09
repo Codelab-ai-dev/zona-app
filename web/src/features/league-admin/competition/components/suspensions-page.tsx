@@ -117,7 +117,7 @@ export function SuspensionsPage({ leagueId }: { leagueId: string }) {
         onConfirm={() => clear.mutate(undefined, { onSuccess: () => setClearOpen(false) })}
       />
       {showForm && <SuspensionForm leagueId={leagueId} onClose={() => setShowForm(false)} />}
-      {editing && <SuspensionForm leagueId={leagueId} suspension={editing} onClose={() => setEditing(null)} />}
+      {editing && <SuspensionForm leagueId={leagueId} suspension={editing} teamName={teamNames.get(editing.team_id)} onClose={() => setEditing(null)} />}
     </section>
   )
 }

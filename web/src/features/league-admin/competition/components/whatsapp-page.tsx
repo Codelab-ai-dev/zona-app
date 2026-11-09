@@ -1,35 +1,17 @@
-import { AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, Pencil, Plus, Power, Trash2, User, XCircle, type LucideIcon } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, Plus, XCircle, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { ErrorState, LoadingState } from '@/components/states'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { useDeleteWhatsAppLink, useTournaments, useUpdateWhatsAppLink, useWhatsAppLinks } from '../api'
-import type { WhatsAppLink } from '../types'
+import { useLeagueUsers, useTournaments, useWhatsAppLinks } from '../api'
 import { BroadcastDialog } from './broadcast-dialog'
 import { WhatsAppForm } from './whatsapp-form'
+import { WhatsAppRow } from './whatsapp-row'
 
 const glass = 'backdrop-blur-xl bg-white/10 border-white/20'
-const roleLabels: Record<string, string> = {
-  super_admin: 'Super Admin',
-  league_admin: 'Admin Liga',
-  team_owner: 'Dueño Equipo',
-  user: 'Usuario',
-}
-
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: LucideIcon; color: string }) {
   return (
     <Card className={glass}>
@@ -51,6 +33,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
   const [showBroadcast, setShowBroadcast] = useState(false)
   const links = useWhatsAppLinks(leagueId)
   const tournaments = useTournaments(leagueId)
+  const users = useLeagueUsers(leagueId)
   const rows = links.data?.data ?? []
 
   return (
@@ -111,7 +94,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
               <Table>
                 <TableHeader>
                   <TableRow className="border-white/20 hover:bg-white/5">
-                    <TableHead className="text-white/90 drop-shadow">Contacto</TableHead>
+                    <TableHead className="text-white/90 drop-shadow">Usuario</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Teléfono</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Rol</TableHead>
                     <TableHead className="text-white/90 drop-shadow">Torneo</TableHead>
@@ -122,7 +105,13 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
                 </TableHeader>
                 <TableBody>
                   {rows.map((link) => (
-                    <WhatsAppRow key={link.id} leagueId={leagueId} link={link} tournamentName={tournaments.data?.data.find((t) => t.id === link.tournament_id)?.name} />
+                    <WhatsAppRow
+                      key={link.id}
+                      leagueId={leagueId}
+                      link={link}
+                      tournamentName={tournaments.data?.data.find((t) => t.id === link.tournament_id)?.name}
+                      account={users.data?.data.find((u) => u.id === link.user_id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -134,110 +123,5 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
       {showBroadcast && <BroadcastDialog leagueId={leagueId} onClose={() => setShowBroadcast(false)} />}
       {showForm && <WhatsAppForm leagueId={leagueId} onClose={() => setShowForm(false)} />}
     </section>
-  )
-}
-
-function WhatsAppRow({ leagueId, link, tournamentName }: { leagueId: string; link: WhatsAppLink; tournamentName?: string }) {
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [editing, setEditing] = useState(false)
-  const deleteLink = useDeleteWhatsAppLink(link.id)
-  const toggle = useUpdateWhatsAppLink(link.id)
-  const name = link.display_name || link.phone_number
-
-  const handleDelete = async () => {
-    try {
-      await deleteLink.mutateAsync()
-      setShowConfirm(false)
-    } catch {
-      // The mutation already shows the error toast; keep the dialog open.
-    }
-  }
-
-  return (
-    <>
-      <TableRow className="border-white/20 hover:bg-white/5">
-        <TableCell>
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-white/50" aria-hidden="true" />
-            <p className="text-white drop-shadow font-medium">{link.display_name || 'Sin nombre'}</p>
-          </div>
-        </TableCell>
-        <TableCell>
-          <code className="text-white/90 drop-shadow bg-white/10 px-2 py-1 rounded text-sm">+{link.phone_number}</code>
-        </TableCell>
-        <TableCell className="text-white/80 text-sm">{roleLabels[link.role] ?? link.role}</TableCell>
-        <TableCell>
-          {link.tournament_id ? (
-            <Badge className="bg-blue-500/80 text-white">{tournamentName ?? 'Torneo'}</Badge>
-          ) : (
-            <Badge className="bg-orange-500/80 text-white">
-              <AlertCircle className="w-3 h-3 mr-1" aria-hidden="true" />
-              Sin torneo
-            </Badge>
-          )}
-        </TableCell>
-        <TableCell>
-          {link.is_active ? (
-            <Badge className="bg-green-500/80 text-white">
-              <CheckCircle className="w-3 h-3 mr-1" aria-hidden="true" />
-              Activo
-            </Badge>
-          ) : (
-            <Badge className="bg-red-500/80 text-white">
-              <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />
-              Inactivo
-            </Badge>
-          )}
-        </TableCell>
-        <TableCell className="text-white/80 drop-shadow text-sm">
-          {link.last_interaction_at ? new Date(link.last_interaction_at).toLocaleDateString('es-ES') : <span className="text-white/50">Sin interacciones</span>}
-        </TableCell>
-        <TableCell className="text-right">
-          <div className="flex gap-2 justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(true)}
-              aria-label={`Editar enlace de ${name}`}
-              className="backdrop-blur-md bg-blue-500/20 border-blue-300/30 text-white hover:bg-blue-500/30"
-            >
-              <Pencil className="w-4 h-4" aria-hidden="true" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toggle.mutate({ is_active: !link.is_active })}
-              disabled={toggle.isPending}
-              aria-label={`${link.is_active ? 'Desactivar' : 'Activar'} enlace de ${name}`}
-              className="backdrop-blur-md bg-white/10 border-white/30 text-white hover:bg-white/20"
-            >
-              <Power className="w-4 h-4" aria-hidden="true" />
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)} disabled={deleteLink.isPending} aria-label={`Eliminar enlace de ${name}`}>
-              <Trash2 className="w-4 h-4" aria-hidden="true" />
-            </Button>
-          </div>
-        </TableCell>
-      </TableRow>
-
-      {editing && <WhatsAppForm leagueId={leagueId} link={link} onClose={() => setEditing(false)} />}
-
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Eliminar Enlace</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              ¿Estás seguro de que deseas eliminar este enlace de WhatsApp? Ya no recibirán notificaciones.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-slate-800/50 border-white/10 text-white hover:bg-slate-700 hover:text-white">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteLink.isPending} className="bg-red-500 hover:bg-red-600 text-white">
-              {deleteLink.isPending ? 'Eliminando…' : 'Sí, eliminar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   )
 }

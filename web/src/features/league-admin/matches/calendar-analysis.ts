@@ -49,7 +49,12 @@ const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
  * which teams have no matches and which pairings of the round robin are
  * missing (once, or twice when the calendar is a double round).
  */
-export function analyzeCalendar(teams: TeamSummary[], allMatches: MatchWithRelations[]): CalendarAnalysis {
+export function analyzeCalendar(
+  teams: TeamSummary[],
+  allMatches: MatchWithRelations[],
+  /** Regeneration: build the pairings even if no match is left, with the format of the old calendar. */
+  force?: { doubleRound: boolean },
+): CalendarAnalysis {
   const matches = allMatches.filter((m) => m.phase === 'regular' && m.status !== 'cancelled')
   const activeTeams = teams.filter((t) => t.is_active)
   const names = new Map(teams.map((t) => [t.id, t.name]))
@@ -80,11 +85,11 @@ export function analyzeCalendar(teams: TeamSummary[], allMatches: MatchWithRelat
   activeTeams.forEach((t) => stat(t.id))
 
   const activeIds = new Set(activeTeams.map((t) => t.id))
-  const doubleRound = Math.max(0, ...pairCount.values()) >= 2
+  const doubleRound = force?.doubleRound ?? Math.max(0, ...pairCount.values()) >= 2
   const expected = doubleRound ? 2 : 1
 
   const missingPairs: MissingPair[] = []
-  if (matches.length > 0) {
+  if (matches.length > 0 || force) {
     for (let i = 0; i < activeTeams.length; i++) {
       for (let j = i + 1; j < activeTeams.length; j++) {
         const a = activeTeams[i]
@@ -119,6 +124,21 @@ export function analyzeCalendar(teams: TeamSummary[], allMatches: MatchWithRelat
     lastRound: Math.max(0, ...rounds()),
     config: detectConfig(matches),
   }
+}
+
+/**
+ * "Regenerar" of Ajustar Calendario: the scheduled matches are deleted and the
+ * pairings the active teams still have to play (the finished / in progress /
+ * cancelled ones are kept and not repeated) are packed into new rounds after
+ * the last kept one, with the weekdays, start time and fields of the whole
+ * current calendar.
+ */
+export function analyzeRegeneration(teams: TeamSummary[], allMatches: MatchWithRelations[]) {
+  const full = analyzeCalendar(teams, allMatches)
+  const kept = allMatches.filter((m) => m.status !== 'scheduled' || m.phase !== 'regular')
+  const scheduled = allMatches.filter((m) => m.status === 'scheduled' && m.phase === 'regular')
+  const analysis = { ...analyzeCalendar(teams, kept, { doubleRound: full.doubleRound }), config: full.config }
+  return { analysis, kept, scheduled }
 }
 
 function detectConfig(matches: MatchWithRelations[]): CalendarConfig {

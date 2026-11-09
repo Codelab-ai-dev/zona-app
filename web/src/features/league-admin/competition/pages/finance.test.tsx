@@ -1,15 +1,20 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { mockApi, renderWithProviders, requestsTo } from '@/test/render'
 
-import { apiError, list, mineOne, summary, transaction } from '../test-fixtures'
+import { apiError, financeConfig, list, mineOne, summary, transaction } from '../test-fixtures'
 import { FinancePageComponent } from './finance'
 
 const txList = 'GET /leagues/league-1/finance/transactions'
 const base = { ...mineOne, 'GET /leagues/league-1/finance/summary': { body: summary } }
 const txBase = '/leagues/league-1/finance/transactions'
 const team = { id: 'team-1', name: 'Tigres', slug: 'tigres', league_id: 'league-1', owner_id: 'o', is_active: true, created_at: '', updated_at: '' }
+
+async function pickAction(user: ReturnType<typeof renderWithProviders>['user'], description: string, action: string) {
+  await user.click(await screen.findByRole('button', { name: `Acciones de ${description}` }))
+  await user.click(await screen.findByRole('menuitem', { name: action }))
+}
 
 async function renderOnTransactions() {
   const view = renderWithProviders(<FinancePageComponent />)
@@ -29,11 +34,22 @@ describe('Finance page: data', () => {
     expect(screen.getAllByText(/1,500\.50/).length).toBeGreaterThan(0)
     expect(screen.getByText(/1,800\.50/)).toBeInTheDocument()
     expect(screen.getByText(/700\.25/)).toBeInTheDocument()
-    expect(screen.getByText('2 vencidos')).toBeInTheDocument()
-    expect(screen.getByText('Multa por tarjeta roja')).toBeInTheDocument()
-    // paid transactions have no pay/cancel/waive actions
-    const paidRow = screen.getByText('Multa roja').closest('tr') as HTMLElement
-    expect(within(paidRow).queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.getAllByText('2 transacciones').length).toBeGreaterThanOrEqual(2) // pending + overdue cards
+    expect(screen.getByText('2 transacciones encontradas')).toBeInTheDocument()
+    expect(screen.getByText('Multa Tarjeta Roja')).toBeInTheDocument()
+    // sign: charges are shown as "-", incomes as "+"
+    expect(within(screen.getByText('Inscripción Tigres').closest('tr') as HTMLElement).getByText(/^-\s*\$1,500\.50$/)).toBeInTheDocument()
+  })
+
+  it('offers only "Ver Detalles" on a paid transaction (no pay, waive or cancel)', async () => {
+    mockApi({ ...base, [txList]: list([transaction({ id: 'tx-2', description: 'Multa roja', status: 'paid' })]) })
+    const { user } = await renderOnTransactions()
+
+    await user.click(await screen.findByRole('button', { name: 'Acciones de Multa roja' }))
+    expect(await screen.findByRole('menuitem', { name: 'Ver Detalles' })).toBeInTheDocument()
+    for (const hidden of ['Registrar Pago', 'Condonar', 'Cancelar']) {
+      expect(screen.queryByRole('menuitem', { name: hidden })).not.toBeInTheDocument()
+    }
   })
 
   it('shows the empty state', async () => {
@@ -68,7 +84,7 @@ describe('Finance page: data', () => {
 
 describe('Finance page: pay', () => {
   const open = async (user: ReturnType<typeof renderWithProviders>['user']) => {
-    await user.click(await screen.findByRole('button', { name: 'Registrar pago de Inscripción Tigres' }))
+    await pickAction(user, 'Inscripción Tigres', 'Registrar Pago')
   }
 
   it('posts the payment to the league-scoped URL with the amount as a decimal string', async () => {
@@ -81,16 +97,16 @@ describe('Finance page: pay', () => {
 
     await open(user)
     // defaults to what is still owed: 1500.50 - 500.00
-    const amount = screen.getByLabelText('Monto (MXN)')
+    const amount = screen.getByLabelText('Monto a Pagar (MXN)')
     expect(amount).toHaveValue('1000.50')
     await user.clear(amount)
     await user.type(amount, '250.5')
-    await user.click(screen.getByLabelText('Método de pago'))
+    await user.click(screen.getByLabelText('Método de Pago'))
     await user.click(await screen.findByRole('option', { name: 'SPEI' }))
     await user.type(screen.getByLabelText('Referencia (opcional)'), 'abc123')
-    await user.click(screen.getByRole('button', { name: 'Registrar pago' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar Pago' }))
 
-    expect(await screen.findByText('Pago registrado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Pago completo registrado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, `POST ${txBase}/tx-1/pay`)).toEqual([
       { amount: '250.50', payment_method: 'spei', payment_reference: 'ABC123' },
     ])
@@ -110,10 +126,10 @@ describe('Finance page: pay', () => {
     const { user } = await renderOnTransactions()
 
     await open(user)
-    const amount = screen.getByLabelText('Monto (MXN)')
+    const amount = screen.getByLabelText('Monto a Pagar (MXN)')
     await user.clear(amount)
     await user.type(amount, typed)
-    await user.click(screen.getByRole('button', { name: 'Registrar pago' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar Pago' }))
 
     expect(await screen.findByText(message)).toBeInTheDocument()
     expect(amount).toHaveAttribute('aria-invalid', 'true')
@@ -130,18 +146,18 @@ describe('Finance page: pay', () => {
     const { user } = await renderOnTransactions()
 
     await open(user)
-    await user.click(screen.getByRole('button', { name: 'Registrar pago' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar Pago' }))
 
     expect(await screen.findByText('excede el saldo')).toBeInTheDocument()
-    expect(screen.getByLabelText('Monto (MXN)')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Monto a Pagar (MXN)')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 })
 
 describe('Finance page: cancel and waive', () => {
   it.each([
-    ['Cancelar Inscripción Tigres', 'cancel', 'Cancelar transacción', 'Transacción cancelada correctamente'],
-    ['Condonar Inscripción Tigres', 'waive', 'Condonar', 'Transacción condonada correctamente'],
+    ['Cancelar', 'cancel', 'Cancelar transacción', 'Transacción cancelada correctamente'],
+    ['Condonar', 'waive', 'Condonar', 'Transacción condonada correctamente'],
   ])('%s asks for a reason and posts to /%s', async (trigger, path, confirm, toastText) => {
     const fetchMock = mockApi({
       ...base,
@@ -150,7 +166,7 @@ describe('Finance page: cancel and waive', () => {
     })
     const { user } = await renderOnTransactions()
 
-    await user.click(await screen.findByRole('button', { name: trigger }))
+    await pickAction(user, 'Inscripción Tigres', trigger)
     const dialog = screen.getByRole('alertdialog')
     expect(requestsTo(fetchMock, `POST ${txBase}/tx-1/${path}`)).toEqual([])
     await user.type(within(dialog).getByLabelText('Motivo'), 'acuerdo con el comité')
@@ -165,7 +181,7 @@ describe('Finance page: cancel and waive', () => {
     const fetchMock = mockApi({ ...base, [txList]: list([transaction()]) })
     const { user } = await renderOnTransactions()
 
-    await user.click(await screen.findByRole('button', { name: 'Cancelar Inscripción Tigres' }))
+    await pickAction(user, 'Inscripción Tigres', 'Cancelar')
     await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancelar transacción' }))
 
     expect(await screen.findByText('El motivo es obligatorio')).toBeInTheDocument()
@@ -177,7 +193,7 @@ describe('Finance page: cancel and waive', () => {
     const fetchMock = mockApi({ ...base, [txList]: list([transaction()]) })
     const { user } = await renderOnTransactions()
 
-    await user.click(await screen.findByRole('button', { name: 'Condonar Inscripción Tigres' }))
+    await pickAction(user, 'Inscripción Tigres', 'Condonar')
     await user.click(screen.getByRole('button', { name: 'Volver' }))
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
@@ -192,7 +208,7 @@ describe('Finance page: cancel and waive', () => {
     })
     const { user } = await renderOnTransactions()
 
-    await user.click(await screen.findByRole('button', { name: 'Condonar Inscripción Tigres' }))
+    await pickAction(user, 'Inscripción Tigres', 'Condonar')
     await user.type(screen.getByLabelText('Motivo'), 'x')
     await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Condonar' }))
 
@@ -201,24 +217,33 @@ describe('Finance page: cancel and waive', () => {
   })
 })
 
-describe('Finance page: Nuevo movimiento', () => {
+describe('Finance page: Nueva Transacción', () => {
   const create = `POST ${txBase}`
   const routes = { ...base, [txList]: list([]), 'GET /teams': list([team]) }
+  const openForm = async (user: ReturnType<typeof renderWithProviders>['user']) => {
+    await user.click((await screen.findAllByRole('button', { name: 'Nuevo Cargo' }))[0] as HTMLElement)
+    await screen.findByRole('dialog')
+  }
 
-  it('creates a fine for a team with the amount as a decimal string', async () => {
+  it('creates a fine for a team with the amount as a decimal string and the due date', async () => {
     const fetchMock = mockApi({ ...routes, [create]: { status: 201, body: transaction() } })
     const { user } = await renderOnTransactions()
 
-    await user.click((await screen.findAllByRole('button', { name: 'Nuevo Cargo' }))[0] as HTMLElement)
-    await user.click(screen.getByLabelText('Tipo'))
-    await user.click(await screen.findByRole('option', { name: /multa por tarjeta roja/i }))
+    await openForm(user)
+    await user.click(screen.getByLabelText('Tipo de Transacción'))
+    await user.click(await screen.findByRole('option', { name: 'Multa Tarjeta Roja' }))
+    // the type prefills the description
+    expect(screen.getByLabelText('Descripción')).toHaveValue('Multa por tarjeta roja')
     await user.click(screen.getByLabelText('Equipo'))
     await user.click(await screen.findByRole('option', { name: 'Tigres' }))
     await user.type(screen.getByLabelText('Monto (MXN)'), '350')
+    await user.clear(screen.getByLabelText('Descripción'))
     await user.type(screen.getByLabelText('Descripción'), 'Roja jornada 4')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    fireEvent.change(screen.getByLabelText('Fecha de Vencimiento'), { target: { value: '2026-12-01' } })
+    await user.type(screen.getByLabelText('Notas (opcional)'), 'Partido vs Leones')
+    await user.click(screen.getByRole('button', { name: 'Crear Transacción' }))
 
-    expect(await screen.findByText('Movimiento creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Transacción creada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, create)).toEqual([
       {
         transaction_type: 'red_card_fine',
@@ -226,43 +251,59 @@ describe('Finance page: Nuevo movimiento', () => {
         amount: '350.00',
         is_income: false,
         team_id: 'team-1',
+        due_date: '2026-12-01',
+        notes: 'PARTIDO VS LEONES',
       },
     ])
     expect(requestsTo(fetchMock, txList).length).toBeGreaterThanOrEqual(2)
   })
 
-  it('creates an income without a team and flags is_income', async () => {
+  it('creates an income without a team, flags is_income and has no due date', async () => {
     const fetchMock = mockApi({ ...routes, [create]: { status: 201, body: transaction({ is_income: true }) } })
     const { user } = await renderOnTransactions()
 
-    await user.click((await screen.findAllByRole('button', { name: 'Nuevo Cargo' }))[0] as HTMLElement)
-    await user.click(screen.getByLabelText('Tipo'))
-    await user.click(await screen.findByRole('option', { name: /patrocinio/i }))
+    await openForm(user)
+    await user.click(screen.getByLabelText('Tipo de Transacción'))
+    await user.click(await screen.findByRole('option', { name: 'Patrocinio' }))
+    expect(screen.queryByLabelText('Fecha de Vencimiento')).not.toBeInTheDocument()
     await user.type(screen.getByLabelText('Monto (MXN)'), '5000.99')
     await user.type(screen.getByLabelText('Descripción'), 'Patrocinador local')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear Transacción' }))
 
-    expect(await screen.findByText('Movimiento creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Transacción creada exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, create)).toEqual([
       { transaction_type: 'sponsorship', description: 'PATROCINADOR LOCAL', amount: '5000.99', is_income: true },
     ])
+  })
+
+  it('prefills description and amount from the league config when picking a type', async () => {
+    mockApi({ ...routes, 'GET /leagues/league-1/finance/config': { body: { ...financeConfig, yellow_card_fine: 75 } } })
+    const { user } = await renderOnTransactions()
+
+    await openForm(user)
+    await user.click(screen.getByLabelText('Tipo de Transacción'))
+    await user.click(await screen.findByRole('option', { name: 'Multa Tarjeta Amarilla' }))
+
+    expect(screen.getByLabelText('Monto (MXN)')).toHaveValue('75')
+    expect(screen.getByLabelText('Descripción')).toHaveValue('Multa por tarjeta amarilla')
   })
 
   it('validates type, team (for charges), amount and description client-side', async () => {
     const fetchMock = mockApi({ ...routes })
     const { user } = await renderOnTransactions()
 
-    await user.click((await screen.findAllByRole('button', { name: 'Nuevo Cargo' }))[0] as HTMLElement)
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
-    expect(screen.getByLabelText('Tipo')).toHaveAccessibleDescription('Selecciona un tipo')
+    await openForm(user)
+    await user.click(screen.getByRole('button', { name: 'Crear Transacción' }))
+    expect(screen.getByLabelText('Tipo de Transacción')).toHaveAccessibleDescription('Selecciona un tipo')
     expect(screen.getByLabelText('Monto (MXN)')).toHaveAccessibleDescription('Ingresa un monto')
-    expect(screen.getByLabelText('Descripción')).toHaveAccessibleDescription('La descripción es obligatoria')
+    expect(screen.getByLabelText('Descripción')).toHaveAccessibleDescription('La descripción debe tener al menos 3 caracteres')
 
-    await user.click(screen.getByLabelText('Tipo'))
-    await user.click(await screen.findByRole('option', { name: /inasistencia/i }))
+    await user.click(screen.getByLabelText('Tipo de Transacción'))
+    await user.click(await screen.findByRole('option', { name: 'Multa por Llegada Tarde' }))
+    await user.clear(screen.getByLabelText('Descripción'))
     await user.type(screen.getByLabelText('Monto (MXN)'), '10.999')
     await user.type(screen.getByLabelText('Descripción'), 'x')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear Transacción' }))
 
     expect(screen.getByLabelText('Equipo')).toHaveAccessibleDescription('Selecciona un equipo')
     expect(screen.getByLabelText('Monto (MXN)')).toHaveAccessibleDescription('Máximo 2 decimales')
@@ -277,12 +318,12 @@ describe('Finance page: Nuevo movimiento', () => {
     })
     const { user } = await renderOnTransactions()
 
-    await user.click((await screen.findAllByRole('button', { name: 'Nuevo Cargo' }))[0] as HTMLElement)
-    await user.click(screen.getByLabelText('Tipo'))
-    await user.click(await screen.findByRole('option', { name: /otro ingreso/i }))
+    await openForm(user)
+    await user.click(screen.getByLabelText('Tipo de Transacción'))
+    await user.click(await screen.findByRole('option', { name: 'Otro Ingreso' }))
     await user.type(screen.getByLabelText('Monto (MXN)'), '20')
     await user.type(screen.getByLabelText('Descripción'), 'Rifa')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear Transacción' }))
 
     expect(await screen.findByText('ya existe un cargo igual')).toBeInTheDocument()
     expect(screen.getByLabelText('Descripción')).toHaveAttribute('aria-invalid', 'true')

@@ -37,11 +37,11 @@ export function useCreateWhatsAppLink(leagueId: string) {
       api.post<WhatsAppLink>(`/leagues/${leagueId}/whatsapp-links`, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: whatsappKey })
-      toast.success('Enlace de WhatsApp creado correctamente')
+      toast.success('Vínculo de WhatsApp creado exitosamente')
     },
     onError: (error: ApiError) => {
       if (error.status === 409) {
-        toast.error('Este número de teléfono ya está registrado')
+        toast.error('Este número de teléfono ya está vinculado')
       } else {
         toast.error(error.message)
       }
@@ -53,12 +53,12 @@ export function useUpdateWhatsAppLink(linkId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     // tournament_id: the nil UUID (NO_TOURNAMENT) clears the tournament.
-    mutationFn: (data: { is_active?: boolean; display_name?: string; preferred_language?: string; tournament_id?: string }) =>
+    mutationFn: (data: { is_active?: boolean; phone_number?: string; display_name?: string; preferred_language?: string; tournament_id?: string }) =>
       api.put<WhatsAppLink>(`/whatsapp-links/${linkId}`, data),
     onSuccess: (_, { is_active }) => {
       void queryClient.invalidateQueries({ queryKey: whatsappKey })
       toast.success(
-        is_active === undefined ? 'Enlace actualizado correctamente' : is_active ? 'Enlace activado' : 'Enlace desactivado',
+        is_active === undefined ? 'Vínculo actualizado exitosamente' : is_active ? 'Vínculo activado' : 'Vínculo desactivado',
       )
     },
     onError,
@@ -90,7 +90,7 @@ export function useDeleteWhatsAppLink(linkId: string) {
     mutationFn: () => api.delete<void>(`/whatsapp-links/${linkId}`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: whatsappKey })
-      toast.success('Enlace eliminado correctamente')
+      toast.success('Vínculo eliminado exitosamente')
     },
     onError,
   })

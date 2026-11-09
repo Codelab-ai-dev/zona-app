@@ -1,8 +1,8 @@
 import { CheckCircle, Lock } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChangePasswordDialog } from '@/features/auth/change-password-dialog'
+
+import { PasswordForm } from './password-form'
 
 const glass = 'backdrop-blur-xl bg-white/10 border-white/20'
 const tips = [
@@ -25,14 +25,7 @@ export function SecurityCards() {
           <CardDescription className="text-white/80 drop-shadow">Actualiza tu contraseña para mantener tu cuenta segura</CardDescription>
         </CardHeader>
         <CardContent>
-          <ChangePasswordDialog
-            trigger={
-              <Button className="w-full sm:w-auto backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
-                <Lock className="w-4 h-4 mr-2" aria-hidden="true" />
-                Cambiar Contraseña
-              </Button>
-            }
-          />
+          <PasswordForm />
         </CardContent>
       </Card>
 

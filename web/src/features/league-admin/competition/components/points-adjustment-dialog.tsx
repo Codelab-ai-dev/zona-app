@@ -30,11 +30,13 @@ export function PointsAdjustmentDialog({
   tournamentId,
   onClose,
 }: PointsAdjustmentDialogProps) {
-  const [points, setPoints] = useState('0')
-  const [reason, setReason] = useState('')
+  // The API stores the adjustment as an absolute value, so start from the current one (like the original).
+  const [points, setPoints] = useState(String(standing.points_adjustment))
+  const [reason, setReason] = useState(standing.adjustment_reason ?? '')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const adjust = useAdjustPoints()
+  const adjustment = /^-?\d+$/.test(points.trim()) ? Number(points.trim()) : 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,12 +47,14 @@ export function PointsAdjustmentDialog({
       return
     }
     const pointsValue = Number(points.trim())
-    if (pointsValue === 0) {
+    // 0 is only meaningful to remove an adjustment that exists.
+    const clearing = pointsValue === 0 && standing.points_adjustment !== 0
+    if (pointsValue === 0 && !clearing) {
       setErrors({ points: 'El ajuste no puede ser 0' })
       return
     }
 
-    if (!reason.trim()) {
+    if (!reason.trim() && !clearing) {
       setErrors({ reason: 'El motivo es obligatorio' })
       return
     }
@@ -60,7 +64,8 @@ export function PointsAdjustmentDialog({
         team_id: standing.team_id,
         tournament_id: tournamentId,
         points_adjustment: pointsValue,
-        adjustment_reason: reason.trim(),
+        // The API requires a reason even when the adjustment is removed.
+        adjustment_reason: reason.trim() || 'Ajuste retirado',
       })
       onClose()
     } catch (err) {
@@ -94,24 +99,13 @@ export function PointsAdjustmentDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="current" className="text-gray-400 text-[10px] md:text-xs">Puntos Actuales</Label>
-            <Input
-              id="current"
-              type="number"
-              value={standing.points}
-              disabled
-              className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="adjustment" className="text-gray-400 text-[10px] md:text-xs">Ajuste de Puntos</Label>
             <Input
               id="adjustment"
               type="number"
               value={points}
               onChange={(e) => setPoints(e.target.value)}
-              placeholder="Ej: 3 o -3"
+              placeholder="Ej: -3"
               className="h-8 md:h-9 bg-slate-800/50 border-white/10 text-white text-center text-xs md:text-sm"
               aria-invalid={!!errors.points}
               aria-describedby={errors.points ? 'points-error' : undefined}
@@ -122,9 +116,7 @@ export function PointsAdjustmentDialog({
                 {errors.points}
               </p>
             )}
-            <p className="text-[10px] text-gray-500 mt-1">
-              Nuevo total: {standing.points + (parseInt(points, 10) || 0)} puntos
-            </p>
+            <p className="text-[10px] text-gray-500 mt-1">Usa números negativos para restar puntos</p>
           </div>
 
           <div className="space-y-2">
@@ -133,7 +125,7 @@ export function PointsAdjustmentDialog({
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Explica el motivo del ajuste…"
+              placeholder="Ej: Incumplimiento de reglamento"
               className="bg-slate-800/50 border-white/10 text-white text-xs md:text-sm min-h-[60px]"
               aria-invalid={!!errors.reason}
               aria-describedby={errors.reason ? 'reason-error' : undefined}
@@ -145,6 +137,26 @@ export function PointsAdjustmentDialog({
                 {errors.reason}
               </p>
             )}
+          </div>
+
+          <div className="p-3 bg-slate-800/50 rounded-lg border border-white/10">
+            <div className="flex justify-between items-center text-xs md:text-sm">
+              <span className="text-gray-400">Puntos calculados:</span>
+              <span className="text-white font-medium">{standing.points}</span>
+            </div>
+            {adjustment !== 0 && (
+              <div className="flex justify-between items-center mt-1 text-xs md:text-sm">
+                <span className="text-gray-400">Ajuste:</span>
+                <span className={adjustment < 0 ? 'text-red-400' : 'text-green-400'}>
+                  {adjustment > 0 ? '+' : ''}
+                  {adjustment}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/10">
+              <span className="text-white font-medium text-xs md:text-sm">Puntos totales:</span>
+              <span className="text-green-400 font-bold text-base md:text-lg">{standing.points + adjustment}</span>
+            </div>
           </div>
 
           <DialogFooter>

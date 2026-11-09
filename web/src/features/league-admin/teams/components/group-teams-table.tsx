@@ -1,11 +1,12 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import { GROUP_LETTERS } from '../groups-logic'
 import type { Team } from '../types'
 
 interface GroupTeamsTableProps {
   teams: Team[]
+  /** Group letters of the tournament. */
+  letters: string[]
   failed: Record<string, string>
   disabled: boolean
   onAssign: (teamId: string, group: string) => void
@@ -22,14 +23,14 @@ const initials = (name: string) =>
     .slice(0, 2)
 
 /** Teams with a per-row group selector; failed PATCHes are highlighted per team. */
-export function GroupTeamsTable({ teams, failed, disabled, onAssign, compact }: GroupTeamsTableProps) {
+export function GroupTeamsTable({ teams, letters, failed, disabled, onAssign, compact }: GroupTeamsTableProps) {
   const select = (team: Team, className: string) => (
     <Select value={team.group_name ?? ''} onValueChange={(value) => onAssign(team.id, value)} disabled={disabled}>
       <SelectTrigger className={`border-white/30 bg-white/10 text-white backdrop-blur-md ${className}`} aria-label={`Grupo de ${team.name}`}>
         <SelectValue placeholder="Seleccionar grupo" />
       </SelectTrigger>
       <SelectContent className="border-white/20 bg-gray-700/95 backdrop-blur-xl">
-        {GROUP_LETTERS.map((letter) => (
+        {letters.map((letter) => (
           <SelectItem key={letter} value={letter} className="text-white">
             Grupo {letter}
           </SelectItem>

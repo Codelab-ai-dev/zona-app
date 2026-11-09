@@ -37,11 +37,28 @@ const LABELS = {
   },
 } as const
 
-const STEPS = [
-  ['1. Finaliza la fase regular:', 'Asegúrate de que todos los partidos estén finalizados y los resultados ingresados correctamente.'],
-  ['2. Genera la liguilla:', 'Elige el torneo, el número de equipos (4 u 8) y la fecha de inicio.'],
-  ['3. Formato automático:', 'Los emparejamientos se crean automáticamente: 1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).'],
-]
+const AUTO_FORMAT = ['4. Formato automático:', 'Los emparejamientos se crean automáticamente: 1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).']
+
+const STEPS: Record<keyof typeof LABELS, string[][]> = {
+  knockout: [
+    ['1. Selecciona los equipos:', 'Elige manualmente los 4 u 8 equipos que participarán en el torneo de eliminación directa.'],
+    ['2. Configura el formato:', 'Define si habrá partidos de ida y vuelta, partido por el tercer lugar, fechas y horarios.'],
+    ['3. Genera el bracket:', 'El sistema creará automáticamente los emparejamientos según el orden seleccionado.'],
+    AUTO_FORMAT,
+  ],
+  group_knockout: [
+    ['1. Finaliza la fase de grupos:', 'Asegúrate de que todos los partidos de la fase de grupos estén finalizados y los resultados ingresados correctamente.'],
+    ['2. Carga equipos clasificados:', 'Con el botón de equipos clasificados se cargan los equipos que avanzaron de cada grupo según la configuración del torneo.'],
+    ['3. Ajusta manualmente:', 'Puedes modificar el orden de los equipos clasificados si es necesario.'],
+    ['4. Genera la eliminación:', 'Los emparejamientos se crean automáticamente basándose en las posiciones de los grupos.'],
+  ],
+  league: [
+    ['1. Finaliza la fase regular:', 'Asegúrate de que todos los partidos de la fase regular estén finalizados y los resultados ingresados correctamente.'],
+    ['2. Genera la liguilla:', 'Sin elegir equipos, el sistema toma la tabla de posiciones y selecciona los primeros 4 u 8 equipos según el formato elegido.'],
+    ['3. Ajusta manualmente:', 'Puedes elegir y ordenar los equipos clasificados si hay criterios especiales de desempate.'],
+    AUTO_FORMAT,
+  ],
+}
 
 /** Playoffs management page for league admins: generate the bracket and see it. */
 export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
@@ -53,7 +70,8 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
   const playoffMatches = useTournamentMatches(selectedTournamentId, { phase: 'playoffs' })
   const tournamentList = tournaments.data?.data ?? []
   const format = tournamentList.find((t) => t.id === selectedTournamentId)?.tournament_format
-  const labels = LABELS[format === 'knockout' || format === 'group_knockout' ? format : 'league']
+  const kind = format === 'knockout' || format === 'group_knockout' ? format : 'league'
+  const labels = LABELS[kind]
   const teamNames = Object.fromEntries((teams.data?.data ?? []).map((t) => [t.id, t.name]))
 
   return (
@@ -124,7 +142,7 @@ export function PlayoffsPage({ leagueId }: PlayoffsPageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-white/80 drop-shadow">
-          {STEPS.map(([lead, text]) => (
+          {STEPS[kind].map(([lead, text]) => (
             <p key={lead}>
               <strong className="text-white">{lead}</strong> {text}
             </p>

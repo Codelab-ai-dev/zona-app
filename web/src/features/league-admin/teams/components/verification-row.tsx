@@ -3,7 +3,7 @@ import { CheckCircle, CreditCard, Edit, Eye, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ interface Props {
   row: LeaguePlayerVerification
   leagueId: string
   age: RowAge | null
+  teamLogo?: string
   onView: (row: LeaguePlayerVerification) => void
   onEditBirthDate: (row: LeaguePlayerVerification) => void
 }
@@ -42,7 +43,7 @@ function StatusBadge({ status }: { status: LeaguePlayerVerification['status'] })
   return <Badge className="w-fit border-0 bg-gray-500/80 text-white">Sin INE</Badge>
 }
 
-export function VerificationRow({ row, leagueId, age, onView, onEditBirthDate }: Props) {
+export function VerificationRow({ row, leagueId, age, teamLogo, onView, onEditBirthDate }: Props) {
   const upload = useUploadPlayerDocument(leagueId)
   const decide = useDecideVerification(leagueId)
   const [confirm, setConfirm] = useState<'verify' | 'unverify' | null>(null)
@@ -88,17 +89,25 @@ export function VerificationRow({ row, leagueId, age, onView, onEditBirthDate }:
           </div>
         </div>
       </TableCell>
-      <TableCell className="text-sm text-white/80">{row.team_name}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6 border border-white/20">
+            {teamLogo && <AvatarImage src={teamLogo} alt={row.team_name} />}
+            <AvatarFallback className="bg-slate-700 text-xs text-white">{row.team_name[0]}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm text-white/80">{row.team_name}</span>
+        </div>
+      </TableCell>
       <TableCell>
         {age ? (
-          <div className="flex flex-col gap-1">
+          age.ok === null ? (
             <span className="text-sm text-white">{age.age} años</span>
-            {age.ok !== null && (
-              <Badge className={`w-fit border-0 text-white ${age.ok ? 'bg-green-500/80' : 'bg-red-500/80'}`}>
-                {age.ok ? 'Cumple edad' : 'No cumple edad'}
-              </Badge>
-            )}
-          </div>
+          ) : (
+            <Badge className={`border-0 text-white ${age.ok ? 'bg-green-500/80' : 'bg-red-500/80'}`}>
+              {age.age} años
+              <span className="sr-only">{age.ok ? ' (cumple la edad del torneo)' : ' (no cumple la edad del torneo)'}</span>
+            </Badge>
+          )
         ) : (
           <span className="text-white/50">-</span>
         )}

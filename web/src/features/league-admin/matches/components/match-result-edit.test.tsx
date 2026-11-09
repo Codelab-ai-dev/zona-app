@@ -29,6 +29,7 @@ const handlers = {
   'GET /teams/team-2/players': page([{ id: 'p-away-1', name: 'Carlos Díaz', jersey_number: 7 }]),
   'POST /matches/match-1/result': { body: finished },
   'POST /knowledge/triggers': { status: 204 },
+  'POST /notifications/matches/match-1/finalized': { status: 204 },
 }
 
 function setup() {
@@ -58,7 +59,7 @@ describe('MatchResultDialog editing a finished match', () => {
     expect(screen.getByLabelText(/opcional/i)).toHaveValue('Lluvia')
   })
 
-  it('saves the corrected score replacing goals/cards, keeps the assist and does not re-announce the match', async () => {
+  it('saves the corrected score replacing goals/cards, keeps the assist and re-sends the result notification', async () => {
     const { fetchMock, onSaved, user } = setup()
     const home = await screen.findByLabelText('Goles Tigres FC')
     await vi.waitFor(() => expect(home).toHaveValue(2))
@@ -80,7 +81,11 @@ describe('MatchResultDialog editing a finished match', () => {
         observations: 'Lluvia',
       },
     ])
-    expect(requestsTo(fetchMock, 'POST /knowledge/triggers')).toHaveLength(1)
+    expect(requestsTo(fetchMock, 'POST /knowledge/triggers')).toEqual([
+      { trigger_type: 'match_result_update', league_id: 'league-1', tournament_id: expect.any(String), match_id: 'match-1' },
+      { trigger_type: 'standings_update', league_id: 'league-1', tournament_id: expect.any(String) },
+    ])
+    expect(requestsTo(fetchMock, 'POST /notifications/matches/match-1/finalized')).toHaveLength(1)
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith('match-1'))
   })
 

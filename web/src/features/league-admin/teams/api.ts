@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { api, type PageParams } from '@/lib/api/client'
 
+import { hasProblematicChars, normalizeForQR } from './qr-text'
 import type {
   CreateTeamRequest,
   CreateUserRequest,
@@ -14,6 +15,8 @@ import type {
   UpdateTeamRequest,
   UpdateUserRequest,
 } from './types'
+
+const PAGE = 100
 
 /** Query keys for teams feature. */
 export const teamsKeys = {
@@ -59,6 +62,30 @@ export function usePlayerRegistrationRequests(
   })
 }
 
+/** Requests of every tournament of a league, newest first (the original screen listed them all together). */
+export function useLeagueRegistrationRequests(tournamentIds: string[], page: PageParams = { limit: 100 }) {
+  const queries = useQueries({
+    queries: tournamentIds.map((tournamentId) => ({
+      queryKey: teamsKeys.requests(tournamentId, page),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        api.list<PlayerRegistrationRequest>(
+          `/tournaments/${tournamentId}/player-registration-requests`,
+          { limit: page.limit, offset: page.offset },
+          { signal },
+        ),
+    })),
+  })
+  const failed = queries.find((q) => q.isError)
+  return {
+    isPending: queries.some((q) => q.isPending),
+    error: failed?.error ?? null,
+    refetch: () => queries.forEach((q) => void q.refetch()),
+    requests: queries
+      .flatMap((q) => q.data?.data ?? [])
+      .sort((a, b) => b.created_at.localeCompare(a.created_at)),
+  }
+}
+
 /** Raised when the team exists but its owner account could not be created. */
 export class OwnerCreationError extends Error {
   readonly cause: unknown
@@ -69,26 +96,60 @@ export class OwnerCreationError extends Error {
   }
 }
 
+/** POST /storage/objects (scope "team"): returns the public URL of the uploaded logo. */
+export async function uploadTeamLogo(teamId: string, file: File): Promise<string> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('scope', 'team')
+  form.append('scope_id', teamId)
+  const res = await api.post<{ url?: string }>('/storage/objects', form)
+  if (!res.url) throw new Error('El servidor no devolvió la URL del logo')
+  return res.url
+}
+
+export interface CreateTeamResult {
+  /** Set when the team and owner exist but the logo could not be stored. */
+  logoError?: string
+}
+
 /**
  * Create a team and then its owner account. If the owner fails, the team
  * already exists: callers retry with `skipTeam` so it is not created twice.
+ * The logo (optional) is uploaded once the team has an id; a failed logo does
+ * not undo the team.
  */
 export function useCreateTeam() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (params: { team: CreateTeamRequest; owner: CreateUserRequest; skipTeam?: boolean }) => {
-      if (!params.skipTeam) await api.post('/teams', params.team)
+    mutationFn: async (params: {
+      team: CreateTeamRequest
+      owner: CreateUserRequest
+      skipTeam?: boolean
+      logo?: File | null
+    }): Promise<CreateTeamResult> => {
+      let logoError: string | undefined
+      if (!params.skipTeam) {
+        const created = await api.post<Team>('/teams', params.team)
+        if (params.logo) {
+          try {
+            const logo = await uploadTeamLogo(created.id, params.logo)
+            await api.patch(`/teams/${created.id}`, { logo } satisfies UpdateTeamRequest)
+          } catch (error) {
+            logoError = error instanceof Error ? error.message : 'No se pudo subir el logo'
+          }
+        }
+      }
       try {
         await api.post('/admin/users', params.owner)
       } catch (error) {
         queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
         throw new OwnerCreationError(error)
       }
+      return { logoError }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
-      toast.success('Equipo creado exitosamente')
     },
   })
 }
@@ -112,6 +173,26 @@ export function useOwnerUser(userId: string) {
   return useQuery({
     queryKey: [...teamsKeys.all, 'owner', userId],
     queryFn: ({ signal }) => api.get<AccountUser>(`/admin/users/${userId}`, { signal }),
+    retry: false,
+  })
+}
+
+/**
+ * id -> name of the users of a league (GET /leagues/{id}/users, league admin).
+ * One request set replaces a lookup per card / per request.
+ */
+export function useLeagueUserNames(leagueId: string) {
+  return useQuery({
+    queryKey: [...teamsKeys.all, 'league-users', leagueId],
+    queryFn: async ({ signal }) => {
+      const names: Record<string, string> = {}
+      for (let offset = 0; ; offset += PAGE) {
+        const res = await api.list<{ id: string; name: string }>(`/leagues/${leagueId}/users`, { limit: PAGE, offset }, { signal })
+        for (const u of res.data) names[u.id] = u.name
+        if (res.data.length < PAGE) return names
+      }
+    },
+    enabled: Boolean(leagueId),
     retry: false,
   })
 }
@@ -188,7 +269,7 @@ export function useDeleteTeam() {
   })
 }
 
-/** Approve/reject a player registration request. */
+/** Approve (creates the player server-side) or reject a player registration request. */
 export function useReviewPlayerRegistration() {
   const queryClient = useQueryClient()
 
@@ -198,11 +279,15 @@ export function useReviewPlayerRegistration() {
         `/player-registration-requests/${params.requestId}/review`,
         params.review,
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [...teamsKeys.all, 'requests'],
-      })
-      toast.success('Solicitud revisada')
+    onSuccess: (_, params) => {
+      queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'requests'] })
+      // Approval adds a player to the roster.
+      queryClient.invalidateQueries({ queryKey: ['players'] })
+      if (params.review.status === 'approved') {
+        toast.success('Solicitud aprobada', { description: 'El jugador ha sido registrado exitosamente' })
+      } else {
+        toast.success('Solicitud rechazada')
+      }
     },
     onError: (error) => {
       const msg = error instanceof Error ? error.message : 'Error al revisar solicitud'
@@ -213,28 +298,48 @@ export function useReviewPlayerRegistration() {
 
 /** Backend limits: max 200 players per qr-batch call, max 100 rows per page. */
 const QR_CHUNK = 200
-const PAGE = 100
+
+export interface QRNormalizedName {
+  id: string
+  name: string
+  /** The name as it goes inside the QR (no accents or eñes). */
+  inQR: string
+}
 
 export interface QRRunResult {
   updated: number
   failures: Array<{ label: string; error: string }>
+  /** Players whose name has accents/eñes and was normalized for the scanner. */
+  normalized: QRNormalizedName[]
+}
+
+export interface QRProgress {
+  percent: number
+  /** Players found so far (0 while rosters are still being read). */
+  total: number
 }
 
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : 'Error desconocido')
 
-async function fetchTeamPlayerIds(teamId: string): Promise<string[]> {
-  const ids: string[] = []
+interface RosterPlayer {
+  id: string
+  name: string
+  is_active: boolean
+}
+
+async function fetchTeamPlayers(teamId: string): Promise<RosterPlayer[]> {
+  const players: RosterPlayer[] = []
   for (let offset = 0; ; offset += PAGE) {
-    const res = await api.list<{ id: string }>(`/teams/${teamId}/players`, { limit: PAGE, offset })
-    ids.push(...res.data.map((p) => p.id))
-    if (res.data.length < PAGE) return ids
+    const res = await api.list<RosterPlayer>(`/teams/${teamId}/players`, { limit: PAGE, offset })
+    players.push(...res.data)
+    if (res.data.length < PAGE) return players
   }
 }
 
 /**
- * Regenerate QR codes for every player of the given teams: reads each roster
- * (paginated), then POSTs `{ players: [{ id }] }` in chunks of 200. Failures
- * are collected per team / per chunk instead of aborting the run.
+ * Regenerate QR codes for every active player of the given teams: reads each
+ * roster (paginated), then POSTs `{ players: [{ id }] }` in chunks of 200.
+ * Failures are collected per team / per player instead of aborting the run.
  */
 export function useQRBatchUpdate() {
   const queryClient = useQueryClient()
@@ -243,33 +348,37 @@ export function useQRBatchUpdate() {
     mutationFn: async (params: {
       leagueId: string
       teams: Array<{ id: string; name: string }>
-      onProgress?: (percent: number) => void
+      onProgress?: (progress: QRProgress) => void
     }): Promise<QRRunResult> => {
       const failures: QRRunResult['failures'] = []
-      const ids: string[] = []
+      const players: RosterPlayer[] = []
       for (const [i, team] of params.teams.entries()) {
         try {
-          ids.push(...(await fetchTeamPlayerIds(team.id)))
+          players.push(...(await fetchTeamPlayers(team.id)).filter((p) => p.is_active !== false))
         } catch (error) {
           failures.push({ label: team.name, error: messageOf(error) })
         }
-        params.onProgress?.(((i + 1) / params.teams.length) * 50)
+        params.onProgress?.({ percent: ((i + 1) / params.teams.length) * 50, total: 0 })
       }
       let updated = 0
-      const chunks = Math.ceil(ids.length / QR_CHUNK)
+      const normalized: QRNormalizedName[] = []
+      const chunks = Math.ceil(players.length / QR_CHUNK)
       for (let c = 0; c < chunks; c++) {
-        const players = ids.slice(c * QR_CHUNK, (c + 1) * QR_CHUNK).map((id) => ({ id }))
+        const chunk = players.slice(c * QR_CHUNK, (c + 1) * QR_CHUNK)
         try {
           const res = await api.post<{ updated: number }>(`/leagues/${params.leagueId}/players/qr-batch`, {
-            players,
+            players: chunk.map((p) => ({ id: p.id })),
           } satisfies QRBatchUpdateRequest)
           updated += res.updated
+          for (const p of chunk) {
+            if (hasProblematicChars(p.name)) normalized.push({ id: p.id, name: p.name, inQR: normalizeForQR(p.name) })
+          }
         } catch (error) {
-          failures.push({ label: `Lote ${c + 1}`, error: messageOf(error) })
+          for (const p of chunk) failures.push({ label: p.name, error: messageOf(error) })
         }
-        params.onProgress?.(50 + ((c + 1) / chunks) * 50)
+        params.onProgress?.({ percent: 50 + ((c + 1) / chunks) * 50, total: players.length })
       }
-      return { updated, failures }
+      return { updated, failures, normalized }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })

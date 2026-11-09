@@ -41,7 +41,9 @@ describe('Home (liga-admin)', () => {
       ...mineOne,
       'GET /leagues/league-1/tournaments': list([tournament()]),
       'GET /teams': list([team(), team({ id: 'team-2', name: 'Leones', is_active: false })]),
-      'GET /tournaments/tour-1/matches': list([match]),
+      'GET /tournaments/tour-1/matches': list([match], 14),
+      'GET /tournaments/tour-1/matches/upcoming': list([match]),
+      'GET /leagues/league-1/players/verification/summary': { body: { total: 37, pending: 0, verified: 0, no_document: 0 } },
       'GET /tournaments/tour-1/standings': list([standing(), standing({ team_id: 't2', team_name: 'Panteras', position: 2, points: 9 })]),
     })
     renderWithProviders(<HomePage />)
@@ -50,13 +52,21 @@ describe('Home (liga-admin)', () => {
     expect(screen.getAllByText('Apertura 2026').length).toBeGreaterThan(0)
     expect(screen.getByText('Abiertas')).toBeInTheDocument()
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
+    expect(screen.getByText('Jugadores')).toBeInTheDocument()
+    expect(screen.getByText('37')).toBeInTheDocument()
+    expect(screen.getByText('14')).toBeInTheDocument()
     expect(await screen.findByText('Tigres vs Leones')).toBeInTheDocument()
     expect(await screen.findByText('Panteras')).toBeInTheDocument()
     expect(screen.getByText('12 pts')).toBeInTheDocument()
   })
 
   it('shows empty messages when the league has no teams or matches yet', async () => {
-    mockApi({ ...mineOne, 'GET /leagues/league-1/tournaments': list([]), 'GET /teams': list([]) })
+    mockApi({
+      ...mineOne,
+      'GET /leagues/league-1/tournaments': list([]),
+      'GET /teams': list([]),
+      'GET /leagues/league-1/players/verification/summary': { body: { total: 0 } },
+    })
     renderWithProviders(<HomePage />)
 
     expect(await screen.findByText('No hay equipos registrados')).toBeInTheDocument()

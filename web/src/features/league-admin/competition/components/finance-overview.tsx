@@ -17,11 +17,12 @@ interface Props {
   teamNames: Map<string, string>
   overdueCount: number
   totalOverdue?: string
+  currency: string
   onTab: (tab: string) => void
 }
 
 /** "Resumen" tab: latest movements, teams with the highest debt and the overdue alert. */
-export function FinanceOverview({ recent, balances, teamNames, overdueCount, totalOverdue, onTab }: Props) {
+export function FinanceOverview({ recent, balances, teamNames, overdueCount, totalOverdue, currency, onTab }: Props) {
   const topDebt = balances
     .filter((b) => Number(b.pending_balance) > 0)
     .sort((a, b) => Number(b.pending_balance) - Number(a.pending_balance))
@@ -51,7 +52,9 @@ export function FinanceOverview({ recent, balances, teamNames, overdueCount, tot
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <span className={`font-semibold ${tx.is_income ? 'text-emerald-400' : 'text-white'}`}>{formatMoney(tx.amount)}</span>
+                    <span className={`font-semibold ${tx.is_income ? 'text-emerald-400' : 'text-white'}`}>{tx.is_income ? '+' : '-'}
+                      {formatMoney(tx.amount, currency)}
+                    </span>
                     <TransactionStatusBadge status={tx.status} />
                   </div>
                 </div>
@@ -83,7 +86,7 @@ export function FinanceOverview({ recent, balances, teamNames, overdueCount, tot
                       {team.pending_fines_count > 0 && <span className="text-amber-400 ml-2">{team.pending_fines_count} multa(s)</span>}
                     </p>
                   </div>
-                  <span className="font-semibold text-red-400 ml-4">{formatMoney(team.pending_balance)}</span>
+                  <span className="font-semibold text-red-400 ml-4">{formatMoney(team.pending_balance, currency)}</span>
                 </div>
               ))
             ) : (
@@ -100,7 +103,7 @@ export function FinanceOverview({ recent, balances, teamNames, overdueCount, tot
               <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <h3 className="font-semibold text-red-200">Hay {overdueCount} transacciones vencidas</h3>
-                <p className="text-red-100/70 text-sm mt-1">Total vencido: {formatMoney(totalOverdue)}</p>
+                <p className="text-red-100/70 text-sm mt-1">Total vencido: {formatMoney(totalOverdue, currency)}</p>
                 <Button variant="outline" size="sm" className="mt-3 border-red-400/50 bg-transparent text-red-200 hover:bg-red-500/20 hover:text-red-100" onClick={() => onTab('transactions')}>
                   Ver transacciones vencidas
                 </Button>

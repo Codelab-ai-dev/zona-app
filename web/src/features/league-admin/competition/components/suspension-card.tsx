@@ -19,7 +19,7 @@ import { useTeamPlayers } from '@/features/league-admin/matches/api'
 import { useCancelSuspension, useCompleteSuspension } from '../api'
 import type { Suspension } from '../types'
 
-const typeLabels: Record<Suspension['suspension_type'], string> = {
+export const suspensionTypeLabels: Record<Suspension['suspension_type'], string> = {
   disciplinary_committee: 'Comité Disciplinario',
   yellow_accumulation: 'Acumulación de Amarillas',
   red_card: 'Tarjeta Roja',
@@ -82,7 +82,7 @@ export function SuspensionRow({ suspension, teamName, onEdit }: Props) {
         </TableCell>
         <TableCell className="text-white/80 drop-shadow">{teamName ?? '—'}</TableCell>
         <TableCell>
-          <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">{typeLabels[suspension.suspension_type]}</Badge>
+          <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">{suspensionTypeLabels[suspension.suspension_type]}</Badge>
         </TableCell>
         <TableCell className="max-w-xs text-white/80 drop-shadow">
           <p className="truncate">{suspension.reason}</p>

@@ -59,16 +59,40 @@ export interface FixtureSchedule {
   break_between_matches: number
 }
 
+export interface FixtureGroup {
+  name: string
+  teams: Array<{ id: string; name: string }>
+}
+
 export interface GenerateFixturesRequest {
   tournament_id: string
-  teams: Array<{ id: string; name: string }>
+  /** Ignored by the API (and omitted) when `groups` is set. */
+  teams?: Array<{ id: string; name: string }>
+  /** Group stage: each group plays its own round robin. */
+  groups?: FixtureGroup[]
   is_double_round?: boolean
   schedule: FixtureSchedule
+  /** Returns the calendar without saving it (preview). */
+  dry_run?: boolean
+}
+
+/** A generated match; the dry run returns these (the saved ones are `Match`). */
+export interface GeneratedMatch {
+  tournament_id: string
+  home_team_id: string
+  away_team_id: string
+  /** RFC 3339 */
+  match_date: string
+  match_time?: string
+  field_number?: number
+  round?: number
+  bye_team_id?: string
 }
 
 export interface GenerateFixturesResponse {
-  matches: Match[]
+  matches: Array<Match | GeneratedMatch>
   rounds: number
+  dry_run?: boolean
 }
 
 export interface GeneratePlayoffsRequest {

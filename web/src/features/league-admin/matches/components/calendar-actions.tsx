@@ -1,4 +1,5 @@
-import { Settings, Trash } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { ImageDown, RefreshCw, Settings, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -6,9 +7,10 @@ import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '@/lib/api/client'
 
-import { useDeleteTournamentMatches, useLeagueTeams } from '../api'
+import { matchKeys, useDeleteTournamentMatches, useLeagueTeams } from '../api'
 import type { MatchWithRelations } from '../types'
 import { AdjustCalendarDialog } from './adjust-calendar-dialog'
+import { MatchPosterGenerator } from './match-poster-generator'
 
 interface CalendarActionsProps {
   leagueId: string
@@ -40,6 +42,8 @@ const COPY: Record<Scope, { label: string; name: string; consequences: string[] 
 export function CalendarActions({ leagueId, tournamentId, tournamentName, matches }: CalendarActionsProps) {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [deleting, setDeleting] = useState<Scope | null>(null)
+  const [posterOpen, setPosterOpen] = useState(false)
+  const queryClient = useQueryClient()
   const teams = useLeagueTeams(adjustOpen ? leagueId : undefined)
   const deleteMatches = useDeleteTournamentMatches()
 
@@ -64,6 +68,15 @@ export function CalendarActions({ leagueId, tournamentId, tournamentName, matche
         <Settings className="mr-1.5 h-3.5 w-3.5 text-yellow-400" aria-hidden="true" />
         {adjustOpen && teams.isPending ? 'Cargando equipos…' : 'Ajustar Calendario'}
       </Button>
+      <Button
+        size="sm"
+        onClick={() => setPosterOpen(true)}
+        disabled={!matches.some((m) => m.status === 'scheduled')}
+        className={outline}
+      >
+        <ImageDown className="mr-1.5 h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+        Generar Imagen
+      </Button>
       {(['regular', 'playoffs'] as const).map(
         (scope) =>
           count(scope) > 0 && (
@@ -79,6 +92,18 @@ export function CalendarActions({ leagueId, tournamentId, tournamentName, matche
           ),
       )}
 
+      <Button
+        size="sm"
+        onClick={() => void queryClient.invalidateQueries({ queryKey: matchKeys.byTournament(tournamentId) })}
+        className={outline}
+      >
+        <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+        Actualizar
+      </Button>
+      {posterOpen && (
+        <MatchPosterGenerator open onOpenChange={setPosterOpen} matches={matches} tournamentName={tournamentName} />
+      )}
+
       {adjustOpen && teams.isError && (
         <p role="alert" className="w-full text-xs text-red-400">
           No se pudieron cargar los equipos para analizar el calendario.{' '}
@@ -90,6 +115,7 @@ export function CalendarActions({ leagueId, tournamentId, tournamentName, matche
           open
           onOpenChange={setAdjustOpen}
           tournamentId={tournamentId}
+          leagueId={leagueId}
           teams={tournamentTeams}
           matches={matches}
         />

@@ -15,6 +15,8 @@ interface ScheduleStepProps {
   errors: Record<string, string>
   onChange: (field: keyof FixtureSchedule, value: string | number | undefined) => void
   onToggleDay: (day: string) => void
+  /** Replaces the selected match days (quick selections). */
+  onSetDays: (days: string[]) => void
   onBack: () => void
   onNext: () => void
 }
@@ -47,7 +49,7 @@ function Field({ id, label, field, errors, children, icon }: FieldProps) {
 }
 
 /** Step 3: schedule configuration. Shows a top-level alert for non-field ("schedule") errors. */
-export function ScheduleStep({ schedule, errors, onChange, onToggleDay, onBack, onNext }: ScheduleStepProps) {
+export function ScheduleStep({ schedule, errors, onChange, onToggleDay, onSetDays, onBack, onNext }: ScheduleStepProps) {
   const generalError = errors['schedule']
   const hasFieldErrors = Object.keys(errors).some((k) => k !== 'schedule')
   const num = (field: keyof FixtureSchedule, raw: string) => {
@@ -98,6 +100,14 @@ export function ScheduleStep({ schedule, errors, onChange, onToggleDay, onBack, 
 
       <fieldset className="space-y-3">
         <legend className="mb-1.5 block text-xs font-medium text-gray-400 md:text-sm">Días de juego</legend>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => onSetDays([...WEEKDAYS])} className="h-7 border-white/10 bg-slate-700/50 text-xs text-gray-300 hover:text-white">
+            Todos los días
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => onSetDays(['saturday', 'sunday'])} className="h-7 border-white/10 bg-slate-700/50 text-xs text-gray-300 hover:text-white">
+            Fines de semana
+          </Button>
+        </div>
         <div className="grid grid-cols-2 gap-3 rounded-lg border border-white/10 bg-slate-800/50 p-3">
           {WEEKDAYS.map((day) => (
             <div key={day} className="flex items-center gap-2">

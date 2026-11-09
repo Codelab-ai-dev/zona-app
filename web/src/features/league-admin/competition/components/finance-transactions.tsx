@@ -1,12 +1,12 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { ErrorState, LoadingState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-import { useTransactions } from '../api'
+import { useCurrency, useTransactions } from '../api'
 import { formatMoney } from '../money'
 import { FinanceFilters, noFilters, type TransactionFilterState } from './finance-filters'
 import { TransactionStatusBadge } from './finance-status-badge'
@@ -14,28 +14,30 @@ import { TransactionActions } from './transaction-actions'
 import { transactionTypeLabel } from './transaction-types'
 
 const PAGE_SIZE = 25
+
+function useDebounced(value: string, ms = 300) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms)
+    return () => clearTimeout(id)
+  }, [value, ms])
+  return debounced
+}
 const outlineButton = 'backdrop-blur-md bg-white/10 border-white/20 text-white hover:bg-white/20'
 
 export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: string; teamNames: Map<string, string>; onAdd: () => void }) {
   const [page, setPage] = useState(0)
+  const currency = useCurrency(leagueId)
   const [filters, setFilters] = useState<TransactionFilterState>(noFilters)
-  const transactions = useTransactions(leagueId, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, { status: filters.status, transaction_type: filters.type })
-
-  // The API has no text search: filter the loaded page by description, team and notes.
-  const search = filters.search.trim().toLowerCase()
-  const rows = useMemo(
-    () =>
-      (transactions.data?.data ?? []).filter(
-        (tx) =>
-          !search ||
-          [tx.description, tx.notes ?? '', (tx.team_id && teamNames.get(tx.team_id)) || ''].some((text) => text.toLowerCase().includes(search)),
-      ),
-    [transactions.data, search, teamNames],
-  )
-  const filtered = filters.status !== 'all' || filters.type !== 'all' || search !== ''
+  const q = useDebounced(filters.search.trim()).slice(0, 100)
+  const transactions = useTransactions(leagueId, { limit: PAGE_SIZE, offset: page * PAGE_SIZE }, { status: filters.status, transaction_type: filters.type, q })
+  const rows = transactions.data?.data ?? []
+  const pendingRows = rows.filter((tx) => tx.status === 'pending').length
+  const overdueRows = rows.filter((tx) => tx.status === 'overdue').length
+  const filtered = filters.status !== 'all' || filters.type !== 'all' || q !== ''
   const changeFilters = (next: TransactionFilterState) => {
-    // Status and type are server-side: they change the result set, so go back to the first page.
-    if (next.status !== filters.status || next.type !== filters.type) setPage(0)
+    // Status, type and search are server-side: they change the result set, so go back to the first page.
+    if (next.status !== filters.status || next.type !== filters.type || next.search !== filters.search) setPage(0)
     setFilters(next)
   }
 
@@ -44,7 +46,11 @@ export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: 
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-white drop-shadow-lg">Transacciones</CardTitle>
-          <CardDescription className="text-white/70">Cargos, multas y pagos de la liga</CardDescription>
+          <CardDescription className="text-white/70">
+            {filtered ? rows.length : (transactions.data?.page.total ?? rows.length)} transacciones encontradas
+            {pendingRows > 0 && <span className="text-yellow-400 ml-2">({pendingRows} pendientes)</span>}
+            {overdueRows > 0 && <span className="text-red-400 ml-2">({overdueRows} vencidas)</span>}
+          </CardDescription>
         </div>
         <Button size="sm" onClick={onAdd} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
@@ -86,13 +92,26 @@ export function FinanceTransactions({ leagueId, teamNames, onAdd }: { leagueId: 
                 {rows.map((tx) => (
                   <TableRow key={tx.id} className="border-white/10 hover:bg-white/5">
                     <TableCell className="text-white/80">{new Date(tx.transaction_date).toLocaleDateString('es-ES')}</TableCell>
-                    <TableCell className="text-white font-medium max-w-[200px] truncate">{tx.description}</TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px]">
+                        <p className="text-white font-medium truncate">{tx.description}</p>
+                        {tx.player_name && (
+                          <p className="text-xs text-white/50">
+                            {tx.player_name}
+                            {tx.player_number !== undefined && ` #${tx.player_number}`}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-white/80">{(tx.team_id && teamNames.get(tx.team_id)) || '-'}</TableCell>
                     <TableCell className="text-xs text-white/60">{transactionTypeLabel(tx.transaction_type)}</TableCell>
                     <TableCell className="text-right">
-                      <span className={`font-semibold ${tx.is_income ? 'text-emerald-400' : 'text-white'}`}>{formatMoney(tx.amount)}</span>
+                      <span className={`font-semibold ${tx.is_income ? 'text-emerald-400' : 'text-white'}`}>
+                        {tx.is_income ? '+' : '-'}
+                        {formatMoney(tx.amount, currency)}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-right text-white/80">{formatMoney(tx.amount_paid)}</TableCell>
+                    <TableCell className="text-right text-white/80">{Number(tx.amount_paid) > 0 ? formatMoney(tx.amount_paid, currency) : '-'}</TableCell>
                     <TableCell>
                       <TransactionStatusBadge status={tx.status} />
                     </TableCell>

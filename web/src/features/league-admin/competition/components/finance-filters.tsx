@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import { statusLabels, transactionTypes } from './transaction-types'
+import { statusFilterLabels, transactionTypes } from './transaction-types'
 
 export interface TransactionFilterState {
   search: string
@@ -16,7 +16,7 @@ export const noFilters: TransactionFilterState = { search: '', status: 'all', ty
 
 const glassField = 'backdrop-blur-md bg-white/10 border-white/20 text-white'
 
-/** Search (client-side over the loaded page), status and type (server-side filters). */
+/** Search (`q`), status and type: all server-side filters. */
 export function FinanceFilters({ value, onChange }: { value: TransactionFilterState; onChange: (next: TransactionFilterState) => void }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -43,7 +43,7 @@ export function FinanceFilters({ value, onChange }: { value: TransactionFilterSt
           </SelectTrigger>
           <SelectContent className="bg-slate-900 border-white/20 text-white">
             <SelectItem value="all">Todos los estados</SelectItem>
-            {Object.entries(statusLabels).map(([status, label]) => (
+            {Object.entries(statusFilterLabels).map(([status, label]) => (
               <SelectItem key={status} value={status}>
                 {label}
               </SelectItem>

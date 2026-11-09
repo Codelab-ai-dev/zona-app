@@ -4,6 +4,8 @@ import { ShieldCheck } from 'lucide-react'
 import { EmptyState, QueryState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useLeagueTournaments } from '@/features/leagues/api'
 
@@ -33,16 +35,17 @@ function useDebounced(value: string, ms = 300) {
 
 export function VerificationPage() {
   const { leaguesQuery, leagueId, setLeagueId } = useSelectedLeague()
-  const [status, setStatus] = useState<VerificationStatus | ''>('')
+  const [status, setStatus] = useState<VerificationStatus | ''>('pending')
   const [teamId, setTeamId] = useState('')
   const [search, setSearch] = useState('')
+  const [ageOnly, setAgeOnly] = useState(true)
   const [offset, setOffset] = useState(0)
   const [viewing, setViewing] = useState<LeaguePlayerVerification | null>(null)
   const [editing, setEditing] = useState<LeaguePlayerVerification | null>(null)
   const q = useDebounced(search.trim())
 
-  const listQuery = useLeagueVerification(leagueId, { status, teamId, q, limit: PAGE_SIZE, offset })
-  const summaryQuery = useVerificationSummary(leagueId)
+  const listQuery = useLeagueVerification(leagueId, { status, teamId, q, ageOnly, limit: PAGE_SIZE, offset })
+  const summaryQuery = useVerificationSummary(leagueId, ageOnly)
   const teams = useTeamsByLeague(leagueId).data?.data ?? []
   const tournaments = useLeagueTournaments(leagueId).data?.data ?? []
   const decide = useDecideVerification(leagueId)
@@ -90,6 +93,10 @@ export function VerificationPage() {
                   <ShieldCheck className="h-5 w-5 text-blue-400" aria-hidden="true" />
                   Lista de Jugadores
                 </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Switch id="age-only" checked={ageOnly} onCheckedChange={reset(setAgeOnly)} />
+                  <Label htmlFor="age-only" className="text-white/90">Solo torneos con validación de edad</Label>
+                </div>
                 <VerificationFilters
                   status={status}
                   teamId={teamId}
@@ -105,7 +112,16 @@ export function VerificationPage() {
                   query={listQuery}
                   isEmpty={(data) => data.data.length === 0}
                   loadingLabel="Cargando jugadores…"
-                  empty={<EmptyState title="No hay jugadores" description="No hay jugadores en esta categoría" />}
+                  empty={
+                    <EmptyState
+                      title="No hay jugadores"
+                      description={
+                        ageOnly
+                          ? 'No hay jugadores en esta categoría. Solo se muestran jugadores de torneos con validación de edad: desactiva «Solo torneos con validación de edad» para ver a todos.'
+                          : 'No hay jugadores en esta categoría'
+                      }
+                    />
+                  }
                 >
                   {(res) => {
                     const total = res.page.total ?? res.data.length
@@ -129,6 +145,7 @@ export function VerificationPage() {
                                   row={row}
                                   leagueId={leagueId}
                                   age={checkAge(row.birth_date, rulesOf(row.team_id))}
+                                  teamLogo={teams.find((t) => t.id === row.team_id)?.logo}
                                   onView={setViewing}
                                   onEditBirthDate={setEditing}
                                 />

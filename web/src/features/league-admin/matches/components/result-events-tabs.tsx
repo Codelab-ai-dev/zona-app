@@ -15,10 +15,11 @@ interface EventsTabsProps {
   setForm: Dispatch<SetStateAction<ResultFormState>>
   teamNames: Record<Side, string>
   rosters: Record<Side, Player[]>
+  rostersLoading?: boolean
 }
 
 /** "Goles" and "Tarjetas" tab bodies of the result dialog, one column per team. */
-export function ResultEventsTabs({ form, setForm, teamNames, rosters }: EventsTabsProps) {
+export function ResultEventsTabs({ form, setForm, teamNames, rosters, rostersLoading = false }: EventsTabsProps) {
   const patchGoal = (id: string, patch: Partial<FormGoal>) =>
     setForm((f) => ({ ...f, goals: f.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) }))
   const patchCard = (id: string, patch: Partial<FormCard>) =>
@@ -30,7 +31,10 @@ export function ResultEventsTabs({ form, setForm, teamNames, rosters }: EventsTa
         <div className="grid grid-cols-2 gap-4">
           {SIDES.map((side) => (
             <div key={side} className="space-y-2">
-              <h3 className="font-semibold text-sm">{teamNames[side]}</h3>
+              <h3 className="font-semibold text-sm">{teamNames[side]} ({form.goals.filter((g) => g.side === side).length})</h3>
+              {!rostersLoading && rosters[side].length === 0 && (
+                <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-xs text-amber-600">No hay jugadores registrados</p>
+              )}
               {form.goals
                 .filter((g) => g.side === side)
                 .map((goal) => (
@@ -53,6 +57,7 @@ export function ResultEventsTabs({ form, setForm, teamNames, rosters }: EventsTa
                 size="sm"
                 variant="outline"
                 className="w-full"
+                disabled={rosters[side].length === 0}
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
@@ -72,6 +77,9 @@ export function ResultEventsTabs({ form, setForm, teamNames, rosters }: EventsTa
           {SIDES.map((side) => (
             <div key={side} className="space-y-2">
               <h3 className="font-semibold text-sm">{teamNames[side]}</h3>
+              {!rostersLoading && rosters[side].length === 0 && (
+                <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-xs text-amber-600">No hay jugadores registrados</p>
+              )}
               {form.cards
                 .filter((c) => c.side === side)
                 .map((card) => (
@@ -92,6 +100,7 @@ export function ResultEventsTabs({ form, setForm, teamNames, rosters }: EventsTa
                 size="sm"
                 variant="outline"
                 className="w-full"
+                disabled={rosters[side].length === 0}
                 onClick={() =>
                   setForm((f) => ({ ...f, cards: [...f.cards, { id: crypto.randomUUID(), side, player_id: '', minute: 1, card_type: 'yellow' }] }))
                 }

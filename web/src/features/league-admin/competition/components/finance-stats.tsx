@@ -33,23 +33,33 @@ function StatsCard({ title, value, description, icon: Icon, iconColor, iconBg, a
 }
 
 /** The four headline numbers of the finance dashboard. `summary` is undefined until the league has finance data. */
-export function FinanceStats({ summary, balances }: { summary?: LeagueSummary; balances: TeamBalance[] }) {
+export function FinanceStats({
+  summary,
+  balances,
+  currency,
+  pendingCount,
+}: {
+  summary?: LeagueSummary
+  balances: TeamBalance[]
+  currency: string
+  pendingCount: number
+}) {
   const teamsWithDebt = balances.filter((b) => Number(b.pending_balance) > 0).length
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-      <StatsCard title="Total Cobrado" value={formatMoney(summary?.total_collected)} description="Ingresos recibidos" icon={TrendingUp} iconColor="text-emerald-400" iconBg="bg-emerald-500/20" />
+      <StatsCard title="Total Cobrado" value={formatMoney(summary?.total_collected, currency)} description="Ingresos recibidos" icon={TrendingUp} iconColor="text-emerald-400" iconBg="bg-emerald-500/20" />
       <StatsCard
         title="Pendiente de Cobro"
-        value={formatMoney(summary?.total_pending)}
-        description={`${summary?.total_transactions ?? 0} transacciones`}
+        value={formatMoney(summary?.total_pending, currency)}
+        description={`${pendingCount} transacciones`}
         icon={Wallet}
         iconColor="text-blue-400"
         iconBg="bg-blue-500/20"
       />
       <StatsCard
         title="Vencido"
-        value={formatMoney(summary?.total_overdue)}
-        description={`${summary?.overdue_transactions ?? 0} vencidos`}
+        value={formatMoney(summary?.total_overdue, currency)}
+        description={`${summary?.overdue_transactions ?? 0} transacciones`}
         icon={AlertTriangle}
         iconColor="text-red-400"
         iconBg="bg-red-500/20"

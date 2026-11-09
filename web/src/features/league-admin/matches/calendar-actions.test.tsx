@@ -200,4 +200,86 @@ describe('adjust calendar', () => {
     expect(await within(dialog).findByText(/No hay nada que ajustar/)).toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: 'Crear partidos faltantes' })).toBeDisabled()
   })
+
+  describe('regenerate', () => {
+    const finished = { ...match3, status: 'finished', home_score: 1, away_score: 0 }
+    const regenSetup = (extra = {}) => {
+      const fetchMock = mockApi({
+        ...base([match1, match2, finished]),
+        ...teamsHandler,
+        'DELETE /matches/match-1': { status: 204 },
+        'DELETE /matches/match-2': { status: 204 },
+        'POST /tournaments/tour-1/matches/bulk': { status: 201, body: [{}, {}, {}, {}, {}] },
+        ...extra,
+      })
+      return { fetchMock, ...renderWithProviders(<CalendarPage leagueId="league-1" />) }
+    }
+    const openConfirm = async (user: ReturnType<typeof renderWithProviders>['user']) => {
+      await user.click(await screen.findByRole('button', { name: 'Ajustar Calendario' }))
+      const dialog = await screen.findByRole('dialog')
+      await user.click(await within(dialog).findByRole('button', { name: 'Regenerar calendario' }))
+      return screen.findByRole('alertdialog')
+    }
+
+    it('sends nothing when the confirmation is cancelled', async () => {
+      const { fetchMock, user } = regenSetup()
+      const confirm = await openConfirm(user)
+      expect(within(confirm).getByText(/2 partidos programados de la fase regular/)).toBeInTheDocument()
+      await user.click(within(confirm).getByRole('button', { name: 'Cancelar' }))
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+      expect(deleteUrls(fetchMock)).toEqual([])
+      expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/matches/bulk')).toHaveLength(0)
+    })
+
+    it('deletes only the scheduled matches, then creates the pending pairings after the kept rounds and notifies', async () => {
+      const { fetchMock, user } = regenSetup()
+      const confirm = await openConfirm(user)
+      await user.click(within(confirm).getByRole('button', { name: 'Eliminar' }))
+
+      expect(await screen.findByText(/Calendario ajustado exitosamente. 5 partidos programados/)).toBeInTheDocument()
+      expect(deleteUrls(fetchMock).sort()).toEqual(['/matches/match-1', '/matches/match-2'])
+      const [body] = requestsTo(fetchMock, 'POST /tournaments/tour-1/matches/bulk') as Array<{ tournament_id: string; matches: Array<{ round: number; home_team_id: string; away_team_id: string }> }>
+      expect(body?.tournament_id).toBe('tour-1')
+      expect(body?.matches).toHaveLength(5)
+      // Round 2 is kept (finished): new rounds start at 3 and never repeat Leones vs Águilas.
+      expect(Math.min(...(body?.matches ?? []).map((m) => m.round))).toBe(3)
+      expect((body?.matches ?? []).some((m) => [m.home_team_id, m.away_team_id].sort().join() === 'team-2,team-3')).toBe(false)
+      await waitFor(() => expect(requestsTo(fetchMock, 'POST /notifications/leagues/league-1').length).toBeGreaterThan(0))
+    })
+
+    it('does not create the new calendar when a deletion fails', async () => {
+      const { fetchMock, user } = regenSetup({
+        'DELETE /matches/match-2': { status: 403, body: { error: { code: 'forbidden', message: 'No tienes permiso' } } },
+      })
+      const confirm = await openConfirm(user)
+      await user.click(within(confirm).getByRole('button', { name: 'Eliminar' }))
+
+      expect(await screen.findByText(/No tienes permiso\. No se creó el calendario nuevo/)).toBeInTheDocument()
+      expect(requestsTo(fetchMock, 'POST /tournaments/tour-1/matches/bulk')).toHaveLength(0)
+    })
+  })
+})
+
+describe('toolbar', () => {
+  it('opens the poster for every scheduled match and refetches the tournament on Actualizar', async () => {
+    const fetchMock = mockApi(base([match1, match2]))
+    const { user } = renderWithProviders(<CalendarPage leagueId="league-1" />)
+
+    await screen.findByRole('heading', { name: 'Jornada 1' })
+    await user.click(screen.getByRole('button', { name: 'Generar Imagen' }))
+    expect(await screen.findByText('Generar Imagen de Partidos')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    const gets = () => requestsTo(fetchMock, 'GET /tournaments/tour-1/matches').length
+    const before = gets()
+    await user.click(screen.getByRole('button', { name: 'Actualizar' }))
+    await waitFor(() => expect(gets()).toBeGreaterThan(before))
+  })
+
+  it('has no poster to make when no match is scheduled', async () => {
+    mockApi(base([{ ...match1, status: 'finished' }]))
+    renderWithProviders(<CalendarPage leagueId="league-1" />)
+    await screen.findByRole('heading', { name: 'Jornada 1' })
+    expect(screen.getByRole('button', { name: 'Generar Imagen' })).toBeDisabled()
+  })
 })

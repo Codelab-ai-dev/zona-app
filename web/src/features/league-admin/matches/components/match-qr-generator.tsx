@@ -56,7 +56,7 @@ export function MatchQRGenerator({ match, tournamentName, leagueSlug, open, onOp
 
       const link = document.createElement('a')
       link.href = url
-      link.download = `qr-${displayMatch.home_team_name || 'home'}-vs-${displayMatch.away_team_name || 'away'}.svg`
+      link.download = `partido-${displayMatch.home_team_name || 'home'}-vs-${displayMatch.away_team_name || 'away'}-${displayMatch.match_date.split('T')[0]}.svg`
       link.click()
 
       URL.revokeObjectURL(url)
@@ -93,6 +93,14 @@ export function MatchQRGenerator({ match, tournamentName, leagueSlug, open, onOp
               <p className="text-xs">
                 {displayMatch.match_date.split('T')[0]} • {displayMatch.match_time || '--:--'}
               </p>
+            </div>
+
+            <div className="w-full text-left">
+              <p className="mb-1 text-sm font-medium">Código QR para App Flutter</p>
+              <p className="mb-2 text-sm text-muted-foreground">
+                Escanea este código con la app de reconocimiento facial para seleccionar este partido.
+              </p>
+              <div className="rounded bg-muted p-2 font-mono text-xs break-all">ID: {displayMatch.id}</div>
             </div>
 
             <Button onClick={handleDownload} className="w-full">

@@ -1,52 +1,67 @@
-import { Calendar, Shield, Trophy } from 'lucide-react'
+import { Calendar, Shield, Trophy, Users } from 'lucide-react'
 import { formatLabel } from './tournament-list'
 import { useMemo } from 'react'
 
-import { ErrorState, LoadingState } from '@/components/states'
+import { ErrorState } from '@/components/states'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useTournamentMatches } from '@/features/league-admin/matches/api'
 import { useTeamsByLeague } from '@/features/league-admin/teams/api'
 
-import { useStandings, useTournaments } from '../api'
+import { useLeagueMatchCount, useLeaguePlayerCount, useStandings, useTournaments, useUpcomingMatches } from '../api'
 
 const glass = 'backdrop-blur-xl bg-white/10 border-white/20'
 const row =
   'flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-3 backdrop-blur-md bg-white/10 rounded-lg border border-white/10'
 
 const dateFmt = (value: string) => new Date(value).toLocaleDateString('es-ES')
+/** Date-only fields (tournament start/end) are read as local calendar days, not shifted by the timezone. */
+const dayFmt = (value: string) => new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString('es-ES')
 
 export function HomePage({ leagueId }: { leagueId: string }) {
   const tournaments = useTournaments(leagueId)
   const teams = useTeamsByLeague(leagueId)
-  const activeTournament = tournaments.data?.data.find((t) => t.is_active)
-  const matches = useTournamentMatches(activeTournament?.id)
+  // Like the original: the most recently created active tournament.
+  const activeTournament = [...(tournaments.data?.data ?? [])]
+    .filter((t) => t.is_active)
+    .sort((x, y) => y.created_at.localeCompare(x.created_at))[0]
+  const players = useLeaguePlayerCount(leagueId)
+  const matchCount = useLeagueMatchCount((tournaments.data?.data ?? []).map((t) => t.id))
+  const upcomingMatches = useUpcomingMatches(activeTournament?.id)
   const standings = useStandings(activeTournament?.id)
 
   const recentTeams = useMemo(
     () => [...(teams.data?.data ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5),
     [teams.data],
   )
-  const upcoming = useMemo(
-    () =>
-      (matches.data?.data ?? [])
-        .filter((m) => m.status === 'scheduled')
-        .sort((a, b) => a.match_date.localeCompare(b.match_date))
-        .slice(0, 5),
-    [matches.data],
-  )
+  const upcoming = (upcomingMatches.data?.data ?? []).slice(0, 5)
 
-  if (tournaments.isPending || teams.isPending) {
+  if (tournaments.isPending || teams.isPending || players.isPending || matchCount.isPending) {
     return (
       <div className="space-y-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
-        <LoadingState label="Cargando datos..." />
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">Estadísticas de la Liga</h2>
+          <p className="text-white/80 drop-shadow" role="status">Cargando datos...</p>
+        </div>
+        <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i} className={glass}>
+              <CardHeader>
+                <div className="h-4 bg-white/20 rounded animate-pulse motion-reduce:animate-none" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-white/20 rounded animate-pulse motion-reduce:animate-none" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     )
   }
 
-  const failed = tournaments.isError ? tournaments : teams.isError ? teams : null
+  const failed = [tournaments, teams, players].find((q) => q.isError)
   if (failed) return <ErrorState error={failed.error} onRetry={() => void failed.refetch()} />
 
+  const teamCount = (teams.data?.data ?? []).filter((t) => t.is_active).length
+  const playerCount = players.data?.total ?? 0
   const stats = [
     {
       title: 'Torneos',
@@ -55,19 +70,14 @@ export function HomePage({ leagueId }: { leagueId: string }) {
       icon: Trophy,
       description: activeTournament ? 'Torneo activo' : 'Sin datos',
     },
-    {
-      title: 'Equipos',
-      value: teams.data?.page?.total ?? teams.data?.data.length ?? 0,
-      total: 0,
-      icon: Shield,
-      description: (teams.data?.data.length ?? 0) > 0 ? 'Registrados' : 'Sin datos',
-    },
+    { title: 'Equipos', value: teamCount, total: teamCount, icon: Shield, description: teamCount > 0 ? 'Registrados' : 'Sin datos' },
+    { title: 'Jugadores', value: playerCount, total: playerCount, icon: Users, description: playerCount > 0 ? 'Registrados' : 'Sin datos' },
     {
       title: 'Partidos',
-      value: matches.data?.page?.total ?? matches.data?.data.length ?? 0,
-      total: 0,
+      value: matchCount.total,
+      total: matchCount.total,
       icon: Calendar,
-      description: (matches.data?.data.length ?? 0) > 0 ? 'Registrados' : 'Sin datos',
+      description: matchCount.total > 0 ? 'Registrados' : 'Sin datos',
     },
   ]
 
@@ -80,7 +90,7 @@ export function HomePage({ leagueId }: { leagueId: string }) {
         <p className="text-white/80 drop-shadow">Resumen de actividad y participación</p>
       </div>
 
-      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-3">
+      <div className="grid gap-4 sm:gap-4 sm:p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -117,7 +127,7 @@ export function HomePage({ leagueId }: { leagueId: string }) {
             <div>
               <p className="text-sm text-white/70">Período</p>
               <p className="font-medium">
-                {dateFmt(activeTournament.start_date)} - {dateFmt(activeTournament.end_date)}
+                {dayFmt(activeTournament.start_date)} - {dayFmt(activeTournament.end_date)}
               </p>
             </div>
             <div>

@@ -15,9 +15,9 @@ const emptyLinks = { body: { data: [], page: { limit: 100, offset: 0 } } }
 
 async function openFormAndFill(user: ReturnType<typeof renderWithProviders>['user'], phone: string) {
   await user.click(await screen.findByRole('button', { name: /nuevo vínculo/i }))
-  await user.type(screen.getByLabelText(/número de teléfono/i), phone)
-  await user.type(screen.getByLabelText(/nombre/i), 'tesoreria')
-  await user.click(screen.getByRole('button', { name: 'Guardar' }))
+  await user.type(screen.getByLabelText(/número de whatsapp/i), phone)
+  await user.type(screen.getByLabelText(/nombre para mostrar/i), 'tesoreria')
+  await user.click(screen.getByRole('button', { name: 'Crear Vínculo' }))
 }
 
 describe('WhatsApp link creation', () => {
@@ -30,7 +30,7 @@ describe('WhatsApp link creation', () => {
 
     await openFormAndFill(user, '5215512345678')
 
-    expect(await screen.findByText('Enlace de WhatsApp creado correctamente')).toBeInTheDocument()
+    expect(await screen.findByText('Vínculo de WhatsApp creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /leagues/league-1/whatsapp-links')).toEqual([
       expect.objectContaining({ phone_number: '5215512345678', display_name: 'TESORERIA' }),
     ])
@@ -45,8 +45,8 @@ describe('WhatsApp link creation', () => {
 
     await openFormAndFill(user, '5215512345678')
 
-    const phone = screen.getByLabelText(/número de teléfono/i)
-    expect(await screen.findByText('Este número ya está registrado')).toBeInTheDocument()
+    const phone = screen.getByLabelText(/número de whatsapp/i)
+    expect(await screen.findByText('Este número de teléfono ya está vinculado')).toBeInTheDocument()
     expect(phone).toHaveAttribute('aria-invalid', 'true')
     expect(phone).toHaveValue('5215512345678')
   })

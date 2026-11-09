@@ -13,7 +13,7 @@ export function DisciplineTable({ leagueId, rows }: { leagueId: string; rows: Pl
   // A failing suspensions request must not hide the cards table, so errors are ignored here.
   const suspensions = useSuspensions(leagueId)
   const suspended = useMemo(
-    () => new Map((suspensions.data?.data ?? []).filter((s) => s.status === 'active').map((s) => [s.player_id, s.reason])),
+    () => new Map((suspensions.data?.data ?? []).filter((s) => s.status === 'active' && s.matches_to_serve - s.matches_served > 0).map((s) => [s.player_id, s.reason])),
     [suspensions.data],
   )
   const records = useMemo(
@@ -26,7 +26,7 @@ export function DisciplineTable({ leagueId, rows }: { leagueId: string; rows: Pl
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-white drop-shadow-lg">
           <AlertTriangle className="w-5 h-5 text-yellow-300" aria-hidden="true" />
-          Disciplina
+          Tabla de Disciplina
         </CardTitle>
         <CardDescription className="text-white/80 drop-shadow">Registro de tarjetas amarillas y rojas de todos los jugadores</CardDescription>
       </CardHeader>
@@ -62,7 +62,12 @@ export function DisciplineTable({ leagueId, rows }: { leagueId: string; rows: Pl
                 return (
                   <TableRow key={record.player_id} className={`border-white/20 ${isSuspended ? 'bg-red-500/10' : 'hover:bg-white/5'}`}>
                     <TableCell className="text-center font-medium text-white">{index + 1}</TableCell>
-                    <TableCell className="font-medium text-white drop-shadow">{record.player_name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white drop-shadow">{record.player_name}</span>
+                        {isSuspended && <Badge className="text-xs backdrop-blur-md bg-red-500/80 text-white border-0">SUSPENDIDO</Badge>}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-white/80 drop-shadow">{record.team_name}</TableCell>
                     <TableCell className="text-center">
                       <Badge className="backdrop-blur-md bg-white/10 text-white border-white/30">{record.jersey_number}</Badge>

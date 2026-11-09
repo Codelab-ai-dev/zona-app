@@ -96,11 +96,17 @@ describe('AttendanceMonitor', () => {
     expect(rows[1]).toHaveTextContent('Carlos (Leones United)')
     expect(rows[1]).toHaveTextContent('Facial')
     expect(within(rows[0] as HTMLElement).getByText(/\d{1,2}:\d{2}/)).toBeInTheDocument()
+    // Facial check-ins show the recognition mode, confidence and similarity (as in the original); QR ones have none.
+    expect(rows[1]).toHaveTextContent('Rápido')
+    expect(rows[1]).toHaveTextContent('Confianza: 95.0%')
+    expect(rows[1]).toHaveTextContent('Similitud: 90.0%')
+    expect(rows[0]).not.toHaveTextContent('Confianza')
+    expect(screen.getByText('2 registros')).toBeInTheDocument()
   })
 
   it('says nobody has checked in yet', async () => {
     mockApi({ ...rosters, 'GET /matches/match-1/attendance': page([], 1000) })
     renderWithProviders(<AttendanceMonitor match={match1} />)
-    expect(await screen.findByText('Aún no hay jugadores registrados.')).toBeInTheDocument()
+    expect(await screen.findByText('No hay asistencias registradas')).toBeInTheDocument()
   })
 })
