@@ -187,10 +187,7 @@ func (s *Service) GenerateFixtures(ctx context.Context, caller auth.Principal, r
 	}
 
 	isDoubleRound := req.IsDoubleRound != nil && *req.IsDoubleRound
-
-	// Run the greedy fixture generation algorithm
-	algo := NewFixtureGenerator(req.Teams, isDoubleRound)
-	rounds := algo.Generate()
+	rounds, byes := fixtureRounds(req, isDoubleRound)
 
 	matchesPerRound := make([]int, len(rounds))
 	for i, round := range rounds {
@@ -216,13 +213,17 @@ func (s *Service) GenerateFixtures(ctx context.Context, caller auth.Principal, r
 				MatchTime:    &kickoff,
 				FieldNumber:  &field,
 			}
-			// The resting team (odd team count) is recorded on the round's first match, like legacy.
-			if mi == 0 && round.ByeTeamID != uuid.Nil {
-				bye := round.ByeTeamID
+			// The resting team (odd team count) is recorded on the first match
+			// of its round (of its group, in a group stage), like legacy.
+			if bye, ok := byes[[2]int{ri, mi}]; ok {
 				creq.ByeTeamID = &bye
 			}
 			createReqs = append(createReqs, creq)
 		}
+	}
+
+	if req.DryRun {
+		return map[string]interface{}{"matches": createReqs, "rounds": len(rounds), "dry_run": true}, nil
 	}
 
 	// Save to database in transaction
@@ -924,4 +925,33 @@ func (g *FixtureGenerator) Generate() []FixtureRound {
 	}
 
 	return rounds
+}
+
+// fixtureRounds builds the round robin: one for all teams, or one per group
+// merged so that round N holds every group's round N. byes maps
+// (round index, match index) to the team resting in that round/group.
+func fixtureRounds(req GenerateFixturesRequest, double bool) ([]FixtureRound, map[[2]int]uuid.UUID) {
+	byes := map[[2]int]uuid.UUID{}
+	if len(req.Groups) == 0 {
+		rounds := NewFixtureGenerator(req.Teams, double).Generate()
+		for ri, r := range rounds {
+			if r.ByeTeamID != uuid.Nil && len(r.Matches) > 0 {
+				byes[[2]int{ri, 0}] = r.ByeTeamID
+			}
+		}
+		return rounds, byes
+	}
+	var merged []FixtureRound
+	for _, g := range req.Groups {
+		for ri, r := range NewFixtureGenerator(g.Teams, double).Generate() {
+			for len(merged) <= ri {
+				merged = append(merged, FixtureRound{Round: len(merged) + 1})
+			}
+			if r.ByeTeamID != uuid.Nil {
+				byes[[2]int{ri, len(merged[ri].Matches)}] = r.ByeTeamID
+			}
+			merged[ri].Matches = append(merged[ri].Matches, r.Matches...)
+		}
+	}
+	return merged, byes
 }

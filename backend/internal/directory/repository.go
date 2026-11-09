@@ -199,6 +199,11 @@ func (r *PGRepository) UpdateWhatsAppLink(ctx context.Context, linkID uuid.UUID,
 	args := []any{}
 	argNum := 1
 
+	if req.PhoneNumber != nil {
+		q += fmt.Sprintf(`, phone_number = $%d`, argNum)
+		args = append(args, *req.PhoneNumber)
+		argNum++
+	}
 	if req.IsActive != nil {
 		q += fmt.Sprintf(`, is_active = $%d`, argNum)
 		args = append(args, *req.IsActive)
@@ -245,6 +250,9 @@ func (r *PGRepository) UpdateWhatsAppLink(ctx context.Context, linkID uuid.UUID,
 			return WhatsAppLink{}, errTournamentNotInLeague
 		}
 		return WhatsAppLink{}, httpx.ErrNotFound
+	}
+	if isUniqueViolation(err) {
+		return WhatsAppLink{}, httpx.ErrConflict.Wrap(err)
 	}
 	if err != nil {
 		return WhatsAppLink{}, fmt.Errorf("update whatsapp link: %w", err)

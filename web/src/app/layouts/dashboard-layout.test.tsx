@@ -40,6 +40,11 @@ describe('dashboard navigation', () => {
     caps.current = makeCaps([], ['league'])
   })
 
+  it('places Resultados right after Calendario, as in the original', () => {
+    const labels = orderTabs([item('/liga-admin/resultados', 'R'), item('/liga-admin/tabla'), item('/liga-admin/calendario')]).map((i) => i.label)
+    expect(labels).toEqual(['Calendario', 'Resultados', 'Posiciones'])
+  })
+
   it('orders tabs with the original labels, keeping unknown routes last', () => {
     expect(orderTabs([item('/liga-admin/tabla'), item('/liga-admin'), item('/otra', 'Otra')]).map((i) => i.label)).toEqual([
       'Resumen',

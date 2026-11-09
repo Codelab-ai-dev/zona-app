@@ -15,6 +15,7 @@ const tabs: { to: string; label: string }[] = [
   { to: '/liga-admin/fixtures', label: 'Jornadas' },
   { to: '/liga-admin/playoffs', label: 'Liguilla' },
   { to: '/liga-admin/calendario', label: 'Calendario' },
+  { to: '/liga-admin/resultados', label: 'Resultados' },
   { to: '/liga-admin/tabla', label: 'Posiciones' },
   { to: '/liga-admin/goleadores', label: 'Goleadores' },
   { to: '/liga-admin/suspensiones', label: 'Suspensiones' },

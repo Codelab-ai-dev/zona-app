@@ -42,6 +42,10 @@ func (f *FakeRepository) GetConfigByLeague(ctx context.Context, leagueID uuid.UU
 	return nil, nil
 }
 
+func (f *FakeRepository) CreateDefaultConfig(ctx context.Context, leagueID, createdBy uuid.UUID) error {
+	return nil
+}
+
 func (f *FakeRepository) GetConfigByLeagueAndTournament(ctx context.Context, leagueID uuid.UUID, tournamentID *uuid.UUID) (*Config, error) {
 	for _, cfg := range f.configs {
 		if cfg.LeagueID == leagueID {

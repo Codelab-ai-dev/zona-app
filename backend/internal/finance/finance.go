@@ -166,11 +166,19 @@ type UpdateConfigRequest struct {
 	OverdueGraceDays          *int         `json:"overdue_grace_days,omitempty"`
 	PaymentInstructions       *string      `json:"payment_instructions,omitempty"`
 	BankAccountInfo           *string      `json:"bank_account_info,omitempty"`
+	Currency                  *Currency    `json:"currency,omitempty"`
 }
 
 // Validate returns validation errors for UpdateConfigRequest.
 func (r *UpdateConfigRequest) Validate() map[string]string {
 	errs := make(map[string]string)
+	if r.Currency != nil {
+		switch *r.Currency {
+		case "MXN", "USD", "EUR", "COP", "ARS", "CLP", "PEN":
+		default:
+			errs["currency"] = "moneda no soportada"
+		}
+	}
 	if r.PaymentDueDays != nil && (*r.PaymentDueDays < 0 || *r.PaymentDueDays > 90) {
 		errs["payment_due_days"] = "debe estar entre 0 y 90"
 	}
@@ -187,6 +195,8 @@ type Transaction struct {
 	TournamentID          *uuid.UUID        `json:"tournament_id,omitempty"`
 	TeamID                *uuid.UUID        `json:"team_id,omitempty"`
 	PlayerID              *uuid.UUID        `json:"player_id,omitempty"`
+	PlayerName            *string           `json:"player_name,omitempty"`
+	PlayerNumber          *int              `json:"player_number,omitempty"`
 	MatchID               *uuid.UUID        `json:"match_id,omitempty"`
 	TransactionType       TransactionType   `json:"transaction_type"`
 	Description           string            `json:"description"`
@@ -408,6 +418,7 @@ type ListTransactionsFilters struct {
 	DateFrom        *time.Time
 	DateTo          *time.Time
 	IsIncome        *bool
+	Search          string // matches description, notes, team or player name
 	Limit           int
 	Offset          int
 }
@@ -439,6 +450,8 @@ type Repository interface {
 	GetConfigByLeague(ctx context.Context, leagueID uuid.UUID) (*Config, error)
 	GetConfigByLeagueAndTournament(ctx context.Context, leagueID uuid.UUID, tournamentID *uuid.UUID) (*Config, error)
 	UpdateConfig(ctx context.Context, configID uuid.UUID, updates *UpdateConfigRequest, updatedBy uuid.UUID) (*Config, error)
+	// CreateDefaultConfig creates the league's config with database defaults if it has none.
+	CreateDefaultConfig(ctx context.Context, leagueID, createdBy uuid.UUID) error
 
 	// Transactions
 	GetTransaction(ctx context.Context, transactionID uuid.UUID) (*Transaction, error)

@@ -41,6 +41,27 @@ func (s *Service) GetConfig(ctx context.Context, caller auth.Principal, leagueID
 	return cfg, nil
 }
 
+// SaveConfig updates the league's financial configuration, creating it with
+// the defaults first when the league has none.
+func (s *Service) SaveConfig(ctx context.Context, caller auth.Principal, leagueID uuid.UUID, updates *UpdateConfigRequest) (*Config, error) {
+	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {
+		return nil, fmt.Errorf("save config: %w", err)
+	}
+	cfg, err := s.repo.GetConfigByLeague(ctx, leagueID)
+	if err != nil {
+		return nil, fmt.Errorf("save config: %w", err)
+	}
+	if cfg == nil {
+		if err := s.repo.CreateDefaultConfig(ctx, leagueID, caller.UserID); err != nil {
+			return nil, err
+		}
+		if cfg, err = s.repo.GetConfigByLeague(ctx, leagueID); err != nil || cfg == nil {
+			return nil, fmt.Errorf("save config: created config not found: %w", err)
+		}
+	}
+	return s.UpdateConfig(ctx, caller, leagueID, cfg.ID, updates)
+}
+
 // UpdateConfig updates the financial configuration for a league.
 func (s *Service) UpdateConfig(ctx context.Context, caller auth.Principal, leagueID uuid.UUID, configID uuid.UUID, updates *UpdateConfigRequest) (*Config, error) {
 	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {

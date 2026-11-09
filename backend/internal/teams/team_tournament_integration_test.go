@@ -46,3 +46,20 @@ func TestChangeTeamTournament(t *testing.T) {
 		t.Fatalf("owner rename: %v", err)
 	}
 }
+
+func TestChangeTeamSlug(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	ctx := context.Background()
+	svc := NewService(NewPGRepository(pool), pool, authz.NewPGChecker(pool))
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+
+	slug := "aguilas-" + f.HomeTeamID.String()[:6]
+	team, err := svc.UpdateTeam(ctx, admin, f.HomeTeamID, UpdateTeamRequest{Slug: &slug})
+	if err != nil || team.Slug != slug {
+		t.Fatalf("change slug: %+v %v", team.Slug, err)
+	}
+	if _, err := svc.UpdateTeam(ctx, admin, f.AwayTeamID, UpdateTeamRequest{Slug: &slug}); statusOf(err) != 422 {
+		t.Fatalf("duplicate slug in the league: got %v, want 422", err)
+	}
+}

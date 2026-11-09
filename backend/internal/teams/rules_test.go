@@ -164,3 +164,13 @@ func TestRequestPlayerRegistrationRules(t *testing.T) {
 		})
 	}
 }
+
+func TestTeamSlugFormat(t *testing.T) {
+	for slug, ok := range map[string]bool{"aguilas-fc": true, "a1": true, "Aguilas": false, "-x": false, "x-": false, "con espacio": false, "ñandú": false} {
+		s := slug
+		errs := (&UpdateTeamRequest{Slug: &s}).Validate()
+		if (errs["slug"] == "") != ok {
+			t.Errorf("%q valid=%v, want %v", slug, errs["slug"] == "", ok)
+		}
+	}
+}

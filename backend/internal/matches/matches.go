@@ -256,6 +256,17 @@ type GenerateFixturesRequest struct {
 	Teams         []TeamFixtureData `json:"teams"`
 	IsDoubleRound *bool             `json:"is_double_round,omitempty"`
 	Schedule      *FixtureSchedule  `json:"schedule"`
+	// Groups (group stage): each group plays its own round robin and round N
+	// gathers every group's matches. When set, Teams is ignored.
+	Groups []FixtureGroup `json:"groups,omitempty"`
+	// DryRun returns the generated calendar without saving it (preview).
+	DryRun bool `json:"dry_run,omitempty"`
+}
+
+// FixtureGroup is one group of a group-stage calendar.
+type FixtureGroup struct {
+	Name  string            `json:"name"`
+	Teams []TeamFixtureData `json:"teams"`
 }
 
 // Validate checks request constraints.
@@ -264,7 +275,20 @@ func (r GenerateFixturesRequest) Validate() map[string]string {
 	if r.TournamentID == uuid.Nil {
 		errs["tournament_id"] = "requerido"
 	}
-	if len(r.Teams) < 2 {
+	if len(r.Groups) > 0 {
+		seen := map[uuid.UUID]bool{}
+		for _, g := range r.Groups {
+			if len(g.Teams) < 2 {
+				errs["groups"] = fmt.Sprintf("el grupo %s necesita al menos 2 equipos", g.Name)
+			}
+			for _, t := range g.Teams {
+				if seen[t.ID] {
+					errs["groups"] = "un equipo no puede estar en dos grupos"
+				}
+				seen[t.ID] = true
+			}
+		}
+	} else if len(r.Teams) < 2 {
 		errs["teams"] = "se requieren al menos 2 equipos"
 	}
 	if r.Schedule == nil {
@@ -578,6 +602,7 @@ type DeleteMatchesResponse struct {
 type ListMatchesFilter struct {
 	Status    *MatchStatus
 	Round     *int
+	Phase     *string
 	StartDate *time.Time
 	EndDate   *time.Time
 	Limit     int

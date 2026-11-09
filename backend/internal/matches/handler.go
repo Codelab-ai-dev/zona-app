@@ -59,8 +59,34 @@ func (h *Handler) listMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse optional filters
+	// Optional filters: ?status=, ?round=, ?phase=regular|playoffs
 	filters := ListMatchesFilter{Limit: page.Limit, Offset: page.Offset}
+	q := r.URL.Query()
+	if v := q.Get("status"); v != "" {
+		switch v {
+		case "scheduled", "in_progress", "finished", "cancelled":
+		default:
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"status": "estado no válido"}))
+			return
+		}
+		st := MatchStatus(v)
+		filters.Status = &st
+	}
+	if v := q.Get("round"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n <= 0 {
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"round": "debe ser un número mayor que 0"}))
+			return
+		}
+		filters.Round = &n
+	}
+	if v := q.Get("phase"); v != "" {
+		if v != string(PhaseRegular) && v != string(PhasePlayoffs) {
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"phase": "debe ser regular o playoffs"}))
+			return
+		}
+		filters.Phase = &v
+	}
 
 	matches, err := h.svc.ListMatches(r.Context(), tournamentID, filters)
 	if err != nil {
@@ -235,7 +261,11 @@ func (h *Handler) generateFixtures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusCreated, result)
+	status := http.StatusCreated
+	if req.DryRun {
+		status = http.StatusOK // nothing was created
+	}
+	httpx.JSON(w, status, result)
 }
 
 func (h *Handler) updateSchedule(w http.ResponseWriter, r *http.Request) {

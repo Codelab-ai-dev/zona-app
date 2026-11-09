@@ -89,6 +89,7 @@ func (r *CreateWhatsAppLinkRequest) Validate() map[string]string {
 
 // UpdateWhatsAppLinkRequest is the payload to update a WhatsApp link.
 type UpdateWhatsAppLinkRequest struct {
+	PhoneNumber       *string `json:"phone_number,omitempty"`
 	IsActive          *bool   `json:"is_active,omitempty"`
 	DisplayName       *string `json:"display_name,omitempty"`
 	PreferredLanguage *string `json:"preferred_language,omitempty"`
@@ -98,7 +99,11 @@ type UpdateWhatsAppLinkRequest struct {
 
 // Validate checks the request for errors.
 func (r *UpdateWhatsAppLinkRequest) Validate() map[string]string {
-	return make(map[string]string)
+	errs := make(map[string]string)
+	if r.PhoneNumber != nil && !isValidPhoneNumber(*r.PhoneNumber) {
+		errs["phone_number"] = "formato E.164 inválido (10-15 dígitos)"
+	}
+	return errs
 }
 
 // Repository is the persistence contract the service depends on.

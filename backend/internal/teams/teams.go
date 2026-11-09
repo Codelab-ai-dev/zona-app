@@ -4,6 +4,7 @@ package teams
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
 )
+
+var teamSlugRegex = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$`)
 
 // Team is the public representation of a row in public.teams.
 type Team struct {
@@ -79,11 +82,16 @@ type UpdateTeamRequest struct {
 	// TournamentID moves the team to a tournament of its league (league
 	// admins only); the nil UUID removes it from any tournament.
 	TournamentID *uuid.UUID `json:"tournament_id,omitempty"`
+	// Slug changes the team's public URL (unique in the league).
+	Slug *string `json:"slug,omitempty"`
 }
 
 // Validate checks the request for errors.
 func (r *UpdateTeamRequest) Validate() map[string]string {
 	errs := make(map[string]string)
+	if r.Slug != nil && !teamSlugRegex.MatchString(*r.Slug) {
+		errs["slug"] = "solo minúsculas, números y guiones (2 a 60 caracteres)"
+	}
 	// Validate group name if provided (must be single uppercase letter A-Z or null)
 	if r.GroupName != nil && *r.GroupName != "" && len(*r.GroupName) != 1 {
 		errs["group_name"] = "debe ser una letra mayúscula individual"

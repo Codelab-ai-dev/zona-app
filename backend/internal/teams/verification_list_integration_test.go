@@ -28,7 +28,7 @@ func TestLeagueVerificationView(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sum, err := svc.LeagueVerificationSummary(ctx, admin, f.LeagueID)
+	sum, err := svc.LeagueVerificationSummary(ctx, admin, f.LeagueID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,16 +36,27 @@ func TestLeagueVerificationView(t *testing.T) {
 		t.Fatalf("summary = %+v", sum)
 	}
 	page := httpx.Page{Limit: 50}
-	pending, total, err := svc.ListLeagueVerification(ctx, admin, f.LeagueID, VerificationPending, nil, "", page)
+	pending, total, err := svc.ListLeagueVerification(ctx, admin, f.LeagueID, VerificationPending, nil, "", false, page)
 	if err != nil || total != 1 || pending[0].Name != "Con Documento" || pending[0].TeamName == "" {
 		t.Fatalf("pending = %+v total=%d %v", pending, total, err)
 	}
-	found, _, err := svc.ListLeagueVerification(ctx, admin, f.LeagueID, "", &f.AwayTeamID, "verif", page)
+	found, _, err := svc.ListLeagueVerification(ctx, admin, f.LeagueID, "", &f.AwayTeamID, "verif", false, page)
 	if err != nil || len(found) != 1 || found[0].Status != VerificationVerified {
 		t.Fatalf("team+search = %+v %v", found, err)
 	}
+	// Only teams of tournaments that validate ages.
+	if _, err := pool.Exec(ctx, `UPDATE public.tournaments SET age_validation_enabled = true WHERE id = $1`, f.TournamentID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE public.teams SET tournament_id = NULL WHERE id = $1`, f.AwayTeamID); err != nil {
+		t.Fatal(err)
+	}
+	aged, err := svc.LeagueVerificationSummary(ctx, admin, f.LeagueID, true)
+	if err != nil || aged.Total != 2 {
+		t.Fatalf("age-validated summary = %+v %v, want 2 home players", aged, err)
+	}
 	owner := auth.Principal{UserID: f.TeamOwnerID, Role: auth.RoleTeamOwner, IsActive: true}
-	if _, err := svc.LeagueVerificationSummary(ctx, owner, f.LeagueID); err == nil {
+	if _, err := svc.LeagueVerificationSummary(ctx, owner, f.LeagueID, false); err == nil {
 		t.Fatal("team owner read the league verification")
 	}
 }

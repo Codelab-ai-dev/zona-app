@@ -184,6 +184,12 @@ func (r *PGRepository) ListMatchesByTournament(ctx context.Context, tournamentID
 		argIdx++
 	}
 
+	if filters.Phase != nil {
+		q += fmt.Sprintf(" AND phase = $%d", argIdx)
+		args = append(args, *filters.Phase)
+		argIdx++
+	}
+
 	if filters.StartDate != nil {
 		q += fmt.Sprintf(" AND match_date >= $%d", argIdx)
 		args = append(args, *filters.StartDate)

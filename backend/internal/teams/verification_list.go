@@ -53,7 +53,7 @@ const verificationStatusSQL = `CASE
 
 // ListLeagueVerification lists active players of a league (league admin).
 func (s *Service) ListLeagueVerification(ctx context.Context, caller auth.Principal, leagueID uuid.UUID,
-	status string, teamID *uuid.UUID, q string, page httpx.Page) ([]LeaguePlayerVerification, int, error) {
+	status string, teamID *uuid.UUID, q string, ageOnly bool, page httpx.Page) ([]LeaguePlayerVerification, int, error) {
 	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {
 		return nil, 0, err
 	}
@@ -73,8 +73,9 @@ func (s *Service) ListLeagueVerification(ctx context.Context, caller auth.Princi
 		  AND ($2 = '' OR `+verificationStatusSQL+` = $2)
 		  AND ($3::uuid IS NULL OR t.id = $3)
 		  AND ($4 = '' OR p.name ILIKE $4)
+		  AND (NOT $7 OR `+ageValidatedTeam+`)
 		ORDER BY t.name, p.jersey_number
-		LIMIT $5 OFFSET $6`, leagueID, status, teamID, pattern, page.Limit, page.Offset)
+		LIMIT $5 OFFSET $6`, leagueID, status, teamID, pattern, page.Limit, page.Offset, ageOnly)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list league verification: %w", err)
 	}
@@ -91,8 +92,12 @@ func (s *Service) ListLeagueVerification(ctx context.Context, caller auth.Princi
 	return items, total, nil
 }
 
+// ageValidatedTeam limits to teams whose tournament validates ages (as the
+// original verification screen did).
+const ageValidatedTeam = `EXISTS (SELECT 1 FROM public.tournaments tr WHERE tr.id = t.tournament_id AND tr.age_validation_enabled)`
+
 // LeagueVerificationSummary counts players by status.
-func (s *Service) LeagueVerificationSummary(ctx context.Context, caller auth.Principal, leagueID uuid.UUID) (VerificationSummary, error) {
+func (s *Service) LeagueVerificationSummary(ctx context.Context, caller auth.Principal, leagueID uuid.UUID, ageOnly bool) (VerificationSummary, error) {
 	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {
 		return VerificationSummary{}, err
 	}
@@ -103,7 +108,7 @@ func (s *Service) LeagueVerificationSummary(ctx context.Context, caller auth.Pri
 		       count(*) FILTER (WHERE `+verificationStatusSQL+` = 'verified'),
 		       count(*) FILTER (WHERE `+verificationStatusSQL+` = 'no_document')
 		FROM public.players p JOIN public.teams t ON t.id = p.team_id
-		WHERE t.league_id = $1 AND p.is_active`, leagueID).
+		WHERE t.league_id = $1 AND p.is_active AND (NOT $2 OR `+ageValidatedTeam+`)`, leagueID, ageOnly).
 		Scan(&sum.Total, &sum.Pending, &sum.Verified, &sum.NoDocument)
 	if err != nil {
 		return VerificationSummary{}, fmt.Errorf("verification summary: %w", err)
@@ -133,7 +138,8 @@ func (h *Handler) listLeagueVerification(w http.ResponseWriter, r *http.Request)
 		teamID = &id
 	}
 	q := r.URL.Query()
-	items, total, err := h.svc.ListLeagueVerification(r.Context(), caller, leagueID, q.Get("status"), teamID, q.Get("q"), page)
+	ageOnly := q.Get("age_validation") == "true"
+	items, total, err := h.svc.ListLeagueVerification(r.Context(), caller, leagueID, q.Get("status"), teamID, q.Get("q"), ageOnly, page)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -148,7 +154,7 @@ func (h *Handler) leagueVerificationSummary(w http.ResponseWriter, r *http.Reque
 		httpx.WriteError(w, r, err)
 		return
 	}
-	sum, err := h.svc.LeagueVerificationSummary(r.Context(), caller, leagueID)
+	sum, err := h.svc.LeagueVerificationSummary(r.Context(), caller, leagueID, r.URL.Query().Get("age_validation") == "true")
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return

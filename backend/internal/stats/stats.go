@@ -166,7 +166,8 @@ func (r *PointsAdjustmentRequest) Validate() map[string]string {
 	if r.TournamentID == uuid.Nil {
 		errs["tournament_id"] = "requerido"
 	}
-	if r.AdjustmentReason == "" {
+	// A reason is required to apply an adjustment, not to remove it (0).
+	if r.AdjustmentReason == "" && r.PointsAdjustment != 0 {
 		errs["adjustment_reason"] = "requerido"
 	}
 	return errs

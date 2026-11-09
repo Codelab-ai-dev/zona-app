@@ -2,6 +2,7 @@ package finance
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -77,13 +78,7 @@ func (h *Handler) updateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, err := h.svc.GetConfig(r.Context(), caller, leagueID)
-	if err != nil {
-		httpx.WriteError(w, r, err)
-		return
-	}
-
-	updated, err := h.svc.UpdateConfig(r.Context(), caller, leagueID, cfg.ID, &req)
+	updated, err := h.svc.SaveConfig(r.Context(), caller, leagueID, &req)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -427,6 +422,12 @@ func parseTransactionFilters(r *http.Request, page httpx.Page) *ListTransactions
 		}
 	}
 
+	if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
+		if r := []rune(q); len(r) > 100 {
+			q = string(r[:100])
+		}
+		filters.Search = q
+	}
 	if isIncome := r.URL.Query().Get("is_income"); isIncome != "" {
 		val := isIncome == "true"
 		filters.IsIncome = &val

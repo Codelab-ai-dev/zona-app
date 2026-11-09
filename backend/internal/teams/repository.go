@@ -223,6 +223,11 @@ func (r *PGRepository) UpdateTeam(ctx context.Context, teamID uuid.UUID, req Upd
 		argIndex++
 	}
 
+	if req.Slug != nil {
+		query += fmt.Sprintf("slug = $%d, ", argIndex)
+		args = append(args, *req.Slug)
+		argIndex++
+	}
 	if req.TournamentID != nil {
 		var tid *uuid.UUID
 		if *req.TournamentID != uuid.Nil {
@@ -249,6 +254,9 @@ func (r *PGRepository) UpdateTeam(ctx context.Context, teamID uuid.UUID, req Upd
 	)
 	if database.IsNoRows(err) {
 		return Team{}, httpx.ErrNotFound
+	}
+	if database.IsUniqueViolation(err) {
+		return Team{}, httpx.Validation(map[string]string{"slug": "ya existe un equipo con esa URL en la liga"})
 	}
 	if err != nil {
 		return Team{}, fmt.Errorf("update team: %w", err)
