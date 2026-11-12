@@ -2,7 +2,9 @@
 
 **Estado:** Propuesta (ADR pendiente de aprobación)  
 **Base revisada:** `main` @ `1bad17a19c780c8b00f4fa8848ac73dcf6c63491` (2026-11-12)  
-**Primer hito operativo:** ligas de fútbol amateur que comienzan en enero de 2027.
+**Primer hito operativo:** lanzamiento exclusivo de Zona Gol para las ligas de fútbol amateur en enero de 2027.
+
+> **Decisión de producto (2026-11-12):** Zona Play queda **pospuesto**. No se ofrecerán transmisiones, grabaciones ni clips a las ligas que inician en enero; no se planificará trabajo de nuevas funciones o integraciones Play para esa entrega. El código existente permanece en el repositorio. Antes de cualquier futura exposición pública de Play se deberán revisar y corregir los hallazgos de seguridad documentados.
 
 ## 1. Visión y límites
 
@@ -33,7 +35,7 @@ Zona OS es la plataforma compartida para operar y conectar aplicaciones deportiv
 4. **Sports Engine incremental**: abstraer lo común únicamente después de identificar invariantes y probar una segunda disciplina. Fútbol continúa como primera implementación, sin sustituir migraciones vigentes.
 5. **Contratos API explícitos** entre web, móvil y Go, con pruebas de compatibilidad; mantener rutas existentes y compatibilidad de datos.
 6. **Eventos de dominio con entrega durable** cuando exista un consumidor real; inicialmente PostgreSQL transactional outbox y worker Go, sin Kafka/NATS.
-7. **Seguridad antes que expansión**: cerrar acceso a claves Mux, permisos premium, lectura de clips/streams y coherencia de ámbitos.
+7. **Seguridad y aislamiento**: priorizar roles, permisos y aislamiento de datos de las ligas de fútbol. Los hallazgos específicos de Play quedan registrados como **bloqueantes para su futura activación pública**, no para la entrega de Zona Gol de enero.
 8. **Lanzamiento protegido**: nuevas abstracciones detrás de pruebas y, cuando proceda, feature flags; desde diciembre limitar cambios de alto riesgo.
 
 ## 4. Límites y responsabilidades
@@ -83,7 +85,10 @@ El contrato definitivo depende del estudio de modelos, resultados, suspensión, 
 
 **Validación de arquitectura posterior al lanzamiento:** implementar una competición piloto de voleibol por sets para probar si el motor separa realmente reglas y estructura de competición. Un deporte individual se evaluaría después.
 
-## 6. Seguridad y hallazgos de revisión priorizados
+## 6. Seguridad y hallazgos pendientes de Zona Play (diferidos para su activación futura)
+
+**No implementar Zona Play en el ciclo de enero de 2027.** Los hallazgos siguientes siguen siendo válidos, pero su prioridad P0/P1 se refiere exclusivamente a **antes de habilitar Zona Play para usuarios**. Evaluar la exposición actual y asegurar que Play no esté accesible al público si no se va a corregir todavía; deshabilitar funcionalidad en despliegue requiere un cambio específico, fuera del alcance de esta documentación.
+
 
 ### P0 — Claves de streaming
 En `play.Stream`, `MuxStreamKey` se serializa a JSON. `GET /api/v1/play/streams` y `GET /api/v1/play/streams/{streamId}` son públicos y devuelven objetos `Stream`. Eliminar secretos de DTO públicos y cubrir todas las rutas/estados con pruebas. Rotar claves si se verifica exposición real.
@@ -102,9 +107,9 @@ Roles actuales globales: `super_admin`, `league_admin`, `team_owner`, `public`; 
 
 Otros controles: firmar/validar webhooks, datos de menores, visibilidad de documentos y derechos de imagen según contexto legal, auditabilidad de resultados y respaldos restaurables.
 
-## 7. Integración Gol ↔ Play: contrato del caso piloto
+## 7. Integración Gol ↔ Play: propuesta futura, fuera del lanzamiento de enero
 
-**Caso:** jornada conectada de extremo a extremo.
+**Caso futuro, no requisito de enero:** jornada conectada de extremo a extremo.
 
 1. El administrador crea/publica un partido en Gol.
 2. Play registra una transmisión vinculada al `match_id` autorizado.
@@ -125,8 +130,8 @@ Otros controles: firmar/validar webhooks, datos de menores, visibilidad de docum
 - Pruebas backend: `go test -race ./...`, `TEST_DATABASE_URL=... go test -tags integration -race ./...`, `go vet ./...`.
 - Pruebas web: `npm ci`, `npx tsc -b`, `npx eslint .`, `npx vitest run`, `npx vite build`.
 - Móvil: agregar workflow para `flutter analyze`, `flutter test` y build de verificación.
-- E2E piloto: dos ligas independientes, administradores cruzados, usuarios móviles y contenido premium.
-- Backups y restore drill antes de enero. Configurar alertas en fallos de API, base de datos y procesamiento de video.
+- E2E de enero: dos ligas independientes, administradores cruzados, usuarios móviles y resultados de fútbol. Play/premium no forman parte de la aceptación.
+- Backups y restore drill antes de enero. Configurar alertas en fallos de API y base de datos. El procesamiento de video pertenece a la fase posterior de Zona Play.
 - No asumir que CI verde implica comportamiento correcto en producción.
 
 ## 9. Compatibilidad y migración
@@ -145,7 +150,7 @@ No reescribir `00001_baseline.sql`; crear nuevas migraciones Goose. No reorganiz
 
 **Obligatorio:** crear y administrar ligas/torneos, equipos, jugadores, fixtures, resultados, estadísticas y sanciones; login/roles; pruebas de aislamiento de ligas; operaciones móviles esenciales; respaldo y restauración probados; simulación integral de jornada y plan de contingencia.
 
-**Opcional sin bloquear operación:** Zona Play avanzada, IA, app shell visual nuevo, deportes adicionales, event bus generalizado, nuevas herramientas de emisión.
+**Fuera de alcance de enero:** cualquier oferta de Zona Play, videos, transmisiones, clips, IA, app shell visual nuevo, deportes adicionales, event bus generalizado y herramientas de emisión.
 
 **Congelamiento:** desde ~21 diciembre, no integrar refactors estructurales de alto riesgo sin necesidad operativa urgente.
 
