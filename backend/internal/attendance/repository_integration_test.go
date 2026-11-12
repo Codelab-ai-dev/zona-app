@@ -211,3 +211,18 @@ func TestScannerFlow_Integration(t *testing.T) {
 		t.Fatalf("duplicate: got %v, want 409", err)
 	}
 }
+
+func TestScannerClosedMatch_Integration(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	svc := NewService(NewPGRepository(pool), authz.NewPGChecker(pool))
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+	if _, err := pool.Exec(context.Background(), `UPDATE public.matches SET status = 'cancelled' WHERE id = $1`, f.MatchID); err != nil {
+		t.Fatal(err)
+	}
+	req := &RecordQRAttendanceRequest{PlayerID: f.HomePlayerID, RecognitionMode: "quick", ConfidenceScore: 1, SimilarityScore: 1, LocalTimestamp: time.Now()}
+	var e *httpx.Error
+	if _, err := svc.RecordQRAttendance(context.Background(), admin, f.MatchID, req); !errors.As(err, &e) || e.Status != 422 {
+		t.Fatalf("cancelled match: got %v, want 422", err)
+	}
+}

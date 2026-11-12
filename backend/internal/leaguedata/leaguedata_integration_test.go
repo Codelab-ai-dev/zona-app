@@ -37,6 +37,9 @@ func TestLeagueData(t *testing.T) {
 	if err != nil || st.Teams != 2 || st.Players != 1 || st.FinishedMatches != 1 || st.Goals != 3 || st.YellowCards != 1 {
 		t.Fatalf("admin stats = %+v %v", st, err)
 	}
+	if st.Results.HomeWins != 1 || st.ScheduledMatches != 0 || st.MatchesThisMonth != 1 || st.GoalsThisMonth != 3 {
+		t.Fatalf("split = %+v", st)
+	}
 	if st.TopScorer == nil || st.TopScorer.PlayerID != f.HomePlayerID || st.TopScorer.Goals != 2 || len(st.MatchesPerMonth) != 1 {
 		t.Fatalf("top scorer / months = %+v %+v", st.TopScorer, st.MatchesPerMonth)
 	}

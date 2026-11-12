@@ -36,7 +36,7 @@ func (s *Service) RecordQRAttendance(ctx context.Context, caller auth.Principal,
 		return QRAttendance{}, err
 	}
 	if status == "finished" || status == "cancelled" {
-		return QRAttendance{}, httpx.ErrConflict.Wrap(fmt.Errorf("match is %s", status))
+		return QRAttendance{}, matchClosed(status)
 	}
 
 	// Check player belongs to match
@@ -64,7 +64,7 @@ func (s *Service) RecordFacialAttendance(ctx context.Context, caller auth.Princi
 		return FacialAttendance{}, err
 	}
 	if status == "finished" || status == "cancelled" {
-		return FacialAttendance{}, httpx.ErrConflict.Wrap(fmt.Errorf("match is %s", status))
+		return FacialAttendance{}, matchClosed(status)
 	}
 
 	// Check player belongs to match
@@ -112,4 +112,13 @@ func (s *Service) PlayerMatchesOn(ctx context.Context, caller auth.Principal, pl
 		return nil, err
 	}
 	return s.repo.PlayerMatchesOn(ctx, playerID, date)
+}
+
+// matchClosed is a 422 (not 409, which means "already registered").
+func matchClosed(status string) error {
+	msg := "El partido ya terminó"
+	if status == "cancelled" {
+		msg = "El partido fue cancelado"
+	}
+	return httpx.Validation(map[string]string{"match_id": msg})
 }

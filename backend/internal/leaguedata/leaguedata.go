@@ -25,16 +25,29 @@ import (
 
 // LeagueStats summarises a league.
 type LeagueStats struct {
-	Teams           int              `json:"teams"`
-	Players         int              `json:"players"`
-	Matches         int              `json:"matches"`
-	FinishedMatches int              `json:"finished_matches"`
-	Goals           int              `json:"goals"`
-	YellowCards     int              `json:"yellow_cards"`
-	RedCards        int              `json:"red_cards"`
+	Teams           int `json:"teams"`
+	Players         int `json:"players"`
+	Matches         int `json:"matches"`
+	FinishedMatches int `json:"finished_matches"`
+	Goals           int `json:"goals"`
+	YellowCards     int `json:"yellow_cards"`
+	RedCards        int `json:"red_cards"`
+	// Matches still to play, and this month's (UTC) finished matches/goals.
+	ScheduledMatches int `json:"scheduled_matches"`
+	MatchesThisMonth int `json:"matches_this_month"`
+	GoalsThisMonth   int `json:"goals_this_month"`
+	// Finished matches by outcome.
+	Results         ResultSplit      `json:"results"`
 	TopScorer       *PlayerTotals    `json:"top_scorer,omitempty"`
 	UpcomingMatches []MatchSummary   `json:"upcoming_matches"`
 	MatchesPerMonth []MonthlyMatches `json:"matches_per_month"`
+}
+
+// ResultSplit counts finished matches by outcome.
+type ResultSplit struct {
+	HomeWins int `json:"home_wins"`
+	Draws    int `json:"draws"`
+	AwayWins int `json:"away_wins"`
 }
 
 // MonthlyMatches counts finished matches of a month (YYYY-MM).
@@ -170,6 +183,19 @@ func (s *Service) Stats(ctx context.Context, caller *auth.Principal, leagueID uu
 		leagueID, manager).Scan(&st.Teams, &st.Players, &st.Matches, &st.FinishedMatches, &st.Goals, &st.YellowCards, &st.RedCards)
 	if err != nil {
 		return LeagueStats{}, fmt.Errorf("league stats: %w", err)
+	}
+	const thisMonth = `date_trunc('month', m.match_date AT TIME ZONE 'UTC') = date_trunc('month', now() AT TIME ZONE 'UTC')`
+	err = s.pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE m.status = 'scheduled'),
+		       count(*) FILTER (WHERE m.status = 'finished' AND `+thisMonth+`),
+		       COALESCE(sum(COALESCE(m.home_score,0) + COALESCE(m.away_score,0)) FILTER (WHERE m.status = 'finished' AND `+thisMonth+`), 0),
+		       count(*) FILTER (WHERE m.status = 'finished' AND m.home_score > m.away_score),
+		       count(*) FILTER (WHERE m.status = 'finished' AND m.home_score = m.away_score),
+		       count(*) FILTER (WHERE m.status = 'finished' AND m.home_score < m.away_score)
+		`+matchesOfLeague, leagueID, manager).Scan(&st.ScheduledMatches, &st.MatchesThisMonth, &st.GoalsThisMonth,
+		&st.Results.HomeWins, &st.Results.Draws, &st.Results.AwayWins)
+	if err != nil {
+		return LeagueStats{}, fmt.Errorf("league match split: %w", err)
 	}
 	scorers, err := s.Totals(ctx, caller, leagueID, "goals", 1)
 	if err != nil {
