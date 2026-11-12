@@ -36,6 +36,11 @@ func TestListLeagueUsers_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListLeagueUsers: %v", err)
 	}
+	for _, u := range users {
+		if u.ID == fix.TeamOwnerID && (u.TeamName == nil || *u.TeamName != "Local FC" || u.LeagueName == nil) {
+			t.Errorf("owner names = %v / %v", u.LeagueName, u.TeamName)
+		}
+	}
 
 	if len(users) == 0 {
 		t.Error("expected at least 1 user in league")

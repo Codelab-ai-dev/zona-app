@@ -21,6 +21,9 @@ type User struct {
 	TeamID    *uuid.UUID `json:"team_id,omitempty"`
 	IsActive  bool       `json:"is_active"`
 	CreatedAt time.Time  `json:"created_at"`
+	// Display names (read-only).
+	LeagueName *string `json:"league_name,omitempty"`
+	TeamName   *string `json:"team_name,omitempty"`
 }
 
 // WhatsAppLink is a phone number linked to a user for WhatsApp notifications.

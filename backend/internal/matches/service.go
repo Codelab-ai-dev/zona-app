@@ -367,6 +367,11 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 			}
 		}
 
+		// Player stats (scorers, discipline) are derived from the events.
+		if _, err := tx.Exec(ctx, `SELECT public.rebuild_match_player_stats($1)`, matchID); err != nil {
+			return fmt.Errorf("rebuild player stats: %w", err)
+		}
+
 		// The stats trigger only fires when a match becomes finished, so a
 		// corrected score of a finished match would leave stale standings.
 		if _, err := tx.Exec(ctx, `SELECT public.rebuild_team_stats_for_tournament($1)`, match.TournamentID); err != nil {
@@ -454,6 +459,30 @@ func (s *Service) PublishMatch(ctx context.Context, caller auth.Principal, match
 	}
 
 	return s.repo.PublishMatch(ctx, matchID, req.IsPublished)
+}
+
+// UpdateStatus changes the status of a match without a result. A finished
+// match is corrected through its result instead (standings depend on it).
+func (s *Service) UpdateStatus(ctx context.Context, caller auth.Principal, matchID uuid.UUID, req UpdateStatusRequest) error {
+	if errs := req.Validate(); len(errs) > 0 {
+		return httpx.Validation(errs)
+	}
+	if err := s.authz.CanManageMatch(ctx, caller, matchID); err != nil {
+		return err
+	}
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE public.matches SET status = $2, updated_at = now()
+		WHERE id = $1 AND status <> 'finished'`, matchID, req.Status)
+	if err != nil {
+		return fmt.Errorf("update match status: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		if _, err := s.repo.GetMatchByID(ctx, matchID); err != nil {
+			return err
+		}
+		return httpx.ErrConflict.Wrap(fmt.Errorf("match already finished"))
+	}
+	return nil
 }
 
 // PublishRound updates the is_published flag for all matches in a tournament round.

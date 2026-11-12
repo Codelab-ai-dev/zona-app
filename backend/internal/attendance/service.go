@@ -3,6 +3,7 @@ package attendance
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -98,4 +99,17 @@ func (s *Service) ListAttendance(ctx context.Context, matchID uuid.UUID, limit, 
 // StreamAttendance streams attendance updates for a match via SSE.
 func (s *Service) StreamAttendance(ctx context.Context, matchID uuid.UUID, ch chan AttendanceRecord) error {
 	return s.repo.StreamAttendance(ctx, matchID, ch)
+}
+
+// PlayerMatchesOn lists the matches a scanned player can check in to on a
+// date (the scanning device's local date). League admins only.
+func (s *Service) PlayerMatchesOn(ctx context.Context, caller auth.Principal, playerID uuid.UUID, date time.Time) ([]TodayMatch, error) {
+	leagueID, err := s.repo.PlayerLeague(ctx, playerID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {
+		return nil, err
+	}
+	return s.repo.PlayerMatchesOn(ctx, playerID, date)
 }

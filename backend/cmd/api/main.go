@@ -25,6 +25,7 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/finance"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/health"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/knowledge"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/leaguedata"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/leagues"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/matches"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/notifications"
@@ -181,6 +182,7 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, to
 		stats.NewHandler(stats.NewService(stats.NewPGRepository(pool), checker)),
 		statsadmin.NewHandler(statsadmin.NewService(pool, checker)),
 		superadmin.NewHandler(superadmin.NewService(pool)),
+		leaguedata.NewHandler(leaguedata.NewService(pool, checker)),
 		finance.NewHandler(finance.NewService(finance.NewPGRepository(pool), checker)),
 		attendance.NewHandler(attendance.NewService(attendance.NewPGRepository(pool), checker), checker),
 		directory.NewHandler(directory.NewService(directory.NewPGRepository(pool), checker)),

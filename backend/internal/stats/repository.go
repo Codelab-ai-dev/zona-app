@@ -27,7 +27,7 @@ func (r *PGRepository) GetStandingsByTournament(ctx context.Context, tournamentI
 			ts.matches_played, ts.matches_won, ts.matches_drawn, ts.matches_lost,
 			ts.goals_for, ts.goals_against, ts.goal_difference,
 			ts.points, ts.points_adjustment, ts.adjustment_reason,
-			ts.recent_form, ts.last_match_date
+			ts.recent_form, ts.last_match_date, t.group_name
 		FROM public.team_stats ts
 		JOIN public.teams t ON t.id = ts.team_id
 		WHERE ts.tournament_id = $1
@@ -48,7 +48,7 @@ func (r *PGRepository) GetStandingsByTournament(ctx context.Context, tournamentI
 			&s.MatchesPlayed, &s.MatchesWon, &s.MatchesDrawn, &s.MatchesLost,
 			&s.GoalsFor, &s.GoalsAgainst, &s.GoalDifference,
 			&s.Points, &s.PointsAdjustment, &s.AdjustmentReason,
-			&s.RecentForm, &s.LastMatchDate,
+			&s.RecentForm, &s.LastMatchDate, &s.GroupName,
 		); err != nil {
 			return nil, fmt.Errorf("scan standing: %w", err)
 		}
@@ -314,6 +314,9 @@ func (r *PGRepository) GetSuspensionsByLeague(ctx context.Context, leagueID uuid
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("league suspensions rows: %w", err)
 	}
+	if err := r.attachSuspensionNames(ctx, suspensions); err != nil {
+		return nil, err
+	}
 	return suspensions, nil
 }
 
@@ -347,6 +350,9 @@ func (r *PGRepository) GetSuspensionsByTeam(ctx context.Context, teamID uuid.UUI
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("team suspensions rows: %w", err)
+	}
+	if err := r.attachSuspensionNames(ctx, suspensions); err != nil {
+		return nil, err
 	}
 	return suspensions, nil
 }
@@ -504,4 +510,41 @@ func (r *PGRepository) IsPubliclyVisible(ctx context.Context, scope Scope, id uu
 		return false, fmt.Errorf("check visibility: %w", err)
 	}
 	return visible != nil && *visible, nil
+}
+
+// attachSuspensionNames fills player and team names with one query.
+func (r *PGRepository) attachSuspensionNames(ctx context.Context, list []Suspension) error {
+	if len(list) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(list))
+	for i, s := range list {
+		ids[i] = s.ID
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT ps.id, p.name, p.jersey_number, t.name
+		FROM public.player_suspensions ps
+		JOIN public.players p ON p.id = ps.player_id
+		JOIN public.teams t ON t.id = ps.team_id
+		WHERE ps.id = ANY($1)`, ids)
+	if err != nil {
+		return fmt.Errorf("suspension names: %w", err)
+	}
+	defer rows.Close()
+	idx := make(map[uuid.UUID]int, len(list))
+	for i, s := range list {
+		idx[s.ID] = i
+	}
+	for rows.Next() {
+		var id uuid.UUID
+		var player, team string
+		var jersey int
+		if err := rows.Scan(&id, &player, &jersey, &team); err != nil {
+			return fmt.Errorf("scan suspension names: %w", err)
+		}
+		if i, ok := idx[id]; ok {
+			list[i].PlayerName, list[i].PlayerJersey, list[i].TeamName = player, jersey, team
+		}
+	}
+	return rows.Err()
 }

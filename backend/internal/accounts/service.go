@@ -54,6 +54,13 @@ func (s *Service) CreateUser(ctx context.Context, caller auth.Principal, req Cre
 		}
 	}
 
+	if req.TeamID != nil {
+		leagueID, err := s.repo.TeamLeague(ctx, *req.TeamID)
+		if err != nil || req.LeagueID == nil || leagueID != *req.LeagueID {
+			return User{}, httpx.Validation(map[string]string{"team_id": "El equipo no pertenece a la liga"})
+		}
+	}
+
 	// Create in identity provider first (returns the user ID)
 	userID, err := s.identity.CreateUser(ctx, req.Email, req.Password)
 	if err != nil {
@@ -68,6 +75,7 @@ func (s *Service) CreateUser(ctx context.Context, caller auth.Principal, req Cre
 		Phone:    req.Phone,
 		Role:     req.Role,
 		LeagueID: req.LeagueID,
+		TeamID:   req.TeamID,
 		IsActive: true,
 	}
 

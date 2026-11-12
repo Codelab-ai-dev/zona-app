@@ -178,7 +178,7 @@ func (r *PGRepository) UpdateTeam(ctx context.Context, teamID uuid.UUID, req Upd
 		argIndex++
 	}
 	if req.GroupName != nil {
-		query += fmt.Sprintf("group_name = $%d, ", argIndex)
+		query += fmt.Sprintf("group_name = NULLIF($%d, ''), ", argIndex)
 		args = append(args, *req.GroupName)
 		argIndex++
 	}

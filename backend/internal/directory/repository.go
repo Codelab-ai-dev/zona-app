@@ -22,10 +22,17 @@ func NewPGRepository(db database.Querier) *PGRepository {
 	return &PGRepository{db: db}
 }
 
+// userNameCols are the user's league and team names (an owner's team is
+// found through teams.owner_id too).
+const userNameCols = `
+		(SELECT l.name FROM public.leagues l WHERE l.id = users.league_id),
+		COALESCE((SELECT t.name FROM public.teams t WHERE t.id = users.team_id),
+		         (SELECT t.name FROM public.teams t WHERE t.owner_id = users.id AND users.role = 'team_owner' ORDER BY t.created_at LIMIT 1))`
+
 // ListUsers returns all users (admin only), optionally filtered.
 func (r *PGRepository) ListUsers(ctx context.Context, role *string, leagueID *uuid.UUID, search string, limit, offset int) ([]User, error) {
 	q := `
-		SELECT id, name, email, phone, role, league_id, team_id, is_active, created_at
+		SELECT id, name, email, phone, role, league_id, team_id, is_active, created_at, ` + userNameCols + `
 		FROM public.users
 		WHERE 1=1
 	`
@@ -62,7 +69,8 @@ func (r *PGRepository) ListUsers(ctx context.Context, role *string, leagueID *uu
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Role, &u.LeagueID, &u.TeamID, &u.IsActive, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Role, &u.LeagueID, &u.TeamID, &u.IsActive, &u.CreatedAt,
+			&u.LeagueName, &u.TeamName); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		users = append(users, u)
@@ -74,7 +82,7 @@ func (r *PGRepository) ListUsers(ctx context.Context, role *string, leagueID *uu
 // ListLeagueUsers returns users that belong to a league.
 func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, search string, limit, offset int) ([]User, error) {
 	q := `
-		SELECT id, name, email, phone, role, league_id, team_id, is_active, created_at
+		SELECT id, name, email, phone, role, league_id, team_id, is_active, created_at, ` + userNameCols + `
 		FROM public.users
 		WHERE league_id = $1
 	`
@@ -99,7 +107,8 @@ func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, 
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Role, &u.LeagueID, &u.TeamID, &u.IsActive, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Role, &u.LeagueID, &u.TeamID, &u.IsActive, &u.CreatedAt,
+			&u.LeagueName, &u.TeamName); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		users = append(users, u)

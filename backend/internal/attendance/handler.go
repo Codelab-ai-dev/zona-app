@@ -39,6 +39,33 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/attendance/facial", h.recordFacialAttendance)
 	r.With(auth.RequireAuth).Get("/matches/{matchID}/attendance", h.listAttendance)
 	r.With(auth.RequireAuth).Get("/matches/{matchID}/attendance/stream", h.streamAttendance)
+	r.With(auth.RequireAuth).Get("/players/{playerID}/today-matches", h.playerMatchesOn)
+}
+
+// playerMatchesOn handles GET /players/{playerID}/today-matches?date=YYYY-MM-DD
+// (the device's local date; defaults to today in UTC).
+func (h *Handler) playerMatchesOn(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	playerID, err := httpx.UUIDParam(r, "playerID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	date := time.Now().UTC()
+	if v := r.URL.Query().Get("date"); v != "" {
+		d, err := time.Parse("2006-01-02", v)
+		if err != nil {
+			httpx.WriteError(w, r, httpx.Validation(map[string]string{"date": "formato YYYY-MM-DD"}))
+			return
+		}
+		date = d
+	}
+	list, err := h.svc.PlayerMatchesOn(r.Context(), caller, playerID, date)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.List(w, list, httpx.Page{Limit: len(list)}.WithTotal(len(list)))
 }
 
 // recordQRAttendance handles POST /matches/{matchID}/attendance/qr.

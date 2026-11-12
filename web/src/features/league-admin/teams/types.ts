@@ -101,6 +101,8 @@ export interface CreateUserRequest {
   phone?: string
   role: 'team_owner' | 'league_admin'
   league_id?: string
+  /** team_owner only: the new user becomes this team's owner. */
+  team_id?: string
 }
 
 export interface QRBatchUpdateRequest {

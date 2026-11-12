@@ -89,10 +89,13 @@ export function useLeagueRegistrationRequests(tournamentIds: string[], page: Pag
 /** Raised when the team exists but its owner account could not be created. */
 export class OwnerCreationError extends Error {
   readonly cause: unknown
-  constructor(cause: unknown) {
+  /** The team that was created, to retry only the owner. */
+  readonly teamId: string
+  constructor(cause: unknown, teamId: string) {
     super(cause instanceof Error ? cause.message : 'No se pudo crear el propietario')
     this.name = 'OwnerCreationError'
     this.cause = cause
+    this.teamId = teamId
   }
 }
 
@@ -113,8 +116,9 @@ export interface CreateTeamResult {
 }
 
 /**
- * Create a team and then its owner account. If the owner fails, the team
- * already exists: callers retry with `skipTeam` so it is not created twice.
+ * Create a team and then its owner account, who becomes the team's owner. If
+ * the owner fails, the team already exists: callers retry with
+ * `existingTeamId` so it is not created twice.
  * The logo (optional) is uploaded once the team has an id; a failed logo does
  * not undo the team.
  */
@@ -125,12 +129,14 @@ export function useCreateTeam() {
     mutationFn: async (params: {
       team: CreateTeamRequest
       owner: CreateUserRequest
-      skipTeam?: boolean
+      existingTeamId?: string | null
       logo?: File | null
     }): Promise<CreateTeamResult> => {
       let logoError: string | undefined
-      if (!params.skipTeam) {
+      let teamId = params.existingTeamId
+      if (!teamId) {
         const created = await api.post<Team>('/teams', params.team)
+        teamId = created.id
         if (params.logo) {
           try {
             const logo = await uploadTeamLogo(created.id, params.logo)
@@ -141,10 +147,10 @@ export function useCreateTeam() {
         }
       }
       try {
-        await api.post('/admin/users', params.owner)
+        await api.post('/admin/users', { ...params.owner, team_id: teamId } satisfies CreateUserRequest)
       } catch (error) {
         queryClient.invalidateQueries({ queryKey: [...teamsKeys.all, 'list'] })
-        throw new OwnerCreationError(error)
+        throw new OwnerCreationError(error, teamId)
       }
       return { logoError }
     },

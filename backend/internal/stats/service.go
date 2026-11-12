@@ -108,14 +108,18 @@ func (s *Service) GetSuspensionsByTeam(ctx context.Context, caller auth.Principa
 
 // CreateSuspension creates a new suspension (league admin only).
 func (s *Service) CreateSuspension(ctx context.Context, caller auth.Principal, leagueID uuid.UUID, req *CreateSuspensionRequest) (Suspension, error) {
-	// Check authorization: caller must be able to manage the league
-	if err := s.azChecker.CanManageLeague(ctx, caller, leagueID); err != nil {
-		return Suspension{}, err
-	}
-
 	// Verify player exists, belongs to the correct team, and is in the correct league (IDOR prevention)
 	ptl, err := s.repo.GetPlayerTeamLeague(ctx, req.PlayerID)
 	if err != nil {
+		return Suspension{}, err
+	}
+	// The league is the player's (uuid.Nil = not sent by the client).
+	if leagueID == uuid.Nil {
+		leagueID = ptl.LeagueID
+	}
+
+	// Check authorization: caller must be able to manage the league
+	if err := s.azChecker.CanManageLeague(ctx, caller, leagueID); err != nil {
 		return Suspension{}, err
 	}
 

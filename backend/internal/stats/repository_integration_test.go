@@ -9,6 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
 )
@@ -535,5 +537,32 @@ func TestPGRepository_IsPubliclyVisible(t *testing.T) {
 	}
 	if ok, err := repo.IsPubliclyVisible(ctx, ScopeTeam, uuid.New()); err != nil || ok {
 		t.Fatalf("missing team visible = %v, %v", ok, err)
+	}
+}
+
+func TestService_CreateSuspensionDerivesLeague(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	other := testdb.Seed(t, pool)
+	svc := NewService(NewPGRepository(pool), authz.NewPGChecker(pool))
+	ctx := context.Background()
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, LeagueID: &f.LeagueID, IsActive: true}
+	stranger := auth.Principal{UserID: other.LeagueAdminID, Role: auth.RoleLeagueAdmin, LeagueID: &other.LeagueID, IsActive: true}
+	req := &CreateSuspensionRequest{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, SuspensionType: "red_card", Reason: "Agresión", MatchesToServe: 1}
+
+	// No league in the request: it comes from the player.
+	s, err := svc.CreateSuspension(ctx, admin, uuid.Nil, req)
+	if err != nil || s.LeagueID != f.LeagueID {
+		t.Fatalf("create = %+v %v", s, err)
+	}
+	if _, err := svc.CreateSuspension(ctx, stranger, uuid.Nil, req); !errors.Is(err, httpx.ErrForbidden) {
+		t.Fatalf("stranger: got %v, want forbidden", err)
+	}
+	if _, err := svc.CreateSuspension(ctx, admin, other.LeagueID, req); err == nil {
+		t.Fatal("mismatched league accepted")
+	}
+	list, err := svc.GetSuspensionsByLeague(ctx, admin, f.LeagueID)
+	if err != nil || len(list) != 1 || list[0].PlayerName != "Jugador" || list[0].PlayerJersey != 9 || list[0].TeamName != "Local FC" {
+		t.Fatalf("list = %+v %v", list, err)
 	}
 }

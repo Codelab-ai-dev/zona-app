@@ -52,7 +52,8 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
   const [logo, setLogo] = useState<File | null>(null)
   const [errors, setErrors] = useState<FieldErrors>({})
   // True once POST /teams succeeded but the owner failed: retries skip the team.
-  const [teamCreated, setTeamCreated] = useState(false)
+  const [createdTeamId, setCreatedTeamId] = useState<string | null>(null)
+  const teamCreated = createdTeamId !== null
   const [credentials, setCredentials] = useState<OwnerCredentials | null>(null)
   const createMutation = useCreateTeam()
   const tournaments = useLeagueTournaments(leagueId).data?.data ?? []
@@ -81,7 +82,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     setOwner(emptyOwner)
     setLogo(null)
     setErrors({})
-    setTeamCreated(false)
+    setCreatedTeamId(null)
   }
 
   const handleClose = () => {
@@ -98,7 +99,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     try {
       const { logoError } = await createMutation.mutateAsync({
         ...buildRequests(team, owner, password, leagueId),
-        skipTeam: teamCreated,
+        existingTeamId: createdTeamId,
         logo,
       })
       setCredentials({ name: owner.name.trim(), email: owner.email.trim(), password })
@@ -108,7 +109,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
     } catch (error) {
       const fromOwner = error instanceof OwnerCreationError
       const cause = fromOwner ? error.cause : error
-      if (fromOwner) setTeamCreated(true)
+      if (fromOwner) setCreatedTeamId(error.teamId)
       const message = cause instanceof Error ? cause.message : 'No se pudo crear el equipo'
       if (cause instanceof ApiError && Object.keys(cause.fields).length > 0) setErrors(mapServerFields(cause.fields, fromOwner))
       toast.error(fromOwner ? `El equipo se creó, pero falló el propietario: ${message}` : message)

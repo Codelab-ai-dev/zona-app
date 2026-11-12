@@ -225,23 +225,16 @@ func (h *Handler) getSuspensionsByTeam(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) createSuspension(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
 
-	// Get leagueID from query params or body
-	leagueID, err := httpx.UUIDParam(r, "leagueID")
-	if err != nil {
-		// Try from query string instead
-		if leagueIDStr := r.URL.Query().Get("league_id"); leagueIDStr != "" {
-			leagueID, err = httpx.UUIDParam(r, "league_id")
-			if err != nil {
-				httpx.WriteError(w, r, err)
-				return
-			}
+	// The league comes from the player (a stale client may still send
+	// ?league_id=, which must then match).
+	var leagueID uuid.UUID
+	if r.URL.Query().Get("league_id") != "" {
+		id, err := httpx.UUIDQuery(r, "league_id")
+		if err != nil {
+			httpx.WriteError(w, r, err)
+			return
 		}
-	}
-
-	// If still no leagueID, return error
-	if leagueID == uuid.Nil {
-		httpx.WriteError(w, r, httpx.ErrBadRequest.Wrap(fmt.Errorf("league_id required")))
-		return
+		leagueID = id
 	}
 
 	var req CreateSuspensionRequest

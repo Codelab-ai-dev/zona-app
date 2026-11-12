@@ -12,8 +12,16 @@ import (
 
 // Fakes for testing
 type fakeRepository struct {
-	users map[uuid.UUID]User
-	calls []string
+	users       map[uuid.UUID]User
+	calls       []string
+	teamLeagues map[uuid.UUID]uuid.UUID
+}
+
+func (f *fakeRepository) TeamLeague(_ context.Context, teamID uuid.UUID) (uuid.UUID, error) {
+	if l, ok := f.teamLeagues[teamID]; ok {
+		return l, nil
+	}
+	return uuid.Nil, httpx.ErrNotFound
 }
 
 func (f *fakeRepository) CreateUser(_ context.Context, user User) error {

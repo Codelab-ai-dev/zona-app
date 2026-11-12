@@ -448,3 +448,11 @@ func TestListAttendance_Handler_InvalidLimit(t *testing.T) {
 		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
 	}
 }
+
+func (f *fakeRepository) PlayerLeague(context.Context, uuid.UUID) (uuid.UUID, error) {
+	return uuid.Nil, httpx.ErrNotFound
+}
+
+func (f *fakeRepository) PlayerMatchesOn(context.Context, uuid.UUID, time.Time) ([]TodayMatch, error) {
+	return nil, nil
+}

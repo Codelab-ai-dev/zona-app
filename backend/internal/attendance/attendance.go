@@ -63,6 +63,18 @@ type AttendanceRecord struct {
 	Source          string    `json:"source"` // "qr" or "facial"
 }
 
+// TodayMatch is a match a scanned player can check in to.
+type TodayMatch struct {
+	MatchID           uuid.UUID `json:"match_id"`
+	TournamentID      uuid.UUID `json:"tournament_id"`
+	MatchTime         *string   `json:"match_time,omitempty"`
+	Status            string    `json:"status"`
+	HomeTeamName      string    `json:"home_team_name"`
+	AwayTeamName      string    `json:"away_team_name"`
+	FieldNumber       *int      `json:"field_number,omitempty"`
+	AlreadyRegistered bool      `json:"already_registered"`
+}
+
 // RecordQRAttendanceRequest is the payload to record QR attendance.
 type RecordQRAttendanceRequest struct {
 	PlayerID         uuid.UUID `json:"player_id"`
@@ -192,6 +204,13 @@ type Repository interface {
 
 	// StreamAttendance polls the database every 2s for new attendance in a match, sends to chan, stops on ctx cancel.
 	StreamAttendance(ctx context.Context, matchID uuid.UUID, ch chan AttendanceRecord) error
+
+	// PlayerLeague returns the league of a player's team (httpx.ErrNotFound if none).
+	PlayerLeague(ctx context.Context, playerID uuid.UUID) (uuid.UUID, error)
+
+	// PlayerMatchesOn lists the player's team matches on a date that can still
+	// take attendance (scheduled or in progress).
+	PlayerMatchesOn(ctx context.Context, playerID uuid.UUID, date time.Time) ([]TodayMatch, error)
 
 	// GetMatchLeague fetches the league_id for a match (for auth checks).
 	GetMatchLeague(ctx context.Context, matchID uuid.UUID) (uuid.UUID, error)

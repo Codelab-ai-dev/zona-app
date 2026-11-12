@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
@@ -252,4 +253,43 @@ func isUniqueViolation(err error) bool {
 		return true
 	}
 	return false
+}
+
+// PlayerLeague returns the league of a player's team.
+func (r *PGRepository) PlayerLeague(ctx context.Context, playerID uuid.UUID) (uuid.UUID, error) {
+	var leagueID uuid.UUID
+	err := r.db.QueryRow(ctx, `
+		SELECT t.league_id FROM public.players p JOIN public.teams t ON t.id = p.team_id WHERE p.id = $1`,
+		playerID).Scan(&leagueID)
+	if database.IsNoRows(err) {
+		return uuid.Nil, httpx.ErrNotFound
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("player league: %w", err)
+	}
+	return leagueID, nil
+}
+
+// PlayerMatchesOn lists the player's team matches on a date (dates are
+// stored as UTC midnight) that are scheduled or in progress.
+func (r *PGRepository) PlayerMatchesOn(ctx context.Context, playerID uuid.UUID, date time.Time) ([]TodayMatch, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT m.id, m.tournament_id, to_char(m.match_time, 'HH24:MI'), m.status::text, ht.name, at.name, m.field_number,
+		       EXISTS (SELECT 1 FROM public.asistencias_qr a WHERE a.match_id = m.id AND a.player_id = p.id)
+		FROM public.players p
+		JOIN public.matches m ON p.team_id IN (m.home_team_id, m.away_team_id)
+		JOIN public.teams ht ON ht.id = m.home_team_id
+		JOIN public.teams at ON at.id = m.away_team_id
+		WHERE p.id = $1 AND (m.match_date AT TIME ZONE 'UTC')::date = $2::date
+		  AND m.status IN ('scheduled', 'in_progress')
+		ORDER BY m.match_time NULLS LAST`, playerID, date.Format("2006-01-02"))
+	if err != nil {
+		return nil, fmt.Errorf("player matches on date: %w", err)
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TodayMatch, error) {
+		var m TodayMatch
+		err := row.Scan(&m.MatchID, &m.TournamentID, &m.MatchTime, &m.Status, &m.HomeTeamName, &m.AwayTeamName,
+			&m.FieldNumber, &m.AlreadyRegistered)
+		return m, err
+	})
 }

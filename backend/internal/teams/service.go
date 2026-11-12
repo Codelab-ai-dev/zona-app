@@ -151,7 +151,7 @@ func (s *Service) GetTeamsByLeague(ctx context.Context, leagueID uuid.UUID, limi
 // GetMyTeams returns teams owned by the caller.
 func (s *Service) GetMyTeams(ctx context.Context, caller auth.Principal, limit, offset int) ([]Team, error) {
 	if caller.Role != auth.RoleTeamOwner {
-		return []Team{}, fmt.Errorf("only team owners can list their teams")
+		return []Team{}, httpx.ErrForbidden.Wrap(fmt.Errorf("only team owners can list their teams"))
 	}
 	return s.repo.GetTeamsByOwner(ctx, caller.UserID, limit, offset)
 }

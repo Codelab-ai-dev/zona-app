@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -32,6 +33,38 @@ type Stats struct {
 	Users        Count `json:"users"`
 	LeagueAdmins int   `json:"league_admins"`
 	TeamOwners   int   `json:"team_owners"`
+	// Matches: total and played this month; goals scored this month.
+	Matches        MatchCount     `json:"matches"`
+	GoalsThisMonth int            `json:"goals_this_month"`
+	TopScorers     []GlobalScorer `json:"top_scorers"`
+	RecentMatches  []RecentMatch  `json:"recent_matches"`
+}
+
+// MatchCount counts matches.
+type MatchCount struct {
+	Total     int `json:"total"`
+	Finished  int `json:"finished"`
+	ThisMonth int `json:"this_month"`
+}
+
+// GlobalScorer is a top scorer across all leagues.
+type GlobalScorer struct {
+	PlayerID   uuid.UUID `json:"player_id"`
+	PlayerName string    `json:"player_name"`
+	TeamName   string    `json:"team_name"`
+	LeagueName string    `json:"league_name"`
+	Goals      int       `json:"goals"`
+}
+
+// RecentMatch is a recently finished match.
+type RecentMatch struct {
+	ID           uuid.UUID `json:"id"`
+	MatchDate    time.Time `json:"match_date"`
+	LeagueName   string    `json:"league_name"`
+	HomeTeamName string    `json:"home_team_name"`
+	AwayTeamName string    `json:"away_team_name"`
+	HomeScore    *int      `json:"home_score,omitempty"`
+	AwayScore    *int      `json:"away_score,omitempty"`
 }
 
 // SetAdminRequest assigns a league's administrator.
@@ -70,6 +103,55 @@ func (s *Service) Stats(ctx context.Context) (Stats, error) {
 		&st.Users.Total, &st.Users.Active, &st.LeagueAdmins, &st.TeamOwners)
 	if err != nil {
 		return Stats{}, fmt.Errorf("admin stats: %w", err)
+	}
+	const thisMonth = `date_trunc('month', m.match_date AT TIME ZONE 'UTC') = date_trunc('month', now() AT TIME ZONE 'UTC')`
+	err = s.pool.QueryRow(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE m.status = 'finished'),
+		       count(*) FILTER (WHERE m.status = 'finished' AND `+thisMonth+`),
+		       COALESCE(sum(COALESCE(m.home_score, 0) + COALESCE(m.away_score, 0)) FILTER (WHERE m.status = 'finished' AND `+thisMonth+`), 0)
+		FROM public.matches m`).Scan(&st.Matches.Total, &st.Matches.Finished, &st.Matches.ThisMonth, &st.GoalsThisMonth)
+	if err != nil {
+		return Stats{}, fmt.Errorf("admin match stats: %w", err)
+	}
+	rows, err := s.pool.Query(ctx, `
+		SELECT p.id, p.name, t.name, l.name, sum(ps.goals)::int
+		FROM public.player_stats ps
+		JOIN public.players p ON p.id = ps.player_id
+		JOIN public.teams t ON t.id = p.team_id
+		JOIN public.leagues l ON l.id = t.league_id
+		GROUP BY p.id, p.name, t.name, l.name
+		HAVING sum(ps.goals) > 0
+		ORDER BY sum(ps.goals) DESC, p.name LIMIT 5`)
+	if err != nil {
+		return Stats{}, fmt.Errorf("admin top scorers: %w", err)
+	}
+	st.TopScorers, err = pgx.CollectRows(rows, func(r pgx.CollectableRow) (GlobalScorer, error) {
+		var g GlobalScorer
+		err := r.Scan(&g.PlayerID, &g.PlayerName, &g.TeamName, &g.LeagueName, &g.Goals)
+		return g, err
+	})
+	if err != nil {
+		return Stats{}, fmt.Errorf("scan top scorers: %w", err)
+	}
+	rows, err = s.pool.Query(ctx, `
+		SELECT m.id, m.match_date, l.name, ht.name, at.name, m.home_score, m.away_score
+		FROM public.matches m
+		JOIN public.tournaments tr ON tr.id = m.tournament_id
+		JOIN public.leagues l ON l.id = tr.league_id
+		JOIN public.teams ht ON ht.id = m.home_team_id
+		JOIN public.teams at ON at.id = m.away_team_id
+		WHERE m.status = 'finished'
+		ORDER BY m.match_date DESC, m.updated_at DESC LIMIT 5`)
+	if err != nil {
+		return Stats{}, fmt.Errorf("admin recent matches: %w", err)
+	}
+	st.RecentMatches, err = pgx.CollectRows(rows, func(r pgx.CollectableRow) (RecentMatch, error) {
+		var m RecentMatch
+		err := r.Scan(&m.ID, &m.MatchDate, &m.LeagueName, &m.HomeTeamName, &m.AwayTeamName, &m.HomeScore, &m.AwayScore)
+		return m, err
+	})
+	if err != nil {
+		return Stats{}, fmt.Errorf("scan recent matches: %w", err)
 	}
 	return st, nil
 }

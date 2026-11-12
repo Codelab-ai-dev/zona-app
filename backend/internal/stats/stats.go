@@ -27,6 +27,7 @@ type Standings struct {
 	AdjustmentReason *string    `json:"adjustment_reason,omitempty"`
 	RecentForm       *string    `json:"recent_form,omitempty"`
 	LastMatchDate    *time.Time `json:"last_match_date,omitempty"`
+	GroupName        *string    `json:"group_name,omitempty"`
 }
 
 // TeamStats represents aggregated team statistics.
@@ -97,6 +98,10 @@ type Suspension struct {
 	UpdatedBy      *uuid.UUID `json:"updated_by,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
+	// Display names (read-only).
+	PlayerName   string `json:"player_name,omitempty"`
+	PlayerJersey int    `json:"player_jersey,omitempty"`
+	TeamName     string `json:"team_name,omitempty"`
 }
 
 // CreateSuspensionRequest is the payload to create a new suspension.

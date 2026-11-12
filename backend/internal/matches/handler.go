@@ -42,6 +42,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/result", h.postResult)
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/referee-report", h.createRefereeReport)
 	r.With(auth.RequireAuth).Patch("/matches/{matchID}/publish", h.publishMatch)
+	r.With(auth.RequireAuth).Patch("/matches/{matchID}/status", h.updateStatus)
 	r.With(auth.RequireAuth).Post("/tournaments/{tournamentID}/rounds/{round}/publish", h.publishRound)
 	r.With(auth.RequireAuth).Post("/tournaments/{tournamentID}/playoffs/generate", h.generatePlayoffs)
 }
@@ -371,6 +372,25 @@ func (h *Handler) publishMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	httpx.NoContent(w)
+}
+
+func (h *Handler) updateStatus(w http.ResponseWriter, r *http.Request) {
+	caller, _ := auth.FromContext(r.Context())
+	matchID, err := httpx.UUIDParam(r, "matchID")
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	var req UpdateStatusRequest
+	if err := httpx.DecodeJSON(w, r, &req); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	if err := h.svc.UpdateStatus(r.Context(), caller, matchID, req); err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
 	httpx.NoContent(w)
 }
 

@@ -73,6 +73,12 @@ var anonymousAllowed = map[string]bool{
 	// Public team page: per-player totals, no personal data.
 	"GET /api/v1/teams/{teamID}/player-stats": true,
 
+	// League-wide public reads (active leagues, published matches only).
+	"GET /api/v1/leagues/{leagueID}/stats":       true,
+	"GET /api/v1/leagues/{leagueID}/top-scorers": true,
+	"GET /api/v1/leagues/{leagueID}/discipline":  true,
+	"GET /api/v1/players/{playerID}/matches":     true,
+
 	// Private files: authorized by an HMAC-signed, expiring link.
 	"GET /api/v1/storage/download": true,
 }

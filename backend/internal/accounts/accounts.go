@@ -17,6 +17,9 @@ type CreateUserRequest struct {
 	Phone    *string    `json:"phone,omitempty"`
 	Role     string     `json:"role"`
 	LeagueID *uuid.UUID `json:"league_id,omitempty"`
+	// TeamID (team_owner only) makes the new user the owner of that team,
+	// which must belong to LeagueID.
+	TeamID *uuid.UUID `json:"team_id,omitempty"`
 }
 
 // Validate checks the request fields and returns a map of field -> message
@@ -49,6 +52,14 @@ func (r CreateUserRequest) Validate() map[string]string {
 		errs["role"] = "El rol es requerido"
 	} else if !isValidRole(r.Role) {
 		errs["role"] = "El rol no es válido"
+	}
+
+	if r.TeamID != nil {
+		if r.Role != "team_owner" {
+			errs["team_id"] = "Solo un propietario de equipo puede tener equipo"
+		} else if r.LeagueID == nil {
+			errs["league_id"] = "La liga es requerida para asignar un equipo"
+		}
 	}
 
 	return errs
@@ -110,6 +121,8 @@ type User struct {
 // Repository is the persistence contract for user operations.
 type Repository interface {
 	CreateUser(ctx context.Context, user User) error
+	// TeamLeague returns the league of a team (httpx.ErrNotFound if none).
+	TeamLeague(ctx context.Context, teamID uuid.UUID) (uuid.UUID, error)
 	UpdateUser(ctx context.Context, userID uuid.UUID, updates UpdateUserRequest) (User, error)
 	GetByID(ctx context.Context, userID uuid.UUID) (User, error)
 }

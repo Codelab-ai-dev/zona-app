@@ -26,7 +26,9 @@ func NewPGRepository(db database.Querier) *PGRepository {
 // creates an initial row with role='public'; this upsert updates it with the
 // provided role, name, league_id, team_id.
 func (r *PGRepository) CreateUser(ctx context.Context, user User) error {
+	// One statement: when the user gets a team they also become its owner.
 	const q = `
+		WITH u AS (
 		INSERT INTO public.users (id, name, email, phone, role, league_id, team_id, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
 		ON CONFLICT (id) DO UPDATE SET
@@ -36,7 +38,10 @@ func (r *PGRepository) CreateUser(ctx context.Context, user User) error {
 			league_id = EXCLUDED.league_id,
 			team_id = EXCLUDED.team_id,
 			is_active = EXCLUDED.is_active,
-			updated_at = now()`
+			updated_at = now()
+		RETURNING id)
+		UPDATE public.teams SET owner_id = (SELECT id FROM u), updated_at = now()
+		WHERE $7::uuid IS NOT NULL AND id = $7 AND league_id = $6`
 
 	now := time.Now()
 	_, err := r.db.Exec(ctx, q,
@@ -138,4 +143,17 @@ func (r *PGRepository) GetByID(ctx context.Context, userID uuid.UUID) (User, err
 	}
 
 	return u, nil
+}
+
+// TeamLeague returns the league of a team.
+func (r *PGRepository) TeamLeague(ctx context.Context, teamID uuid.UUID) (uuid.UUID, error) {
+	var leagueID uuid.UUID
+	err := r.db.QueryRow(ctx, `SELECT league_id FROM public.teams WHERE id = $1`, teamID).Scan(&leagueID)
+	if database.IsNoRows(err) {
+		return uuid.Nil, httpx.ErrNotFound
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("team league: %w", err)
+	}
+	return leagueID, nil
 }

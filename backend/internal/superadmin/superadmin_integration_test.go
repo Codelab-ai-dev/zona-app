@@ -26,6 +26,9 @@ func TestSuperAdminOperations(t *testing.T) {
 	if err != nil || st.Leagues.Total < 2 || st.Teams.Total < 4 || st.Players.Total < 2 || st.LeagueAdmins < 2 {
 		t.Fatalf("stats = %+v %v", st, err)
 	}
+	if st.Matches.Total < 2 || st.TopScorers == nil || st.RecentMatches == nil {
+		t.Fatalf("match stats = %+v", st)
+	}
 
 	// Assign the other league's admin to this league.
 	if err := svc.SetLeagueAdmin(ctx, sa, f.LeagueID, other.LeagueAdminID); err != nil {

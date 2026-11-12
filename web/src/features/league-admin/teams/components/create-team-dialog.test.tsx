@@ -45,6 +45,7 @@ describe('CreateTeamDialog', () => {
       phone: '5512345678',
       role: 'team_owner',
       league_id: 'league-1',
+      team_id: 'team-1',
     })
     expect(ownerBody?.password).toHaveLength(12)
     expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -219,7 +220,8 @@ describe('CreateTeamDialog', () => {
     await submit(user)
     expect(await screen.findByText('Equipo creado exitosamente')).toBeInTheDocument()
     expect(requestsTo(fetchMock, 'POST /teams')).toHaveLength(1)
-    expect(requestsTo(fetchMock, 'POST /admin/users')).toHaveLength(2)
+    const owners = requestsTo(fetchMock, 'POST /admin/users') as Array<{ team_id?: string }>
+    expect(owners.map((o) => o.team_id)).toEqual(['team-1', 'team-1'])
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

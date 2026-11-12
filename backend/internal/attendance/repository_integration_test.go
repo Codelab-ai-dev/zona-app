@@ -5,12 +5,14 @@ package attendance
 import (
 	"context"
 	"errors"
-	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/auth"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/authz"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
 )
 
@@ -160,5 +162,52 @@ func TestCheckPlayerInMatch_NotInMatch_Integration(t *testing.T) {
 
 	if inMatch {
 		t.Error("expected player to not be in match")
+	}
+}
+
+func TestScannerFlow_Integration(t *testing.T) {
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	other := testdb.Seed(t, pool)
+	ctx := context.Background()
+	svc := NewService(NewPGRepository(pool), authz.NewPGChecker(pool))
+	admin := auth.Principal{UserID: f.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+	stranger := auth.Principal{UserID: other.LeagueAdminID, Role: auth.RoleLeagueAdmin, IsActive: true}
+	day := time.Date(2030, 5, 4, 0, 0, 0, 0, time.UTC)
+	if _, err := pool.Exec(ctx, `UPDATE public.matches SET match_date = $2 WHERE id = $1`, f.MatchID, day); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := svc.PlayerMatchesOn(ctx, admin, f.HomePlayerID, day)
+	if err != nil || len(list) != 1 || list[0].MatchID != f.MatchID || list[0].AlreadyRegistered || list[0].AwayTeamName != "Visita FC" {
+		t.Fatalf("matches = %+v %v", list, err)
+	}
+	if list[0].MatchTime == nil || *list[0].MatchTime != "18:30" {
+		t.Fatalf("match time = %v", list[0].MatchTime)
+	}
+	if list, err := svc.PlayerMatchesOn(ctx, admin, f.HomePlayerID, day.AddDate(0, 0, 1)); err != nil || len(list) != 0 {
+		t.Fatalf("next day = %+v %v", list, err)
+	}
+	if _, err := svc.PlayerMatchesOn(ctx, stranger, f.HomePlayerID, day); err == nil {
+		t.Fatal("stranger listed another league's player")
+	}
+
+	req := &RecordQRAttendanceRequest{PlayerID: f.HomePlayerID, RecognitionMode: "quick", ConfidenceScore: 1, SimilarityScore: 1, LocalTimestamp: time.Now()}
+	if _, err := svc.RecordQRAttendance(ctx, admin, f.MatchID, req); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+	list, _ = svc.PlayerMatchesOn(ctx, admin, f.HomePlayerID, day)
+	if len(list) != 1 || !list[0].AlreadyRegistered {
+		t.Fatalf("after record = %+v", list)
+	}
+	// Attendance marks the player as having played, with no fake assists.
+	var assists, minutes int
+	if err := pool.QueryRow(ctx, `SELECT assists, minutes_played FROM public.player_stats WHERE match_id = $1 AND player_id = $2`,
+		f.MatchID, f.HomePlayerID).Scan(&assists, &minutes); err != nil || assists != 0 || minutes != 90 {
+		t.Fatalf("player stats = %d assists %d minutes %v", assists, minutes, err)
+	}
+	var e *httpx.Error
+	if _, err := svc.RecordQRAttendance(ctx, admin, f.MatchID, req); !errors.As(err, &e) || e.Status != 409 {
+		t.Fatalf("duplicate: got %v, want 409", err)
 	}
 }

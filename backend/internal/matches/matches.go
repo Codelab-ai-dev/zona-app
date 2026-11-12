@@ -479,6 +479,23 @@ func (r PublishMatchRequest) Validate() map[string]string {
 	return make(map[string]string)
 }
 
+// UpdateStatusRequest starts, cancels or reschedules a match that has no
+// result yet ("finished" is only reachable by posting the result).
+type UpdateStatusRequest struct {
+	Status MatchStatus `json:"status"`
+}
+
+// Validate checks request constraints.
+func (r UpdateStatusRequest) Validate() map[string]string {
+	errs := make(map[string]string)
+	switch r.Status {
+	case "scheduled", "in_progress", "cancelled":
+	default:
+		errs["status"] = "debe ser scheduled, in_progress o cancelled"
+	}
+	return errs
+}
+
 // PublishRoundRequest publishes/unpublishes all matches in a round.
 type PublishRoundRequest struct {
 	IsPublished bool `json:"is_published"`
