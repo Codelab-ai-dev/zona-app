@@ -40,7 +40,7 @@ Clean Architecture + BLoC Pattern
 ┌─────────────────▼───────────────────┐
 │         Data Layer                  │
 │  Models │ Repositories │ DataSources│
-│  (Supabase + Hive + Secure Storage) │
+│ (API Zona Gol + Hive + Secure Stor.)│
 └─────────────────────────────────────┘
 ```
 
@@ -55,7 +55,7 @@ Clean Architecture + BLoC Pattern
 - **equatable** ^2.0.7
 
 ### Backend & Storage
-- **supabase_flutter** ^2.8.0
+- **API Zona Gol** (Go, `backend/`) vía **http** ^1.2.2
 - **hive** ^2.2.3
 - **flutter_secure_storage** ^9.2.2
 
@@ -79,7 +79,7 @@ Clean Architecture + BLoC Pattern
 ### Prerequisitos
 - Flutter SDK ^3.10.0
 - Dart SDK ^3.10.0
-- Cuenta de Supabase configurada
+- Backend de Zona Gol corriendo (ver `../backend`, `make db-up` y `make run`)
 - Xcode (para iOS)
 - Android Studio (para Android)
 
@@ -97,24 +97,30 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 3. **Ejecutar en modo desarrollo**
 
-**Opción 1: Con credenciales ya configuradas (recomendado para desarrollo local)**
+**Simulador iOS** (llega al Mac como `localhost`, el valor por defecto):
 ```bash
-# Las credenciales de desarrollo ya están configuradas en app_config.dart
 flutter run
-
 # O usando el script:
 ./run_dev.sh "iPhone 17"
 ```
 
-**Opción 2: Con variables de entorno personalizadas**
+**Emulador Android** (el Mac es `10.0.2.2`):
 ```bash
-flutter run \
-  --dart-define=ENV=dev \
-  --dart-define=SUPABASE_URL=https://tu-proyecto.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=tu_key_aqui
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
-> **Nota:** Las credenciales de desarrollo están configuradas como valores por defecto en `lib/core/config/app_config.dart`. Para producción, siempre pasa las variables con `--dart-define`.
+**Teléfono físico** (usa la IP del Mac en la red local):
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8080
+```
+
+| Variable | Default | Uso |
+|----------|---------|-----|
+| `API_BASE_URL` | `http://localhost:8080` | Origen de la API (sin `/api/v1`) |
+| `WEB_BASE_URL` | `http://localhost:8088` | Sitio público (links compartidos) |
+| `ENV` | `dev` | `dev`, `staging` o `prod` |
+
+> **Nota:** con `ENV=prod`, `API_BASE_URL` debe ser `https://`; si no, la app no arranca.
 
 ### Build para Producción
 
@@ -122,16 +128,16 @@ flutter run \
 ```bash
 flutter build apk --release \
   --dart-define=ENV=prod \
-  --dart-define=SUPABASE_URL=https://tu-proyecto.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=tu_key_aqui
+  --dart-define=API_BASE_URL=https://api.tu-dominio.com \
+  --dart-define=WEB_BASE_URL=https://tu-dominio.com
 ```
 
 **iOS:**
 ```bash
 flutter build ios --release \
   --dart-define=ENV=prod \
-  --dart-define=SUPABASE_URL=https://tu-proyecto.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=tu_key_aqui
+  --dart-define=API_BASE_URL=https://api.tu-dominio.com \
+  --dart-define=WEB_BASE_URL=https://tu-dominio.com
 ```
 
 ## 📂 Estructura del Proyecto
@@ -143,14 +149,13 @@ lib/
 │   ├── constants/          # Constantes de la app
 │   ├── errors/             # Excepciones y failures
 │   ├── extensions/         # Extensiones de Dart
-│   ├── network/            # Network utilities
+│   ├── network/            # ApiClient, tokens, errores, conectividad
 │   └── utils/              # Helpers y validadores
 │
 ├── data/                   # Capa de datos 🔨
-│   ├── models/            # Modelos de datos (Freezed)
-│   ├── repositories/      # Implementaciones de repositorios
-│   └── datasources/       # Fuentes de datos
-│       ├── remote/        # Supabase API
+│   ├── mappers/           # JSON de la API → entidades
+│   ├── repositories/      # Implementaciones (usan ApiClient)
+│   └── datasources/
 │       └── local/         # Hive + Secure Storage
 │
 ├── domain/                # Capa de dominio ⏳
@@ -168,7 +173,8 @@ lib/
 
 - ✅ Tokens en Flutter Secure Storage (Keychain/Keystore)
 - ✅ SSL/TLS para todas las comunicaciones
-- ✅ Row Level Security (RLS) en Supabase
+- ✅ Access token + refresh token (renovación automática, sesión expira si el refresh es rechazado)
+- ✅ Permisos por rol aplicados en la API
 - ✅ Validación de inputs
 - ✅ No credentials hardcoded (use --dart-define)
 - ✅ Diferentes configs por ambiente (dev/staging/prod)
@@ -202,12 +208,13 @@ lib/
 - [x] Core utilities
 - [x] Tema y constantes
 
-### 🔨 Fase 2: Data & Auth (Siguiente)
-- [ ] Modelos de datos con Freezed
-- [ ] Supabase client
-- [ ] Auth service
-- [ ] Secure storage
-- [ ] Hive setup
+### ✅ Fase 2: Data & Auth (Completado)
+- [x] Mappers y entidades
+- [x] Cliente de la API Zona Gol (`ApiClient`)
+- [x] Auth (login, refresh, logout)
+- [x] Secure storage
+- [x] Hive setup
+- [x] Migración de Supabase al backend en Go
 
 ### ⏳ Fase 3: Navigation & Screens
 - [ ] Go Router configuration
@@ -222,7 +229,6 @@ lib/
 ## 📚 Documentación
 
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Guía de inicio y próximos pasos
-- **[ZONA_GOL_MOBILE_ARCHITECTURE.md](ZONA_GOL_MOBILE_ARCHITECTURE.md)** - Arquitectura completa
 
 ## 🛠️ Comandos Útiles
 
@@ -249,7 +255,7 @@ flutter test
 ---
 
 **Version:** 1.0.0+1
-**Last Updated:** 2025-12-17
+**Last Updated:** 2026-11-12
 **Status:** Foundation Complete ✅
 
 **Para comenzar a desarrollar, ve a [GETTING_STARTED.md](GETTING_STARTED.md)**

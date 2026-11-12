@@ -1,150 +1,177 @@
+import '../../core/network/json.dart';
 import '../../domain/entities/finance_config_entity.dart';
 import '../../domain/entities/finance_enums.dart';
 import '../../domain/entities/finance_league_summary_entity.dart';
 import '../../domain/entities/finance_team_balance_entity.dart';
 import '../../domain/entities/finance_transaction_entity.dart';
-import '../models/finance_config_model.dart';
-import '../models/finance_transaction_model.dart';
 
-/// Maps between finance data models/rows and domain entities
+/// Maps the finance API shapes (backend/internal/finance) to domain entities.
+/// Money comes as decimal strings (or JSON numbers in the config) and is sent
+/// back as decimal strings.
 class FinanceMapper {
-  /// Convert a DB row to FinanceConfigEntity
-  static FinanceConfigEntity configFromRow(Map<String, dynamic> row) {
+  static FinanceConfigEntity configFromJson(Map<String, dynamic> json) {
     return FinanceConfigEntity(
-      id: row['id'] as String,
-      leagueId: row['league_id'] as String,
-      registrationFee: (row['registration_fee'] as num?)?.toDouble() ?? 0.0,
-      monthlyFee: (row['monthly_fee'] as num?)?.toDouble() ?? 0.0,
-      matchFee: (row['match_fee'] as num?)?.toDouble() ?? 0.0,
-      yellowCardFine: (row['yellow_card_fine'] as num?)?.toDouble() ?? 0.0,
-      redCardFine: (row['red_card_fine'] as num?)?.toDouble() ?? 0.0,
-      noShowFine: (row['no_show_fine'] as num?)?.toDouble() ?? 0.0,
-      lateArrivalFine: (row['late_arrival_fine'] as num?)?.toDouble() ?? 0.0,
-      uniformViolationFine:
-          (row['uniform_violation_fine'] as num?)?.toDouble() ?? 0.0,
-      misconductFine: (row['misconduct_fine'] as num?)?.toDouble() ?? 0.0,
-      forfeitFine: (row['forfeit_fine'] as num?)?.toDouble() ?? 0.0,
-      autoGenerateFines: row['auto_generate_fines'] as bool? ?? false,
-      currency: Currency.fromString(row['currency'] as String? ?? 'mxn'),
-      createdAt: row['created_at'] != null
-          ? DateTime.tryParse(row['created_at'] as String)
-          : null,
-      updatedAt: row['updated_at'] != null
-          ? DateTime.tryParse(row['updated_at'] as String)
-          : null,
+      id: json.str('id'),
+      leagueId: json.str('league_id'),
+      teamRegistrationFee: json.number('team_registration_fee'),
+      playerRegistrationFee: json.number('player_registration_fee'),
+      lateRegistrationSurcharge: json.number('late_registration_surcharge'),
+      yellowCardFine: json.number('yellow_card_fine'),
+      redCardFine: json.number('red_card_fine'),
+      doubleYellowFine: json.number('double_yellow_fine'),
+      absenceFine: json.number('absence_fine'),
+      lateArrivalFine: json.number('late_arrival_fine'),
+      misconductFine: json.number('misconduct_fine'),
+      uniformViolationFine: json.number('uniform_violation_fine'),
+      refereeFeePerMatch: json.number('referee_fee_per_match'),
+      assistantRefereeFee: json.number('assistant_referee_fee'),
+      fieldRentalPerMatch: json.number('field_rental_per_match'),
+      currency: Currency.fromString(json.str('currency', 'MXN')),
+      paymentDueDays: json.integer('payment_due_days', 7),
+      overdueGraceDays: json.integer('overdue_grace_days', 3),
+      autoGenerateFines: json.boolean('auto_generate_fines'),
+      autoGenerateRefereeFees: json.boolean('auto_generate_referee_fees'),
+      notifyOnNewCharge: json.boolean('notify_on_new_charge'),
+      notifyOnOverdue: json.boolean('notify_on_overdue'),
+      paymentInstructions: json.strOrNull('payment_instructions'),
+      bankAccountInfo: json.strOrNull('bank_account_info'),
+      createdAt: json.dateOrNull('created_at'),
+      updatedAt: json.dateOrNull('updated_at'),
     );
   }
 
-  /// Convert FinanceConfigModel to FinanceConfigEntity
-  static FinanceConfigEntity configToEntity(FinanceConfigModel model) {
-    return FinanceConfigEntity(
-      id: model.id,
-      leagueId: model.leagueId,
-      registrationFee: model.registrationFee,
-      monthlyFee: model.monthlyFee,
-      matchFee: model.matchFee,
-      yellowCardFine: model.yellowCardFine,
-      redCardFine: model.redCardFine,
-      noShowFine: model.noShowFine,
-      lateArrivalFine: model.lateArrivalFine,
-      uniformViolationFine: model.uniformViolationFine,
-      misconductFine: model.misconductFine,
-      forfeitFine: model.forfeitFine,
-      autoGenerateFines: model.autoGenerateFines,
-      currency: Currency.fromString(model.currency),
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-    );
+  /// Body of PUT /leagues/{id}/finance/config (UpdateConfigRequest).
+  static Map<String, dynamic> configToJson(FinanceConfigEntity c) {
+    return {
+      'team_registration_fee': apiMoney(c.teamRegistrationFee),
+      'player_registration_fee': apiMoney(c.playerRegistrationFee),
+      'late_registration_surcharge': apiMoney(c.lateRegistrationSurcharge),
+      'yellow_card_fine': apiMoney(c.yellowCardFine),
+      'red_card_fine': apiMoney(c.redCardFine),
+      'double_yellow_fine': apiMoney(c.doubleYellowFine),
+      'absence_fine': apiMoney(c.absenceFine),
+      'late_arrival_fine': apiMoney(c.lateArrivalFine),
+      'misconduct_fine': apiMoney(c.misconductFine),
+      'uniform_violation_fine': apiMoney(c.uniformViolationFine),
+      'referee_fee_per_match': apiMoney(c.refereeFeePerMatch),
+      'assistant_referee_fee': apiMoney(c.assistantRefereeFee),
+      'field_rental_per_match': apiMoney(c.fieldRentalPerMatch),
+      'currency': c.currency.dbValue,
+      'payment_due_days': c.paymentDueDays,
+      'overdue_grace_days': c.overdueGraceDays,
+      'auto_generate_fines': c.autoGenerateFines,
+      'auto_generate_referee_fees': c.autoGenerateRefereeFees,
+      'notify_on_new_charge': c.notifyOnNewCharge,
+      'notify_on_overdue': c.notifyOnOverdue,
+      'payment_instructions': c.paymentInstructions?.trim() ?? '',
+      'bank_account_info': c.bankAccountInfo?.trim() ?? '',
+    };
   }
 
-  /// Convert a DB row (with optional joined team/player data) to FinanceTransactionEntity
-  static FinanceTransactionEntity transactionFromRow(
-      Map<String, dynamic> row) {
-    final team = row['teams'] as Map<String, dynamic>?;
-    final player = row['players'] as Map<String, dynamic>?;
-
+  static FinanceTransactionEntity transactionFromJson(
+    Map<String, dynamic> json, {
+    String? teamName,
+  }) {
+    final method = json.strOrNull('payment_method');
     return FinanceTransactionEntity(
-      id: row['id'] as String,
-      leagueId: row['league_id'] as String,
-      teamId: row['team_id'] as String,
-      playerId: row['player_id'] as String?,
-      matchId: row['match_id'] as String?,
-      transactionType: TransactionType.fromString(
-          row['transaction_type'] as String? ?? 'other'),
-      amount: (row['amount'] as num?)?.toDouble() ?? 0.0,
-      amountPaid: (row['amount_paid'] as num?)?.toDouble() ?? 0.0,
-      status: TransactionStatus.fromString(
-          row['status'] as String? ?? 'pending'),
-      description: row['description'] as String?,
-      paymentMethod: row['payment_method'] != null
-          ? PaymentMethod.fromString(row['payment_method'] as String)
-          : null,
-      paidAt: row['paid_at'] != null
-          ? DateTime.tryParse(row['paid_at'] as String)
-          : null,
-      dueDate: row['due_date'] != null
-          ? DateTime.tryParse(row['due_date'] as String)
-          : null,
-      createdAt: row['created_at'] != null
-          ? DateTime.tryParse(row['created_at'] as String)
-          : null,
-      updatedAt: row['updated_at'] != null
-          ? DateTime.tryParse(row['updated_at'] as String)
-          : null,
-      teamName: team?['name'] as String?,
-      playerName: player?['name'] as String?,
+      id: json.str('id'),
+      leagueId: json.str('league_id'),
+      tournamentId: json.strOrNull('tournament_id'),
+      teamId: json.strOrNull('team_id'),
+      playerId: json.strOrNull('player_id'),
+      matchId: json.strOrNull('match_id'),
+      transactionType: TransactionType.fromString(json.str('transaction_type')),
+      description: json.str('description'),
+      notes: json.strOrNull('notes'),
+      amount: json.number('amount'),
+      amountPaid: json.number('amount_paid'),
+      isIncome: json.boolean('is_income'),
+      status: TransactionStatus.fromString(json.str('status', 'pending')),
+      transactionDate: calendarDate(json, 'transaction_date'),
+      dueDate: calendarDate(json, 'due_date'),
+      paidAt: json.dateOrNull('paid_at'),
+      paymentMethod: method == null ? null : PaymentMethod.fromString(method),
+      paymentReference: json.strOrNull('payment_reference'),
+      receiptNumber: json.strOrNull('receipt_number'),
+      autoGenerated: json.boolean('auto_generated'),
+      cancellationReason: json.strOrNull('cancellation_reason'),
+      createdAt: json.dateOrNull('created_at'),
+      updatedAt: json.dateOrNull('updated_at'),
+      teamName: teamName,
+      playerName: json.strOrNull('player_name'),
+      playerNumber: json.intOrNull('player_number'),
     );
   }
 
-  /// Convert FinanceTransactionModel to FinanceTransactionEntity (without joined data)
-  static FinanceTransactionEntity transactionToEntity(
-      FinanceTransactionModel model) {
-    return FinanceTransactionEntity(
-      id: model.id,
-      leagueId: model.leagueId,
-      teamId: model.teamId,
-      playerId: model.playerId,
-      matchId: model.matchId,
-      transactionType: TransactionType.fromString(model.transactionType),
-      amount: model.amount,
-      amountPaid: model.amountPaid,
-      status: TransactionStatus.fromString(model.status),
-      description: model.description,
-      paymentMethod: model.paymentMethod != null
-          ? PaymentMethod.fromString(model.paymentMethod!)
-          : null,
-      paidAt: model.paidAt,
-      dueDate: model.dueDate,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-    );
+  /// Body of POST /leagues/{id}/finance/transactions (CreateTransactionRequest).
+  static Map<String, dynamic> createTransactionToJson({
+    String? teamId,
+    String? playerId,
+    String? matchId,
+    required TransactionType type,
+    required double amount,
+    required String description,
+    String? notes,
+    DateTime? dueDate,
+  }) {
+    return {
+      'transaction_type': type.dbValue,
+      'description': description,
+      'amount': apiMoney(amount),
+      'is_income': type.isIncome,
+      if (teamId != null && teamId.isNotEmpty) 'team_id': teamId,
+      if (playerId != null) 'player_id': playerId,
+      if (matchId != null) 'match_id': matchId,
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      if (dueDate != null) 'due_date': apiDateTime(dueDate),
+    };
   }
 
-  /// Convert a DB row from finance_team_balances view to FinanceTeamBalanceEntity
-  static FinanceTeamBalanceEntity balanceFromRow(Map<String, dynamic> row) {
+  static FinanceTeamBalanceEntity balanceFromJson(Map<String, dynamic> json) {
     return FinanceTeamBalanceEntity(
-      teamId: row['team_id'] as String,
-      teamName: row['team_name'] as String? ?? 'Equipo desconocido',
-      teamLogo: row['team_logo'] as String?,
-      totalCharges: (row['total_charges'] as num?)?.toDouble() ?? 0.0,
-      totalPaid: (row['total_paid'] as num?)?.toDouble() ?? 0.0,
-      totalPending: (row['total_pending'] as num?)?.toDouble() ?? 0.0,
-      totalOverdue: (row['total_overdue'] as num?)?.toDouble() ?? 0.0,
-      transactionCount: (row['transaction_count'] as num?)?.toInt() ?? 0,
+      teamId: json.str('team_id'),
+      teamName: json.str('team_name', 'Equipo'),
+      teamLogo: json.strOrNull('team_logo'),
+      totalCharges: json.number('total_charges'),
+      totalPaid: json.number('total_paid'),
+      balance: json.number('balance'),
+      pendingBalance: json.number('pending_balance'),
+      overdueCount: json.integer('overdue_count'),
+      pendingFinesCount: json.integer('pending_fines_count'),
+      lastTransactionAt: json.dateOrNull('last_transaction_at'),
     );
   }
 
-  /// Convert a DB row from finance_league_summary view to FinanceLeagueSummaryEntity
-  static FinanceLeagueSummaryEntity summaryFromRow(Map<String, dynamic> row) {
+  static FinanceLeagueSummaryEntity summaryFromJson(Map<String, dynamic> json) {
     return FinanceLeagueSummaryEntity(
-      leagueId: row['league_id'] as String,
-      totalIncome: (row['total_income'] as num?)?.toDouble() ?? 0.0,
-      totalExpenses: (row['total_expenses'] as num?)?.toDouble() ?? 0.0,
-      totalPending: (row['total_pending'] as num?)?.toDouble() ?? 0.0,
-      totalOverdue: (row['total_overdue'] as num?)?.toDouble() ?? 0.0,
-      totalPaid: (row['total_paid'] as num?)?.toDouble() ?? 0.0,
-      teamCount: (row['team_count'] as num?)?.toInt() ?? 0,
-      transactionCount: (row['transaction_count'] as num?)?.toInt() ?? 0,
+      leagueId: json.str('league_id'),
+      totalIncome: json.number('total_income'),
+      totalCharges: json.number('total_charges'),
+      totalCollected: json.number('total_collected'),
+      totalPending: json.number('total_pending'),
+      totalOverdue: json.number('total_overdue'),
+      teamsWithTransactions: json.integer('teams_with_transactions'),
+      totalTransactions: json.integer('total_transactions'),
+      overdueTransactions: json.integer('overdue_transactions'),
     );
   }
+
+  /// A DATE column. The API serializes it as UTC midnight
+  /// (`2026-11-20T00:00:00Z`), so only the calendar part is kept; converting
+  /// to local time would move it to the previous day west of UTC.
+  static DateTime? calendarDate(Map<String, dynamic> json, String key) {
+    final v = json[key];
+    if (v is! String || v.length < 10) return null;
+    final p = v.substring(0, 10).split('-');
+    if (p.length != 3) return null;
+    final y = int.tryParse(p[0]),
+        m = int.tryParse(p[1]),
+        d = int.tryParse(p[2]);
+    if (y == null || m == null || d == null) return null;
+    return DateTime(y, m, d);
+  }
+
+  /// A calendar date for a `time.Time` request field: the API only accepts
+  /// RFC 3339, so the date is sent as UTC midnight.
+  static String apiDateTime(DateTime d) => '${apiDate(d)}T00:00:00Z';
 }

@@ -48,33 +48,23 @@ class _EditableMatch {
 
   bool get isValid => homeTeam != null && awayTeam != null && homeTeam!.id != awayTeam!.id;
 
-  Map<String, dynamic> toInsertMap(String tournamentId, int round) {
-    return {
-      'tournament_id': tournamentId,
-      'home_team_id': homeTeam!.id,
-      'away_team_id': awayTeam!.id,
-      'match_date': _formatDate(date),
-      'match_time': _formatTime(time),
-      'field_number': field,
-      'round': round,
-      'status': MatchStatus.scheduled.toDbString(),
-      'phase': 'regular',
-      'is_published': false,
-    };
-  }
+  NewMatch toNewMatch(String tournamentId, int round) => NewMatch(
+        tournamentId: tournamentId,
+        homeTeamId: homeTeam!.id,
+        awayTeamId: awayTeam!.id,
+        matchDate: date,
+        matchTime: _formatTime(time),
+        fieldNumber: field,
+        round: round,
+      );
 
-  Map<String, dynamic> toUpdateMap() {
-    return {
-      'home_team_id': homeTeam!.id,
-      'away_team_id': awayTeam!.id,
-      'match_date': _formatDate(date),
-      'match_time': _formatTime(time),
-      'field_number': field,
-    };
-  }
-
-  static String _formatDate(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  MatchScheduleUpdate toUpdate() => MatchScheduleUpdate(
+        homeTeamId: homeTeam!.id,
+        awayTeamId: awayTeam!.id,
+        matchDate: date,
+        matchTime: _formatTime(time),
+        fieldNumber: field,
+      );
 
   static String _formatTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -817,7 +807,8 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
     if (deletes > 0) parts.add('$deletes eliminados');
 
     return Text(
-      'Jornada ${widget.roundNumber}: ${parts.join(', ')}.',
+      'Jornada ${widget.roundNumber}: ${parts.join(', ')}.'
+      '${deletes > 0 ? ' Los partidos eliminados se borran de forma permanente.' : ''}',
       style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
     );
   }
@@ -828,14 +819,14 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
     // Split into creates and updates
     final matchesToCreate = activeMatches
         .where((m) => m.existingId == null)
-        .map((m) => m.toInsertMap(widget.tournamentId, widget.roundNumber))
+        .map((m) => m.toNewMatch(widget.tournamentId, widget.roundNumber))
         .toList();
 
     final matchesToUpdate = activeMatches
         .where((m) => m.existingId != null)
         .map((m) => ManualMatchUpdate(
               matchId: m.existingId!,
-              data: m.toUpdateMap(),
+              update: m.toUpdate(),
             ))
         .toList();
 
@@ -845,6 +836,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
         .toList();
 
     context.read<MatchBloc>().add(SaveManualRoundEvent(
+      tournamentId: widget.tournamentId,
       matchesToCreate: matchesToCreate,
       matchesToUpdate: matchesToUpdate,
       matchIdsToDelete: matchIdsToDelete,

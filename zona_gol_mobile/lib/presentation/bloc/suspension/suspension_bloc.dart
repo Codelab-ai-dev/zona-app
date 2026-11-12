@@ -62,7 +62,6 @@ class SuspensionBloc extends Bloc<SuspensionEvent, SuspensionState> {
     final result = await _createSuspensionUseCase(CreateSuspensionParams(
       playerId: event.playerId,
       teamId: event.teamId,
-      leagueId: event.leagueId,
       suspensionType: event.suspensionType,
       reason: event.reason,
       matchesToServe: event.matchesToServe,

@@ -96,7 +96,6 @@ class WhatsAppBloc extends Bloc<WhatsAppEvent, WhatsAppState> {
       UpdateWhatsAppLinkParams(
         id: event.id,
         phoneNumber: event.phoneNumber,
-        role: event.role,
         displayName: event.displayName,
         preferredLanguage: event.preferredLanguage,
       ),
@@ -119,7 +118,7 @@ class WhatsAppBloc extends Bloc<WhatsAppEvent, WhatsAppState> {
     Emitter<WhatsAppState> emit,
   ) async {
     emit(const WhatsAppLoading());
-    logger.i('Deleting WhatsApp link: ${event.id}');
+    logger.i('Deactivating WhatsApp link: ${event.id}');
 
     final result = await deleteWhatsAppLinkUseCase(
       DeleteWhatsAppLinkParams(id: event.id),
@@ -127,11 +126,11 @@ class WhatsAppBloc extends Bloc<WhatsAppEvent, WhatsAppState> {
 
     result.fold(
       (failure) {
-        logger.e('Error deleting WhatsApp link: ${failure.message}');
+        logger.e('Error deactivating WhatsApp link: ${failure.message}');
         emit(WhatsAppError(failure.message));
       },
       (_) {
-        logger.i('Successfully deleted WhatsApp link');
+        logger.i('Successfully deactivated WhatsApp link');
         emit(WhatsAppLinkDeleted(event.id));
       },
     );
@@ -145,10 +144,7 @@ class WhatsAppBloc extends Bloc<WhatsAppEvent, WhatsAppState> {
     logger.i('Toggling WhatsApp link ${event.id}: ${event.isActive}');
 
     final result = await toggleWhatsAppLinkUseCase(
-      ToggleWhatsAppLinkParams(
-        id: event.id,
-        isActive: event.isActive,
-      ),
+      ToggleWhatsAppLinkParams(id: event.id, isActive: event.isActive),
     );
 
     result.fold(

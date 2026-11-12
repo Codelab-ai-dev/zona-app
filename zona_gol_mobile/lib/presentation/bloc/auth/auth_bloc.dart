@@ -20,12 +20,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.loginWithEmailUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
+    Stream<UserEntity?>? authStateChanges,
   }) : super(const AuthInitial()) {
     // Register event handlers
     on<LoginWithEmailEvent>(_onLoginWithEmail);
     on<LogoutEvent>(_onLogout);
     on<CheckAuthEvent>(_onCheckAuth);
     on<AuthStateChangedEvent>(_onAuthStateChanged);
+
+    // The API session expired (refresh token rejected): back to login.
+    _authStateSubscription = authStateChanges?.listen((user) {
+      if (user == null && state is Authenticated) add(const AuthStateChangedEvent(false));
+    });
 
     // Check initial auth state
     add(const CheckAuthEvent());
@@ -61,7 +67,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await logoutUseCase();
 
     result.fold(
-      (failure) => emit(AuthError(failure.message)),
+      (failure) => emit(const Unauthenticated()),
       (_) => emit(const Unauthenticated()),
     );
   }
@@ -89,7 +95,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (event.isAuthenticated) {
       add(const CheckAuthEvent());
     } else {
-      emit(const Unauthenticated());
+      emit(const Unauthenticated(message: 'Tu sesión expiró. Inicia sesión de nuevo.'));
     }
   }
 

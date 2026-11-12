@@ -10,13 +10,14 @@ abstract class SuspensionRepository {
     String leagueId,
   );
 
-  /// Create a new suspension
+  /// Create a new suspension (the league is derived from the player).
+  /// [suspensionType] is one of red_card, yellow_accumulation,
+  /// disciplinary_committee, other; [reason] is required by the API.
   Future<Either<Failure, SuspensionEntity>> createSuspension({
     required String playerId,
     required String teamId,
-    required String leagueId,
     required String suspensionType,
-    String? reason,
+    required String reason,
     required int matchesToServe,
   });
 

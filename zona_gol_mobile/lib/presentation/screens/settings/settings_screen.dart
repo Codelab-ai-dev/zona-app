@@ -20,9 +20,7 @@ class _StadiumNights {
   static const Color neonBlue = Color(0xFF00BFFF);
   static const Color neonPurple = Color(0xFF8B5CF6);
 
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color warning = Color(0xFFF59E0B);
 
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);

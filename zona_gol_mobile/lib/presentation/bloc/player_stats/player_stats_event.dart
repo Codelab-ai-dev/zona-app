@@ -55,54 +55,56 @@ class ResetPlayerStatsEvent extends PlayerStatsEvent {
   const ResetPlayerStatsEvent();
 }
 
-/// Add extemporaneous goals for a player
+/// Add extemporaneous goals for a player in a tournament (adds to the
+/// manual goals and assists already recorded there)
 class AddExtemporaneousGoalsEvent extends PlayerStatsEvent {
   final String playerId;
   final String leagueId;
+  final String tournamentId;
   final int goals;
   final int assists;
 
   const AddExtemporaneousGoalsEvent({
     required this.playerId,
     required this.leagueId,
+    required this.tournamentId,
     required this.goals,
     required this.assists,
   });
 
   @override
-  List<Object?> get props => [playerId, leagueId, goals, assists];
+  List<Object?> get props => [playerId, leagueId, tournamentId, goals, assists];
 }
 
-/// Update extemporaneous goals (edit totals)
+/// Set a player's extemporaneous goals and assists in a tournament
+/// (absolute values; match goals are not affected)
 class UpdateExtemporaneousGoalsEvent extends PlayerStatsEvent {
   final String playerId;
   final String leagueId;
-  final int newTotalGoals;
-  final int newTotalAssists;
+  final String tournamentId;
+  final int goals;
+  final int assists;
 
   const UpdateExtemporaneousGoalsEvent({
     required this.playerId,
     required this.leagueId,
-    required this.newTotalGoals,
-    required this.newTotalAssists,
+    required this.tournamentId,
+    required this.goals,
+    required this.assists,
   });
 
   @override
-  List<Object?> get props => [playerId, leagueId, newTotalGoals, newTotalAssists];
+  List<Object?> get props => [playerId, leagueId, tournamentId, goals, assists];
 }
 
 /// Load stats for a single player by ID
 class LoadPlayerStatsByIdEvent extends PlayerStatsEvent {
   final String playerId;
-  final String? tournamentId;
 
-  const LoadPlayerStatsByIdEvent({
-    required this.playerId,
-    this.tournamentId,
-  });
+  const LoadPlayerStatsByIdEvent({required this.playerId});
 
   @override
-  List<Object?> get props => [playerId, tournamentId];
+  List<Object?> get props => [playerId];
 }
 
 /// Load match-by-match history + aggregated stats for a player
@@ -115,16 +117,18 @@ class LoadPlayerMatchHistoryEvent extends PlayerStatsEvent {
   List<Object?> get props => [playerId];
 }
 
-/// Delete extemporaneous goals for a player
+/// Delete a player's extemporaneous goals and assists in a tournament
 class DeleteExtemporaneousGoalsEvent extends PlayerStatsEvent {
   final String playerId;
   final String leagueId;
+  final String tournamentId;
 
   const DeleteExtemporaneousGoalsEvent({
     required this.playerId,
     required this.leagueId,
+    required this.tournamentId,
   });
 
   @override
-  List<Object?> get props => [playerId, leagueId];
+  List<Object?> get props => [playerId, leagueId, tournamentId];
 }

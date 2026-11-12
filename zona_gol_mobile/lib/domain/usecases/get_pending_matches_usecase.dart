@@ -16,7 +16,7 @@ class GetPendingMatchesUseCase {
     GetPendingMatchesParams params,
   ) async {
     if (params.leagueId.isEmpty) {
-      return Left(ValidationFailure('League ID cannot be empty'));
+      return const Left(ValidationFailure('Liga no válida'));
     }
 
     return await repository.getPendingMatchesByLeague(params.leagueId);

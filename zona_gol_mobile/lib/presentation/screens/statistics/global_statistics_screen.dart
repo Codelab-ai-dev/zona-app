@@ -3,12 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../data/datasources/remote/supabase_client.dart';
+import '../../../core/di/injection.dart';
+import '../../../domain/entities/league_stats_entity.dart';
+import '../../../domain/repositories/league_repository.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
   static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
 
   static const Color gold = Color(0xFFFFD700);
@@ -57,10 +58,10 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
   int _activeLeagues = 0;
 
   // Top scorers
-  List<Map<String, dynamic>> _topScorers = [];
+  List<GlobalScorerInfo> _topScorers = [];
 
   // Recent matches
-  List<Map<String, dynamic>> _recentMatches = [];
+  List<RecentMatchInfo> _recentMatches = [];
 
   @override
   void initState() {
@@ -91,104 +92,32 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
       _error = null;
     });
 
-    try {
-      final client = SupabaseClientService.instance.client;
-
-      // Fetch all counts in parallel
-      final results = await Future.wait([
-        client.from('leagues').select('id, is_active'),
-        client.from('teams').select('id').eq('is_active', true),
-        client.from('players').select('id').eq('is_active', true),
-        client.from('matches').select('id, status, match_date, home_score, away_score'),
-        client.from('tournaments').select('id').eq('is_active', true),
-        client.from('users').select('id'),
-      ]);
-
-      // Process leagues
-      final leagues = results[0] as List;
-      _leaguesCount = leagues.length;
-      _activeLeagues = leagues.where((l) => l['is_active'] == true).length;
-
-      // Process teams
-      _teamsCount = (results[1] as List).length;
-
-      // Process players
-      _playersCount = (results[2] as List).length;
-
-      // Process matches
-      final matches = results[3] as List;
-      _matchesCount = matches.length;
-
-      // Calculate this month's stats
-      final now = DateTime.now();
-      final startOfMonth = DateTime(now.year, now.month, 1);
-      _matchesThisMonth = matches.where((m) {
-        final matchDate = DateTime.tryParse(m['match_date'] ?? '');
-        return matchDate != null && matchDate.isAfter(startOfMonth);
-      }).length;
-
-      _goalsThisMonth = matches.where((m) {
-        final matchDate = DateTime.tryParse(m['match_date'] ?? '');
-        return matchDate != null && matchDate.isAfter(startOfMonth);
-      }).fold<int>(0, (sum, m) {
-        final homeScore = (m['home_score'] ?? 0) as int;
-        final awayScore = (m['away_score'] ?? 0) as int;
-        return sum + homeScore + awayScore;
-      });
-
-      // Process tournaments
-      _tournamentsCount = (results[4] as List).length;
-
-      // Process users
-      _usersCount = (results[5] as List).length;
-
-      // Fetch top scorers
-      try {
-        final scorersResult = await client
-            .from('player_stats')
-            .select('player_id, goals, players(name, photo)')
-            .order('goals', ascending: false)
-            .limit(5);
-        _topScorers = List<Map<String, dynamic>>.from(scorersResult);
-      } catch (e) {
-        _topScorers = [];
-      }
-
-      // Fetch recent matches
-      try {
-        final matchesResult = await client
-            .from('matches')
-            .select('''
-              id,
-              match_date,
-              status,
-              home_score,
-              away_score,
-              home_team:teams!matches_home_team_id_fkey(name),
-              away_team:teams!matches_away_team_id_fkey(name)
-            ''')
-            .order('match_date', ascending: false)
-            .limit(5);
-        _recentMatches = List<Map<String, dynamic>>.from(matchesResult);
-      } catch (e) {
-        _recentMatches = [];
-      }
-
-      if (mounted) {
+    final result = await sl<LeagueRepository>().getGlobalStats();
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _error = 'Error al cargar estadísticas';
+        _isLoading = false;
+      }),
+      (stats) {
         setState(() {
+          // Teams, players and tournaments count the active ones, as before.
+          _leaguesCount = stats.leagues;
+          _activeLeagues = stats.activeLeagues;
+          _teamsCount = stats.activeTeams;
+          _playersCount = stats.activePlayers;
+          _matchesCount = stats.matches;
+          _tournamentsCount = stats.activeTournaments;
+          _usersCount = stats.users;
+          _matchesThisMonth = stats.matchesThisMonth;
+          _goalsThisMonth = stats.goalsThisMonth;
+          _topScorers = stats.topScorers;
+          _recentMatches = stats.recentMatches;
           _isLoading = false;
         });
         _statsController.forward();
-      }
-    } catch (e) {
-      print('❌ Error loading statistics: $e');
-      if (mounted) {
-        setState(() {
-          _error = 'Error al cargar estadísticas';
-          _isLoading = false;
-        });
-      }
-    }
+      },
+    );
   }
 
   @override
@@ -874,9 +803,8 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
             children: _topScorers.asMap().entries.map((entry) {
               final index = entry.key;
               final scorer = entry.value;
-              final player = scorer['players'] as Map<String, dynamic>?;
-              final playerName = player?['name'] ?? 'Jugador';
-              final goals = scorer['goals'] ?? 0;
+              final playerName = scorer.playerName.isEmpty ? 'Jugador' : scorer.playerName;
+              final goals = scorer.goals;
 
               return Column(
                 children: [
@@ -1038,32 +966,15 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
     );
   }
 
-  Widget _buildMatchTile(Map<String, dynamic> match) {
-    final homeTeam = match['home_team'] as Map<String, dynamic>?;
-    final awayTeam = match['away_team'] as Map<String, dynamic>?;
-    final homeName = homeTeam?['name'] ?? 'Local';
-    final awayName = awayTeam?['name'] ?? 'Visitante';
-    final homeScore = match['home_score'] ?? 0;
-    final awayScore = match['away_score'] ?? 0;
-    final status = match['status'] ?? 'scheduled';
-    final matchDate = DateTime.tryParse(match['match_date'] ?? '');
-
-    Color statusColor;
-    String statusText;
-
-    switch (status) {
-      case 'completed':
-        statusColor = _StadiumNights.neonGreen;
-        statusText = 'Finalizado';
-        break;
-      case 'in_progress':
-        statusColor = _StadiumNights.amber;
-        statusText = 'En vivo';
-        break;
-      default:
-        statusColor = _StadiumNights.textMuted;
-        statusText = 'Programado';
-    }
+  /// Recent matches are the last finished ones (`GET /admin/stats`).
+  Widget _buildMatchTile(RecentMatchInfo match) {
+    final homeName = match.homeName;
+    final awayName = match.awayName;
+    final homeScore = match.homeScore;
+    final awayScore = match.awayScore;
+    final matchDate = match.matchDate;
+    const statusColor = _StadiumNights.neonGreen;
+    const statusText = 'Finalizado';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1098,7 +1009,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                   ),
                 ),
                 child: Text(
-                  status == 'scheduled' ? 'vs' : '$homeScore - $awayScore',
+                  '$homeScore - $awayScore',
                   style: GoogleFonts.bebasNeue(
                     fontSize: 18,
                     color: statusColor,

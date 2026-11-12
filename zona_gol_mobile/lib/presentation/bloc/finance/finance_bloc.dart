@@ -33,16 +33,16 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     required GenerateFinesFromMatchUseCase generateFinesFromMatchUseCase,
     required GetFinanceTeamBalancesUseCase getFinanceTeamBalancesUseCase,
     required GetFinanceLeagueSummaryUseCase getFinanceLeagueSummaryUseCase,
-  })  : _getFinanceConfigUseCase = getFinanceConfigUseCase,
-        _updateFinanceConfigUseCase = updateFinanceConfigUseCase,
-        _getFinanceTransactionsUseCase = getFinanceTransactionsUseCase,
-        _createFinanceTransactionUseCase = createFinanceTransactionUseCase,
-        _cancelFinanceTransactionUseCase = cancelFinanceTransactionUseCase,
-        _registerPaymentUseCase = registerPaymentUseCase,
-        _generateFinesFromMatchUseCase = generateFinesFromMatchUseCase,
-        _getFinanceTeamBalancesUseCase = getFinanceTeamBalancesUseCase,
-        _getFinanceLeagueSummaryUseCase = getFinanceLeagueSummaryUseCase,
-        super(FinanceInitial()) {
+  }) : _getFinanceConfigUseCase = getFinanceConfigUseCase,
+       _updateFinanceConfigUseCase = updateFinanceConfigUseCase,
+       _getFinanceTransactionsUseCase = getFinanceTransactionsUseCase,
+       _createFinanceTransactionUseCase = createFinanceTransactionUseCase,
+       _cancelFinanceTransactionUseCase = cancelFinanceTransactionUseCase,
+       _registerPaymentUseCase = registerPaymentUseCase,
+       _generateFinesFromMatchUseCase = generateFinesFromMatchUseCase,
+       _getFinanceTeamBalancesUseCase = getFinanceTeamBalancesUseCase,
+       _getFinanceLeagueSummaryUseCase = getFinanceLeagueSummaryUseCase,
+       super(FinanceInitial()) {
     on<LoadFinanceDashboard>(_onLoadDashboard);
     on<LoadTransactions>(_onLoadTransactions);
     on<CreateTransaction>(_onCreateTransaction);
@@ -59,10 +59,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   ) async {
     emit(FinanceLoading());
 
-    final summaryResult =
-        await _getFinanceLeagueSummaryUseCase(event.leagueId);
-    final balancesResult =
-        await _getFinanceTeamBalancesUseCase(event.leagueId);
+    final summaryResult = await _getFinanceLeagueSummaryUseCase(event.leagueId);
+    final balancesResult = await _getFinanceTeamBalancesUseCase(event.leagueId);
 
     // Check if both succeeded
     summaryResult.fold(
@@ -70,10 +68,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
       (summary) {
         balancesResult.fold(
           (failure) => emit(FinanceError(message: failure.message)),
-          (balances) => emit(FinanceDashboardLoaded(
-            summary: summary,
-            balances: balances,
-          )),
+          (balances) => emit(
+            FinanceDashboardLoaded(summary: summary, balances: balances),
+          ),
         );
       },
     );
@@ -113,9 +110,10 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
         teamId: event.teamId,
         playerId: event.playerId,
         matchId: event.matchId,
-        transactionType: event.transactionType,
+        type: event.type,
         amount: event.amount,
         description: event.description,
+        notes: event.notes,
         dueDate: event.dueDate,
       ),
     );
@@ -134,8 +132,13 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     CancelTransaction event,
     Emitter<FinanceState> emit,
   ) async {
-    final result =
-        await _cancelFinanceTransactionUseCase(event.transactionId);
+    final result = await _cancelFinanceTransactionUseCase(
+      CancelFinanceTransactionParams(
+        leagueId: event.leagueId,
+        transactionId: event.transactionId,
+        reason: event.reason,
+      ),
+    );
 
     await result.fold(
       (failure) async => emit(FinanceError(message: failure.message)),
@@ -154,16 +157,24 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
 
     final result = await _registerPaymentUseCase(
       RegisterPaymentParams(
+        leagueId: event.leagueId,
         transactionId: event.transactionId,
         amount: event.amount,
         paymentMethod: event.paymentMethod,
+        paymentReference: event.paymentReference,
       ),
     );
 
     await result.fold(
       (failure) async => emit(FinanceError(message: failure.message)),
       (transaction) async {
-        emit(const FinancePaymentRegistered());
+        emit(
+          FinancePaymentRegistered(
+            message: transaction.isPaid
+                ? 'Pago completo registrado exitosamente'
+                : 'Pago parcial registrado exitosamente',
+          ),
+        );
         add(LoadTransactions(leagueId: event.leagueId));
       },
     );
@@ -189,29 +200,13 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   ) async {
     emit(FinanceLoading());
 
-    final result = await _updateFinanceConfigUseCase(
-      UpdateFinanceConfigParams(
-        leagueId: event.leagueId,
-        registrationFee: event.registrationFee,
-        monthlyFee: event.monthlyFee,
-        matchFee: event.matchFee,
-        yellowCardFine: event.yellowCardFine,
-        redCardFine: event.redCardFine,
-        noShowFine: event.noShowFine,
-        lateArrivalFine: event.lateArrivalFine,
-        uniformViolationFine: event.uniformViolationFine,
-        misconductFine: event.misconductFine,
-        forfeitFine: event.forfeitFine,
-        autoGenerateFines: event.autoGenerateFines,
-        currency: event.currency,
-      ),
-    );
+    final result = await _updateFinanceConfigUseCase(event.config);
 
     await result.fold(
       (failure) async => emit(FinanceError(message: failure.message)),
       (config) async {
         emit(const FinanceConfigUpdated());
-        add(LoadConfig(leagueId: event.leagueId));
+        add(LoadConfig(leagueId: event.config.leagueId));
       },
     );
   }
@@ -231,8 +226,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
 
     await result.fold(
       (failure) async => emit(FinanceError(message: failure.message)),
-      (transactions) async {
-        emit(FinanceFinesGenerated(count: transactions.length));
+      (count) async {
+        emit(FinanceFinesGenerated(count: count));
       },
     );
   }

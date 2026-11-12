@@ -87,6 +87,18 @@ class TeamCreatedWithOwner extends TeamState {
   List<Object?> get props => [team, ownerEmail, ownerPassword];
 }
 
+/// The team was created but its owner account was not: retry only the
+/// owner with [teamId] (`CreateTeamWithOwnerEvent.existingTeamId`).
+class TeamOwnerCreationFailed extends TeamState {
+  final String teamId;
+  final String message;
+
+  const TeamOwnerCreationFailed({required this.teamId, required this.message});
+
+  @override
+  List<Object?> get props => [teamId, message];
+}
+
 /// Team Updated State
 class TeamUpdated extends TeamState {
   final TeamEntity team;

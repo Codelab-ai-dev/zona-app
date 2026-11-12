@@ -7,17 +7,15 @@ import '../repositories/suspension_repository.dart';
 class CreateSuspensionParams extends Equatable {
   final String playerId;
   final String teamId;
-  final String leagueId;
   final String suspensionType;
-  final String? reason;
+  final String reason;
   final int matchesToServe;
 
   const CreateSuspensionParams({
     required this.playerId,
     required this.teamId,
-    required this.leagueId,
     required this.suspensionType,
-    this.reason,
+    required this.reason,
     required this.matchesToServe,
   });
 
@@ -25,7 +23,6 @@ class CreateSuspensionParams extends Equatable {
   List<Object?> get props => [
         playerId,
         teamId,
-        leagueId,
         suspensionType,
         reason,
         matchesToServe,
@@ -42,7 +39,6 @@ class CreateSuspensionUseCase {
     return repository.createSuspension(
       playerId: params.playerId,
       teamId: params.teamId,
-      leagueId: params.leagueId,
       suspensionType: params.suspensionType,
       reason: params.reason,
       matchesToServe: params.matchesToServe,

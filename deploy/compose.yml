@@ -1,0 +1,80 @@
+# Full stack: Caddy (web + /api proxy, TLS in production) -> Go API -> Postgres.
+# Usage from the repo root: `make up` (local) — see deploy/README.md.
+# Secrets come from deploy/.env (generated locally by `make env`), never from
+# this file.
+name: zona
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zona
+      POSTGRES_USER: zona
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run make env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zona -d zona"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [internal]
+
+  api:
+    build: ../backend
+    image: zona-api:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://zona:${POSTGRES_PASSWORD}@db:5432/zona?sslmode=disable
+      HTTP_ADDR: ":8080"
+      MIGRATE_ON_START: "true"
+      STORAGE_DIR: /data
+    ports:
+      # Local only: lets `npm run dev` (Vite, proxy /api -> :8080) use this API.
+      - "${API_BIND:-127.0.0.1:8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Public images (also served by Caddy at /media) and private files
+      # (identity documents: only via signed API links) in separate volumes.
+      - media_public:/data/public
+      - media_private:/data/private
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal]
+
+  web:
+    build: ../web
+    image: zona-web:local
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_BIND:-127.0.0.1:8088}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # nocopy + starting after the API: the API initializes this volume
+      # (owned by its nonroot user); Caddy only reads it.
+      - type: volume
+        source: media_public
+        target: /media
+        read_only: true
+        volume:
+          nocopy: true
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+    networks: [internal]
+
+volumes:
+  pgdata:
+  media_public:
+  media_private:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:

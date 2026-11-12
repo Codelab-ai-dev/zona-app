@@ -1,41 +1,23 @@
+import '../../core/network/json.dart';
 import '../../domain/entities/coaching_staff_entity.dart';
-import '../models/coaching_staff_model.dart';
 
-/// Coaching Staff Mapper
-/// Converts between CoachingStaffModel and CoachingStaffEntity
+/// Coaching Staff Mapper.
+///
+/// `GET /teams/{id}/coaching-staff` returns the public shape (no birth_date
+/// nor cedula); create/update responses carry every field.
 class CoachingStaffMapper {
-  static CoachingStaffEntity toEntity(CoachingStaffModel model) {
-    return CoachingStaffEntity(
-      id: model.id,
-      teamId: model.teamId,
-      name: model.name,
-      role: model.role,
-      photo: model.photo,
-      birthDate: model.birthDate,
-      cedula: model.cedula,
-      isActive: model.isActive,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-    );
-  }
+  static CoachingStaffEntity fromJson(Map<String, dynamic> json) => CoachingStaffEntity(
+        id: json.str('id'),
+        teamId: json.str('team_id'),
+        name: json.str('name'),
+        role: json.str('role'),
+        photo: _nonEmpty(json.strOrNull('photo')),
+        birthDate: json.dateOrNull('birth_date'),
+        cedula: _nonEmpty(json.strOrNull('cedula')),
+        isActive: json.boolean('is_active', true),
+        createdAt: json.dateOrNull('created_at'),
+        updatedAt: json.dateOrNull('updated_at'),
+      );
 
-  static CoachingStaffModel toModel(CoachingStaffEntity entity) {
-    return CoachingStaffModel(
-      id: entity.id,
-      teamId: entity.teamId,
-      name: entity.name,
-      role: entity.role,
-      photo: entity.photo,
-      birthDate: entity.birthDate,
-      cedula: entity.cedula,
-      isActive: entity.isActive,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    );
-  }
-
-  static CoachingStaffEntity fromJson(Map<String, dynamic> json) {
-    final model = CoachingStaffModel.fromJson(json);
-    return toEntity(model);
-  }
+  static String? _nonEmpty(String? v) => v == null || v.isEmpty ? null : v;
 }

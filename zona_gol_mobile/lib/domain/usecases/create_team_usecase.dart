@@ -8,7 +8,6 @@ class CreateTeamParams extends Equatable {
   final String name;
   final String slug;
   final String leagueId;
-  final String ownerId;
   final String? tournamentId;
   final String? logo;
   final String? description;
@@ -17,14 +16,13 @@ class CreateTeamParams extends Equatable {
     required this.name,
     required this.slug,
     required this.leagueId,
-    required this.ownerId,
     this.tournamentId,
     this.logo,
     this.description,
   });
 
   @override
-  List<Object?> get props => [name, slug, leagueId, ownerId, tournamentId, logo, description];
+  List<Object?> get props => [name, slug, leagueId, tournamentId, logo, description];
 }
 
 class CreateTeamUseCase {
@@ -37,7 +35,6 @@ class CreateTeamUseCase {
       name: params.name,
       slug: params.slug,
       leagueId: params.leagueId,
-      ownerId: params.ownerId,
       tournamentId: params.tournamentId,
       logo: params.logo,
       description: params.description,

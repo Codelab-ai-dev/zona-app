@@ -29,7 +29,8 @@ class GetFinanceTransactionsUseCase {
   GetFinanceTransactionsUseCase(this.repository);
 
   Future<Either<Failure, List<FinanceTransactionEntity>>> call(
-      GetFinanceTransactionsParams params) {
+    GetFinanceTransactionsParams params,
+  ) {
     return repository.getTransactions(
       params.leagueId,
       teamId: params.teamId,

@@ -1,27 +1,20 @@
 import 'package:dartz/dartz.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../core/errors/failures.dart';
-import '../../core/network/network_info.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/network/failure_mapper.dart';
+import '../../core/network/json.dart';
 import '../../domain/entities/player_entity.dart';
 import '../../domain/repositories/player_repository.dart';
-import '../datasources/remote/supabase_client.dart';
 import '../mappers/player_mapper.dart';
 
-/// Player Repository Implementation
-/// Handles all player-related data operations with Supabase
+/// Player repository backed by the Zona Gol API (`/teams/{id}/players`,
+/// `/players/*`, `/leagues/{id}/players*`, `/storage/*`).
 class PlayerRepositoryImpl implements PlayerRepository {
-  final SupabaseClientService supabaseService;
-  final NetworkInfo networkInfo;
+  final ApiClient api;
 
-  static const _selectFields = '''
-    id, team_id, name, jersey_number, photo, birth_date, position,
-    is_active, id_document_url, id_verified, created_at, updated_at
-  ''';
-
-  PlayerRepositoryImpl({
-    required this.supabaseService,
-    required this.networkInfo,
-  });
+  PlayerRepositoryImpl({required this.api});
 
   @override
   Future<Either<Failure, List<PlayerEntity>>> getPlayersByTeamId(
@@ -29,54 +22,29 @@ class PlayerRepositoryImpl implements PlayerRepository {
     bool onlyActive = false,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      var query = supabaseService.client
-          .from('players')
-          .select(_selectFields)
-          .eq('team_id', teamId);
-
-      if (onlyActive) {
-        query = query.eq('is_active', true);
-      }
-
-      final response = await query.order('jersey_number', ascending: true);
-
-      final players = (response as List)
-          .map((json) => PlayerMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      return Right(players);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      // The API lists the active players only (public fields).
+      final rows = await api.getAll('/teams/$teamId/players');
+      final players = rows.map(PlayerMapper.fromJson).toList();
+      return Right(onlyActive ? players.where((p) => p.isActive).toList() : players);
     } catch (e) {
-      return Left(ServerFailure('Error al obtener jugadores'));
+      return Left(failureFrom(e, 'Error al obtener los jugadores'));
     }
   }
 
   @override
   Future<Either<Failure, PlayerEntity>> getPlayerById(String playerId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
+      var player = PlayerMapper.fromJson(await api.getObject('/players/$playerId'));
+      // The verification status is private: only managers of the player see it.
+      try {
+        final v = await api.getObject('/players/$playerId/verification');
+        player = player.copyWith(idVerified: v.boolean('id_verified'), documentKey: v.strOrNull('document_key'));
+      } on ApiException catch (e) {
+        if (e.isNetwork) rethrow;
       }
-
-      final response = await supabaseService.client
-          .from('players')
-          .select(_selectFields)
-          .eq('id', playerId)
-          .single();
-
-      final player = PlayerMapper.fromJson(response);
       return Right(player);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure('Error al obtener jugador'));
+      return Left(failureFrom(e, 'Error al obtener el jugador'));
     }
   }
 
@@ -84,40 +52,25 @@ class PlayerRepositoryImpl implements PlayerRepository {
   Future<Either<Failure, PlayerEntity>> createPlayer({
     required String name,
     required String teamId,
-    String? position,
-    int? jerseyNumber,
+    required String position,
+    required int jerseyNumber,
     String? photo,
     DateTime? birthDate,
-    String? idDocumentUrl,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      final playerData = {
+      final json = await api.post('/teams/$teamId/players', {
         'name': name,
-        'team_id': teamId,
-        if (position != null) 'position': position,
-        if (jerseyNumber != null) 'jersey_number': jerseyNumber,
-        if (photo != null) 'photo': photo,
-        if (birthDate != null) 'birth_date': birthDate.toIso8601String().split('T')[0],
-        if (idDocumentUrl != null) 'id_document_url': idDocumentUrl,
-      };
-
-      final response = await supabaseService.client
-          .from('players')
-          .insert(playerData)
-          .select(_selectFields)
-          .single();
-
-      final player = PlayerMapper.fromJson(response);
-      return Right(player);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+        'position': position,
+        'jersey_number': jerseyNumber,
+        if (photo != null && photo.isNotEmpty) 'photo': photo,
+        if (birthDate != null) 'birth_date': apiDate(birthDate),
+      });
+      return Right(PlayerMapper.fromJson((json as Map).cast<String, dynamic>()));
+    } on ApiException catch (e) {
+      if (e.isConflict) return Left(ValidationFailure('El número $jerseyNumber ya está en uso en el equipo', e.code));
+      return Left(failureFrom(e));
     } catch (e) {
-      return Left(ServerFailure('Error al crear jugador'));
+      return Left(failureFrom(e, 'Error al crear el jugador'));
     }
   }
 
@@ -129,95 +82,52 @@ class PlayerRepositoryImpl implements PlayerRepository {
     int? jerseyNumber,
     String? photo,
     DateTime? birthDate,
-    bool? isActive,
-    String? idDocumentUrl,
-    bool? idVerified,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      final updateData = <String, dynamic>{};
-      if (name != null) updateData['name'] = name;
-      if (position != null) updateData['position'] = position;
-      if (jerseyNumber != null) updateData['jersey_number'] = jerseyNumber;
-      if (photo != null) updateData['photo'] = photo;
-      if (birthDate != null) updateData['birth_date'] = birthDate.toIso8601String().split('T')[0];
-      if (isActive != null) updateData['is_active'] = isActive;
-      if (idDocumentUrl != null) updateData['id_document_url'] = idDocumentUrl;
-      if (idVerified != null) updateData['id_verified'] = idVerified;
-
-      final response = await supabaseService.client
-          .from('players')
-          .update(updateData)
-          .eq('id', playerId)
-          .select(_selectFields)
-          .single();
-
-      final player = PlayerMapper.fromJson(response);
-      return Right(player);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      final json = await api.patch('/players/$playerId', {
+        if (name != null) 'name': name,
+        if (position != null) 'position': position,
+        if (jerseyNumber != null) 'jersey_number': jerseyNumber,
+        if (photo != null) 'photo': photo,
+        if (birthDate != null) 'birth_date': apiDate(birthDate),
+      });
+      return Right(PlayerMapper.fromJson((json as Map).cast<String, dynamic>()));
+    } on ApiException catch (e) {
+      if (e.isConflict) return Left(ValidationFailure('Ese número ya está en uso en el equipo', e.code));
+      return Left(failureFrom(e));
     } catch (e) {
-      return Left(ServerFailure('Error al actualizar jugador'));
+      return Left(failureFrom(e, 'Error al actualizar el jugador'));
     }
   }
 
   @override
   Future<Either<Failure, void>> deletePlayer(String playerId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      // Soft delete: set is_active to false
-      await supabaseService.client
-          .from('players')
-          .update({'is_active': false})
-          .eq('id', playerId);
-
+      await api.post('/players/$playerId/deactivate');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure('Error al eliminar jugador'));
+      return Left(failureFrom(e, 'Error al dar de baja al jugador'));
     }
   }
 
   @override
-  Future<Either<Failure, List<PlayerEntity>>> searchPlayers(
-    String query, {
-    String? teamId,
+  Future<Either<Failure, String>> uploadPlayerPhoto({
+    required String playerId,
+    required List<int> bytes,
+    required String filename,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      var supaQuery = supabaseService.client
-          .from('players')
-          .select(_selectFields)
-          .ilike('name', '%$query%');
-
-      if (teamId != null) {
-        supaQuery = supaQuery.eq('team_id', teamId);
-      }
-
-      final response = await supaQuery.order('name', ascending: true);
-
-      final players = (response as List)
-          .map((json) => PlayerMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      return Right(players);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      final res = await api.upload(
+        '/storage/objects',
+        bytes: bytes,
+        filename: filename,
+        fields: {'scope': 'player', 'scope_id': playerId},
+      );
+      final url = res.strOrNull('url');
+      if (url == null || url.isEmpty) return const Left(ServerFailure('El servidor no devolvió la URL de la foto'));
+      return Right(url);
     } catch (e) {
-      return Left(ServerFailure('Error al buscar jugadores'));
+      return Left(failureFrom(e, 'Error al subir la foto'));
     }
   }
 
@@ -227,51 +137,57 @@ class PlayerRepositoryImpl implements PlayerRepository {
     bool? idVerified,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      // Get teams in this league first
-      final teamsResponse = await supabaseService.client
-          .from('teams')
-          .select('id')
-          .eq('league_id', leagueId);
-
-      final teamIds = (teamsResponse as List)
-          .map((t) => t['id'] as String)
-          .toList();
-
-      if (teamIds.isEmpty) {
-        return const Right([]);
-      }
-
-      // Get players for all teams with team name join
-      var query = supabaseService.client
-          .from('players')
-          .select('$_selectFields, teams!inner(name)')
-          .inFilter('team_id', teamIds);
-
-      if (idVerified != null) {
-        query = query.eq('id_verified', idVerified);
-      }
-
-      final response = await query.order('name', ascending: true);
-
-      final players = (response as List).map((json) {
-        final teamData = json['teams'] as Map<String, dynamic>?;
-        final player = PlayerMapper.fromJson(json as Map<String, dynamic>);
-        // Attach team name via copyWith isn't available directly,
-        // but the entity doesn't have teamName field.
-        // We'll return the player as-is; the screen can look up team name.
-        return player;
-      }).toList();
-
+      final rows = await api.getAll('/leagues/$leagueId/players');
+      var players = rows.map(PlayerMapper.fromJson).toList();
+      if (idVerified != null) players = players.where((p) => p.idVerified == idVerified).toList();
+      players.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       return Right(players);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure('Error al obtener jugadores de la liga'));
+      return Left(failureFrom(e, 'Error al obtener los jugadores de la liga'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PlayerVerificationQueue>> getVerificationQueue(String leagueId) async {
+    try {
+      final results = await Future.wait([
+        api.getAll('/leagues/$leagueId/players/verification'),
+        api.getObject('/leagues/$leagueId/players/verification/summary'),
+      ]);
+      final rows = results[0] as List<Map<String, dynamic>>;
+      return Right(PlayerVerificationQueue(
+        players: rows.map(PlayerMapper.verificationFromJson).toList(),
+        summary: PlayerMapper.summaryFromJson(results[1] as Map<String, dynamic>),
+      ));
+    } catch (e) {
+      return Left(failureFrom(e, 'Error al obtener la verificación de jugadores'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setPlayerVerification({
+    required String playerId,
+    required bool verified,
+    String? documentKey,
+  }) async {
+    try {
+      await api.patch('/players/$playerId/verification', {
+        'verified': verified,
+        if (documentKey != null) 'document_key': documentKey,
+      });
+      return const Right(null);
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo actualizar la verificación'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> getDocumentUrl(String documentKey) async {
+    try {
+      final res = await api.getObject('/storage/url', query: {'key': documentKey});
+      return Right(res.str('url'));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo abrir el documento'));
     }
   }
 }

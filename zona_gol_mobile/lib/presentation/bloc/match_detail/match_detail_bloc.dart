@@ -1,25 +1,27 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/entities/match_entity.dart';
 import '../../../domain/repositories/match_repository.dart';
 import '../../../domain/usecases/get_match_detail_usecase.dart';
-import '../../../domain/usecases/save_match_player_stats_usecase.dart';
+import '../../../domain/usecases/update_match_result_usecase.dart';
 import 'match_detail_event.dart';
 import 'match_detail_state.dart';
 
 class MatchDetailBloc extends Bloc<MatchDetailEvent, MatchDetailState> {
   final GetMatchDetailUseCase getMatchDetailUseCase;
-  final SaveMatchPlayerStatsUseCase saveMatchPlayerStatsUseCase;
+  final UpdateMatchResultUseCase updateMatchResultUseCase;
   final MatchRepository matchRepository;
 
   MatchDetailBloc({
     required this.getMatchDetailUseCase,
-    required this.saveMatchPlayerStatsUseCase,
+    required this.updateMatchResultUseCase,
     required this.matchRepository,
   }) : super(const MatchDetailInitial()) {
     on<LoadMatchDetailEvent>(_onLoadMatchDetail);
     on<RefreshMatchDetailEvent>(_onRefreshMatchDetail);
-    on<SaveMatchPlayerStatsEvent>(_onSaveMatchPlayerStats);
+    on<SubmitMatchResultEvent>(_onSubmitMatchResult);
     on<UpdateMatchStatusEvent>(_onUpdateMatchStatus);
+    on<ToggleMatchPublishedEvent>(_onTogglePublished);
   }
 
   Future<void> _onLoadMatchDetail(
@@ -37,26 +39,24 @@ class MatchDetailBloc extends Bloc<MatchDetailEvent, MatchDetailState> {
     await _fetchMatchDetail(event.matchId, emit);
   }
 
-  Future<void> _onSaveMatchPlayerStats(
-    SaveMatchPlayerStatsEvent event,
+  Future<void> _onSubmitMatchResult(
+    SubmitMatchResultEvent event,
     Emitter<MatchDetailState> emit,
   ) async {
-    emit(const MatchPlayerStatsSaving());
+    emit(const MatchResultSaving());
 
-    final result = await saveMatchPlayerStatsUseCase(
-      SaveMatchPlayerStatsParams(
-        matchId: event.matchId,
-        homeScore: event.homeScore,
-        awayScore: event.awayScore,
-        homeEntries: event.homeEntries,
-        awayEntries: event.awayEntries,
-        observations: event.observations,
+    final result = await updateMatchResultUseCase(
+      UpdateMatchResultParams(
+        matchId: event.match.id,
+        homeTeamId: event.match.homeTeamId,
+        awayTeamId: event.match.awayTeamId,
+        result: event.result,
       ),
     );
 
     result.fold(
-      (failure) => emit(MatchPlayerStatsError(failure.message)),
-      (_) => emit(const MatchPlayerStatsSaved()),
+      (failure) => emit(MatchResultError(failure.message)),
+      (_) => emit(const MatchResultSaved()),
     );
   }
 
@@ -64,7 +64,7 @@ class MatchDetailBloc extends Bloc<MatchDetailEvent, MatchDetailState> {
     UpdateMatchStatusEvent event,
     Emitter<MatchDetailState> emit,
   ) async {
-    emit(const MatchStatusUpdating());
+    emit(const MatchActionInProgress());
 
     final result = await matchRepository.updateMatchStatus(
       matchId: event.matchId,
@@ -72,8 +72,28 @@ class MatchDetailBloc extends Bloc<MatchDetailEvent, MatchDetailState> {
     );
 
     result.fold(
-      (failure) => emit(MatchStatusUpdateError(failure.message)),
-      (match) => emit(MatchStatusUpdated(match)),
+      (failure) => emit(MatchActionError(failure.message)),
+      (_) => emit(MatchActionSuccess(
+          'Estado actualizado: ${event.status.displayText}')),
+    );
+  }
+
+  Future<void> _onTogglePublished(
+    ToggleMatchPublishedEvent event,
+    Emitter<MatchDetailState> emit,
+  ) async {
+    emit(const MatchActionInProgress());
+
+    final result = await matchRepository.setMatchPublished(
+      event.matchId,
+      event.isPublished,
+    );
+
+    result.fold(
+      (failure) => emit(MatchActionError(failure.message)),
+      (_) => emit(MatchActionSuccess(event.isPublished
+          ? 'Partido publicado'
+          : 'Partido oculto al público')),
     );
   }
 
@@ -89,8 +109,6 @@ class MatchDetailBloc extends Bloc<MatchDetailEvent, MatchDetailState> {
       (failure) => emit(MatchDetailError(failure.message)),
       (detail) => emit(MatchDetailLoaded(
         match: detail.match,
-        homePlayerStats: detail.homePlayerStats,
-        awayPlayerStats: detail.awayPlayerStats,
         refereeObservations: detail.refereeObservations,
       )),
     );

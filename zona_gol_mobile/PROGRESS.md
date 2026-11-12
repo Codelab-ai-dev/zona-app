@@ -1,5 +1,27 @@
 # 📊 Progress Report - Zona Gol Mobile
 
+## ✅ Estado actual (2026-11-12): migración al backend en Go
+
+La app ya no usa Supabase. Toda la capa de datos pasa por la API de Zona Gol (`../backend`, `/api/v1`).
+
+- ✅ `core/network/api_client.dart`: cliente HTTP con Bearer token, refresh automático (single flight) y aviso `sessionExpired`
+- ✅ `core/network/token_store.dart`: access/refresh tokens en Secure Storage
+- ✅ `core/network/api_exception.dart` + `failure_mapper.dart`: errores de la API → `Failure`
+- ✅ 13 repositorios migrados a `ApiClient`: auth, ligas, torneos, equipos, jugadores, estadísticas, asistencia, suspensiones, cuerpo técnico, partidos, finanzas, WhatsApp y administración de usuarios
+- ✅ Mappers en `data/mappers/` (JSON de la API → entidades); se eliminaron los modelos Freezed que mapeaban tablas de Supabase (solo queda `user_model.dart`)
+- ✅ Estadísticas de jugador derivadas de los eventos de partido en el backend
+- ✅ `supabase_flutter` y `supabase_client.dart` eliminados
+- ✅ 128 tests (`flutter test`) en `test/` por módulo
+
+### Configuración
+`API_BASE_URL` (default `http://localhost:8080`), `WEB_BASE_URL` y `ENV`. Ver `GETTING_STARTED.md`.
+
+---
+
+# 🗂️ Histórico: Sesión 1 (2025-12-17)
+
+> Lo que sigue es el reporte original. Los modelos Freezed y el cliente de Supabase que menciona fueron reemplazados por mappers y `ApiClient`.
+
 ## ✅ Completado (Sesión 1)
 
 ### 1. Foundation & Architecture ✅
@@ -51,12 +73,6 @@
 - ✅ Validation helpers
 
 ### 4. Data Services ✅ (5 servicios)
-**Remote:**
-- ✅ `supabase_client.dart` - Cliente Supabase singleton
-  - Auth, Database, Storage, Realtime, Functions
-  - Métodos helper para operaciones comunes
-  - Debug info integrado
-
 **Local:**
 - ✅ `secure_storage_service.dart` - Storage seguro
   - Flutter Secure Storage (Keychain/Keystore)
@@ -128,10 +144,9 @@
 
 ## 🚀 Cómo Ejecutar
 
-### 1. Configurar Variables de Entorno
+### 1. Levantar el backend
 ```bash
-export SUPABASE_URL="https://tu-proyecto.supabase.co"
-export SUPABASE_ANON_KEY="tu_key_aqui"
+cd ../backend && make db-up && make run
 ```
 
 ### 2. Ejecutar en Development
@@ -145,7 +160,6 @@ Al ejecutar, verás en consola:
 🔧 APP CONFIGURATION
 🚀 Initializing services...
 💾 HIVE CACHE INFO
-🔧 SUPABASE CLIENT INFO
 📡 CONNECTIVITY MANAGER INFO
 ✅ All services initialized successfully
 ```
@@ -273,12 +287,10 @@ Al ejecutar, verás en consola:
 - Type-safe
 - Perfecto para offline-first
 
-### Por qué Supabase
-- Backend-as-a-Service completo
-- PostgreSQL real
-- Row Level Security
-- Realtime subscriptions
-- Auth integrado
+### Por qué una API propia en Go
+- Reemplazó a Supabase: la lógica de negocio y los permisos por rol viven en el backend
+- Un solo backend para la app móvil y el panel web
+- PostgreSQL detrás de una API versionada (`/api/v1`)
 
 ---
 
@@ -316,9 +328,7 @@ Al ejecutar, verás en consola:
    - Solución: Implementar con BLoC states
 
 3. **No hay logout completo**
-   - Solo se llama a Supabase signOut
-   - No limpia secure storage ni cache
-   - Solución: Implementar en AuthBloc
+   - Resuelto: `ApiClient.logout()` revoca el refresh token y limpia la sesión
 
 ---
 
@@ -337,7 +347,7 @@ Al ejecutar, verás en consola:
 ```
 1. Crear interfaces en domain/repositories
 2. Implementar en data/repositories
-3. Integrar con Supabase client
+3. Integrar con `ApiClient`
 4. Agregar error handling
 5. Testing
 ```
@@ -347,6 +357,6 @@ Dime qué feature necesitas y la implementamos juntos.
 
 ---
 
-**Última actualización:** 2025-12-17
+**Última actualización:** 2026-11-12
 **Estado:** Foundation Complete ✅
 **Próximo Milestone:** Authentication o Repositories

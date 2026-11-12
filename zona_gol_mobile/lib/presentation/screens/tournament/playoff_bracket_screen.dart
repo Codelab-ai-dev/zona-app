@@ -17,7 +17,6 @@ class _SN {
   static const Color card = Color(0xFF161B22);
   static const Color gold = Color(0xFFFFD700);
   static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
@@ -1011,10 +1010,22 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
   Future<void> _saveBracket() async {
     setState(() => _isSaving = true);
 
-    final result = await _matchRepo.createMatches(_generatedMatches);
+    // The server builds the same bracket from the seeds (1st seed first).
+    final result = await _matchRepo.generatePlayoffs(PlayoffRequest(
+      tournamentId: widget.tournament.id,
+      numTeams: _bracketSize,
+      startDate: _startDate,
+      startTime:
+          '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
+      fieldNumber: _fieldNumber,
+      thirdPlaceMatch: _thirdPlace,
+      homeAndAway: _twoLegs,
+      teamIds: _selectedTeams.take(_bracketSize).map((t) => t.id).toList(),
+    ));
 
     result.fold(
       (failure) {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1026,6 +1037,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
         }
       },
       (matches) {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         if (mounted) {
           showDialog(

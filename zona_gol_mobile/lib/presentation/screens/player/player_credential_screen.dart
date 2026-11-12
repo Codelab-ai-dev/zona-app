@@ -17,7 +17,6 @@ import '../../bloc/player/player_state.dart';
 class _SN {
   static const Color backgroundDark = Color(0xFF050508);
   static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color error = Color(0xFFEF4444);

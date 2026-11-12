@@ -9,7 +9,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/match_entity.dart';
-import '../../../domain/entities/player_stats_entity.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../bloc/match_detail/match_detail_bloc.dart';
 import '../../bloc/match_detail/match_detail_event.dart';
@@ -73,12 +72,10 @@ class _MatchDetailView extends StatelessWidget {
         appBar: _buildAppBar(context),
         body: BlocConsumer<MatchDetailBloc, MatchDetailState>(
           listener: (context, state) {
-            if (state is MatchStatusUpdated) {
+            if (state is MatchActionSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Estado actualizado: ${state.match.statusText}',
-                  ),
+                  content: Text(state.message),
                   backgroundColor: _StadiumNights.success,
                 ),
               );
@@ -86,7 +83,7 @@ class _MatchDetailView extends StatelessWidget {
               context
                   .read<MatchDetailBloc>()
                   .add(RefreshMatchDetailEvent(matchId: matchId));
-            } else if (state is MatchStatusUpdateError) {
+            } else if (state is MatchActionError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -103,9 +100,9 @@ class _MatchDetailView extends StatelessWidget {
               current is MatchDetailLoading ||
               current is MatchDetailLoaded ||
               current is MatchDetailError ||
-              current is MatchStatusUpdating,
+              current is MatchActionInProgress,
           builder: (context, state) {
-            if (state is MatchDetailLoading || state is MatchStatusUpdating) {
+            if (state is MatchDetailLoading || state is MatchActionInProgress) {
               return _buildLoadingState();
             }
 
@@ -310,15 +307,29 @@ class _MatchDetailView extends StatelessWidget {
                 _buildStartMatchButton(context, match),
                 const SizedBox(height: 10),
               ],
-              if (match.isPending) ...[
+              if (match.canEnterResult) ...[
                 _buildEditResultButton(context, match),
                 const SizedBox(height: 10),
               ],
               if (match.status != MatchStatus.finished &&
                   match.status != MatchStatus.cancelled) ...[
                 _buildCancelMatchButton(context, match),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
               ],
+              if (match.status == MatchStatus.cancelled) ...[
+                _buildReactivateMatchButton(context, match),
+                const SizedBox(height: 10),
+              ],
+              _PublishToggleCard(
+                isPublished: match.isPublished,
+                onChanged: (value) => context.read<MatchDetailBloc>().add(
+                      ToggleMatchPublishedEvent(
+                        matchId: match.id,
+                        isPublished: value,
+                      ),
+                    ),
+              ),
+              const SizedBox(height: 16),
             ],
             // Referee observations card (for finished matches)
             if (match.status == MatchStatus.finished &&
@@ -328,8 +339,8 @@ class _MatchDetailView extends StatelessWidget {
               const SizedBox(height: 16),
             ],
             _PlayerStatsTabs(
-              homePlayerStats: state.homePlayerStats,
-              awayPlayerStats: state.awayPlayerStats,
+              homePlayerStats: _PlayerLine.fromEvents(match, match.homeTeamId),
+              awayPlayerStats: _PlayerLine.fromEvents(match, match.awayTeamId),
               homeTeamName: match.homeTeam?.name ?? 'Local',
               awayTeamName: match.awayTeam?.name ?? 'Visitante',
             ),
@@ -365,7 +376,7 @@ class _MatchDetailView extends StatelessWidget {
             const Icon(Icons.edit, color: Colors.black, size: 20),
             const SizedBox(width: 8),
             Text(
-              'EDITAR RESULTADO',
+              match.isPending ? 'REGISTRAR RESULTADO' : 'EDITAR RESULTADO',
               style: GoogleFonts.bebasNeue(
                 fontSize: 16,
                 color: Colors.black,
@@ -380,13 +391,16 @@ class _MatchDetailView extends StatelessWidget {
 
   void _openResultEntryWizard(BuildContext context, MatchEntity match) {
     final bloc = context.read<MatchDetailBloc>();
+    final state = bloc.state;
+    final observations =
+        state is MatchDetailLoaded ? state.refereeObservations : null;
     Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => MatchResultEntryScreen(
           match: match,
-          user: user,
           matchDetailBloc: bloc,
+          initialObservations: observations,
         ),
       ),
     ).then((saved) {
@@ -527,7 +541,7 @@ class _MatchDetailView extends StatelessWidget {
         match,
         MatchStatus.cancelled,
         'CANCELAR PARTIDO',
-        'El partido será marcado como "Cancelado". Esta acción no se puede deshacer.',
+        'El partido será marcado como "Cancelado". Podrás reactivarlo después.',
         _StadiumNights.error,
       ),
       child: Container(
@@ -551,6 +565,45 @@ class _MatchDetailView extends StatelessWidget {
               style: GoogleFonts.bebasNeue(
                 fontSize: 14,
                 color: _StadiumNights.error,
+                letterSpacing: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReactivateMatchButton(BuildContext context, MatchEntity match) {
+    return GestureDetector(
+      onTap: () => _showStatusConfirmDialog(
+        context,
+        match,
+        MatchStatus.scheduled,
+        'REACTIVAR PARTIDO',
+        'El partido volverá a estado "Programado".',
+        _StadiumNights.neonBlue,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _StadiumNights.neonBlue.withOpacity(0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.restore, color: _StadiumNights.neonBlue, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'REACTIVAR PARTIDO',
+              style: GoogleFonts.bebasNeue(
+                fontSize: 14,
+                color: _StadiumNights.neonBlue,
                 letterSpacing: 2,
               ),
             ),
@@ -905,9 +958,46 @@ class _MatchInfoCard extends StatelessWidget {
 
 // ==================== Player Stats Tabs ====================
 
+/// Per-player totals of a team in this match, derived from the goal and
+/// card events
+class _PlayerLine {
+  final String playerName;
+  final int? jerseyNumber;
+  int goals = 0;
+  int assists = 0;
+  int yellowCards = 0;
+  int redCards = 0;
+
+  _PlayerLine(this.playerName, this.jerseyNumber);
+
+  static List<_PlayerLine> fromEvents(MatchEntity match, String teamId) {
+    final lines = <String, _PlayerLine>{};
+    _PlayerLine line(String id, String? name, int? jersey) =>
+        lines.putIfAbsent(id, () => _PlayerLine(name ?? 'Jugador', jersey));
+
+    for (final g in match.goals.where((g) => g.teamId == teamId)) {
+      final scorer = line(g.playerId, g.playerName, g.playerJersey);
+      if (!g.isOwnGoal) scorer.goals++;
+      if (g.assistPlayerId != null) {
+        line(g.assistPlayerId!, g.assistPlayerName, null).assists++;
+      }
+    }
+    for (final c in match.cards.where((c) => c.teamId == teamId)) {
+      final player = line(c.playerId, c.playerName, c.playerJersey);
+      if (c.cardType == CardType.red) {
+        player.redCards++;
+      } else {
+        player.yellowCards++;
+      }
+    }
+    return lines.values.toList()
+      ..sort((a, b) => (a.jerseyNumber ?? 999).compareTo(b.jerseyNumber ?? 999));
+  }
+}
+
 class _PlayerStatsTabs extends StatelessWidget {
-  final List<PlayerStatsEntity> homePlayerStats;
-  final List<PlayerStatsEntity> awayPlayerStats;
+  final List<_PlayerLine> homePlayerStats;
+  final List<_PlayerLine> awayPlayerStats;
   final String homeTeamName;
   final String awayTeamName;
 
@@ -967,8 +1057,8 @@ class _PlayerStatsTabs extends StatelessWidget {
   }
 
   double _calculateTabHeight(
-    List<PlayerStatsEntity> home,
-    List<PlayerStatsEntity> away,
+    List<_PlayerLine> home,
+    List<_PlayerLine> away,
   ) {
     final maxRows =
         home.length > away.length ? home.length : away.length;
@@ -981,7 +1071,7 @@ class _PlayerStatsTabs extends StatelessWidget {
 // ==================== Player Stats Table ====================
 
 class _PlayerStatsTable extends StatelessWidget {
-  final List<PlayerStatsEntity> stats;
+  final List<_PlayerLine> stats;
 
   const _PlayerStatsTable({required this.stats});
 
@@ -1005,7 +1095,7 @@ class _PlayerStatsTable extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No hay estadísticas registradas',
+              'No hay goles ni tarjetas registrados',
               style: GoogleFonts.outfit(
                 fontSize: 14,
                 color: _StadiumNights.textMuted,
@@ -1040,7 +1130,6 @@ class _PlayerStatsTable extends StatelessWidget {
                   _headerCell('A', 32),
                   _headerCell('TA', 32),
                   _headerCell('TR', 32),
-                  _headerCell('MIN', 40),
                 ],
               ),
             ),
@@ -1108,11 +1197,6 @@ class _PlayerStatsTable extends StatelessWidget {
                           ? _StadiumNights.error
                           : _StadiumNights.textMuted,
                     ),
-                    _dataCell(
-                      '${player.minutesPlayed}',
-                      40,
-                      color: _StadiumNights.textSecondary,
-                    ),
                   ],
                 ),
               );
@@ -1154,6 +1238,68 @@ class _PlayerStatsTable extends StatelessWidget {
           color: color ?? _StadiumNights.textPrimary,
           fontWeight: FontWeight.w500,
         ),
+      ),
+    );
+  }
+}
+
+// ==================== Publish Toggle ====================
+
+class _PublishToggleCard extends StatelessWidget {
+  final bool isPublished;
+  final ValueChanged<bool> onChanged;
+
+  const _PublishToggleCard({required this.isPublished, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _StadiumNights.cardDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isPublished ? Icons.visibility : Icons.visibility_off,
+            size: 20,
+            color: isPublished ? _StadiumNights.neonGreen : _StadiumNights.textMuted,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isPublished ? 'PUBLICADO' : 'NO PUBLICADO',
+                  style: GoogleFonts.bebasNeue(
+                    fontSize: 14,
+                    color: isPublished
+                        ? _StadiumNights.neonGreen
+                        : _StadiumNights.textSecondary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                Text(
+                  isPublished
+                      ? 'Visible en el portal público'
+                      : 'Solo lo ven los administradores',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: _StadiumNights.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isPublished,
+            onChanged: onChanged,
+            activeColor: _StadiumNights.neonGreen,
+          ),
+        ],
       ),
     );
   }

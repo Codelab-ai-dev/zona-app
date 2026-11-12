@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/match_entity.dart';
-import '../../../domain/repositories/player_stats_repository.dart';
 
 abstract class MatchDetailEvent extends Equatable {
   const MatchDetailEvent();
@@ -28,26 +27,15 @@ class RefreshMatchDetailEvent extends MatchDetailEvent {
   List<Object?> get props => [matchId];
 }
 
-class SaveMatchPlayerStatsEvent extends MatchDetailEvent {
-  final String matchId;
-  final int homeScore;
-  final int awayScore;
-  final List<PlayerMatchStatEntry> homeEntries;
-  final List<PlayerMatchStatEntry> awayEntries;
-  final String? observations;
+/// Save the result (score, goals, cards, observations) of a match
+class SubmitMatchResultEvent extends MatchDetailEvent {
+  final MatchEntity match;
+  final MatchResultInput result;
 
-  const SaveMatchPlayerStatsEvent({
-    required this.matchId,
-    required this.homeScore,
-    required this.awayScore,
-    required this.homeEntries,
-    required this.awayEntries,
-    this.observations,
-  });
+  const SubmitMatchResultEvent({required this.match, required this.result});
 
   @override
-  List<Object?> get props =>
-      [matchId, homeScore, awayScore, homeEntries, awayEntries, observations];
+  List<Object?> get props => [match, result];
 }
 
 class UpdateMatchStatusEvent extends MatchDetailEvent {
@@ -61,4 +49,18 @@ class UpdateMatchStatusEvent extends MatchDetailEvent {
 
   @override
   List<Object?> get props => [matchId, status];
+}
+
+/// Publish or hide the match for the public
+class ToggleMatchPublishedEvent extends MatchDetailEvent {
+  final String matchId;
+  final bool isPublished;
+
+  const ToggleMatchPublishedEvent({
+    required this.matchId,
+    required this.isPublished,
+  });
+
+  @override
+  List<Object?> get props => [matchId, isPublished];
 }

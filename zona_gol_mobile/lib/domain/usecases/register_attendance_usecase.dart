@@ -1,24 +1,19 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import '../../core/errors/failures.dart';
-import '../entities/attendance_entity.dart';
 import '../repositories/attendance_repository.dart';
 
 class RegisterAttendanceParams extends Equatable {
   final String playerId;
-  final String teamId;
-  final String? matchId;
-  final String scannedByUserId;
+  final String matchId;
 
   const RegisterAttendanceParams({
     required this.playerId,
-    required this.teamId,
-    this.matchId,
-    required this.scannedByUserId,
+    required this.matchId,
   });
 
   @override
-  List<Object?> get props => [playerId, teamId, matchId, scannedByUserId];
+  List<Object?> get props => [playerId, matchId];
 }
 
 class RegisterAttendanceUseCase {
@@ -26,13 +21,11 @@ class RegisterAttendanceUseCase {
 
   RegisterAttendanceUseCase(this.repository);
 
-  Future<Either<Failure, AttendanceEntity>> call(
+  Future<Either<Failure, AttendanceResult>> call(
       RegisterAttendanceParams params) {
     return repository.registerAttendance(
       playerId: params.playerId,
-      teamId: params.teamId,
       matchId: params.matchId,
-      scannedByUserId: params.scannedByUserId,
     );
   }
 }

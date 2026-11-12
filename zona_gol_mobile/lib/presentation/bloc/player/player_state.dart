@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/player_entity.dart';
+import '../../../domain/entities/player_verification_entity.dart';
 
 /// Player States
 abstract class PlayerState extends Equatable {
@@ -79,14 +80,27 @@ class LeaguePlayersLoaded extends PlayerState {
   List<Object?> get props => [players];
 }
 
-/// Player Verified State
-class PlayerVerified extends PlayerState {
-  final PlayerEntity player;
+/// Verification queue of a league
+class PlayerVerificationLoaded extends PlayerState {
+  final List<PlayerVerificationEntity> players;
+  final VerificationSummaryEntity summary;
 
-  const PlayerVerified(this.player);
+  const PlayerVerificationLoaded(this.players, this.summary);
 
   @override
-  List<Object?> get props => [player];
+  List<Object?> get props => [players, summary];
+}
+
+/// Player Verified State (verified or verification removed)
+class PlayerVerified extends PlayerState {
+  final String playerId;
+  final String playerName;
+  final bool verified;
+
+  const PlayerVerified({required this.playerId, required this.playerName, required this.verified});
+
+  @override
+  List<Object?> get props => [playerId, playerName, verified];
 }
 
 /// Error State

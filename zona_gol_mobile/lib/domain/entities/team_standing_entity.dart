@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 class TeamStandingEntity extends Equatable {
   final String id;
   final String teamId;
-  final String? leagueId;
   final String? tournamentId;
 
   // Team info
@@ -31,16 +30,12 @@ class TeamStandingEntity extends Equatable {
   // Group info (for group_knockout tournaments)
   final String? groupName;
 
-  // Additional stats
-  final int? cleanSheets;
-  final int? yellowCards;
-  final int? redCards;
+  // Last results, e.g. "WDL"
   final String? recentForm;
 
   const TeamStandingEntity({
     required this.id,
     required this.teamId,
-    this.leagueId,
     this.tournamentId,
     required this.teamName,
     this.teamLogo,
@@ -55,9 +50,6 @@ class TeamStandingEntity extends Equatable {
     this.points = 0,
     this.pointsAdjustment = 0,
     this.adjustmentReason,
-    this.cleanSheets,
-    this.yellowCards,
-    this.redCards,
     this.recentForm,
   });
 
@@ -81,7 +73,6 @@ class TeamStandingEntity extends Equatable {
   List<Object?> get props => [
         id,
         teamId,
-        leagueId,
         tournamentId,
         teamName,
         teamLogo,
@@ -96,9 +87,6 @@ class TeamStandingEntity extends Equatable {
         points,
         pointsAdjustment,
         adjustmentReason,
-        cleanSheets,
-        yellowCards,
-        redCards,
         recentForm,
       ];
 }

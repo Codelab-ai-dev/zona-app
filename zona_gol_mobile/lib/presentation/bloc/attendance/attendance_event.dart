@@ -8,7 +8,7 @@ abstract class AttendanceEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Scan a QR code and parse player data
+/// A QR code was read: parse it and look up the player's matches today.
 class ScanQRCodeEvent extends AttendanceEvent {
   final String qrData;
 
@@ -18,44 +18,29 @@ class ScanQRCodeEvent extends AttendanceEvent {
   List<Object?> get props => [qrData];
 }
 
-/// Register attendance for a scanned player
-class RegisterAttendanceEvent extends AttendanceEvent {
+/// Look up (again) the scanned player's matches for today.
+class LoadTodayMatchesEvent extends AttendanceEvent {
   final QRPlayerData playerData;
-  final String? matchId;
-  final String scannedByUserId;
 
-  const RegisterAttendanceEvent({
-    required this.playerData,
-    this.matchId,
-    required this.scannedByUserId,
-  });
+  const LoadTodayMatchesEvent({required this.playerData});
 
   @override
-  List<Object?> get props => [playerData, matchId, scannedByUserId];
+  List<Object?> get props => [playerData];
 }
 
-/// Check if player already has attendance for a match
-class CheckAttendanceEvent extends AttendanceEvent {
-  final String playerId;
-  final String? matchId;
-
-  const CheckAttendanceEvent({
-    required this.playerId,
-    this.matchId,
-  });
-
-  @override
-  List<Object?> get props => [playerId, matchId];
-}
-
-/// Load all attendance records for a match
-class LoadMatchAttendanceEvent extends AttendanceEvent {
+/// The operator picked one of several matches.
+class SelectMatchEvent extends AttendanceEvent {
   final String matchId;
 
-  const LoadMatchAttendanceEvent({required this.matchId});
+  const SelectMatchEvent({required this.matchId});
 
   @override
   List<Object?> get props => [matchId];
+}
+
+/// Register the scanned player's check-in for the selected match.
+class RegisterAttendanceEvent extends AttendanceEvent {
+  const RegisterAttendanceEvent();
 }
 
 /// Reset scanner state for next scan

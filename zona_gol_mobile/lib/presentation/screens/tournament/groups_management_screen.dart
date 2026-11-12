@@ -75,6 +75,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
     final result = await _teamRepo.getTeamsByTournamentId(
       widget.tournament.id,
       onlyActive: true,
+      leagueId: widget.tournament.leagueId,
     );
 
     result.fold(
@@ -125,7 +126,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
 
     // Reload to get fresh data
     await _loadTeams();
-    setState(() => _isSaving = false);
+    if (mounted) setState(() => _isSaving = false);
   }
 
   Future<void> _autoDistribute() async {
@@ -162,25 +163,29 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
     // Shuffle and distribute
     final shuffled = List<TeamEntity>.from(_teams)..shuffle(Random());
 
+    var failed = 0;
     for (int i = 0; i < shuffled.length; i++) {
       final groupIndex = i % _numberOfGroups;
       final groupName = String.fromCharCode(65 + groupIndex);
-      await _teamRepo.assignToTournament(
+      final result = await _teamRepo.assignToTournament(
         shuffled[i].id,
         widget.tournament.id,
         groupName: groupName,
       );
+      if (result.isLeft()) failed++;
     }
 
     await _loadTeams();
+    if (!mounted) return;
     setState(() => _isSaving = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              '${_teams.length} equipos distribuidos en $_numberOfGroups grupos'),
-          backgroundColor: _SN.neonGreen.withValues(alpha: 0.8),
+          content: Text(failed == 0
+              ? '${_teams.length} equipos distribuidos en $_numberOfGroups grupos'
+              : 'No se pudieron asignar $failed equipos. Intenta de nuevo.'),
+          backgroundColor: failed == 0 ? _SN.neonGreen.withValues(alpha: 0.8) : _SN.error,
         ),
       );
     }

@@ -1309,12 +1309,26 @@ class _CreateSuspensionSheetState extends State<_CreateSuspensionSheet> {
       return;
     }
 
+    final reason = _reasonCtrl.text.trim();
+    if (reason.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Ingresa la raz\u00f3n de la suspensi\u00f3n'),
+          backgroundColor: _SN.error,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
     widget.suspensionBloc.add(CreateSuspensionEvent(
       playerId: _selectedPlayer!['id'] as String,
       teamId: _selectedPlayer!['team_id'] as String,
       leagueId: widget.leagueId,
       suspensionType: _suspensionType,
-      reason: _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
+      reason: reason,
       matchesToServe: matches,
     ));
 

@@ -15,27 +15,10 @@ class GetStandingsByTournamentUseCase {
     GetStandingsParams params,
   ) async {
     if (params.tournamentId.isEmpty) {
-      return Left(ValidationFailure('Tournament ID cannot be empty'));
+      return const Left(ValidationFailure('ID del torneo es requerido'));
     }
 
     return await repository.getStandingsByTournament(params.tournamentId);
-  }
-}
-
-/// Get Standings by League Use Case
-class GetStandingsByLeagueUseCase {
-  final TeamRepository repository;
-
-  GetStandingsByLeagueUseCase(this.repository);
-
-  Future<Either<Failure, List<TeamStandingEntity>>> call(
-    GetStandingsByLeagueParams params,
-  ) async {
-    if (params.leagueId.isEmpty) {
-      return Left(ValidationFailure('League ID cannot be empty'));
-    }
-
-    return await repository.getStandingsByLeague(params.leagueId);
   }
 }
 
@@ -47,14 +30,4 @@ class GetStandingsParams extends Equatable {
 
   @override
   List<Object?> get props => [tournamentId];
-}
-
-/// Parameters for GetStandingsByLeagueUseCase
-class GetStandingsByLeagueParams extends Equatable {
-  final String leagueId;
-
-  const GetStandingsByLeagueParams({required this.leagueId});
-
-  @override
-  List<Object?> get props => [leagueId];
 }

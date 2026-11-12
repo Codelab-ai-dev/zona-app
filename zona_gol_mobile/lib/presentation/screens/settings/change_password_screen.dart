@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../domain/usecases/change_password_usecase.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/auth/auth_event.dart';
 
 class _S {
   static const Color backgroundDark = Color(0xFF050508);
@@ -28,13 +31,15 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _currentController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  bool _obscureCurrent = true;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _loading = false;
 
-  bool get _hasMinLength => _passwordController.text.length >= 8;
+  bool get _hasMinLength => _passwordController.text.length >= 10 && _passwordController.text.length <= 72;
   bool get _hasUppercase => _passwordController.text.contains(RegExp(r'[A-Z]'));
   bool get _hasLowercase => _passwordController.text.contains(RegExp(r'[a-z]'));
   bool get _hasNumber => _passwordController.text.contains(RegExp(r'[0-9]'));
@@ -42,10 +47,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool get _passwordsMatch =>
       _passwordController.text.isNotEmpty &&
       _passwordController.text == _confirmController.text;
-  bool get _isValid => _hasMinLength && _hasUppercase && _hasLowercase && _hasNumber && _hasSpecial && _passwordsMatch;
+  bool get _isValid => _currentController.text.isNotEmpty && _hasMinLength && _hasUppercase && _hasLowercase && _hasNumber && _hasSpecial && _passwordsMatch;
 
   @override
   void dispose() {
+    _currentController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -86,6 +92,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 16),
+
+                // Current password (the server requires it)
+                _buildTextField(
+                  controller: _currentController,
+                  label: 'Contraseña actual',
+                  icon: Icons.key_outlined,
+                  obscure: _obscureCurrent,
+                  onToggle: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                  onChanged: (_) => setState(() {}),
+                ),
                 const SizedBox(height: 16),
 
                 // Password field
@@ -229,7 +246,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             style: GoogleFonts.outfit(fontSize: 12, color: _S.textMuted, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildCheck('Mínimo 8 caracteres', _hasMinLength),
+          _buildCheck('Entre 10 y 72 caracteres', _hasMinLength),
           _buildCheck('Una letra mayúscula', _hasUppercase),
           _buildCheck('Una letra minúscula', _hasLowercase),
           _buildCheck('Un número', _hasNumber),
@@ -267,7 +284,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     try {
       final useCase = sl<ChangePasswordUseCase>();
-      final result = await useCase(ChangePasswordParams(newPassword: _passwordController.text));
+      final result = await useCase(ChangePasswordParams(
+        currentPassword: _currentController.text,
+        newPassword: _passwordController.text,
+      ));
 
       if (!mounted) return;
 
@@ -276,7 +296,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           setState(() => _loading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(failure.message ?? 'Error al cambiar contraseña'),
+              content: Text(failure.message),
               backgroundColor: _S.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -286,13 +306,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         (_) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Contraseña cambiada exitosamente'),
+              content: const Text('Contraseña cambiada. Inicia sesión con la nueva contraseña.'),
               backgroundColor: _S.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           );
-          Navigator.pop(context);
+          // The server closes every session when the password changes.
+          context.read<AuthBloc>().add(const LogoutEvent());
         },
       );
     } catch (e) {

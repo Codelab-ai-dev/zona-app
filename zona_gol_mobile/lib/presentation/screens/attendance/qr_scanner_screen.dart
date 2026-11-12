@@ -23,42 +23,27 @@ class _SN {
   static const Color textMuted = Color(0xFF6B7280);
 }
 
-/// QR Scanner Screen — scans player QR codes for attendance
+/// QR Scanner Screen — scans player QR codes for attendance.
+/// The match is resolved from the scanned player: the team's matches today.
 class QrScannerScreen extends StatelessWidget {
   final UserEntity user;
-  final String? matchId;
-  final String? matchName;
 
   const QrScannerScreen({
     super.key,
     required this.user,
-    this.matchId,
-    this.matchName,
   });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<AttendanceBloc>(),
-      child: _QrScannerView(
-        user: user,
-        matchId: matchId,
-        matchName: matchName,
-      ),
+      child: const _QrScannerView(),
     );
   }
 }
 
 class _QrScannerView extends StatefulWidget {
-  final UserEntity user;
-  final String? matchId;
-  final String? matchName;
-
-  const _QrScannerView({
-    required this.user,
-    this.matchId,
-    this.matchName,
-  });
+  const _QrScannerView();
 
   @override
   State<_QrScannerView> createState() => _QrScannerViewState();
@@ -100,13 +85,8 @@ class _QrScannerViewState extends State<_QrScannerView> {
       backgroundColor: _SN.backgroundDark,
       body: BlocConsumer<AttendanceBloc, AttendanceState>(
         listener: (context, state) {
-          if (state is QRScanned) {
+          if (state is TodayMatchesLoading) {
             _scannerController.stop();
-            // Check if already checked in
-            context.read<AttendanceBloc>().add(CheckAttendanceEvent(
-              playerId: state.playerData.playerId,
-              matchId: widget.matchId,
-            ));
           } else if (state is AttendanceRegistered) {
             HapticFeedback.heavyImpact();
           } else if (state is QRScanError) {
@@ -114,10 +94,13 @@ class _QrScannerViewState extends State<_QrScannerView> {
           }
         },
         builder: (context, state) {
-          if (state is QRScanned ||
-              state is AttendanceRegistering ||
-              state is AttendanceRegistered ||
-              state is AttendanceRegisterError) {
+          if (state is AttendanceRegistered) {
+            return _buildSuccessView(context, state);
+          }
+          if (state is TodayMatchesLoading ||
+              state is TodayMatchesError ||
+              state is QRScanned ||
+              state is AttendanceRegistering) {
             return _buildConfirmationView(context, state);
           }
 
@@ -163,26 +146,6 @@ class _QrScannerViewState extends State<_QrScannerView> {
                   onTap: () => Navigator.pop(context),
                 ),
                 const Spacer(),
-                if (widget.matchName != null)
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.matchName!,
-                        style: const TextStyle(
-                            color: _SN.textPrimary, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                const Spacer(),
-                const SizedBox(width: 40),
               ],
             ),
           ),
@@ -411,22 +374,23 @@ class _QrScannerViewState extends State<_QrScannerView> {
 
   // ==================== Confirmation View ====================
 
+  void _scanAnother(BuildContext context) {
+    _lastScannedCode = null;
+    context.read<AttendanceBloc>().add(const ResetScannerEvent());
+    _scannerController.start();
+  }
+
   Widget _buildConfirmationView(BuildContext context, AttendanceState state) {
-    QRPlayerData? playerData;
-    bool? alreadyCheckedIn;
-
-    if (state is QRScanned) {
+    final QRPlayerData playerData;
+    if (state is TodayMatchesLoading) {
       playerData = state.playerData;
-      alreadyCheckedIn = state.alreadyCheckedIn;
-    } else if (state is AttendanceRegistering && _getPlayerData() != null) {
-      playerData = _getPlayerData();
-    } else if (state is AttendanceRegistered) {
-      return _buildSuccessView(context, state);
-    } else if (state is AttendanceRegisterError) {
-      playerData = _getPlayerData();
-    }
-
-    if (playerData == null) {
+    } else if (state is TodayMatchesError) {
+      playerData = state.playerData;
+    } else if (state is QRScanned) {
+      playerData = state.playerData;
+    } else if (state is AttendanceRegistering) {
+      playerData = state.playerData;
+    } else {
       return _buildScannerView(context, state);
     }
 
@@ -459,162 +423,19 @@ class _QrScannerViewState extends State<_QrScannerView> {
 
           Expanded(
             child: Center(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Player avatar
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            _SN.neonGreen.withOpacity(0.3),
-                            _SN.neonBlue.withOpacity(0.3),
-                          ],
-                        ),
-                        border: Border.all(
-                            color: _SN.neonGreen.withOpacity(0.6), width: 2),
-                      ),
-                      child: Center(
-                        child: Text(
-                          playerData.jerseyNumber > 0
-                              ? '${playerData.jerseyNumber}'
-                              : '?',
-                          style: GoogleFonts.bebasNeue(
-                            color: _SN.neonGreen,
-                            fontSize: 40,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Player name
-                    Text(
-                      playerData.playerName,
-                      style: GoogleFonts.bebasNeue(
-                        color: _SN.textPrimary,
-                        fontSize: 28,
-                        letterSpacing: 1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (playerData.jerseyNumber > 0)
-                      Text(
-                        'Dorsal #${playerData.jerseyNumber}',
-                        style: const TextStyle(
-                            color: _SN.textSecondary, fontSize: 16),
-                      ),
-
+                    _buildPlayerHeader(playerData),
                     const SizedBox(height: 32),
-
-                    // Already checked in warning
-                    if (alreadyCheckedIn == true)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _SN.gold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: _SN.gold.withOpacity(0.4)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: _SN.gold, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Este jugador ya tiene asistencia registrada.',
-                                style: TextStyle(
-                                    color: _SN.gold, fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Error message
-                    if (state is AttendanceRegisterError)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _SN.error.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: _SN.error.withOpacity(0.4)),
-                        ),
-                        child: Text(
-                          state.message,
-                          style:
-                              const TextStyle(color: _SN.error, fontSize: 13),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-
-                    // Register button
-                    if (state is! AttendanceRegistering)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: alreadyCheckedIn == true
-                              ? null
-                              : () {
-                                  context.read<AttendanceBloc>().add(
-                                        RegisterAttendanceEvent(
-                                          playerData: playerData!,
-                                          matchId: widget.matchId,
-                                          scannedByUserId: widget.user.id,
-                                        ),
-                                      );
-                                },
-                          icon: const Icon(Icons.check_circle, size: 24),
-                          label: Text(
-                            'REGISTRAR ASISTENCIA',
-                            style: GoogleFonts.bebasNeue(
-                              fontSize: 18,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _SN.neonGreen,
-                            foregroundColor: Colors.black,
-                            disabledBackgroundColor:
-                                _SN.neonGreen.withOpacity(0.3),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Loading
-                    if (state is AttendanceRegistering)
-                      const SizedBox(
-                        width: 56,
-                        height: 56,
-                        child: CircularProgressIndicator(
-                            color: _SN.neonGreen, strokeWidth: 3),
-                      ),
-
+                    ..._buildMatchSection(context, state),
                     const SizedBox(height: 16),
 
                     // Scan another
                     TextButton.icon(
-                      onPressed: () {
-                        _lastScannedCode = null;
-                        context
-                            .read<AttendanceBloc>()
-                            .add(const ResetScannerEvent());
-                        _scannerController.start();
-                      },
+                      onPressed: () => _scanAnother(context),
                       icon: const Icon(Icons.qr_code_scanner, size: 18),
                       label: const Text('Escanear otro'),
                       style: TextButton.styleFrom(
@@ -631,8 +452,287 @@ class _QrScannerViewState extends State<_QrScannerView> {
     );
   }
 
+  Widget _buildPlayerHeader(QRPlayerData playerData) {
+    return Column(
+      children: [
+        // Player avatar
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                _SN.neonGreen.withOpacity(0.3),
+                _SN.neonBlue.withOpacity(0.3),
+              ],
+            ),
+            border:
+                Border.all(color: _SN.neonGreen.withOpacity(0.6), width: 2),
+          ),
+          child: Center(
+            child: Text(
+              playerData.jerseyNumber > 0 ? '${playerData.jerseyNumber}' : '?',
+              style: GoogleFonts.bebasNeue(
+                color: _SN.neonGreen,
+                fontSize: 40,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Player name
+        Text(
+          playerData.playerName,
+          style: GoogleFonts.bebasNeue(
+            color: _SN.textPrimary,
+            fontSize: 28,
+            letterSpacing: 1,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (playerData.jerseyNumber > 0)
+          Text(
+            'Dorsal #${playerData.jerseyNumber}',
+            style: const TextStyle(color: _SN.textSecondary, fontSize: 16),
+          ),
+      ],
+    );
+  }
+
+  List<Widget> _buildMatchSection(BuildContext context, AttendanceState state) {
+    if (state is TodayMatchesLoading) {
+      return const [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: CircularProgressIndicator(color: _SN.neonGreen, strokeWidth: 3),
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Buscando partidos de hoy...',
+          style: TextStyle(color: _SN.textSecondary, fontSize: 13),
+        ),
+      ];
+    }
+
+    if (state is TodayMatchesError) {
+      return [
+        _buildNotice(state.message, _SN.error, Icons.error_outline),
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: () => context
+                .read<AttendanceBloc>()
+                .add(LoadTodayMatchesEvent(playerData: state.playerData)),
+            icon: const Icon(Icons.refresh, size: 20),
+            label: const Text('Reintentar'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _SN.neonGreen,
+              side: BorderSide(color: _SN.neonGreen.withOpacity(0.6)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    if (state is AttendanceRegistering) {
+      return [
+        _buildMatchCard(context, state.match, selected: true, selectable: false),
+        const SizedBox(height: 16),
+        const SizedBox(
+          width: 56,
+          height: 56,
+          child: CircularProgressIndicator(color: _SN.neonGreen, strokeWidth: 3),
+        ),
+      ];
+    }
+
+    final scanned = state as QRScanned;
+    if (scanned.hasNoMatch) {
+      return [
+        _buildNotice(
+          'El equipo de este jugador no tiene partido hoy',
+          _SN.gold,
+          Icons.event_busy,
+        ),
+      ];
+    }
+
+    final selected = scanned.selectedMatch;
+    final several = scanned.matches.length > 1;
+    return [
+      if (several)
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Selecciona el partido',
+            style: TextStyle(color: _SN.textSecondary, fontSize: 13),
+          ),
+        ),
+      for (final match in scanned.matches)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildMatchCard(
+            context,
+            match,
+            selected: match.matchId == scanned.selectedMatchId,
+            selectable: several,
+          ),
+        ),
+
+      // Error message
+      if (scanned.errorMessage != null)
+        _buildNotice(scanned.errorMessage!, _SN.error, Icons.error_outline),
+
+      const SizedBox(height: 4),
+
+      // Register button
+      SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton.icon(
+          onPressed: selected == null || selected.alreadyRegistered
+              ? null
+              : () => context
+                  .read<AttendanceBloc>()
+                  .add(const RegisterAttendanceEvent()),
+          icon: const Icon(Icons.check_circle, size: 24),
+          label: Text(
+            selected != null && selected.alreadyRegistered
+                ? 'YA REGISTRADO'
+                : 'REGISTRAR ASISTENCIA',
+            style: GoogleFonts.bebasNeue(
+              fontSize: 18,
+              letterSpacing: 1.5,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _SN.neonGreen,
+            foregroundColor: Colors.black,
+            disabledBackgroundColor: _SN.neonGreen.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildNotice(String message, Color color, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: color, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchCard(
+    BuildContext context,
+    TodayMatchEntity match, {
+    required bool selected,
+    required bool selectable,
+  }) {
+    final borderColor =
+        selected ? _SN.neonGreen : _SN.textMuted.withOpacity(0.3);
+    return GestureDetector(
+      onTap: selectable
+          ? () => context
+              .read<AttendanceBloc>()
+              .add(SelectMatchEvent(matchId: match.matchId))
+          : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected
+              ? _SN.neonGreen.withOpacity(0.08)
+              : Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: selected ? 2 : 1),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selectable
+                  ? (selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked)
+                  : Icons.sports_soccer,
+              color: selected ? _SN.neonGreen : _SN.textMuted,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    match.displayName,
+                    style: const TextStyle(
+                      color: _SN.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (match.fieldNumber != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'Cancha ${match.fieldNumber}',
+                        style: const TextStyle(
+                            color: _SN.textSecondary, fontSize: 12),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (match.alreadyRegistered)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _SN.gold.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _SN.gold.withOpacity(0.5)),
+                ),
+                child: const Text(
+                  'Ya registrado',
+                  style: TextStyle(color: _SN.gold, fontSize: 11),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSuccessView(
       BuildContext context, AttendanceRegistered state) {
+    final color = state.alreadyRegistered ? _SN.gold : _SN.neonGreen;
     return SafeArea(
       child: Center(
         child: Padding(
@@ -646,35 +746,45 @@ class _QrScannerViewState extends State<_QrScannerView> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _SN.neonGreen.withOpacity(0.15),
-                  border: Border.all(color: _SN.neonGreen, width: 3),
+                  color: color.withOpacity(0.15),
+                  border: Border.all(color: color, width: 3),
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: _SN.neonGreen,
+                child: Icon(
+                  state.alreadyRegistered ? Icons.info_outline : Icons.check,
+                  color: color,
                   size: 56,
                 ),
               ),
               const SizedBox(height: 24),
               Text(
-                'ASISTENCIA REGISTRADA',
+                state.alreadyRegistered
+                    ? 'YA REGISTRADO'
+                    : 'ASISTENCIA REGISTRADA',
                 style: GoogleFonts.bebasNeue(
-                  color: _SN.neonGreen,
+                  color: color,
                   fontSize: 26,
                   letterSpacing: 2,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                state.attendance.displayName,
+                state.playerData.displayName,
                 style: const TextStyle(
                     color: _SN.textPrimary, fontSize: 18),
+                textAlign: TextAlign.center,
               ),
               Text(
-                state.attendance.checkedInTimeDisplay,
+                state.match.displayName,
                 style: const TextStyle(
                     color: _SN.textSecondary, fontSize: 14),
+                textAlign: TextAlign.center,
               ),
+              if (!state.alreadyRegistered)
+                Text(
+                  state.registeredTimeDisplay,
+                  style: const TextStyle(
+                      color: _SN.textSecondary, fontSize: 14),
+                ),
               const SizedBox(height: 40),
 
               // Scan another
@@ -682,13 +792,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    _lastScannedCode = null;
-                    context
-                        .read<AttendanceBloc>()
-                        .add(const ResetScannerEvent());
-                    _scannerController.start();
-                  },
+                  onPressed: () => _scanAnother(context),
                   icon: const Icon(Icons.qr_code_scanner, size: 24),
                   label: Text(
                     'ESCANEAR OTRO',
@@ -717,12 +821,6 @@ class _QrScannerViewState extends State<_QrScannerView> {
         ),
       ),
     );
-  }
-
-  QRPlayerData? _getPlayerData() {
-    // Try to recover playerData from previous states
-    // This is a simple approach - in production you might store it in the BLoC
-    return null;
   }
 }
 

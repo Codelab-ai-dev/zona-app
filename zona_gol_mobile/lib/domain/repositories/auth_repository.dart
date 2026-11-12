@@ -13,42 +13,26 @@ abstract class AuthRepository {
   });
 
   /// Logout current user
-  /// Returns [Right(void)] on success or [Left(Failure)] on error
   Future<Either<Failure, void>> logout();
 
   /// Get current authenticated user
   /// Returns [Right(UserEntity)] if authenticated or [Left(Failure)] if not
   Future<Either<Failure, UserEntity>> getCurrentUser();
 
-  /// Check if user is authenticated
-  /// Returns true if there's a valid session
+  /// Check if there is a stored session
   Future<bool> isAuthenticated();
 
-  /// Stream of authentication state changes
-  /// Emits user when logged in, null when logged out
+  /// Emits null when the session expires (refresh token rejected).
   Stream<UserEntity?> get authStateChanges;
 
-  /// Sign up with email and password (for future implementation)
-  Future<Either<Failure, UserEntity>> signUpWithEmail({
-    required String email,
-    required String password,
-    required String name,
-  });
-
-  /// Reset password (for future implementation)
+  /// Sends a password reset email (always succeeds to avoid account probing).
   Future<Either<Failure, void>> resetPassword({
     required String email,
   });
 
-  /// Update user profile (for future implementation)
-  Future<Either<Failure, UserEntity>> updateProfile({
-    required String userId,
-    String? name,
-    String? avatarUrl,
-  });
-
-  /// Change password for current user
+  /// Change password for current user. The server then closes every session.
   Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
     required String newPassword,
   });
 }

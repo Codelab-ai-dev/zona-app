@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../core/utils/fixture_config.dart';
 import '../../../domain/entities/match_entity.dart';
+import '../../../domain/repositories/match_repository.dart';
 
 /// Match States
 abstract class MatchState extends Equatable {
@@ -30,26 +32,6 @@ class MatchesLoaded extends MatchState {
   List<Object?> get props => [matches];
 }
 
-/// Match Result Updated State
-class MatchResultUpdated extends MatchState {
-  final MatchEntity match;
-
-  const MatchResultUpdated(this.match);
-
-  @override
-  List<Object?> get props => [match];
-}
-
-/// Updating Match State (for showing loading on specific match)
-class MatchUpdating extends MatchState {
-  final String matchId;
-
-  const MatchUpdating(this.matchId);
-
-  @override
-  List<Object?> get props => [matchId];
-}
-
 /// Error State
 class MatchError extends MatchState {
   final String message;
@@ -58,6 +40,18 @@ class MatchError extends MatchState {
 
   @override
   List<Object?> get props => [message];
+}
+
+/// An action on a loaded list (e.g. publishing a round) finished; the list
+/// is reloaded right after
+class MatchActionResult extends MatchState {
+  final String message;
+  final bool success;
+
+  const MatchActionResult(this.message, {this.success = true});
+
+  @override
+  List<Object?> get props => [message, success];
 }
 
 /// Match Created Successfully
@@ -70,20 +64,24 @@ class MatchCreated extends MatchState {
   List<Object?> get props => [message];
 }
 
-/// Fixtures Generated (preview data)
+/// Fixtures Generated (preview data from the server's dry run)
 class FixturesGenerated extends MatchState {
   final List<GeneratedMatch> fixtures;
   final int totalRounds;
   final int totalMatches;
 
+  /// The request to send again (without dry run) to save this calendar
+  final FixtureRequest request;
+
   const FixturesGenerated({
     required this.fixtures,
     required this.totalRounds,
     required this.totalMatches,
+    required this.request,
   });
 
   @override
-  List<Object?> get props => [fixtures, totalRounds, totalMatches];
+  List<Object?> get props => [fixtures, totalRounds, totalMatches, request];
 }
 
 /// Fixtures Saving

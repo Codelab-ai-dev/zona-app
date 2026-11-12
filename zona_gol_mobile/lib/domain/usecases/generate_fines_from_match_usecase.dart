@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../core/errors/failures.dart';
-import '../entities/finance_transaction_entity.dart';
 import '../repositories/finance_repository.dart';
 
 class GenerateFinesFromMatchParams extends Equatable {
@@ -23,8 +22,8 @@ class GenerateFinesFromMatchUseCase {
 
   GenerateFinesFromMatchUseCase(this.repository);
 
-  Future<Either<Failure, List<FinanceTransactionEntity>>> call(
-      GenerateFinesFromMatchParams params) {
+  /// Returns how many fines were created.
+  Future<Either<Failure, int>> call(GenerateFinesFromMatchParams params) {
     return repository.generateFinesFromMatch(
       matchId: params.matchId,
       leagueId: params.leagueId,

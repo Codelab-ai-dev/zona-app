@@ -1,7 +1,9 @@
 import 'package:get_it/get_it.dart';
+import '../config/app_config.dart';
+import '../network/api_client.dart';
+import '../network/token_store.dart';
 import '../../data/datasources/local/hive_service.dart';
 import '../../data/datasources/local/secure_storage_service.dart';
-import '../../data/datasources/remote/supabase_client.dart';
 import '../../data/repositories/attendance_repository_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/coaching_staff_repository_impl.dart';
@@ -14,6 +16,7 @@ import '../../data/repositories/suspension_repository_impl.dart';
 import '../../data/repositories/team_repository_impl.dart';
 import '../../data/repositories/tournament_repository_impl.dart';
 import '../../data/repositories/whatsapp_repository_impl.dart';
+import '../../data/repositories/user_admin_repository_impl.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/coaching_staff_repository.dart';
@@ -26,8 +29,8 @@ import '../../domain/repositories/suspension_repository.dart';
 import '../../domain/repositories/team_repository.dart';
 import '../../domain/repositories/tournament_repository.dart';
 import '../../domain/repositories/whatsapp_repository.dart';
+import '../../domain/repositories/user_admin_repository.dart';
 import '../../domain/usecases/register_attendance_usecase.dart';
-import '../../domain/usecases/get_match_attendance_usecase.dart';
 import '../../domain/usecases/create_staff_usecase.dart';
 import '../../domain/usecases/delete_staff_usecase.dart';
 import '../../domain/usecases/get_staff_by_team_usecase.dart';
@@ -37,12 +40,9 @@ import '../../domain/usecases/create_tournament_usecase.dart';
 import '../../domain/usecases/delete_league_usecase.dart';
 import '../../domain/usecases/get_all_leagues_usecase.dart';
 import '../../domain/usecases/get_league_stats_usecase.dart';
-import '../../domain/usecases/get_all_tournaments_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/get_league_by_id_usecase.dart';
-import '../../domain/usecases/get_leagues_by_admin_usecase.dart';
 import '../../domain/usecases/get_match_detail_usecase.dart';
-import '../../domain/usecases/save_match_player_stats_usecase.dart';
 import '../../domain/usecases/get_pending_matches_usecase.dart';
 import '../../domain/usecases/get_player_by_id_usecase.dart';
 import '../../domain/usecases/get_players_by_team_usecase.dart';
@@ -122,9 +122,10 @@ Future<void> initializeDependencies() async {
 
   // =============== Data Sources ===============
 
-  // Supabase Client (already initialized in main.dart)
-  sl.registerLazySingleton<SupabaseClientService>(
-    () => SupabaseClientService.instance,
+  // Zona Gol API client (tokens in secure storage)
+  sl.registerLazySingleton<TokenStore>(() => TokenStore(sl<SecureStorageService>()));
+  sl.registerLazySingleton<ApiClient>(
+    () => ApiClient(baseUrl: AppConfig.apiBaseUrl, tokens: sl(), timeout: AppConfig.apiTimeout),
   );
 
   // Secure Storage
@@ -139,100 +140,67 @@ Future<void> initializeDependencies() async {
 
   // Auth Repository
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      supabaseService: sl(),
-      secureStorage: sl(),
-      hiveService: sl(),
-      networkInfo: sl(),
-    ),
+    () => AuthRepositoryImpl(api: sl(), hiveService: sl()),
   );
 
   // League Repository
   sl.registerLazySingleton<LeagueRepository>(
-    () => LeagueRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => LeagueRepositoryImpl(api: sl()),
   );
 
   // Tournament Repository
   sl.registerLazySingleton<TournamentRepository>(
-    () => TournamentRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => TournamentRepositoryImpl(api: sl()),
   );
 
   // Team Repository
   sl.registerLazySingleton<TeamRepository>(
-    () => TeamRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => TeamRepositoryImpl(api: sl()),
   );
 
   // Player Repository
   sl.registerLazySingleton<PlayerRepository>(
-    () => PlayerRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => PlayerRepositoryImpl(api: sl()),
   );
 
   // Player Stats Repository
   sl.registerLazySingleton<PlayerStatsRepository>(
-    () => PlayerStatsRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => PlayerStatsRepositoryImpl(api: sl()),
   );
 
   // Attendance Repository
   sl.registerLazySingleton<AttendanceRepository>(
-    () => AttendanceRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => AttendanceRepositoryImpl(api: sl()),
   );
 
   // Suspension Repository
   sl.registerLazySingleton<SuspensionRepository>(
-    () => SuspensionRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => SuspensionRepositoryImpl(api: sl()),
   );
 
   // Coaching Staff Repository
   sl.registerLazySingleton<CoachingStaffRepository>(
-    () => CoachingStaffRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => CoachingStaffRepositoryImpl(api: sl()),
   );
 
   // Match Repository
   sl.registerLazySingleton<MatchRepository>(
-    () => MatchRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => MatchRepositoryImpl(api: sl()),
   );
 
   // Finance Repository
   sl.registerLazySingleton<FinanceRepository>(
-    () => FinanceRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => FinanceRepositoryImpl(api: sl()),
   );
 
   // WhatsApp Repository
   sl.registerLazySingleton<WhatsAppRepository>(
-    () => WhatsAppRepositoryImpl(
-      supabaseService: sl(),
-      networkInfo: sl(),
-    ),
+    () => WhatsAppRepositoryImpl(api: sl()),
+  );
+
+  // User Admin Repository
+  sl.registerLazySingleton<UserAdminRepository>(
+    () => UserAdminRepositoryImpl(api: sl()),
   );
 
   // =============== Use Cases ===============
@@ -246,14 +214,12 @@ Future<void> initializeDependencies() async {
   // League Use Cases
   sl.registerLazySingleton(() => GetAllLeaguesUseCase(sl()));
   sl.registerLazySingleton(() => GetLeagueByIdUseCase(sl()));
-  sl.registerLazySingleton(() => GetLeaguesByAdminUseCase(sl()));
   sl.registerLazySingleton(() => CreateLeagueUseCase(sl()));
   sl.registerLazySingleton(() => UpdateLeagueUseCase(sl()));
   sl.registerLazySingleton(() => DeleteLeagueUseCase(sl()));
   sl.registerLazySingleton(() => GetLeagueStatsUseCase(sl()));
 
   // Tournament Use Cases
-  sl.registerLazySingleton(() => GetAllTournamentsUseCase(sl()));
   sl.registerLazySingleton(() => GetTournamentByIdUseCase(sl()));
   sl.registerLazySingleton(() => GetTournamentsByLeagueUseCase(sl()));
   sl.registerLazySingleton(() => CreateTournamentUseCase(sl()));
@@ -263,7 +229,6 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetTeamsByLeagueUseCase(sl()));
   sl.registerLazySingleton(() => GetTeamsByTournamentUseCase(sl()));
   sl.registerLazySingleton(() => GetStandingsByTournamentUseCase(sl()));
-  sl.registerLazySingleton(() => GetStandingsByLeagueUseCase(sl()));
   sl.registerLazySingleton(() => CreateTeamUseCase(sl()));
   sl.registerLazySingleton(() => UpdateTeamUseCase(sl()));
   sl.registerLazySingleton(() => DeleteTeamUseCase(sl()));
@@ -294,7 +259,6 @@ Future<void> initializeDependencies() async {
 
   // Attendance Use Cases
   sl.registerLazySingleton(() => RegisterAttendanceUseCase(sl()));
-  sl.registerLazySingleton(() => GetMatchAttendanceUseCase(sl()));
 
   // Suspension Use Cases
   sl.registerLazySingleton(() => GetSuspensionsByLeagueUseCase(sl()));
@@ -306,8 +270,7 @@ Future<void> initializeDependencies() async {
   // Match Use Cases
   sl.registerLazySingleton(() => GetPendingMatchesUseCase(sl()));
   sl.registerLazySingleton(() => UpdateMatchResultUseCase(sl()));
-  sl.registerLazySingleton(() => GetMatchDetailUseCase(sl(), sl()));
-  sl.registerLazySingleton(() => SaveMatchPlayerStatsUseCase(sl(), sl()));
+  sl.registerLazySingleton(() => GetMatchDetailUseCase(sl()));
 
   // Finance Use Cases
   sl.registerLazySingleton(() => GetFinanceConfigUseCase(sl()));
@@ -340,6 +303,7 @@ Future<void> initializeDependencies() async {
       loginWithEmailUseCase: sl(),
       logoutUseCase: sl(),
       getCurrentUserUseCase: sl(),
+      authStateChanges: sl<AuthRepository>().authStateChanges,
     ),
   );
 
@@ -348,7 +312,6 @@ Future<void> initializeDependencies() async {
     () => LeagueBloc(
       getAllLeaguesUseCase: sl(),
       getLeagueByIdUseCase: sl(),
-      getLeaguesByAdminUseCase: sl(),
       createLeagueUseCase: sl(),
       updateLeagueUseCase: sl(),
       deleteLeagueUseCase: sl(),
@@ -358,7 +321,6 @@ Future<void> initializeDependencies() async {
   // Tournament BLoC (Factory - new instance each time)
   sl.registerFactory(
     () => TournamentBloc(
-      getAllTournamentsUseCase: sl(),
       getTournamentByIdUseCase: sl(),
       getTournamentsByLeagueUseCase: sl(),
       createTournamentUseCase: sl(),
@@ -372,13 +334,11 @@ Future<void> initializeDependencies() async {
       getTeamsByLeagueUseCase: sl(),
       getTeamsByTournamentUseCase: sl(),
       getStandingsByTournamentUseCase: sl(),
-      getStandingsByLeagueUseCase: sl(),
       createTeamUseCase: sl(),
       updateTeamUseCase: sl(),
       deleteTeamUseCase: sl(),
       createTeamOwnerUseCase: sl(),
       updateStandingsUseCase: sl(),
-      teamRepository: sl(),
     ),
   );
 
@@ -411,7 +371,6 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(
     () => AttendanceBloc(
       registerAttendanceUseCase: sl(),
-      getMatchAttendanceUseCase: sl(),
       attendanceRepository: sl(),
     ),
   );
@@ -442,7 +401,6 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(
     () => MatchBloc(
       getPendingMatchesUseCase: sl(),
-      updateMatchResultUseCase: sl(),
       matchRepository: sl(),
     ),
   );
@@ -451,7 +409,7 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(
     () => MatchDetailBloc(
       getMatchDetailUseCase: sl(),
-      saveMatchPlayerStatsUseCase: sl(),
+      updateMatchResultUseCase: sl(),
       matchRepository: sl(),
     ),
   );

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../data/datasources/remote/supabase_client.dart';
+import '../../../core/di/injection.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../../domain/repositories/league_repository.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../widgets/dashboard/dashboard_background.dart';
@@ -41,32 +42,16 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   Future<void> _loadDashboardStats() async {
-    try {
-      final client = SupabaseClientService.instance.client;
-
-      // Fetch all counts in parallel
-      final results = await Future.wait([
-        client.from('leagues').select('id').eq('is_active', true),
-        client.from('teams').select('id').eq('is_active', true),
-        client.from('users').select('id'),
-      ]);
-
-      if (mounted) {
-        setState(() {
-          _leaguesCount = (results[0] as List).length;
-          _teamsCount = (results[1] as List).length;
-          _usersCount = (results[2] as List).length;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('❌ Error loading dashboard stats: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    final result = await sl<LeagueRepository>().getGlobalStats();
+    if (!mounted) return;
+    setState(() {
+      result.fold((_) {}, (stats) {
+        _leaguesCount = stats.activeLeagues;
+        _teamsCount = stats.activeTeams;
+        _usersCount = stats.users;
+      });
+      _isLoading = false;
+    });
   }
 
   @override
@@ -385,19 +370,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Próximamente: $feature'),
-        backgroundColor: const Color(0xFF1F2937),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
       ),
     );
   }

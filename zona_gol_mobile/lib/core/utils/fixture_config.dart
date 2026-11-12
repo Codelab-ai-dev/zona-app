@@ -1,73 +1,8 @@
 import '../../domain/entities/match_entity.dart';
 import '../../domain/entities/team_entity.dart';
 
-/// Configuration for fixture generation
-class FixtureConfig {
-  final String tournamentId;
-  final DateTime startDate;
-  final DateTime endDate;
-  final List<int> matchDays; // 1=Mon...7=Sun (Dart convention)
-  final String startTime; // HH:MM
-  final String? endTime; // HH:MM or null for auto
-  final int fieldsAvailable; // 1-6
-  final bool doubleRound; // ida y vuelta
-  final int halfTime; // minutes per half (15-45)
-  final int breakTime; // halftime break (5-15)
-  final int breakBetweenMatches; // rest between matches (0-30)
-
-  const FixtureConfig({
-    required this.tournamentId,
-    required this.startDate,
-    required this.endDate,
-    required this.matchDays,
-    required this.startTime,
-    this.endTime,
-    this.fieldsAvailable = 1,
-    this.doubleRound = false,
-    this.halfTime = 25,
-    this.breakTime = 10,
-    this.breakBetweenMatches = 5,
-  });
-
-  /// Total match duration in minutes
-  int get matchDuration => (halfTime * 2) + breakTime + breakBetweenMatches;
-
-  /// Start time as minutes from midnight
-  int get startMinutes {
-    final parts = startTime.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
-  }
-
-  /// End time as minutes from midnight (null if auto mode)
-  int? get endMinutes {
-    if (endTime == null) return null;
-    final parts = endTime!.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
-  }
-}
-
-/// A single match pair in a round
-class FixtureMatchPair {
-  final TeamEntity home;
-  final TeamEntity away;
-
-  const FixtureMatchPair({required this.home, required this.away});
-}
-
-/// A round of matches with optional bye team
-class FixtureRound {
-  final int round;
-  final List<FixtureMatchPair> matches;
-  final TeamEntity? byeTeam;
-
-  const FixtureRound({
-    required this.round,
-    required this.matches,
-    this.byeTeam,
-  });
-}
-
-/// A fully scheduled match ready for preview/save
+/// A generated (not yet saved) match of a fixture preview, with the team
+/// entities resolved for display
 class GeneratedMatch {
   final String tournamentId;
   final int round;
@@ -76,7 +11,7 @@ class GeneratedMatch {
   final String date; // YYYY-MM-DD
   final String time; // HH:MM
   final int field;
-  final TeamEntity? byeTeam; // bye team for this round (if any)
+  final TeamEntity? byeTeam; // team resting this round (if any)
   final String? groupName; // group identifier for group_knockout
 
   const GeneratedMatch({
@@ -91,19 +26,40 @@ class GeneratedMatch {
     this.groupName,
   });
 
-  /// Convert to map for Supabase insert
-  Map<String, dynamic> toInsertMap() {
-    return {
-      'tournament_id': tournamentId,
-      'home_team_id': homeTeam.id,
-      'away_team_id': awayTeam.id,
-      'match_date': date,
-      'match_time': time,
-      'field_number': field,
-      'round': round,
-      'status': MatchStatus.scheduled.toDbString(),
-      'phase': 'regular',
-      'is_published': false,
-    };
+  /// Builds the preview rows from the server's dry run. Rows whose teams are
+  /// unknown are skipped. The resting team is recorded on the first match of
+  /// its round, so it is spread to every match of that round.
+  static List<GeneratedMatch> fromDryRun(
+    List<MatchEntity> matches,
+    List<TeamEntity> teams,
+  ) {
+    final byId = {for (final t in teams) t.id: t};
+    final byeByRound = <int, TeamEntity>{};
+    for (final m in matches) {
+      final bye = byId[m.byeTeamId];
+      if (bye != null && m.round != null) byeByRound[m.round!] = bye;
+    }
+
+    final result = <GeneratedMatch>[];
+    for (final m in matches) {
+      final home = byId[m.homeTeamId];
+      final away = byId[m.awayTeamId];
+      if (home == null || away == null) continue;
+      final d = m.matchDate;
+      result.add(GeneratedMatch(
+        tournamentId: m.tournamentId,
+        round: m.round ?? 0,
+        homeTeam: home,
+        awayTeam: away,
+        date: '${d.year.toString().padLeft(4, '0')}-'
+            '${d.month.toString().padLeft(2, '0')}-'
+            '${d.day.toString().padLeft(2, '0')}',
+        time: m.matchTime ?? '',
+        field: m.fieldNumber ?? 1,
+        byeTeam: byeByRound[m.round],
+        groupName: home.groupName,
+      ));
+    }
+    return result;
   }
 }

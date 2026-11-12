@@ -8,11 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/match_entity.dart';
-import '../../../core/utils/embedding_generator.dart';
 import '../../../domain/entities/player_entity.dart';
-import '../../../domain/entities/user_entity.dart';
-import '../../../domain/repositories/player_stats_repository.dart';
 import '../../../domain/usecases/get_players_by_team_usecase.dart';
+import '../../../domain/usecases/update_match_result_usecase.dart';
 import '../../bloc/match_detail/match_detail_bloc.dart';
 import '../../bloc/match_detail/match_detail_event.dart';
 import '../../bloc/match_detail/match_detail_state.dart';
@@ -24,7 +22,6 @@ class _S {
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
@@ -32,40 +29,54 @@ class _S {
   static const Color textMuted = Color(0xFF6B7280);
 }
 
-/// Mutable stats holder for each player during form editing
-class _PlayerStats {
-  final PlayerEntity player;
-  int goals = 0;
-  int assists = 0;
-  int yellowCards = 0;
-  int redCards = 0;
-  int minutesPlayed = 0;
+enum _Side { home, away }
 
-  _PlayerStats(this.player);
+/// Editable goal of the form. The player is picked from the roster of [side].
+class _FormGoal {
+  final _Side side;
+  final String playerId;
+  final int minute;
+  final GoalType goalType;
+  final String? assistPlayerId;
 
-  bool get hasAnyStats =>
-      goals > 0 || assists > 0 || yellowCards > 0 || redCards > 0;
-
-  PlayerMatchStatEntry toEntry() => PlayerMatchStatEntry(
-        playerId: player.id,
-        goals: goals,
-        assists: assists,
-        yellowCards: yellowCards,
-        redCards: redCards,
-        minutesPlayed: minutesPlayed,
-      );
+  const _FormGoal({
+    required this.side,
+    required this.playerId,
+    required this.minute,
+    this.goalType = GoalType.normal,
+    this.assistPlayerId,
+  });
 }
 
+/// Editable card of the form
+class _FormCard {
+  final _Side side;
+  final String playerId;
+  final int minute;
+  final CardType cardType;
+
+  const _FormCard({
+    required this.side,
+    required this.playerId,
+    required this.minute,
+    required this.cardType,
+  });
+}
+
+/// Result entry: score, then goals and cards (with minute, type and
+/// optional assist) for each team, then confirmation with observations.
+/// Same model as the web result form; the server derives player stats.
 class MatchResultEntryScreen extends StatefulWidget {
+  /// Match with its stored goals and cards (from GET /matches/{id})
   final MatchEntity match;
-  final UserEntity user;
   final MatchDetailBloc matchDetailBloc;
+  final String? initialObservations;
 
   const MatchResultEntryScreen({
     super.key,
     required this.match,
-    required this.user,
     required this.matchDetailBloc,
+    this.initialObservations,
   });
 
   @override
@@ -81,9 +92,11 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
   late final TextEditingController _homeScoreCtrl;
   late final TextEditingController _awayScoreCtrl;
 
-  // Step 1 & 2: Player stats
-  List<_PlayerStats> _homePlayers = [];
-  List<_PlayerStats> _awayPlayers = [];
+  // Step 1 & 2: Events
+  List<PlayerEntity> _homePlayers = [];
+  List<PlayerEntity> _awayPlayers = [];
+  final List<_FormGoal> _goals = [];
+  final List<_FormCard> _cards = [];
   bool _loadingPlayers = true;
   String? _loadError;
 
@@ -93,18 +106,45 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
   // Saving
   bool _saving = false;
 
+  MatchEntity get _match => widget.match;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     _homeScoreCtrl = TextEditingController(
-      text: widget.match.homeScore?.toString() ?? '',
+      text: _match.homeScore?.toString() ?? '',
     );
     _awayScoreCtrl = TextEditingController(
-      text: widget.match.awayScore?.toString() ?? '',
+      text: _match.awayScore?.toString() ?? '',
     );
-    _observationsCtrl = TextEditingController();
+    _observationsCtrl =
+        TextEditingController(text: widget.initialObservations ?? '');
+    _prefillEvents();
     _loadPlayers();
+  }
+
+  /// Stored goals and cards of a finished match (the API replaces them all)
+  void _prefillEvents() {
+    _Side sideOf(String teamId) =>
+        teamId == _match.homeTeamId ? _Side.home : _Side.away;
+    for (final g in _match.goals) {
+      _goals.add(_FormGoal(
+        side: sideOf(g.teamId),
+        playerId: g.playerId,
+        minute: g.minute,
+        goalType: g.goalType,
+        assistPlayerId: g.assistPlayerId,
+      ));
+    }
+    for (final c in _match.cards) {
+      _cards.add(_FormCard(
+        side: sideOf(c.teamId),
+        playerId: c.playerId,
+        minute: c.minute,
+        cardType: c.cardType,
+      ));
+    }
   }
 
   Future<void> _loadPlayers() async {
@@ -114,48 +154,27 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
     });
 
     final useCase = sl<GetPlayersByTeamUseCase>();
-
-    final homeResult = await useCase(
-      GetPlayersByTeamParams(
-        teamId: widget.match.homeTeamId,
-        onlyActive: true,
-      ),
-    );
-
-    final awayResult = await useCase(
-      GetPlayersByTeamParams(
-        teamId: widget.match.awayTeamId,
-        onlyActive: true,
-      ),
-    );
+    final results = await Future.wait([
+      useCase(GetPlayersByTeamParams(teamId: _match.homeTeamId)),
+      useCase(GetPlayersByTeamParams(teamId: _match.awayTeamId)),
+    ]);
 
     if (!mounted) return;
 
     String? error;
     List<PlayerEntity> homePlayers = [];
     List<PlayerEntity> awayPlayers = [];
+    results[0].fold((f) => error = f.message, (p) => homePlayers = [...p]);
+    results[1].fold((f) => error ??= f.message, (p) => awayPlayers = [...p]);
 
-    homeResult.fold(
-      (f) => error = f.message,
-      (players) => homePlayers = players,
-    );
-
-    awayResult.fold(
-      (f) => error ??= f.message,
-      (players) => awayPlayers = players,
-    );
-
-    // Sort by jersey number
-    homePlayers.sort(
-        (a, b) => (a.jerseyNumber ?? 999).compareTo(b.jerseyNumber ?? 999));
-    awayPlayers.sort(
-        (a, b) => (a.jerseyNumber ?? 999).compareTo(b.jerseyNumber ?? 999));
+    int byJersey(PlayerEntity a, PlayerEntity b) =>
+        (a.jerseyNumber ?? 999).compareTo(b.jerseyNumber ?? 999);
+    homePlayers.sort(byJersey);
+    awayPlayers.sort(byJersey);
 
     setState(() {
-      _homePlayers =
-          homePlayers.map((p) => _PlayerStats(p)).toList();
-      _awayPlayers =
-          awayPlayers.map((p) => _PlayerStats(p)).toList();
+      _homePlayers = homePlayers;
+      _awayPlayers = awayPlayers;
       _loadingPlayers = false;
       _loadError = error;
     });
@@ -172,8 +191,63 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
 
   int get _homeScore => int.tryParse(_homeScoreCtrl.text) ?? 0;
   int get _awayScore => int.tryParse(_awayScoreCtrl.text) ?? 0;
-  int get _homeGoalsTotal => _homePlayers.fold(0, (s, p) => s + p.goals);
-  int get _awayGoalsTotal => _awayPlayers.fold(0, (s, p) => s + p.goals);
+
+  String _teamIdOf(_Side side) =>
+      side == _Side.home ? _match.homeTeamId : _match.awayTeamId;
+
+  String _teamNameOf(_Side side) => side == _Side.home
+      ? (_match.homeTeam?.name ?? 'Local')
+      : (_match.awayTeam?.name ?? 'Visitante');
+
+  List<PlayerEntity> _rosterOf(_Side side) =>
+      side == _Side.home ? _homePlayers : _awayPlayers;
+
+  /// Players offered in the pickers: active ones plus any already used
+  List<PlayerEntity> _pickablePlayers(_Side side, {String? keep}) =>
+      _rosterOf(side).where((p) => p.isActive || p.id == keep).toList();
+
+  String _playerLabel(_Side side, String playerId) {
+    final player = _rosterOf(side).where((p) => p.id == playerId).firstOrNull;
+    if (player != null) return player.displayName;
+    final stored = _match.goals.where((g) => g.playerId == playerId).firstOrNull;
+    if (stored?.playerName != null) return stored!.playerName!;
+    final storedCard =
+        _match.cards.where((c) => c.playerId == playerId).firstOrNull;
+    return storedCard?.playerName ?? 'Jugador';
+  }
+
+  MatchResultInput _buildResult() {
+    final observations = _observationsCtrl.text.trim();
+    return MatchResultInput(
+      homeScore: _homeScore,
+      awayScore: _awayScore,
+      goals: _goals
+          .map((g) => MatchGoal(
+                playerId: g.playerId,
+                teamId: _teamIdOf(g.side),
+                minute: g.minute,
+                goalType: g.goalType,
+                assistPlayerId: g.assistPlayerId,
+              ))
+          .toList(),
+      cards: _cards
+          .map((c) => MatchCard(
+                playerId: c.playerId,
+                teamId: _teamIdOf(c.side),
+                cardType: c.cardType,
+                minute: c.minute,
+              ))
+          .toList(),
+      observations: observations.isEmpty ? null : observations,
+    );
+  }
+
+  /// Goals that count for [side] (an own goal counts for the rival)
+  int _creditedGoals(_Side side) => UpdateMatchResultUseCase.creditedGoals(
+        _buildResult().goals,
+        _teamIdOf(side),
+        _teamIdOf(side == _Side.home ? _Side.away : _Side.home),
+      );
 
   void _goToStep(int step) {
     if (step < 0 || step >= _totalSteps) return;
@@ -187,22 +261,13 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
 
   void _onNext() {
     if (_currentStep == 0) {
-      // Validate score entered
-      if (_homeScore < 0 || _awayScore < 0) {
-        _showError('Ingresa marcadores válidos');
-        return;
-      }
       if (_homeScoreCtrl.text.isEmpty || _awayScoreCtrl.text.isEmpty) {
         _showError('Ingresa el marcador de ambos equipos');
         return;
       }
     } else if (_currentStep == 2) {
-      // Validate goals match score before going to confirmation
-      if (_homeGoalsTotal != _homeScore) {
-        _showGoalsMismatchDialog();
-        return;
-      }
-      if (_awayGoalsTotal != _awayScore) {
+      if (_creditedGoals(_Side.home) > _homeScore ||
+          _creditedGoals(_Side.away) > _awayScore) {
         _showGoalsMismatchDialog();
         return;
       }
@@ -243,7 +308,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Los goles asignados a jugadores deben coincidir con el marcador.',
+              'Hay más goles registrados que el marcador del equipo. Un autogol cuenta para el rival.',
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 14,
@@ -252,15 +317,15 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             ),
             const SizedBox(height: 20),
             _buildMismatchRow(
-              widget.match.homeTeam?.name ?? 'Local',
+              _teamNameOf(_Side.home),
               _homeScore,
-              _homeGoalsTotal,
+              _creditedGoals(_Side.home),
             ),
             const SizedBox(height: 8),
             _buildMismatchRow(
-              widget.match.awayTeam?.name ?? 'Visitante',
+              _teamNameOf(_Side.away),
               _awayScore,
-              _awayGoalsTotal,
+              _creditedGoals(_Side.away),
             ),
           ],
         ),
@@ -331,18 +396,21 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
 
   void _onSubmit() {
     if (_saving) return;
+    final result = _buildResult();
+    final error = UpdateMatchResultUseCase.validate(
+      result,
+      _match.homeTeamId,
+      _match.awayTeamId,
+    );
+    if (error != null) {
+      _showError(error);
+      return;
+    }
 
     setState(() => _saving = true);
-
-    widget.matchDetailBloc.add(SaveMatchPlayerStatsEvent(
-      matchId: widget.match.id,
-      homeScore: _homeScore,
-      awayScore: _awayScore,
-      homeEntries: _homePlayers.map((p) => p.toEntry()).toList(),
-      awayEntries: _awayPlayers.map((p) => p.toEntry()).toList(),
-      observations: _observationsCtrl.text.trim().isEmpty
-          ? null
-          : _observationsCtrl.text.trim(),
+    widget.matchDetailBloc.add(SubmitMatchResultEvent(
+      match: _match,
+      result: result,
     ));
   }
 
@@ -351,13 +419,9 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
     return BlocListener<MatchDetailBloc, MatchDetailState>(
       bloc: widget.matchDetailBloc,
       listener: (context, state) {
-        if (state is MatchPlayerStatsSaved) {
-          // Trigger embedding generation in background
-          if (widget.user.leagueId != null) {
-            EmbeddingGenerator.generateMatchResultsEmbedding(widget.user.leagueId!);
-          }
+        if (state is MatchResultSaved) {
           Navigator.pop(context, true); // return true = saved
-        } else if (state is MatchPlayerStatsError) {
+        } else if (state is MatchResultError) {
           setState(() => _saving = false);
           _showError(state.message);
         }
@@ -383,18 +447,8 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                             physics: const NeverScrollableScrollPhysics(),
                             children: [
                               _buildScoreStep(),
-                              _buildPlayerStatsStep(
-                                widget.match.homeTeam?.name ?? 'Local',
-                                _homePlayers,
-                                _homeScore,
-                                _homeGoalsTotal,
-                              ),
-                              _buildPlayerStatsStep(
-                                widget.match.awayTeam?.name ?? 'Visitante',
-                                _awayPlayers,
-                                _awayScore,
-                                _awayGoalsTotal,
-                              ),
+                              _buildEventsStep(_Side.home),
+                              _buildEventsStep(_Side.away),
                               _buildConfirmStep(),
                             ],
                           ),
@@ -587,7 +641,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            widget.match.roundText,
+            _match.roundText,
             style: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
           ),
           const SizedBox(height: 40),
@@ -595,7 +649,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             children: [
               Expanded(
                 child: _buildTeamScoreColumn(
-                  widget.match.homeTeam,
+                  _match.homeTeam,
                   _homeScoreCtrl,
                 ),
               ),
@@ -611,7 +665,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
               ),
               Expanded(
                 child: _buildTeamScoreColumn(
-                  widget.match.awayTeam,
+                  _match.awayTeam,
                   _awayScoreCtrl,
                 ),
               ),
@@ -677,14 +731,20 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
     );
   }
 
-  // ==================== Step 1 & 2: Player Stats ====================
+  // ==================== Step 1 & 2: Goals and cards ====================
 
-  Widget _buildPlayerStatsStep(
-    String teamName,
-    List<_PlayerStats> players,
-    int expectedScore,
-    int currentGoals,
-  ) {
+  Widget _buildEventsStep(_Side side) {
+    final expectedScore = side == _Side.home ? _homeScore : _awayScore;
+    final currentGoals = _creditedGoals(side);
+    final goalsOk = currentGoals == expectedScore;
+    final exceeded = currentGoals > expectedScore;
+    final color = goalsOk ? _S.neonGreen : (exceeded ? _S.error : _S.amber);
+
+    final goals = _goals.asMap().entries.where((e) => e.value.side == side).toList()
+      ..sort((a, b) => a.value.minute.compareTo(b.value.minute));
+    final cards = _cards.asMap().entries.where((e) => e.value.side == side).toList()
+      ..sort((a, b) => a.value.minute.compareTo(b.value.minute));
+
     return Column(
       children: [
         // Goal counter bar
@@ -694,34 +754,25 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.sports_soccer,
-                size: 18,
-                color: currentGoals == expectedScore
-                    ? _S.neonGreen
-                    : _S.amber,
-              ),
+              Icon(Icons.sports_soccer, size: 18, color: color),
               const SizedBox(width: 8),
               Text(
                 'GOLES: $currentGoals / $expectedScore',
                 style: GoogleFonts.bebasNeue(
                   fontSize: 16,
-                  color: currentGoals == expectedScore
-                      ? _S.neonGreen
-                      : _S.amber,
+                  color: color,
                   letterSpacing: 1.5,
                 ),
               ),
-              if (currentGoals == expectedScore) ...[
+              if (goalsOk) ...[
                 const SizedBox(width: 8),
                 const Icon(Icons.check_circle, size: 16, color: _S.neonGreen),
               ],
             ],
           ),
         ),
-        // Player list
         Expanded(
-          child: players.isEmpty
+          child: _rosterOf(side).isEmpty
               ? Center(
                   child: Text(
                     'No hay jugadores registrados\nen este equipo.',
@@ -732,28 +783,262 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     ),
                   ),
                 )
-              : ListView.builder(
+              : ListView(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: players.length,
-                  itemBuilder: (context, index) {
-                    return _PlayerStatCard(
-                      playerStats: players[index],
-                      onChanged: () => setState(() {}),
-                    );
-                  },
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  children: [
+                    _buildEventsHeader('GOLES', Icons.sports_soccer, _S.neonGreen),
+                    ...goals.map((e) => _buildGoalTile(e.key, e.value)),
+                    _buildAddButton(
+                      'AGREGAR GOL',
+                      _S.neonGreen,
+                      () => _editGoal(side),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildEventsHeader('TARJETAS', Icons.square, _S.amber),
+                    ...cards.map((e) => _buildCardTile(e.key, e.value)),
+                    _buildAddButton(
+                      'AGREGAR TARJETA',
+                      _S.amber,
+                      () => _editCard(side),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
         ),
       ],
     );
   }
 
+  Widget _buildEventsHeader(String title, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.bebasNeue(
+              fontSize: 15,
+              color: color,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddButton(String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, size: 18, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.bebasNeue(
+                fontSize: 14,
+                color: color,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventTile({
+    required int minute,
+    required String title,
+    String? subtitle,
+    required Widget badge,
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) {
+    return GestureDetector(
+      onTap: onEdit,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: _S.cardDark,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _S.gold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  "$minute'",
+                  style: GoogleFonts.bebasNeue(fontSize: 16, color: _S.gold),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      color: _S.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(fontSize: 11, color: _S.textMuted),
+                    ),
+                ],
+              ),
+            ),
+            badge,
+            IconButton(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline, size: 20, color: _S.textMuted),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalTile(int index, _FormGoal goal) {
+    final assist = goal.assistPlayerId == null
+        ? null
+        : 'Asistencia: ${_playerLabel(goal.side, goal.assistPlayerId!)}';
+    return _buildEventTile(
+      minute: goal.minute,
+      title: _playerLabel(goal.side, goal.playerId),
+      subtitle: assist,
+      badge: _statBadge(
+        goal.goalType.displayText,
+        goal.goalType == GoalType.ownGoal ? _S.error : _S.neonGreen,
+      ),
+      onEdit: () => _editGoal(goal.side, index: index),
+      onDelete: () => setState(() => _goals.removeAt(index)),
+    );
+  }
+
+  Widget _buildCardTile(int index, _FormCard card) {
+    return _buildEventTile(
+      minute: card.minute,
+      title: _playerLabel(card.side, card.playerId),
+      badge: _statBadge(
+        card.cardType.displayText,
+        card.cardType == CardType.red ? _S.error : _S.amber,
+      ),
+      onEdit: () => _editCard(card.side, index: index),
+      onDelete: () => setState(() => _cards.removeAt(index)),
+    );
+  }
+
+  Future<void> _editGoal(_Side side, {int? index}) async {
+    final current = index != null ? _goals[index] : null;
+    final result = await showModalBottomSheet<_FormGoal>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _S.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _EventSheet(
+        title: current == null ? 'AGREGAR GOL' : 'EDITAR GOL',
+        teamName: _teamNameOf(side),
+        players: _pickablePlayers(side, keep: current?.playerId),
+        assistPlayers: _pickablePlayers(side, keep: current?.assistPlayerId),
+        initialPlayerId: current?.playerId,
+        initialMinute: current?.minute,
+        initialGoalType: current?.goalType ?? GoalType.normal,
+        initialAssistId: current?.assistPlayerId,
+        isGoal: true,
+        onGoal: (playerId, minute, type, assistId) => _FormGoal(
+          side: side,
+          playerId: playerId,
+          minute: minute,
+          goalType: type,
+          assistPlayerId: assistId,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      if (index != null) {
+        _goals[index] = result;
+      } else {
+        _goals.add(result);
+      }
+    });
+  }
+
+  Future<void> _editCard(_Side side, {int? index}) async {
+    final current = index != null ? _cards[index] : null;
+    final result = await showModalBottomSheet<_FormCard>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _S.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _EventSheet(
+        title: current == null ? 'AGREGAR TARJETA' : 'EDITAR TARJETA',
+        teamName: _teamNameOf(side),
+        players: _pickablePlayers(side, keep: current?.playerId),
+        initialPlayerId: current?.playerId,
+        initialMinute: current?.minute,
+        initialCardType: current?.cardType ?? CardType.yellow,
+        isGoal: false,
+        onCard: (playerId, minute, type) => _FormCard(
+          side: side,
+          playerId: playerId,
+          minute: minute,
+          cardType: type,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      if (index != null) {
+        _cards[index] = result;
+      } else {
+        _cards.add(result);
+      }
+    });
+  }
+
   // ==================== Step 3: Confirm ====================
 
   Widget _buildConfirmStep() {
-    final homeWithStats = _homePlayers.where((p) => p.hasAnyStats).toList();
-    final awayWithStats = _awayPlayers.where((p) => p.hasAnyStats).toList();
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -791,10 +1076,10 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     Expanded(
                       child: Column(
                         children: [
-                          _buildTeamLogo(widget.match.homeTeam, 48),
+                          _buildTeamLogo(_match.homeTeam, 48),
                           const SizedBox(height: 6),
                           Text(
-                            widget.match.homeTeam?.name ?? 'Local',
+                            _match.homeTeam?.name ?? 'Local',
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -834,10 +1119,10 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     Expanded(
                       child: Column(
                         children: [
-                          _buildTeamLogo(widget.match.awayTeam, 48),
+                          _buildTeamLogo(_match.awayTeam, 48),
                           const SizedBox(height: 6),
                           Text(
-                            widget.match.awayTeam?.name ?? 'Visitante',
+                            _match.awayTeam?.name ?? 'Visitante',
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -857,23 +1142,15 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Stats summary
-          if (homeWithStats.isNotEmpty) ...[
-            _buildStatsSummarySection(
-              widget.match.homeTeam?.name ?? 'Local',
-              homeWithStats,
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (awayWithStats.isNotEmpty) ...[
-            _buildStatsSummarySection(
-              widget.match.awayTeam?.name ?? 'Visitante',
-              awayWithStats,
-            ),
-            const SizedBox(height: 12),
-          ],
+          // Events summary
+          for (final side in _Side.values)
+            if (_goals.any((g) => g.side == side) ||
+                _cards.any((c) => c.side == side)) ...[
+              _buildEventsSummarySection(side),
+              const SizedBox(height: 12),
+            ],
 
-          if (homeWithStats.isEmpty && awayWithStats.isEmpty)
+          if (_goals.isEmpty && _cards.isEmpty)
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -886,7 +1163,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'No se registraron estadísticas individuales de jugadores.',
+                      'No se registraron goles ni tarjetas.',
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         color: _S.textSecondary,
@@ -987,10 +1264,36 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
     );
   }
 
-  Widget _buildStatsSummarySection(
-    String teamName,
-    List<_PlayerStats> players,
-  ) {
+  Widget _buildEventsSummarySection(_Side side) {
+    final goals = _goals.where((g) => g.side == side).toList()
+      ..sort((a, b) => a.minute.compareTo(b.minute));
+    final cards = _cards.where((c) => c.side == side).toList()
+      ..sort((a, b) => a.minute.compareTo(b.minute));
+
+    Widget row(int minute, String name, Widget badge) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 36,
+                child: Text(
+                  "$minute'",
+                  style: GoogleFonts.bebasNeue(fontSize: 14, color: _S.gold),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(fontSize: 13, color: _S.textPrimary),
+                ),
+              ),
+              badge,
+            ],
+          ),
+        );
+
     return Container(
       decoration: BoxDecoration(
         color: _S.cardDark,
@@ -1003,7 +1306,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
-              teamName.toUpperCase(),
+              _teamNameOf(side).toUpperCase(),
               style: GoogleFonts.bebasNeue(
                 fontSize: 14,
                 color: _S.gold,
@@ -1011,28 +1314,20 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
               ),
             ),
           ),
-          ...players.map((p) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: [
-                    Text(
-                      p.player.displayName,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        color: _S.textPrimary,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (p.goals > 0)
-                      _statBadge('${p.goals}G', _S.neonGreen),
-                    if (p.assists > 0)
-                      _statBadge('${p.assists}A', _S.neonBlue),
-                    if (p.yellowCards > 0)
-                      _statBadge('${p.yellowCards}TA', _S.amber),
-                    if (p.redCards > 0)
-                      _statBadge('${p.redCards}TR', _S.error),
-                  ],
+          ...goals.map((g) => row(
+                g.minute,
+                _playerLabel(side, g.playerId),
+                _statBadge(
+                  g.goalType == GoalType.ownGoal ? 'AUTOGOL' : 'GOL',
+                  g.goalType == GoalType.ownGoal ? _S.error : _S.neonGreen,
+                ),
+              )),
+          ...cards.map((c) => row(
+                c.minute,
+                _playerLabel(side, c.playerId),
+                _statBadge(
+                  c.cardType == CardType.red ? 'TR' : 'TA',
+                  c.cardType == CardType.red ? _S.error : _S.amber,
                 ),
               )),
           const SizedBox(height: 10),
@@ -1192,255 +1487,260 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
   }
 }
 
-// ==================== Player Stat Card Widget ====================
+// ==================== Event Sheet ====================
 
-class _PlayerStatCard extends StatelessWidget {
-  final _PlayerStats playerStats;
-  final VoidCallback onChanged;
+/// Bottom sheet to add or edit a goal or a card
+class _EventSheet extends StatefulWidget {
+  final String title;
+  final String teamName;
+  final List<PlayerEntity> players;
+  final List<PlayerEntity> assistPlayers;
+  final String? initialPlayerId;
+  final int? initialMinute;
+  final GoalType initialGoalType;
+  final String? initialAssistId;
+  final CardType initialCardType;
+  final bool isGoal;
+  final _FormGoal Function(String playerId, int minute, GoalType type, String? assistId)? onGoal;
+  final _FormCard Function(String playerId, int minute, CardType type)? onCard;
 
-  const _PlayerStatCard({
-    required this.playerStats,
-    required this.onChanged,
+  const _EventSheet({
+    required this.title,
+    required this.teamName,
+    required this.players,
+    this.assistPlayers = const [],
+    this.initialPlayerId,
+    this.initialMinute,
+    this.initialGoalType = GoalType.normal,
+    this.initialAssistId,
+    this.initialCardType = CardType.yellow,
+    required this.isGoal,
+    this.onGoal,
+    this.onCard,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final player = playerStats.player;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _S.cardDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: playerStats.hasAnyStats
-              ? _S.gold.withOpacity(0.2)
-              : Colors.white.withOpacity(0.04),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Player info row
-          Row(
-            children: [
-              if (player.jerseyNumber != null)
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _S.gold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${player.jerseyNumber}',
-                      style: GoogleFonts.bebasNeue(
-                        fontSize: 16,
-                        color: _S.gold,
-                      ),
-                    ),
-                  ),
-                ),
-              if (player.jerseyNumber != null) const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      player.name,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        color: _S.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (player.hasPosition)
-                      Text(
-                        player.positionDisplay,
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          color: _S.textMuted,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Stats counters row
-          Row(
-            children: [
-              _StatCounter(
-                label: 'GOL',
-                value: playerStats.goals,
-                color: _S.neonGreen,
-                icon: Icons.sports_soccer,
-                onIncrement: () {
-                  playerStats.goals++;
-                  onChanged();
-                },
-                onDecrement: () {
-                  if (playerStats.goals > 0) {
-                    playerStats.goals--;
-                    onChanged();
-                  }
-                },
-              ),
-              const SizedBox(width: 6),
-              _StatCounter(
-                label: 'ASIS',
-                value: playerStats.assists,
-                color: _S.neonBlue,
-                icon: Icons.handshake_outlined,
-                onIncrement: () {
-                  playerStats.assists++;
-                  onChanged();
-                },
-                onDecrement: () {
-                  if (playerStats.assists > 0) {
-                    playerStats.assists--;
-                    onChanged();
-                  }
-                },
-              ),
-              const SizedBox(width: 6),
-              _StatCounter(
-                label: 'TA',
-                value: playerStats.yellowCards,
-                color: _S.amber,
-                icon: Icons.square,
-                onIncrement: () {
-                  playerStats.yellowCards++;
-                  onChanged();
-                },
-                onDecrement: () {
-                  if (playerStats.yellowCards > 0) {
-                    playerStats.yellowCards--;
-                    onChanged();
-                  }
-                },
-              ),
-              const SizedBox(width: 6),
-              _StatCounter(
-                label: 'TR',
-                value: playerStats.redCards,
-                color: _S.error,
-                icon: Icons.square,
-                onIncrement: () {
-                  playerStats.redCards++;
-                  onChanged();
-                },
-                onDecrement: () {
-                  if (playerStats.redCards > 0) {
-                    playerStats.redCards--;
-                    onChanged();
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  State<_EventSheet> createState() => _EventSheetState();
 }
 
-// ==================== Stat Counter Widget ====================
-
-class _StatCounter extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-  final IconData icon;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
-
-  const _StatCounter({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.icon,
-    required this.onIncrement,
-    required this.onDecrement,
-  });
+class _EventSheetState extends State<_EventSheet> {
+  String? _playerId;
+  String? _assistId;
+  late GoalType _goalType;
+  late CardType _cardType;
+  late final TextEditingController _minuteCtrl;
+  String? _error;
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
+  void initState() {
+    super.initState();
+    _playerId = widget.initialPlayerId;
+    _assistId = widget.initialAssistId;
+    _goalType = widget.initialGoalType;
+    _cardType = widget.initialCardType;
+    _minuteCtrl = TextEditingController(
+      text: widget.initialMinute?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _minuteCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final minute = int.tryParse(_minuteCtrl.text);
+    if (_playerId == null) {
+      setState(() => _error = 'Selecciona un jugador');
+      return;
+    }
+    if (minute == null || minute < 1 || minute > 120) {
+      setState(() => _error = 'El minuto debe estar entre 1 y 120');
+      return;
+    }
+    if (widget.isGoal) {
+      final assist = _assistId == _playerId ? null : _assistId;
+      Navigator.pop(context, widget.onGoal!(_playerId!, minute, _goalType, assist));
+    } else {
+      Navigator.pop(context, widget.onCard!(_playerId!, minute, _cardType));
+    }
+  }
+
+  InputDecoration _decoration(String label) => InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
+        filled: true,
+        fillColor: _S.surfaceDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: _S.gold.withOpacity(0.4)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      );
+
+  Widget _choice(String label, bool selected, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: value > 0
-              ? color.withOpacity(0.08)
-              : Colors.white.withOpacity(0.03),
+          color: selected ? color.withOpacity(0.2) : Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: value > 0
-                ? color.withOpacity(0.25)
-                : Colors.white.withOpacity(0.04),
+            color: selected ? color.withOpacity(0.6) : Colors.white.withOpacity(0.06),
           ),
         ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.bebasNeue(
-                fontSize: 10,
-                color: value > 0 ? color : _S.textMuted,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _counterButton(
-                  Icons.remove,
-                  onDecrement,
-                  enabled: value > 0,
-                ),
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    '$value',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.bebasNeue(
-                      fontSize: 20,
-                      color: value > 0 ? color : _S.textMuted,
-                    ),
-                  ),
-                ),
-                _counterButton(Icons.add, onIncrement, enabled: true),
-              ],
-            ),
-          ],
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 13,
+            color: selected ? color : _S.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  Widget _counterButton(
-    IconData icon,
-    VoidCallback onTap, {
-    required bool enabled,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        if (enabled) {
-          HapticFeedback.lightImpact();
-          onTap();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(
-          icon,
-          size: 16,
-          color: enabled ? _S.textSecondary : _S.textMuted.withOpacity(0.3),
+  @override
+  Widget build(BuildContext context) {
+    final dropdownStyle = GoogleFonts.outfit(fontSize: 14, color: _S.textPrimary);
+    final assistOptions =
+        widget.assistPlayers.where((p) => p.id != _playerId).toList();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.bebasNeue(
+                fontSize: 22,
+                color: _S.gold,
+                letterSpacing: 2,
+              ),
+            ),
+            Text(
+              widget.teamName,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
+            ),
+            const SizedBox(height: 20),
+            DropdownButtonFormField<String>(
+              initialValue: widget.players.any((p) => p.id == _playerId) ? _playerId : null,
+              isExpanded: true,
+              dropdownColor: _S.cardDark,
+              style: dropdownStyle,
+              decoration: _decoration('Jugador'),
+              items: widget.players
+                  .map((p) => DropdownMenuItem(
+                        value: p.id,
+                        child: Text(p.displayName, overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() {
+                _playerId = v;
+                _error = null;
+              }),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _minuteCtrl,
+              keyboardType: TextInputType.number,
+              style: dropdownStyle,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+              decoration: _decoration('Minuto (1-120)'),
+              onChanged: (_) => setState(() => _error = null),
+            ),
+            const SizedBox(height: 16),
+            if (widget.isGoal) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: GoalType.values
+                    .map((t) => _choice(
+                          t.displayText,
+                          _goalType == t,
+                          t == GoalType.ownGoal ? _S.error : _S.neonGreen,
+                          () => setState(() => _goalType = t),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String?>(
+                key: ValueKey(_playerId),
+                initialValue: assistOptions.any((p) => p.id == _assistId) ? _assistId : null,
+                isExpanded: true,
+                dropdownColor: _S.cardDark,
+                style: dropdownStyle,
+                decoration: _decoration('Asistencia (opcional)'),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Sin asistencia'),
+                  ),
+                  ...assistOptions.map((p) => DropdownMenuItem<String?>(
+                        value: p.id,
+                        child: Text(p.displayName, overflow: TextOverflow.ellipsis),
+                      )),
+                ],
+                onChanged: (v) => setState(() => _assistId = v),
+              ),
+            ] else
+              Row(
+                children: [
+                  _choice('Amarilla', _cardType == CardType.yellow, _S.amber,
+                      () => setState(() => _cardType = CardType.yellow)),
+                  const SizedBox(width: 8),
+                  _choice('Roja', _cardType == CardType.red, _S.error,
+                      () => setState(() => _cardType = CardType.red)),
+                ],
+              ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: GoogleFonts.outfit(fontSize: 13, color: _S.error),
+              ),
+            ],
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _S.gold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'GUARDAR',
+                style: GoogleFonts.bebasNeue(fontSize: 16, letterSpacing: 1.5),
+              ),
+            ),
+          ],
         ),
       ),
     );

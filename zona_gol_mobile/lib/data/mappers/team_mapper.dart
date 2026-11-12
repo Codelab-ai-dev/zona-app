@@ -1,82 +1,28 @@
+import '../../core/network/json.dart';
 import '../../domain/entities/team_entity.dart';
-import '../models/team_model.dart';
 
-/// Team Mapper
-/// Converts between TeamModel (data layer) and TeamEntity (domain layer)
+/// Team Mapper: API team (`GET /teams`, `/teams/{id}`, `/my-teams`) -> TeamEntity.
 class TeamMapper {
-  /// Convert TeamModel to TeamEntity
-  static TeamEntity toEntity(TeamModel model) {
-    return TeamEntity(
-      id: model.id,
-      name: model.name,
-      slug: model.slug,
-      leagueId: model.leagueId,
-      tournamentId: model.tournamentId,
-      ownerId: model.ownerId,
-      logo: model.logo,
-      description: model.description,
-      isActive: model.isActive,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-      homePrimaryColor: model.homePrimaryColor,
-      homeSecondaryColor: model.homeSecondaryColor,
-      homeAccentColor: model.homeAccentColor,
-      awayPrimaryColor: model.awayPrimaryColor,
-      awaySecondaryColor: model.awaySecondaryColor,
-      awayAccentColor: model.awayAccentColor,
-      groupName: model.groupName,
-    );
-  }
+  static TeamEntity fromJson(Map<String, dynamic> json) => TeamEntity(
+        id: json.str('id'),
+        name: json.str('name'),
+        slug: json.str('slug'),
+        leagueId: json.str('league_id'),
+        tournamentId: _nonEmpty(json.strOrNull('tournament_id')),
+        ownerId: json.str('owner_id'),
+        logo: _nonEmpty(json.strOrNull('logo')),
+        description: json.strOrNull('description'),
+        isActive: json.boolean('is_active', true),
+        createdAt: json.dateOrNull('created_at'),
+        updatedAt: json.dateOrNull('updated_at'),
+        homePrimaryColor: json.strOrNull('home_primary_color'),
+        homeSecondaryColor: json.strOrNull('home_secondary_color'),
+        homeAccentColor: json.strOrNull('home_accent_color'),
+        awayPrimaryColor: json.strOrNull('away_primary_color'),
+        awaySecondaryColor: json.strOrNull('away_secondary_color'),
+        awayAccentColor: json.strOrNull('away_accent_color'),
+        groupName: _nonEmpty(json.strOrNull('group_name')),
+      );
 
-  /// Convert TeamEntity to TeamModel
-  static TeamModel toModel(TeamEntity entity) {
-    return TeamModel(
-      id: entity.id,
-      name: entity.name,
-      slug: entity.slug,
-      leagueId: entity.leagueId,
-      tournamentId: entity.tournamentId,
-      ownerId: entity.ownerId,
-      logo: entity.logo,
-      description: entity.description,
-      isActive: entity.isActive,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      homePrimaryColor: entity.homePrimaryColor,
-      homeSecondaryColor: entity.homeSecondaryColor,
-      homeAccentColor: entity.homeAccentColor,
-      awayPrimaryColor: entity.awayPrimaryColor,
-      awaySecondaryColor: entity.awaySecondaryColor,
-      awayAccentColor: entity.awayAccentColor,
-      groupName: entity.groupName,
-    );
-  }
-
-  /// Convert list of TeamModel to list of TeamEntity
-  static List<TeamEntity> toEntityList(List<TeamModel> models) {
-    return models.map((model) => toEntity(model)).toList();
-  }
-
-  /// Convert list of TeamEntity to list of TeamModel
-  static List<TeamModel> toModelList(List<TeamEntity> entities) {
-    return entities.map((entity) => toModel(entity)).toList();
-  }
-
-  /// Create TeamEntity from JSON
-  static TeamEntity fromJson(Map<String, dynamic> json) {
-    print('🔍 TeamMapper.fromJson - Raw JSON: $json');
-    print('🔍 Logo value: ${json['logo']}');
-    final model = TeamModel.fromJson(json);
-    print('🔍 Model logo: ${model.logo}');
-    final entity = toEntity(model);
-    print('🔍 Entity logo: ${entity.logo}');
-    print('🔍 Has logo: ${entity.hasLogo}');
-    return entity;
-  }
-
-  /// Convert TeamEntity to JSON
-  static Map<String, dynamic> toJson(TeamEntity entity) {
-    final model = toModel(entity);
-    return model.toJson();
-  }
+  static String? _nonEmpty(String? v) => v == null || v.isEmpty ? null : v;
 }

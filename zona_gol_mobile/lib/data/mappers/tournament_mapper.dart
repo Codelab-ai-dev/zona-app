@@ -1,84 +1,64 @@
+import '../../core/network/json.dart';
 import '../../domain/entities/tournament_entity.dart';
-import '../models/tournament_model.dart';
 
-/// Tournament Mapper
-/// Converts between TournamentModel (data layer) and TournamentEntity (domain layer)
+/// Tournament Mapper: Go API tournament JSON (`leagues.Tournament`) <-> TournamentEntity.
 class TournamentMapper {
-  /// Convert TournamentModel to TournamentEntity
-  static TournamentEntity toEntity(TournamentModel model) {
-    return TournamentEntity(
-      id: model.id,
-      name: model.name,
-      leagueId: model.leagueId,
-      startDate: model.startDate,
-      endDate: model.endDate,
-      isActive: model.isActive,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-      maxPlayers: model.maxPlayers,
-      maxCoachingStaff: model.maxCoachingStaff,
-      format: model.tournamentFormat.toTournamentFormat(),
-      numberOfGroups: model.numberOfGroups,
-      teamsAdvancingPerGroup: model.teamsAdvancingPerGroup,
-      roundsPerSeason: model.roundsPerSeason,
-      hasThirdPlaceMatch: model.hasThirdPlaceMatch,
-      ageValidationEnabled: model.ageValidationEnabled,
-      minAge: model.minAge,
-      maxAge: model.maxAge,
-      ageReferenceDate: model.ageReferenceDate,
-      ageExceptionCount: model.ageExceptionCount,
-      ageExceptionMinAge: model.ageExceptionMinAge,
-      ageExceptionMaxAge: model.ageExceptionMaxAge,
-    );
-  }
-
-  /// Convert TournamentEntity to TournamentModel
-  static TournamentModel toModel(TournamentEntity entity) {
-    return TournamentModel(
-      id: entity.id,
-      name: entity.name,
-      leagueId: entity.leagueId,
-      startDate: entity.startDate,
-      endDate: entity.endDate,
-      isActive: entity.isActive,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      maxPlayers: entity.maxPlayers,
-      maxCoachingStaff: entity.maxCoachingStaff,
-      tournamentFormat: entity.format.toDbString(),
-      numberOfGroups: entity.numberOfGroups,
-      teamsAdvancingPerGroup: entity.teamsAdvancingPerGroup,
-      roundsPerSeason: entity.roundsPerSeason,
-      hasThirdPlaceMatch: entity.hasThirdPlaceMatch,
-      ageValidationEnabled: entity.ageValidationEnabled,
-      minAge: entity.minAge,
-      maxAge: entity.maxAge,
-      ageReferenceDate: entity.ageReferenceDate,
-      ageExceptionCount: entity.ageExceptionCount,
-      ageExceptionMinAge: entity.ageExceptionMinAge,
-      ageExceptionMaxAge: entity.ageExceptionMaxAge,
-    );
-  }
-
-  /// Convert list of TournamentModel to list of TournamentEntity
-  static List<TournamentEntity> toEntityList(List<TournamentModel> models) {
-    return models.map((model) => toEntity(model)).toList();
-  }
-
-  /// Convert list of TournamentEntity to list of TournamentModel
-  static List<TournamentModel> toModelList(List<TournamentEntity> entities) {
-    return entities.map((entity) => toModel(entity)).toList();
-  }
-
-  /// Create TournamentEntity from JSON
+  /// From `GET /tournaments/{id}`, `GET /leagues/{id}/tournaments`, `POST /tournaments`.
   static TournamentEntity fromJson(Map<String, dynamic> json) {
-    final model = TournamentModel.fromJson(json);
-    return toEntity(model);
+    final created = json.dateOrNull('created_at');
+    return TournamentEntity(
+      id: json.str('id'),
+      name: json.str('name'),
+      leagueId: json.str('league_id'),
+      startDate: json.dateOrNull('start_date') ?? created ?? DateTime.now(),
+      endDate: json.dateOrNull('end_date') ?? created ?? DateTime.now(),
+      isActive: json.boolean('is_active'),
+      createdAt: created,
+      updatedAt: json.dateOrNull('updated_at'),
+      maxPlayers: json.intOrNull('max_players'),
+      maxCoachingStaff: json.integer('max_coaching_staff', 10),
+      format: json.str('tournament_format', 'league').toTournamentFormat(),
+      numberOfGroups: json.intOrNull('number_of_groups'),
+      teamsAdvancingPerGroup: json.integer('teams_advancing_per_group', 2),
+      roundsPerSeason: json.integer('rounds_per_season', 1),
+      hasThirdPlaceMatch: json.boolean('has_third_place_match'),
+      ageValidationEnabled: json.boolean('age_validation_enabled'),
+      minAge: json.intOrNull('min_age'),
+      maxAge: json.intOrNull('max_age'),
+      ageReferenceDate: json.dateOrNull('age_reference_date'),
+      ageExceptionCount: json.integer('age_exception_count'),
+      ageExceptionMinAge: json.intOrNull('age_exception_min_age'),
+      ageExceptionMaxAge: json.intOrNull('age_exception_max_age'),
+    );
   }
 
-  /// Convert TournamentEntity to JSON
-  static Map<String, dynamic> toJson(TournamentEntity entity) {
-    final model = toModel(entity);
-    return model.toJson();
-  }
+  /// Body of `POST /tournaments` (leagues.CreateTournamentRequest).
+  /// New tournaments start inactive, as before.
+  static Map<String, dynamic> createJson({
+    required String name,
+    required String leagueId,
+    required DateTime startDate,
+    required DateTime endDate,
+    int? maxPlayers,
+    int maxCoachingStaff = 10,
+    TournamentFormat format = TournamentFormat.league,
+    int? numberOfGroups,
+    int teamsAdvancingPerGroup = 2,
+    int roundsPerSeason = 1,
+    bool hasThirdPlaceMatch = false,
+  }) =>
+      {
+        'league_id': leagueId,
+        'name': name,
+        'start_date': apiDate(startDate),
+        'end_date': apiDate(endDate),
+        'is_active': false,
+        if (maxPlayers != null) 'max_players': maxPlayers,
+        'max_coaching_staff': maxCoachingStaff,
+        'tournament_format': format.toDbString(),
+        if (numberOfGroups != null) 'number_of_groups': numberOfGroups,
+        'teams_advancing_per_group': teamsAdvancingPerGroup,
+        'rounds_per_season': roundsPerSeason,
+        'has_third_place_match': hasThirdPlaceMatch,
+      };
 }

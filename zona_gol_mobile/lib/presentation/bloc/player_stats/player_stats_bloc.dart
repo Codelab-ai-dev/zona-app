@@ -106,7 +106,7 @@ class PlayerStatsBloc extends Bloc<PlayerStatsEvent, PlayerStatsState> {
       ),
     );
 
-    // Also fetch suspensions in parallel
+    // Active suspensions need a league admin token; others just get none.
     Map<String, SuspensionInfo> suspensions = {};
     final suspResult = await playerStatsRepository.getActiveSuspensionsByLeague(
       event.leagueId,
@@ -141,10 +141,7 @@ class PlayerStatsBloc extends Bloc<PlayerStatsEvent, PlayerStatsState> {
     logger.i('Loading stats for player: ${event.playerId}');
 
     final result = await getPlayerStatsByIdUseCase(
-      GetPlayerStatsByIdParams(
-        playerId: event.playerId,
-        tournamentId: event.tournamentId,
-      ),
+      GetPlayerStatsByIdParams(playerId: event.playerId),
     );
 
     result.fold(
@@ -206,25 +203,17 @@ class PlayerStatsBloc extends Bloc<PlayerStatsEvent, PlayerStatsState> {
     AddExtemporaneousGoalsEvent event,
     Emitter<PlayerStatsState> emit,
   ) async {
-    emit(const PlayerStatsLoading());
     logger.i('Adding extemporaneous goals for player: ${event.playerId}');
-
-    final result = await playerStatsRepository.addExtemporaneousGoals(
-      event.playerId,
-      event.goals,
-      event.assists,
-    );
-
-    result.fold(
-      (failure) {
-        logger.e('Error adding extemporaneous goals: ${failure.message}');
-        emit(PlayerStatsError(failure.message));
-      },
-      (_) {
-        logger.i('Successfully added extemporaneous goals');
-        emit(const ExtemporaneousGoalsSaved());
-        add(LoadTopScorersEvent(leagueId: event.leagueId));
-      },
+    await _saveManual(
+      emit,
+      tournamentId: event.tournamentId,
+      playerId: event.playerId,
+      leagueId: event.leagueId,
+      update: (current) => current.copyWith(
+        goals: current.goals + event.goals,
+        assists: current.assists + event.assists,
+      ),
+      done: const ExtemporaneousGoalsSaved(),
     );
   }
 
@@ -232,25 +221,14 @@ class PlayerStatsBloc extends Bloc<PlayerStatsEvent, PlayerStatsState> {
     UpdateExtemporaneousGoalsEvent event,
     Emitter<PlayerStatsState> emit,
   ) async {
-    emit(const PlayerStatsLoading());
     logger.i('Updating extemporaneous goals for player: ${event.playerId}');
-
-    final result = await playerStatsRepository.updateExtemporaneousGoals(
-      event.playerId,
-      event.newTotalGoals,
-      event.newTotalAssists,
-    );
-
-    result.fold(
-      (failure) {
-        logger.e('Error updating extemporaneous goals: ${failure.message}');
-        emit(PlayerStatsError(failure.message));
-      },
-      (_) {
-        logger.i('Successfully updated extemporaneous goals');
-        emit(const ExtemporaneousGoalsSaved());
-        add(LoadTopScorersEvent(leagueId: event.leagueId));
-      },
+    await _saveManual(
+      emit,
+      tournamentId: event.tournamentId,
+      playerId: event.playerId,
+      leagueId: event.leagueId,
+      update: (current) => current.copyWith(goals: event.goals, assists: event.assists),
+      done: const ExtemporaneousGoalsSaved(),
     );
   }
 
@@ -258,22 +236,52 @@ class PlayerStatsBloc extends Bloc<PlayerStatsEvent, PlayerStatsState> {
     DeleteExtemporaneousGoalsEvent event,
     Emitter<PlayerStatsState> emit,
   ) async {
-    emit(const PlayerStatsLoading());
     logger.i('Deleting extemporaneous goals for player: ${event.playerId}');
+    await _saveManual(
+      emit,
+      tournamentId: event.tournamentId,
+      playerId: event.playerId,
+      leagueId: event.leagueId,
+      update: (current) => current.copyWith(goals: 0, assists: 0),
+      done: const ExtemporaneousGoalsDeleted(),
+    );
+  }
 
-    final result = await playerStatsRepository.deleteExtemporaneousGoals(
-      event.playerId,
+  /// The API stores a player's manual stats per tournament as absolute
+  /// values (goals, assists and cards together), so read the current entry,
+  /// change goals/assists and write it back, keeping any manual cards.
+  Future<void> _saveManual(
+    Emitter<PlayerStatsState> emit, {
+    required String tournamentId,
+    required String playerId,
+    required String leagueId,
+    required ManualStatsEntity Function(ManualStatsEntity current) update,
+    required PlayerStatsState done,
+  }) async {
+    emit(const PlayerStatsLoading());
+
+    final currentResult = await playerStatsRepository.getManualStats(tournamentId);
+    final failure = currentResult.fold((f) => f, (_) => null);
+    if (failure != null) {
+      logger.e('Error loading manual stats: ${failure.message}');
+      emit(PlayerStatsError(failure.message));
+      return;
+    }
+    final entries = currentResult.getOrElse(() => const []);
+    final current = entries.firstWhere(
+      (m) => m.playerId == playerId,
+      orElse: () => ManualStatsEntity(playerId: playerId),
     );
 
+    final result = await playerStatsRepository.setManualStats(tournamentId, update(current));
     result.fold(
       (failure) {
-        logger.e('Error deleting extemporaneous goals: ${failure.message}');
+        logger.e('Error saving extemporaneous goals: ${failure.message}');
         emit(PlayerStatsError(failure.message));
       },
       (_) {
-        logger.i('Successfully deleted extemporaneous goals');
-        emit(const ExtemporaneousGoalsDeleted());
-        add(LoadTopScorersEvent(leagueId: event.leagueId));
+        emit(done);
+        add(LoadTopScorersEvent(leagueId: leagueId));
       },
     );
   }

@@ -1,13 +1,11 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/di/injection.dart';
-import '../../../domain/entities/player_entity.dart';
+import '../../../domain/entities/player_verification_entity.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
@@ -18,7 +16,6 @@ class _S {
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color amber = Color(0xFFF59E0B);
@@ -39,7 +36,7 @@ class PlayerVerificationScreen extends StatelessWidget {
       create: (context) {
         final bloc = sl<PlayerBloc>();
         if (user.leagueId != null) {
-          bloc.add(LoadPlayersByLeagueEvent(leagueId: user.leagueId!));
+          bloc.add(LoadPlayerVerificationEvent(leagueId: user.leagueId!));
         }
         return bloc;
       },
@@ -92,7 +89,7 @@ class _VerificationViewState extends State<_VerificationView> {
               onPressed: () {
                 if (widget.user.leagueId != null) {
                   context.read<PlayerBloc>().add(
-                    LoadPlayersByLeagueEvent(leagueId: widget.user.leagueId!),
+                    LoadPlayerVerificationEvent(leagueId: widget.user.leagueId!),
                   );
                 }
               },
@@ -105,11 +102,11 @@ class _VerificationViewState extends State<_VerificationView> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    state.player.idVerified
-                        ? 'Jugador verificado: ${state.player.name}'
-                        : 'Verificación rechazada: ${state.player.name}',
+                    state.verified
+                        ? 'Jugador verificado: ${state.playerName}'
+                        : 'Verificación retirada: ${state.playerName}',
                   ),
-                  backgroundColor: state.player.idVerified ? _S.success : _S.error,
+                  backgroundColor: state.verified ? _S.success : _S.error,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -117,7 +114,7 @@ class _VerificationViewState extends State<_VerificationView> {
               // Reload list
               if (widget.user.leagueId != null) {
                 context.read<PlayerBloc>().add(
-                  LoadPlayersByLeagueEvent(leagueId: widget.user.leagueId!),
+                  LoadPlayerVerificationEvent(leagueId: widget.user.leagueId!),
                 );
               }
             }
@@ -144,8 +141,8 @@ class _VerificationViewState extends State<_VerificationView> {
               );
             }
 
-            if (state is LeaguePlayersLoaded) {
-              return _buildContent(state.players);
+            if (state is PlayerVerificationLoaded) {
+              return _buildContent(state.players, state.summary);
             }
 
             return const SizedBox.shrink();
@@ -155,12 +152,12 @@ class _VerificationViewState extends State<_VerificationView> {
     );
   }
 
-  Widget _buildContent(List<PlayerEntity> allPlayers) {
+  Widget _buildContent(List<PlayerVerificationEntity> allPlayers, VerificationSummaryEntity summary) {
     final filtered = _filterPlayers(allPlayers);
-    final total = allPlayers.length;
-    final verified = allPlayers.where((p) => p.idVerified).length;
-    final pending = allPlayers.where((p) => !p.idVerified && p.idDocumentUrl != null).length;
-    final noDoc = allPlayers.where((p) => p.idDocumentUrl == null || p.idDocumentUrl!.isEmpty).length;
+    final total = summary.total;
+    final verified = summary.verified;
+    final pending = summary.pending;
+    final noDoc = summary.noDocument;
 
     return Column(
       children: [
@@ -204,14 +201,14 @@ class _VerificationViewState extends State<_VerificationView> {
     );
   }
 
-  List<PlayerEntity> _filterPlayers(List<PlayerEntity> players) {
+  List<PlayerVerificationEntity> _filterPlayers(List<PlayerVerificationEntity> players) {
     switch (_filter) {
       case 'pending':
-        return players.where((p) => !p.idVerified && p.idDocumentUrl != null && p.idDocumentUrl!.isNotEmpty).toList();
+        return players.where((p) => p.status == VerificationStatus.pending).toList();
       case 'verified':
-        return players.where((p) => p.idVerified).toList();
+        return players.where((p) => p.status == VerificationStatus.verified).toList();
       case 'no_doc':
-        return players.where((p) => p.idDocumentUrl == null || p.idDocumentUrl!.isEmpty).toList();
+        return players.where((p) => p.status == VerificationStatus.noDocument).toList();
       default:
         return players;
     }
@@ -248,8 +245,8 @@ class _VerificationViewState extends State<_VerificationView> {
     );
   }
 
-  Widget _buildPlayerCard(PlayerEntity player) {
-    final hasDoc = player.idDocumentUrl != null && player.idDocumentUrl!.isNotEmpty;
+  Widget _buildPlayerCard(PlayerVerificationEntity player) {
+    final hasDoc = player.status == VerificationStatus.pending;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -258,7 +255,7 @@ class _VerificationViewState extends State<_VerificationView> {
         color: _S.cardDark,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: player.idVerified
+          color: player.isVerified
               ? _S.success.withOpacity(0.3)
               : hasDoc
                   ? _S.amber.withOpacity(0.3)
@@ -294,6 +291,12 @@ class _VerificationViewState extends State<_VerificationView> {
                   player.displayName,
                   style: GoogleFonts.outfit(fontSize: 14, color: _S.textPrimary, fontWeight: FontWeight.w500),
                 ),
+                Text(
+                  player.teamName,
+                  style: GoogleFonts.outfit(fontSize: 11, color: _S.textMuted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -301,7 +304,7 @@ class _VerificationViewState extends State<_VerificationView> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: player.idVerified
+                        color: player.isVerified
                             ? _S.success.withOpacity(0.2)
                             : hasDoc
                                 ? _S.amber.withOpacity(0.2)
@@ -309,10 +312,10 @@ class _VerificationViewState extends State<_VerificationView> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        player.idVerified ? 'Verificado' : hasDoc ? 'Pendiente' : 'Sin INE',
+                        player.isVerified ? 'Verificado' : hasDoc ? 'Pendiente' : 'Sin INE',
                         style: GoogleFonts.outfit(
                           fontSize: 10,
-                          color: player.idVerified ? _S.success : hasDoc ? _S.amber : _S.error,
+                          color: player.isVerified ? _S.success : hasDoc ? _S.amber : _S.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -324,7 +327,7 @@ class _VerificationViewState extends State<_VerificationView> {
           ),
 
           // Actions
-          if (hasDoc && !player.idVerified) ...[
+          if (hasDoc) ...[
             // View document
             IconButton(
               icon: const Icon(Icons.visibility, color: _S.gold, size: 20),
@@ -337,16 +340,18 @@ class _VerificationViewState extends State<_VerificationView> {
               onPressed: () => _verifyPlayer(player, true),
               tooltip: 'Aprobar',
             ),
-            // Reject
-            IconButton(
-              icon: const Icon(Icons.cancel, color: _S.error, size: 20),
-              onPressed: () => _verifyPlayer(player, false),
-              tooltip: 'Rechazar',
-            ),
-          ] else if (player.idVerified) ...[
+          ] else if (player.isVerified) ...[
+            if (player.hasDocument)
+              IconButton(
+                icon: const Icon(Icons.visibility, color: _S.gold, size: 20),
+                onPressed: () => _showDocumentViewer(player),
+                tooltip: 'Ver documento',
+              ),
+            // Remove the verification
             IconButton(
               icon: const Icon(Icons.verified, color: _S.success, size: 20),
-              onPressed: null,
+              onPressed: () => _verifyPlayer(player, false),
+              tooltip: 'Quitar verificación',
             ),
           ],
         ],
@@ -354,20 +359,20 @@ class _VerificationViewState extends State<_VerificationView> {
     );
   }
 
-  void _verifyPlayer(PlayerEntity player, bool verified) {
+  void _verifyPlayer(PlayerVerificationEntity player, bool verified) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _S.cardDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          verified ? 'Aprobar jugador' : 'Rechazar verificación',
+          verified ? 'Aprobar jugador' : 'Quitar verificación',
           style: GoogleFonts.outfit(color: _S.textPrimary),
         ),
         content: Text(
           verified
               ? '¿Confirmas que el documento de ${player.name} es válido?'
-              : '¿Rechazar la verificación de ${player.name}?',
+              : '¿Quitar la verificación de ${player.name}? El documento se conserva para revisarlo de nuevo.',
           style: GoogleFonts.outfit(color: _S.textSecondary),
         ),
         actions: [
@@ -379,20 +384,27 @@ class _VerificationViewState extends State<_VerificationView> {
             onPressed: () {
               Navigator.pop(ctx);
               context.read<PlayerBloc>().add(
-                VerifyPlayerEvent(playerId: player.id, verified: verified),
+                VerifyPlayerEvent(
+                  playerId: player.playerId,
+                  playerName: player.name,
+                  verified: verified,
+                  documentKey: player.documentKey,
+                ),
               );
             },
             style: TextButton.styleFrom(
               foregroundColor: verified ? _S.success : _S.error,
             ),
-            child: Text(verified ? 'Aprobar' : 'Rechazar'),
+            child: Text(verified ? 'Aprobar' : 'Quitar'),
           ),
         ],
       ),
     );
   }
 
-  void _showDocumentViewer(PlayerEntity player) {
+  void _showDocumentViewer(PlayerVerificationEntity player) {
+    // The document is private: ask for a short-lived link each time.
+    final urlFuture = context.read<PlayerBloc>().documentUrl(player.documentKey!);
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -423,7 +435,23 @@ class _VerificationViewState extends State<_VerificationView> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: _buildDocumentImage(player.idDocumentUrl!),
+                child: FutureBuilder(
+                  future: urlFuture,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(_S.gold)),
+                        ),
+                      );
+                    }
+                    return snapshot.data!.fold(
+                      (failure) => _buildImageError(failure.message),
+                      (url) => player.isPdf ? _buildPdfLink(url) : _buildDocumentImage(url),
+                    );
+                  },
+                ),
               ),
             ),
             Padding(
@@ -431,29 +459,20 @@ class _VerificationViewState extends State<_VerificationView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _verifyPlayer(player, false);
-                    },
-                    icon: const Icon(Icons.cancel, size: 18),
-                    label: const Text('Rechazar'),
-                    style: TextButton.styleFrom(foregroundColor: _S.error),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _verifyPlayer(player, true);
-                    },
-                    icon: const Icon(Icons.check_circle, size: 18),
-                    label: const Text('Aprobar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _S.success,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  if (!player.isVerified)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _verifyPlayer(player, true);
+                      },
+                      icon: const Icon(Icons.check_circle, size: 18),
+                      label: const Text('Aprobar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _S.success,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -464,27 +483,27 @@ class _VerificationViewState extends State<_VerificationView> {
   }
 
   Widget _buildDocumentImage(String url) {
-    try {
-      if (url.startsWith('data:image/')) {
-        final base64Data = url.split(',')[1];
-        final Uint8List bytes = base64Decode(base64Data);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _buildImageError(),
-        );
-      }
-      return Image.network(
-        url,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => _buildImageError(),
-      );
-    } catch (e) {
-      return _buildImageError();
-    }
+    return Image.network(
+      url,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _buildImageError(),
+    );
   }
 
-  Widget _buildImageError() {
+  Widget _buildPdfLink(String url) {
+    return SizedBox(
+      height: 160,
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+          icon: const Icon(Icons.picture_as_pdf, color: _S.gold),
+          label: Text('Abrir documento PDF', style: GoogleFonts.outfit(color: _S.gold)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageError([String message = 'Error al cargar imagen']) {
     return Container(
       height: 200,
       color: _S.surfaceDark,
@@ -494,7 +513,7 @@ class _VerificationViewState extends State<_VerificationView> {
           children: [
             const Icon(Icons.broken_image, size: 40, color: _S.textMuted),
             const SizedBox(height: 8),
-            Text('Error al cargar imagen', style: GoogleFonts.outfit(color: _S.textMuted)),
+            Text(message, textAlign: TextAlign.center, style: GoogleFonts.outfit(color: _S.textMuted)),
           ],
         ),
       ),

@@ -3,7 +3,6 @@ import '../../../domain/usecases/create_league_usecase.dart';
 import '../../../domain/usecases/delete_league_usecase.dart';
 import '../../../domain/usecases/get_all_leagues_usecase.dart';
 import '../../../domain/usecases/get_league_by_id_usecase.dart';
-import '../../../domain/usecases/get_leagues_by_admin_usecase.dart';
 import '../../../domain/usecases/update_league_usecase.dart';
 import 'league_event.dart';
 import 'league_state.dart';
@@ -13,7 +12,6 @@ import 'league_state.dart';
 class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
   final GetAllLeaguesUseCase getAllLeaguesUseCase;
   final GetLeagueByIdUseCase getLeagueByIdUseCase;
-  final GetLeaguesByAdminUseCase getLeaguesByAdminUseCase;
   final CreateLeagueUseCase createLeagueUseCase;
   final UpdateLeagueUseCase updateLeagueUseCase;
   final DeleteLeagueUseCase deleteLeagueUseCase;
@@ -21,14 +19,12 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
   LeagueBloc({
     required this.getAllLeaguesUseCase,
     required this.getLeagueByIdUseCase,
-    required this.getLeaguesByAdminUseCase,
     required this.createLeagueUseCase,
     required this.updateLeagueUseCase,
     required this.deleteLeagueUseCase,
   }) : super(const LeagueInitial()) {
     on<LoadAllLeaguesEvent>(_onLoadAllLeagues);
     on<LoadLeagueByIdEvent>(_onLoadLeagueById);
-    on<LoadLeaguesByAdminEvent>(_onLoadLeaguesByAdmin);
     on<CreateLeagueEvent>(_onCreateLeague);
     on<UpdateLeagueEvent>(_onUpdateLeague);
     on<DeleteLeagueEvent>(_onDeleteLeague);
@@ -46,7 +42,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     final result = await getAllLeaguesUseCase(onlyActive: event.onlyActive);
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (leagues) => emit(LeaguesLoaded(leagues)),
     );
   }
@@ -63,28 +59,8 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     );
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (league) => emit(LeagueDetailLoaded(league)),
-    );
-  }
-
-  /// Handle Load Leagues By Admin Event
-  Future<void> _onLoadLeaguesByAdmin(
-    LoadLeaguesByAdminEvent event,
-    Emitter<LeagueState> emit,
-  ) async {
-    emit(const LeagueLoading());
-
-    final result = await getLeaguesByAdminUseCase(
-      GetLeaguesByAdminParams(
-        adminId: event.adminId,
-        onlyActive: event.onlyActive,
-      ),
-    );
-
-    result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
-      (leagues) => emit(LeaguesLoaded(leagues)),
     );
   }
 
@@ -107,7 +83,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     );
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (league) => emit(LeagueCreated(league)),
     );
   }
@@ -139,7 +115,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     );
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (league) => emit(LeagueUpdated(league)),
     );
   }
@@ -156,7 +132,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     );
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (_) => emit(LeagueDeleted(event.leagueId)),
     );
   }
@@ -176,7 +152,7 @@ class LeagueBloc extends Bloc<LeagueEvent, LeagueState> {
     );
 
     result.fold(
-      (failure) => emit(LeagueError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(LeagueError(failure.message)),
       (league) => emit(LeagueStatusToggled(league)),
     );
   }

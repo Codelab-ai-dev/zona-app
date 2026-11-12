@@ -25,7 +25,6 @@ class _StadiumNights {
   static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
@@ -80,22 +79,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
         appBar: _buildAppBar(context),
         body: BlocConsumer<MatchBloc, MatchState>(
           listener: (context, state) {
-            if (state is MatchResultUpdated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Resultado guardado: ${state.match.resultText}',
-                  ),
-                  backgroundColor: _StadiumNights.success,
-                ),
-              );
-              // Reload matches
-              if (widget.user.leagueId != null) {
-                context.read<MatchBloc>().add(
-                      LoadPendingMatchesEvent(leagueId: widget.user.leagueId!),
-                    );
-              }
-            } else if (state is MatchError) {
+            if (state is MatchError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.message),
@@ -377,8 +361,8 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
     // Get unique tournaments for filter
     final Map<String, String> tournaments = {}; // id -> name
     for (final match in matches) {
-      if (match.tournamentId != null && match.tournamentName != null) {
-        tournaments[match.tournamentId!] = match.tournamentName!;
+      if (match.tournamentName != null) {
+        tournaments[match.tournamentId] = match.tournamentName!;
       }
     }
 
@@ -649,7 +633,6 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM');
-    final timeFormat = DateFormat('HH:mm');
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),

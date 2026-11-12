@@ -7,9 +7,7 @@ class DeleteWhatsAppLinkUseCase {
 
   DeleteWhatsAppLinkUseCase(this.repository);
 
-  Future<Either<Failure, void>> call(
-    DeleteWhatsAppLinkParams params,
-  ) async {
+  Future<Either<Failure, void>> call(DeleteWhatsAppLinkParams params) async {
     if (params.id.isEmpty) {
       return Left(ValidationFailure('ID del enlace es requerido'));
     }

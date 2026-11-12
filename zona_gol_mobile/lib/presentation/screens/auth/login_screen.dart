@@ -2,7 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/config/theme.dart';
+import '../../../core/di/injection.dart';
+import '../../../domain/repositories/auth_repository.dart';
 import '../../../main.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
@@ -192,18 +193,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // Login button
                         _buildLoginButton(isLoading),
-                        const SizedBox(height: 20),
-
-                        // Divider
-                        _buildDivider(),
-                        const SizedBox(height: 16),
-
-                        // Social buttons
-                        _buildSocialButtons(isLoading),
-                        const SizedBox(height: 16),
-
-                        // Sign up link
-                        _buildSignUpLink(isLoading),
 
                         const Spacer(flex: 1),
                       ],
@@ -521,9 +510,7 @@ class _LoginScreenState extends State<LoginScreen>
               ? null
               : () {
                   HapticFeedback.selectionClick();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    _buildSnackBar('Próximamente disponible', isError: false),
-                  );
+                  _showForgotPasswordDialog();
                 },
           style: TextButton.styleFrom(
             foregroundColor: Colors.white.withOpacity(0.6),
@@ -539,6 +526,39 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       ),
     );
+  }
+
+  /// Asks for the email and requests a reset link (the answer is the same
+  /// whether or not the account exists).
+  Future<void> _showForgotPasswordDialog() async {
+    final controller = TextEditingController(text: _emailController.text.trim());
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Recuperar contraseña'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.emailAddress,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Enviar enlace'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (email == null || email.isEmpty || !mounted) return;
+    final result = await sl<AuthRepository>().resetPassword(email: email);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(result.fold(
+      (failure) => _buildSnackBar(failure.message, isError: true),
+      (_) => _buildSnackBar('Si el email está registrado, recibirás un enlace para restablecer tu contraseña.', isError: false),
+    ));
   }
 
   Widget _buildLoginButton(bool isLoading) {
@@ -605,171 +625,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return _buildStaggeredAnimation(
-      delay: 0.4,
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    Colors.white.withOpacity(0.15),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              'o continúa con',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSocialButtons(bool isLoading) {
-    return _buildStaggeredAnimation(
-      delay: 0.45,
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSocialButton(
-              icon: Icons.g_mobiledata_rounded,
-              label: 'Google',
-              iconSize: 24,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  _buildSnackBar('Próximamente disponible', isError: false),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildSocialButton(
-              icon: Icons.apple_rounded,
-              label: 'Apple',
-              iconSize: 22,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  _buildSnackBar('Próximamente disponible', isError: false),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    required double iconSize,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.15),
-          ),
-          color: Colors.white.withOpacity(0.05),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: Colors.white.withOpacity(0.8),
-              size: iconSize,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSignUpLink(bool isLoading) {
-    return _buildStaggeredAnimation(
-      delay: 0.5,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '¿Nuevo en Zona Gol?',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 13,
-            ),
-          ),
-          TextButton(
-            onPressed: isLoading
-                ? null
-                : () {
-                    HapticFeedback.selectionClick();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      _buildSnackBar('Próximamente disponible', isError: false),
-                    );
-                  },
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF10B981),
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text(
-              'Únete al equipo',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

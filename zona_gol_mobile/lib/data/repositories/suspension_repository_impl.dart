@@ -1,53 +1,31 @@
 import 'package:dartz/dartz.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/errors/failures.dart';
-import '../../core/network/network_info.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/failure_mapper.dart';
+import '../../core/network/json.dart';
 import '../../domain/entities/suspension_entity.dart';
 import '../../domain/repositories/suspension_repository.dart';
-import '../datasources/remote/supabase_client.dart';
 import '../mappers/suspension_mapper.dart';
 
-/// Suspension Repository Implementation
-/// Manages player_suspensions table with Supabase
+/// Player suspensions backed by the Zona Gol API (`/suspensions`,
+/// `/leagues/{id}/suspensions`, `/leagues/{id}/players`).
 class SuspensionRepositoryImpl implements SuspensionRepository {
-  final SupabaseClientService supabaseService;
-  final NetworkInfo networkInfo;
+  final ApiClient api;
 
-  SuspensionRepositoryImpl({
-    required this.supabaseService,
-    required this.networkInfo,
-  });
+  SuspensionRepositoryImpl({required this.api});
 
   @override
   Future<Either<Failure, List<SuspensionEntity>>> getSuspensionsByLeague(
     String leagueId,
   ) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('player_suspensions')
-          .select('''
-            *, players(name, jersey_number, teams(name))
-          ''')
-          .eq('league_id', leagueId)
-          .order('created_at', ascending: false);
-
-      final rows = response as List;
-      final suspensions = rows
-          .map((row) => SuspensionMapper.fromRow(row as Map<String, dynamic>))
-          .toList();
-
-      return Right(suspensions);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      // The endpoint returns every suspension of the league in one response
+      // (newest first) and ignores limit/offset, so it is read once.
+      final rows = await api.getList('/leagues/$leagueId/suspensions');
+      return Right(rows.map(SuspensionMapper.fromJson).toList());
     } catch (e) {
-      return Left(
-          ServerFailure('Error al obtener suspensiones: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al obtener suspensiones'));
     }
   }
 
@@ -55,100 +33,41 @@ class SuspensionRepositoryImpl implements SuspensionRepository {
   Future<Either<Failure, SuspensionEntity>> createSuspension({
     required String playerId,
     required String teamId,
-    required String leagueId,
     required String suspensionType,
-    String? reason,
+    required String reason,
     required int matchesToServe,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('player_suspensions')
-          .insert({
-            'player_id': playerId,
-            'team_id': teamId,
-            'league_id': leagueId,
-            'suspension_type': suspensionType,
-            'reason': reason,
-            'matches_to_serve': matchesToServe,
-            'matches_served': 0,
-            'status': 'active',
-          })
-          .select('''
-            *, players(name, jersey_number, teams(name))
-          ''')
-          .single();
-
-      return Right(SuspensionMapper.fromRow(response));
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      final body = await api.post('/suspensions', {
+        'player_id': playerId,
+        'team_id': teamId,
+        'suspension_type': suspensionType,
+        'reason': reason,
+        'matches_to_serve': matchesToServe,
+      });
+      return Right(SuspensionMapper.fromJson((body as Map).cast<String, dynamic>()));
     } catch (e) {
-      return Left(ServerFailure('Error al crear suspensi\u00f3n: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al crear suspensión'));
     }
   }
 
   @override
   Future<Either<Failure, void>> cancelSuspension(String suspensionId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      await supabaseService.client
-          .from('player_suspensions')
-          .update({
-            'status': 'cancelled',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', suspensionId);
-
+      await api.post('/suspensions/$suspensionId/cancel');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al cancelar suspensi\u00f3n: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al cancelar suspensión'));
     }
   }
 
   @override
-  Future<Either<Failure, void>> completeSuspension(
-      String suspensionId) async {
+  Future<Either<Failure, void>> completeSuspension(String suspensionId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      // First get the matches_to_serve value
-      final record = await supabaseService.client
-          .from('player_suspensions')
-          .select('matches_to_serve')
-          .eq('id', suspensionId)
-          .single();
-
-      final matchesToServe = (record['matches_to_serve'] as num?)?.toInt() ?? 0;
-
-      await supabaseService.client
-          .from('player_suspensions')
-          .update({
-            'status': 'completed',
-            'matches_served': matchesToServe,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', suspensionId);
-
+      await api.post('/suspensions/$suspensionId/complete');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al completar suspensi\u00f3n: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al completar suspensión'));
     }
   }
 
@@ -158,47 +77,20 @@ class SuspensionRepositoryImpl implements SuspensionRepository {
     required int matchesToServe,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      await supabaseService.client
-          .from('player_suspensions')
-          .update({
-            'matches_to_serve': matchesToServe,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', suspensionId);
-
+      await api.put('/suspensions/$suspensionId', {'matches_to_serve': matchesToServe});
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al actualizar suspensi\u00f3n: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al actualizar suspensión'));
     }
   }
 
   @override
   Future<Either<Failure, void>> clearAllSuspensions(String leagueId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      await supabaseService.client
-          .from('player_suspensions')
-          .delete()
-          .eq('league_id', leagueId);
-
+      await api.delete('/leagues/$leagueId/suspensions');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al limpiar suspensiones: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al limpiar suspensiones'));
     }
   }
 
@@ -207,39 +99,21 @@ class SuspensionRepositoryImpl implements SuspensionRepository {
     String leagueId,
   ) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('players')
-          .select('''
-            id, name, jersey_number, team_id,
-            teams!inner(id, name)
-          ''')
-          .eq('teams.league_id', leagueId)
-          .eq('is_active', true)
-          .order('name', ascending: true);
-
-      final rows = (response as List).map((row) {
-        final data = row as Map<String, dynamic>;
-        final team = data['teams'] as Map<String, dynamic>?;
-        return {
-          'id': data['id'] as String,
-          'name': data['name'] as String? ?? '',
-          'jersey_number': data['jersey_number'] as int?,
-          'team_id': data['team_id'] as String? ?? '',
-          'team_name': team?['name'] as String? ?? '',
-        };
-      }).toList();
-
-      return Right(rows);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      // Active players only (the API's default), sorted by name.
+      final rows = await api.getAll('/leagues/$leagueId/players');
+      final players = rows
+          .map((p) => <String, dynamic>{
+                'id': p.str('id'),
+                'name': p.str('name'),
+                'jersey_number': p.intOrNull('jersey_number'),
+                'team_id': p.str('team_id'),
+                'team_name': p.str('team_name'),
+              })
+          .toList()
+        ..sort((a, b) => (a['name'] as String).toLowerCase().compareTo((b['name'] as String).toLowerCase()));
+      return Right(players);
     } catch (e) {
-      return Left(
-          ServerFailure('Error al obtener jugadores: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al obtener jugadores'));
     }
   }
 }

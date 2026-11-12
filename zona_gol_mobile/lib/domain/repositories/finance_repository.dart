@@ -13,22 +13,10 @@ abstract class FinanceRepository {
   /// Get the finance configuration for a league
   Future<Either<Failure, FinanceConfigEntity>> getConfig(String leagueId);
 
-  /// Update the finance configuration for a league
-  Future<Either<Failure, FinanceConfigEntity>> updateConfig({
-    required String leagueId,
-    double? registrationFee,
-    double? monthlyFee,
-    double? matchFee,
-    double? yellowCardFine,
-    double? redCardFine,
-    double? noShowFine,
-    double? lateArrivalFine,
-    double? uniformViolationFine,
-    double? misconductFine,
-    double? forfeitFine,
-    bool? autoGenerateFines,
-    String? currency,
-  });
+  /// Save every editable field of [config]
+  Future<Either<Failure, FinanceConfigEntity>> updateConfig(
+    FinanceConfigEntity config,
+  );
 
   /// Get transactions for a league with optional filters
   Future<Either<Failure, List<FinanceTransactionEntity>>> getTransactions(
@@ -38,31 +26,37 @@ abstract class FinanceRepository {
     TransactionType? type,
   });
 
-  /// Create a new transaction
+  /// Create a new transaction (`is_income` follows [type])
   Future<Either<Failure, FinanceTransactionEntity>> createTransaction({
     required String leagueId,
-    required String teamId,
+    String? teamId,
     String? playerId,
     String? matchId,
-    required String transactionType,
+    required TransactionType type,
     required double amount,
-    String? description,
-    String? dueDate,
+    required String description,
+    String? notes,
+    DateTime? dueDate,
   });
 
-  /// Cancel a transaction
-  Future<Either<Failure, void>> cancelTransaction(String transactionId);
+  /// Cancel an open transaction
+  Future<Either<Failure, FinanceTransactionEntity>> cancelTransaction({
+    required String leagueId,
+    required String transactionId,
+    required String reason,
+  });
 
-  /// Register a payment for a transaction via RPC
+  /// Register a (full or partial) payment for a transaction
   Future<Either<Failure, FinanceTransactionEntity>> registerPayment({
+    required String leagueId,
     required String transactionId,
     required double amount,
-    required String paymentMethod,
+    required PaymentMethod paymentMethod,
+    String? paymentReference,
   });
 
-  /// Generate fines from match events via RPC
-  Future<Either<Failure, List<FinanceTransactionEntity>>>
-      generateFinesFromMatch({
+  /// Generate the card fines of a finished match; returns how many were created
+  Future<Either<Failure, int>> generateFinesFromMatch({
     required String matchId,
     required String leagueId,
   });

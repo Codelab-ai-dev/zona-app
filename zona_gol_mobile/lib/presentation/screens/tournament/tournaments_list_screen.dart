@@ -23,7 +23,6 @@ class _StadiumNights {
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
-  static const Color goldLight = Color(0xFFFFF0B3);
   static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color neonBlue = Color(0xFF00BFFF);

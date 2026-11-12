@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/di/injection.dart';
+import '../../../domain/entities/team_entity.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../../domain/repositories/team_repository.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
+import '../../bloc/player/player_bloc.dart';
 import '../../widgets/dashboard/dashboard_background.dart';
 import '../../widgets/dashboard/dashboard_action_card.dart';
 import '../../widgets/dashboard/dashboard_header.dart';
@@ -211,11 +215,22 @@ class TeamOwnerDashboard extends StatelessWidget {
     );
   }
 
-  void _navigateToTeamStats(BuildContext context) {
-    if (user.teamId == null) {
+  /// The owner's team: the profile's team_id, otherwise the first of
+  /// `GET /my-teams`. Shows a message and returns null when there is none.
+  Future<TeamEntity?> _resolveTeam(BuildContext context) async {
+    final result = await sl<TeamRepository>().getMyTeams();
+    if (!context.mounted) return null;
+    final teams = result.getOrElse(() => const <TeamEntity>[]);
+    TeamEntity? team;
+    for (final t in teams) {
+      if (t.id == user.teamId) team = t;
+    }
+    team ??= teams.isNotEmpty ? teams.first : null;
+    if (team == null && user.teamId == null) {
+      final message = result.fold((f) => f.message, (_) => 'No tienes un equipo asignado');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('No tienes un equipo asignado'),
+          content: Text(message),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -223,147 +238,102 @@ class TeamOwnerDashboard extends StatelessWidget {
           ),
         ),
       );
-      return;
+      return null;
     }
+    return team ??
+        TeamEntity(
+          id: user.teamId!,
+          name: 'Mi Equipo',
+          slug: '',
+          leagueId: user.leagueId ?? '',
+          ownerId: user.id,
+          isActive: true,
+        );
+  }
 
+  Future<void> _openForTeam(
+    BuildContext context,
+    Widget Function(TeamEntity team) screen,
+  ) async {
+    final team = await _resolveTeam(context);
+    if (team == null || !context.mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => TeamStatsScreen(user: user),
+      MaterialPageRoute(builder: (context) => screen(team)),
+    );
+  }
+
+  void _navigateToTeamStats(BuildContext context) {
+    _openForTeam(
+      context,
+      (team) => TeamStatsScreen(
+        user: UserEntity(
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          leagueId: user.leagueId ?? team.leagueId,
+          teamId: team.id,
+          avatarUrl: user.avatarUrl,
+          createdAt: user.createdAt,
+        ),
       ),
     );
   }
 
   void _navigateToPlayerList(BuildContext context) {
-    if (user.teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No tienes un equipo asignado'),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
+    _openForTeam(
       context,
-      MaterialPageRoute(
-        builder: (context) => PlayerListScreen(
-          teamId: user.teamId!,
-          teamName: 'Mi Equipo',
-          canEdit: true,
-        ),
+      (team) => PlayerListScreen(
+        teamId: team.id,
+        teamName: team.name,
+        canEdit: true,
       ),
     );
   }
 
   void _navigateToCreatePlayer(BuildContext context) {
-    if (user.teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No tienes un equipo asignado'),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
+    _openForTeam(
       context,
-      MaterialPageRoute(
-        builder: (context) => CreateEditPlayerScreen(
-          teamId: user.teamId!,
-          teamName: 'Mi Equipo',
+      (team) => BlocProvider(
+        create: (_) => sl<PlayerBloc>(),
+        child: CreateEditPlayerScreen(
+          teamId: team.id,
+          teamName: team.name,
         ),
       ),
     );
   }
 
   void _navigateToCoachingStaff(BuildContext context) {
-    if (user.teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No tienes un equipo asignado'),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
+    _openForTeam(
       context,
-      MaterialPageRoute(
-        builder: (context) => CoachingStaffScreen(
-          teamId: user.teamId!,
-          teamName: 'Mi Equipo',
-          canEdit: true,
-        ),
+      (team) => CoachingStaffScreen(
+        teamId: team.id,
+        teamName: team.name,
+        canEdit: true,
       ),
     );
   }
 
   void _navigateToCredentials(BuildContext context) {
-    if (user.teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No tienes un equipo asignado'),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
+    _openForTeam(
       context,
-      MaterialPageRoute(
-        builder: (context) => PlayerCredentialScreen(
-          teamId: user.teamId!,
-          teamName: 'Mi Equipo',
-          leagueId: user.leagueId,
-        ),
+      (team) => PlayerCredentialScreen(
+        teamId: team.id,
+        teamName: team.name,
+        leagueId: user.leagueId ?? team.leagueId,
       ),
     );
   }
 
   void _navigateToQrCodes(BuildContext context) {
-    if (user.teamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No tienes un equipo asignado'),
-          backgroundColor: const Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return;
-    }
-
-    Navigator.push(
+    _openForTeam(
       context,
-      MaterialPageRoute(
-        builder: (context) => PlayerQrScreen(
-          teamId: user.teamId!,
-          teamName: 'Mi Equipo',
-          leagueId: user.leagueId,
-        ),
+      (team) => PlayerQrScreen(
+        teamId: team.id,
+        teamName: team.name,
+        leagueId: user.leagueId ?? team.leagueId,
       ),
     );
   }

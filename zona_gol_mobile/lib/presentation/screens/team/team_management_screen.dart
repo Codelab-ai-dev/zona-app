@@ -738,10 +738,9 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
           child: CreateTeamScreen(leagueId: widget.user.leagueId!),
         ),
       ),
-    ).then((result) {
-      if (result == true) {
-        _reloadTeams(context);
-      }
+    ).then((_) {
+      // Reload even when leaving early: the team may exist without its owner.
+      if (context.mounted) _reloadTeams(context);
     });
   }
 
@@ -1029,7 +1028,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Estas seguro de que deseas eliminar "${team.name}"?\nEsta accion no se puede deshacer.',
+                'Estas seguro de que deseas eliminar "${team.name}"?\nSe borraran de forma permanente sus jugadores, cuerpo tecnico y partidos. Esta accion no se puede deshacer.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
                   color: _SN.textSecondary,

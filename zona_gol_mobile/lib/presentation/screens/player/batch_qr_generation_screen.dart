@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -22,11 +20,9 @@ class _S {
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
   static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
 }
 
 String _generateQrData({

@@ -21,7 +21,7 @@ class CreateSuspensionEvent extends SuspensionEvent {
   final String teamId;
   final String leagueId;
   final String suspensionType;
-  final String? reason;
+  final String reason;
   final int matchesToServe;
 
   const CreateSuspensionEvent({
@@ -29,7 +29,7 @@ class CreateSuspensionEvent extends SuspensionEvent {
     required this.teamId,
     required this.leagueId,
     required this.suspensionType,
-    this.reason,
+    required this.reason,
     required this.matchesToServe,
   });
 

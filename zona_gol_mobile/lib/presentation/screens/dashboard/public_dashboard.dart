@@ -60,7 +60,7 @@ class PublicDashboard extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const LeaguesListScreen(),
+                          builder: (context) => const LeaguesListScreen(isSuperAdmin: false),
                         ),
                       );
                     },

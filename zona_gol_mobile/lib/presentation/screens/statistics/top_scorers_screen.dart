@@ -10,6 +10,7 @@ import '../../../domain/entities/player_stats_entity.dart';
 import '../../../domain/entities/team_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../../domain/repositories/player_stats_repository.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
@@ -969,10 +970,14 @@ class _TopScorersViewState extends State<_TopScorersView>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return _EditGoalsBottomSheet(
-          leagueId: leagueId,
-          stat: stat,
-          statsBloc: statsBloc,
+        return BlocProvider(
+          create: (_) => sl<TournamentBloc>()
+            ..add(LoadTournamentsByLeagueEvent(leagueId: leagueId)),
+          child: _EditGoalsBottomSheet(
+            leagueId: leagueId,
+            stat: stat,
+            statsBloc: statsBloc,
+          ),
         );
       },
     );
@@ -1033,7 +1038,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
   }
 
   void _onSave() {
-    if (_selectedPlayer == null) return;
+    if (_selectedPlayer == null || _selectedTournament == null) return;
     final goals = int.tryParse(_goalsController.text) ?? 0;
     final assists = int.tryParse(_assistsController.text) ?? 0;
     if (goals == 0 && assists == 0) return;
@@ -1041,6 +1046,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
     widget.statsBloc.add(AddExtemporaneousGoalsEvent(
       playerId: _selectedPlayer!.id,
       leagueId: widget.leagueId,
+      tournamentId: _selectedTournament!.id,
       goals: goals,
       assists: assists,
     ));
@@ -1434,15 +1440,13 @@ class _EditGoalsBottomSheet extends StatefulWidget {
 }
 
 class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
-  late TextEditingController _goalsController;
-  late TextEditingController _assistsController;
+  final _goalsController = TextEditingController(text: '0');
+  final _assistsController = TextEditingController(text: '0');
+  TournamentEntity? _selectedTournament;
+  bool _loadingManual = false;
+  String? _manualError;
 
-  @override
-  void initState() {
-    super.initState();
-    _goalsController = TextEditingController(text: '${widget.stat.goals}');
-    _assistsController = TextEditingController(text: '${widget.stat.assists}');
-  }
+  bool get _ready => _selectedTournament != null && !_loadingManual && _manualError == null;
 
   @override
   void dispose() {
@@ -1451,25 +1455,119 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
     super.dispose();
   }
 
+  /// Manual stats are per tournament: load the player's current ones.
+  Future<void> _onTournamentSelected(TournamentEntity tournament) async {
+    setState(() {
+      _selectedTournament = tournament;
+      _loadingManual = true;
+      _manualError = null;
+    });
+    final result = await sl<PlayerStatsRepository>().getManualStats(tournament.id);
+    if (!mounted || _selectedTournament?.id != tournament.id) return;
+    result.fold(
+      (failure) => setState(() {
+        _manualError = failure.message;
+        _loadingManual = false;
+      }),
+      (entries) {
+        final current = entries.where((m) => m.playerId == widget.stat.playerId);
+        setState(() {
+          _goalsController.text = '${current.isEmpty ? 0 : current.first.goals}';
+          _assistsController.text = '${current.isEmpty ? 0 : current.first.assists}';
+          _loadingManual = false;
+        });
+      },
+    );
+  }
+
   void _onSave() {
+    if (!_ready) return;
     final newGoals = int.tryParse(_goalsController.text) ?? 0;
     final newAssists = int.tryParse(_assistsController.text) ?? 0;
 
     widget.statsBloc.add(UpdateExtemporaneousGoalsEvent(
       playerId: widget.stat.playerId,
       leagueId: widget.leagueId,
-      newTotalGoals: newGoals,
-      newTotalAssists: newAssists,
+      tournamentId: _selectedTournament!.id,
+      goals: newGoals,
+      assists: newAssists,
     ));
     Navigator.pop(context);
   }
 
   void _onDelete() {
+    if (!_ready) return;
     widget.statsBloc.add(DeleteExtemporaneousGoalsEvent(
       playerId: widget.stat.playerId,
       leagueId: widget.leagueId,
+      tournamentId: _selectedTournament!.id,
     ));
     Navigator.pop(context);
+  }
+
+  Widget _buildTournamentSection() {
+    return BlocConsumer<TournamentBloc, TournamentState>(
+      listener: (context, state) {
+        // Preselect the active tournament (or the only one).
+        if (state is TournamentsLoaded && _selectedTournament == null && state.tournaments.isNotEmpty) {
+          final active = state.tournaments.where((t) => t.isActive);
+          _onTournamentSelected(active.isNotEmpty ? active.first : state.tournaments.first);
+        }
+      },
+      builder: (context, state) {
+        if (state is TournamentsLoaded) {
+          if (state.tournaments.isEmpty) {
+            return Text('No hay torneos en la liga',
+                style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 12));
+          }
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: _SN.backgroundDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _SN.gold.withOpacity(0.2)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedTournament?.id,
+                hint: Text('Seleccionar torneo',
+                    style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+                isExpanded: true,
+                dropdownColor: _SN.cardDark,
+                icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
+                items: state.tournaments.map((tournament) {
+                  return DropdownMenuItem(
+                    value: tournament.id,
+                    child: Text(
+                      tournament.name,
+                      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (id) {
+                  final tournament = state.tournaments.where((t) => t.id == id);
+                  if (tournament.isNotEmpty) _onTournamentSelected(tournament.first);
+                },
+              ),
+            ),
+          );
+        }
+        if (state is TournamentError) {
+          return Text(state.message,
+              style: GoogleFonts.outfit(color: _SN.error, fontSize: 12));
+        }
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: _SN.neonGreen),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1546,9 +1644,27 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
               ],
               const SizedBox(height: 8),
               Text(
-                'Ajusta los totales. El sistema calcula la diferencia y modifica solo el registro extemporaneo.',
+                'Goles y asistencias extemporaneos (sin partido asociado) del torneo. Los goles de partidos no se modifican.',
                 style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
               ),
+              const SizedBox(height: 16),
+
+              // Tournament dropdown
+              Text(
+                'TORNEO',
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 14,
+                  color: _SN.textSecondary,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildTournamentSection(),
+              if (_manualError != null) ...[
+                const SizedBox(height: 8),
+                Text(_manualError!,
+                    style: GoogleFonts.outfit(color: _SN.error, fontSize: 12)),
+              ],
               const SizedBox(height: 20),
 
               // Goals & Assists inputs
@@ -1556,7 +1672,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                 children: [
                   Expanded(
                     child: _buildNumberInput(
-                      label: 'TOTAL GOLES',
+                      label: 'GOLES EXTEMP.',
                       controller: _goalsController,
                       icon: Icons.sports_soccer,
                       color: _SN.neonGreen,
@@ -1565,7 +1681,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildNumberInput(
-                      label: 'TOTAL ASISTENCIAS',
+                      label: 'ASISTENCIAS EXTEMP.',
                       controller: _assistsController,
                       icon: Icons.assistant,
                       color: _SN.neonBlue,
@@ -1580,7 +1696,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _onSave,
+                  onPressed: _ready ? _onSave : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _SN.neonGreen,
                     shape: RoundedRectangleBorder(
@@ -1604,7 +1720,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                 width: double.infinity,
                 height: 44,
                 child: OutlinedButton.icon(
-                  onPressed: _onDelete,
+                  onPressed: _ready ? _onDelete : null,
                   icon: Icon(Icons.delete_outline, size: 18, color: _SN.error),
                   label: Text(
                     'ELIMINAR GOLES EXTEMPORANEOS',

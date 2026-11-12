@@ -15,19 +15,12 @@ class GetPlayerStatsByIdUseCase {
       return Left(ValidationFailure('ID del jugador es requerido'));
     }
 
-    return await repository.getStatsByPlayer(
-      params.playerId,
-      tournamentId: params.tournamentId,
-    );
+    return await repository.getStatsByPlayer(params.playerId);
   }
 }
 
 class GetPlayerStatsByIdParams {
   final String playerId;
-  final String? tournamentId;
 
-  const GetPlayerStatsByIdParams({
-    required this.playerId,
-    this.tournamentId,
-  });
+  const GetPlayerStatsByIdParams({required this.playerId});
 }

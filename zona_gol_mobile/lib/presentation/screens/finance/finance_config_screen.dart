@@ -58,75 +58,130 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
   final _formKey = GlobalKey<FormState>();
 
   // Fee controllers
-  final _registrationFeeCtrl = TextEditingController();
-  final _monthlyFeeCtrl = TextEditingController();
-  final _matchFeeCtrl = TextEditingController();
+  final _teamRegistrationFeeCtrl = TextEditingController();
+  final _playerRegistrationFeeCtrl = TextEditingController();
+  final _lateRegistrationSurchargeCtrl = TextEditingController();
 
   // Fine controllers
   final _yellowCardFineCtrl = TextEditingController();
+  final _doubleYellowFineCtrl = TextEditingController();
   final _redCardFineCtrl = TextEditingController();
-  final _noShowFineCtrl = TextEditingController();
+  final _absenceFineCtrl = TextEditingController();
   final _lateArrivalFineCtrl = TextEditingController();
   final _uniformViolationFineCtrl = TextEditingController();
   final _misconductFineCtrl = TextEditingController();
-  final _forfeitFineCtrl = TextEditingController();
+
+  // Operational cost controllers
+  final _refereeFeeCtrl = TextEditingController();
+  final _assistantRefereeFeeCtrl = TextEditingController();
+  final _fieldRentalCtrl = TextEditingController();
+
+  // Payment settings
+  final _paymentDueDaysCtrl = TextEditingController();
+  final _overdueGraceDaysCtrl = TextEditingController();
+  final _paymentInstructionsCtrl = TextEditingController();
+  final _bankAccountInfoCtrl = TextEditingController();
 
   bool _autoGenerateFines = false;
+  bool _autoGenerateRefereeFees = false;
+  bool _notifyOnNewCharge = false;
+  bool _notifyOnOverdue = false;
   Currency _currency = Currency.mxn;
-  bool _isInitialized = false;
+  FinanceConfigEntity? _config;
+
+  List<TextEditingController> get _controllers => [
+    _teamRegistrationFeeCtrl,
+    _playerRegistrationFeeCtrl,
+    _lateRegistrationSurchargeCtrl,
+    _yellowCardFineCtrl,
+    _doubleYellowFineCtrl,
+    _redCardFineCtrl,
+    _absenceFineCtrl,
+    _lateArrivalFineCtrl,
+    _uniformViolationFineCtrl,
+    _misconductFineCtrl,
+    _refereeFeeCtrl,
+    _assistantRefereeFeeCtrl,
+    _fieldRentalCtrl,
+    _paymentDueDaysCtrl,
+    _overdueGraceDaysCtrl,
+    _paymentInstructionsCtrl,
+    _bankAccountInfoCtrl,
+  ];
 
   @override
   void dispose() {
-    _registrationFeeCtrl.dispose();
-    _monthlyFeeCtrl.dispose();
-    _matchFeeCtrl.dispose();
-    _yellowCardFineCtrl.dispose();
-    _redCardFineCtrl.dispose();
-    _noShowFineCtrl.dispose();
-    _lateArrivalFineCtrl.dispose();
-    _uniformViolationFineCtrl.dispose();
-    _misconductFineCtrl.dispose();
-    _forfeitFineCtrl.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
+  static String _money(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+
   void _populateFields(FinanceConfigEntity config) {
-    if (_isInitialized) return;
-    _registrationFeeCtrl.text = config.registrationFee.toStringAsFixed(0);
-    _monthlyFeeCtrl.text = config.monthlyFee.toStringAsFixed(0);
-    _matchFeeCtrl.text = config.matchFee.toStringAsFixed(0);
-    _yellowCardFineCtrl.text = config.yellowCardFine.toStringAsFixed(0);
-    _redCardFineCtrl.text = config.redCardFine.toStringAsFixed(0);
-    _noShowFineCtrl.text = config.noShowFine.toStringAsFixed(0);
-    _lateArrivalFineCtrl.text = config.lateArrivalFine.toStringAsFixed(0);
-    _uniformViolationFineCtrl.text =
-        config.uniformViolationFine.toStringAsFixed(0);
-    _misconductFineCtrl.text = config.misconductFine.toStringAsFixed(0);
-    _forfeitFineCtrl.text = config.forfeitFine.toStringAsFixed(0);
+    if (_config != null) return;
+    _teamRegistrationFeeCtrl.text = _money(config.teamRegistrationFee);
+    _playerRegistrationFeeCtrl.text = _money(config.playerRegistrationFee);
+    _lateRegistrationSurchargeCtrl.text = _money(
+      config.lateRegistrationSurcharge,
+    );
+    _yellowCardFineCtrl.text = _money(config.yellowCardFine);
+    _doubleYellowFineCtrl.text = _money(config.doubleYellowFine);
+    _redCardFineCtrl.text = _money(config.redCardFine);
+    _absenceFineCtrl.text = _money(config.absenceFine);
+    _lateArrivalFineCtrl.text = _money(config.lateArrivalFine);
+    _uniformViolationFineCtrl.text = _money(config.uniformViolationFine);
+    _misconductFineCtrl.text = _money(config.misconductFine);
+    _refereeFeeCtrl.text = _money(config.refereeFeePerMatch);
+    _assistantRefereeFeeCtrl.text = _money(config.assistantRefereeFee);
+    _fieldRentalCtrl.text = _money(config.fieldRentalPerMatch);
+    _paymentDueDaysCtrl.text = config.paymentDueDays.toString();
+    _overdueGraceDaysCtrl.text = config.overdueGraceDays.toString();
+    _paymentInstructionsCtrl.text = config.paymentInstructions ?? '';
+    _bankAccountInfoCtrl.text = config.bankAccountInfo ?? '';
     _autoGenerateFines = config.autoGenerateFines;
+    _autoGenerateRefereeFees = config.autoGenerateRefereeFees;
+    _notifyOnNewCharge = config.notifyOnNewCharge;
+    _notifyOnOverdue = config.notifyOnOverdue;
     _currency = config.currency;
-    _isInitialized = true;
+    _config = config;
   }
 
   void _saveConfig() {
-    if (!_formKey.currentState!.validate()) return;
+    final config = _config;
+    if (config == null || !_formKey.currentState!.validate()) return;
+    double amount(TextEditingController c) => double.tryParse(c.text) ?? 0;
 
-    context.read<FinanceBloc>().add(UpdateConfig(
-          leagueId: widget.leagueId,
-          registrationFee: double.tryParse(_registrationFeeCtrl.text) ?? 0,
-          monthlyFee: double.tryParse(_monthlyFeeCtrl.text) ?? 0,
-          matchFee: double.tryParse(_matchFeeCtrl.text) ?? 0,
-          yellowCardFine: double.tryParse(_yellowCardFineCtrl.text) ?? 0,
-          redCardFine: double.tryParse(_redCardFineCtrl.text) ?? 0,
-          noShowFine: double.tryParse(_noShowFineCtrl.text) ?? 0,
-          lateArrivalFine: double.tryParse(_lateArrivalFineCtrl.text) ?? 0,
-          uniformViolationFine:
-              double.tryParse(_uniformViolationFineCtrl.text) ?? 0,
-          misconductFine: double.tryParse(_misconductFineCtrl.text) ?? 0,
-          forfeitFine: double.tryParse(_forfeitFineCtrl.text) ?? 0,
+    context.read<FinanceBloc>().add(
+      UpdateConfig(
+        config: config.copyWith(
+          teamRegistrationFee: amount(_teamRegistrationFeeCtrl),
+          playerRegistrationFee: amount(_playerRegistrationFeeCtrl),
+          lateRegistrationSurcharge: amount(_lateRegistrationSurchargeCtrl),
+          yellowCardFine: amount(_yellowCardFineCtrl),
+          doubleYellowFine: amount(_doubleYellowFineCtrl),
+          redCardFine: amount(_redCardFineCtrl),
+          absenceFine: amount(_absenceFineCtrl),
+          lateArrivalFine: amount(_lateArrivalFineCtrl),
+          uniformViolationFine: amount(_uniformViolationFineCtrl),
+          misconductFine: amount(_misconductFineCtrl),
+          refereeFeePerMatch: amount(_refereeFeeCtrl),
+          assistantRefereeFee: amount(_assistantRefereeFeeCtrl),
+          fieldRentalPerMatch: amount(_fieldRentalCtrl),
+          currency: _currency,
+          paymentDueDays: int.tryParse(_paymentDueDaysCtrl.text) ?? 0,
+          overdueGraceDays: int.tryParse(_overdueGraceDaysCtrl.text) ?? 0,
           autoGenerateFines: _autoGenerateFines,
-          currency: _currency.dbValue,
-        ));
+          autoGenerateRefereeFees: _autoGenerateRefereeFees,
+          notifyOnNewCharge: _notifyOnNewCharge,
+          notifyOnOverdue: _notifyOnOverdue,
+          paymentInstructions: _paymentInstructionsCtrl.text.trim(),
+          bankAccountInfo: _bankAccountInfoCtrl.text.trim(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -144,8 +199,10 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
             if (state is FinanceConfigUpdated) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -154,8 +211,10 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
             if (state is FinanceError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -172,6 +231,10 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
             }
             if (state is FinanceConfigLoaded) {
               _populateFields(state.config);
+              return _buildForm();
+            }
+            // A failed save keeps the form (the snackbar shows the error).
+            if (state is FinanceError && _config != null) {
               return _buildForm();
             }
             if (state is FinanceError) {
@@ -207,7 +270,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'CONFIGURACION',
+        'CONFIGURACIÓN',
         style: GoogleFonts.bebasNeue(
           fontSize: 22,
           color: _SN.textPrimary,
@@ -236,34 +299,144 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
             _buildSectionHeader('CUOTAS'),
             const SizedBox(height: 12),
             _buildAmountField(
-                'Inscripcion', _registrationFeeCtrl, Icons.app_registration),
+              'Inscripción de Equipo',
+              _teamRegistrationFeeCtrl,
+              Icons.app_registration,
+            ),
             _buildAmountField(
-                'Mensualidad', _monthlyFeeCtrl, Icons.calendar_month),
+              'Inscripción de Jugador',
+              _playerRegistrationFeeCtrl,
+              Icons.person_add_alt,
+            ),
             _buildAmountField(
-                'Cuota por Partido', _matchFeeCtrl, Icons.sports_soccer),
+              'Recargo por Inscripción Tardía',
+              _lateRegistrationSurchargeCtrl,
+              Icons.more_time,
+            ),
             const SizedBox(height: 24),
 
             // Fines section
             _buildSectionHeader('MULTAS'),
             const SizedBox(height: 12),
-            _buildAmountField('Tarjeta Amarilla', _yellowCardFineCtrl,
-                Icons.square, color: _SN.amber),
-            _buildAmountField('Tarjeta Roja', _redCardFineCtrl, Icons.square,
-                color: _SN.error),
             _buildAmountField(
-                'Inasistencia', _noShowFineCtrl, Icons.person_off),
+              'Tarjeta Amarilla',
+              _yellowCardFineCtrl,
+              Icons.square,
+              color: _SN.amber,
+            ),
             _buildAmountField(
-                'Llegada Tarde', _lateArrivalFineCtrl, Icons.access_time),
-            _buildAmountField('Uniforme', _uniformViolationFineCtrl,
-                Icons.checkroom),
+              'Doble Amarilla',
+              _doubleYellowFineCtrl,
+              Icons.square,
+              color: Colors.orange,
+            ),
             _buildAmountField(
-                'Mala Conducta', _misconductFineCtrl, Icons.warning),
+              'Tarjeta Roja',
+              _redCardFineCtrl,
+              Icons.square,
+              color: _SN.error,
+            ),
             _buildAmountField(
-                'Forfeit', _forfeitFineCtrl, Icons.cancel_outlined),
+              'Incomparecencia',
+              _absenceFineCtrl,
+              Icons.person_off,
+            ),
+            _buildAmountField(
+              'Llegada Tarde',
+              _lateArrivalFineCtrl,
+              Icons.access_time,
+            ),
+            _buildAmountField(
+              'Uniforme',
+              _uniformViolationFineCtrl,
+              Icons.checkroom,
+            ),
+            _buildAmountField(
+              'Mala Conducta',
+              _misconductFineCtrl,
+              Icons.warning,
+            ),
             const SizedBox(height: 24),
 
-            // Auto-generate toggle
-            _buildAutoGenerateToggle(),
+            // Operational costs
+            _buildSectionHeader('OPERATIVOS'),
+            const SizedBox(height: 12),
+            _buildAmountField(
+              'Arbitraje por Partido',
+              _refereeFeeCtrl,
+              Icons.sports,
+            ),
+            _buildAmountField(
+              'Árbitro Asistente',
+              _assistantRefereeFeeCtrl,
+              Icons.flag_outlined,
+            ),
+            _buildAmountField(
+              'Renta de Cancha por Partido',
+              _fieldRentalCtrl,
+              Icons.stadium_outlined,
+            ),
+            const SizedBox(height: 24),
+
+            // Payment settings
+            _buildSectionHeader('PAGOS'),
+            const SizedBox(height: 12),
+            _buildDaysField(
+              'Días para Pago',
+              _paymentDueDaysCtrl,
+              Icons.event_available,
+              max: 90,
+            ),
+            _buildDaysField(
+              'Días de Gracia',
+              _overdueGraceDaysCtrl,
+              Icons.hourglass_bottom,
+              max: 30,
+            ),
+            _buildTextArea(
+              'Instrucciones de Pago',
+              _paymentInstructionsCtrl,
+              Icons.info_outline,
+            ),
+            _buildTextArea(
+              'Datos Bancarios',
+              _bankAccountInfoCtrl,
+              Icons.account_balance,
+            ),
+            const SizedBox(height: 24),
+
+            // Automation toggles
+            _buildToggle(
+              Icons.auto_fix_high,
+              'Generar multas automáticamente',
+              'Crea multas cuando se registran tarjetas en partidos',
+              _autoGenerateFines,
+              (v) => setState(() => _autoGenerateFines = v),
+            ),
+            const SizedBox(height: 10),
+            _buildToggle(
+              Icons.sports,
+              'Generar honorarios de árbitros',
+              'Crea el cargo de arbitraje al cerrar cada partido',
+              _autoGenerateRefereeFees,
+              (v) => setState(() => _autoGenerateRefereeFees = v),
+            ),
+            const SizedBox(height: 10),
+            _buildToggle(
+              Icons.notifications_active_outlined,
+              'Notificar nuevos cargos',
+              'Envía notificación cuando se genera un nuevo cargo',
+              _notifyOnNewCharge,
+              (v) => setState(() => _notifyOnNewCharge = v),
+            ),
+            const SizedBox(height: 10),
+            _buildToggle(
+              Icons.alarm,
+              'Notificar pagos vencidos',
+              'Envía recordatorio cuando un pago se vence',
+              _notifyOnOverdue,
+              (v) => setState(() => _notifyOnOverdue = v),
+            ),
             const SizedBox(height: 32),
 
             // Save button
@@ -283,9 +456,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
           colors: [_SN.gold.withOpacity(0.15), Colors.transparent],
         ),
         borderRadius: BorderRadius.circular(6),
-        border: Border(
-          left: BorderSide(color: _SN.gold, width: 3),
-        ),
+        border: Border(left: BorderSide(color: _SN.gold, width: 3)),
       ),
       child: Text(
         title,
@@ -316,11 +487,8 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
             return DropdownMenuItem(
               value: currency,
               child: Text(
-                '${currency.symbol} - ${currency.display}',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  color: _SN.textPrimary,
-                ),
+                '${currency.dbValue} - ${currency.display}',
+                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textPrimary),
               ),
             );
           }).toList(),
@@ -342,8 +510,10 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
       margin: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: controller,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
+        ],
         style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
@@ -360,8 +530,10 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
           ),
           filled: true,
           fillColor: _SN.cardDark,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: _SN.gold.withOpacity(0.2)),
@@ -378,8 +550,8 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
         validator: (value) {
           if (value != null && value.isNotEmpty) {
             final number = double.tryParse(value);
-            if (number == null || number < 0) {
-              return 'Monto invalido';
+            if (number == null || number < 0 || number > 999999.99) {
+              return 'Monto inválido';
             }
           }
           return null;
@@ -388,7 +560,81 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
     );
   }
 
-  Widget _buildAutoGenerateToggle() {
+  InputDecoration _decoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.outfit(color: _SN.textSecondary, fontSize: 13),
+      prefixIcon: Icon(icon, color: _SN.gold, size: 20),
+      filled: true,
+      fillColor: _SN.cardDark,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _SN.gold.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _SN.gold.withOpacity(0.15)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: _SN.gold, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildDaysField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    required int max,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(2),
+        ],
+        style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+        decoration: _decoration(label, icon),
+        validator: (value) {
+          final days = int.tryParse(value ?? '');
+          if (days == null || days < 0 || days > max) {
+            return 'Debe estar entre 0 y $max';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildTextArea(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: TextFormField(
+        controller: controller,
+        minLines: 1,
+        maxLines: 3,
+        style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+        decoration: _decoration(label, icon),
+      ),
+    );
+  }
+
+  Widget _buildToggle(
+    IconData icon,
+    String title,
+    String hint,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -398,14 +644,14 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
       ),
       child: Row(
         children: [
-          Icon(Icons.auto_fix_high, color: _SN.gold, size: 22),
+          Icon(icon, color: _SN.gold, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Generar multas automaticamente',
+                  title,
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     color: _SN.textPrimary,
@@ -413,19 +659,15 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
                   ),
                 ),
                 Text(
-                  'Las multas se generaran al finalizar cada partido',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    color: _SN.textMuted,
-                  ),
+                  hint,
+                  style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
                 ),
               ],
             ),
           ),
           Switch(
-            value: _autoGenerateFines,
-            onChanged: (value) =>
-                setState(() => _autoGenerateFines = value),
+            value: value,
+            onChanged: onChanged,
             activeColor: _SN.neonGreen,
             activeTrackColor: _SN.neonGreen.withOpacity(0.3),
             inactiveThumbColor: _SN.textMuted,
@@ -451,11 +693,8 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
           elevation: 0,
         ),
         child: Text(
-          'GUARDAR CONFIGURACION',
-          style: GoogleFonts.bebasNeue(
-            fontSize: 18,
-            letterSpacing: 2,
-          ),
+          'GUARDAR CONFIGURACIÓN',
+          style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
         ),
       ),
     );

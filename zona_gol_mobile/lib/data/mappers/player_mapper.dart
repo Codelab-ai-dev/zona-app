@@ -1,59 +1,49 @@
+import '../../core/network/json.dart';
 import '../../domain/entities/player_entity.dart';
-import '../models/player_model.dart';
+import '../../domain/entities/player_verification_entity.dart';
 
-/// Player Mapper
-/// Converts between PlayerModel (data layer) and PlayerEntity (domain layer)
+/// Player Mapper.
+///
+/// - `GET /teams/{id}/players` and `GET /players/{id}` return the public shape
+///   (`id, name, team_id, position, jersey_number, photo, is_active`).
+/// - `GET /leagues/{id}/players` adds `team_name` and `id_verified`.
+/// - Create/update responses carry `birth_date` and `id_verified` too.
 class PlayerMapper {
-  /// Convert PlayerModel to PlayerEntity
-  static PlayerEntity toEntity(PlayerModel model) {
-    return PlayerEntity(
-      id: model.id,
-      teamId: model.teamId,
-      name: model.name,
-      jerseyNumber: model.jerseyNumber,
-      photo: model.photo,
-      birthDate: model.birthDate,
-      position: model.position,
-      isActive: model.isActive,
-      idDocumentUrl: model.idDocumentUrl,
-      idVerified: model.idVerified,
-      createdAt: model.createdAt,
-      updatedAt: model.updatedAt,
-    );
-  }
+  static PlayerEntity fromJson(Map<String, dynamic> json) => PlayerEntity(
+        id: json.str('id'),
+        teamId: json.str('team_id'),
+        name: json.str('name'),
+        jerseyNumber: json.intOrNull('jersey_number'),
+        photo: _nonEmpty(json.strOrNull('photo')),
+        birthDate: json.dateOrNull('birth_date'),
+        position: _nonEmpty(json.strOrNull('position')),
+        isActive: json.boolean('is_active', true),
+        idVerified: json.boolean('id_verified'),
+        createdAt: json.dateOrNull('created_at'),
+        updatedAt: json.dateOrNull('updated_at'),
+      );
 
-  /// Convert PlayerEntity to PlayerModel
-  static PlayerModel toModel(PlayerEntity entity) {
-    return PlayerModel(
-      id: entity.id,
-      teamId: entity.teamId,
-      name: entity.name,
-      jerseyNumber: entity.jerseyNumber,
-      photo: entity.photo,
-      birthDate: entity.birthDate,
-      position: entity.position,
-      isActive: entity.isActive,
-      idDocumentUrl: entity.idDocumentUrl,
-      idVerified: entity.idVerified,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    );
-  }
+  /// Row of `GET /leagues/{id}/players/verification`.
+  static PlayerVerificationEntity verificationFromJson(Map<String, dynamic> json) => PlayerVerificationEntity(
+        playerId: json.str('player_id'),
+        name: json.str('name'),
+        jerseyNumber: json.integer('jersey_number'),
+        position: json.str('position'),
+        birthDate: json.dateOrNull('birth_date'),
+        teamId: json.str('team_id'),
+        teamName: json.str('team_name'),
+        status: VerificationStatus.parse(json.strOrNull('status')),
+        documentKey: _nonEmpty(json.strOrNull('document_key')),
+        verifiedAt: json.dateOrNull('id_verified_at'),
+      );
 
-  /// Convert list of PlayerModel to list of PlayerEntity
-  static List<PlayerEntity> toEntityList(List<PlayerModel> models) {
-    return models.map((model) => toEntity(model)).toList();
-  }
+  /// `GET /leagues/{id}/players/verification/summary`.
+  static VerificationSummaryEntity summaryFromJson(Map<String, dynamic> json) => VerificationSummaryEntity(
+        total: json.integer('total'),
+        pending: json.integer('pending'),
+        verified: json.integer('verified'),
+        noDocument: json.integer('no_document'),
+      );
 
-  /// Create PlayerEntity from JSON
-  static PlayerEntity fromJson(Map<String, dynamic> json) {
-    final model = PlayerModel.fromJson(json);
-    return toEntity(model);
-  }
-
-  /// Convert PlayerEntity to JSON
-  static Map<String, dynamic> toJson(PlayerEntity entity) {
-    final model = toModel(entity);
-    return model.toJson();
-  }
+  static String? _nonEmpty(String? v) => v == null || v.isEmpty ? null : v;
 }

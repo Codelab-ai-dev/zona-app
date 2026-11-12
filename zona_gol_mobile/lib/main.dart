@@ -6,10 +6,8 @@ import 'core/config/app_config.dart';
 import 'core/config/theme.dart';
 import 'core/di/injection.dart';
 import 'core/network/connectivity_manager.dart';
-import 'data/datasources/remote/supabase_client.dart';
 import 'data/datasources/local/hive_service.dart';
 import 'presentation/bloc/auth/auth_bloc.dart';
-import 'presentation/bloc/auth/auth_event.dart';
 import 'presentation/bloc/auth/auth_state.dart';
 import 'presentation/bloc/connectivity/connectivity_cubit.dart';
 import 'presentation/widgets/connectivity/offline_banner.dart';
@@ -30,6 +28,7 @@ void main() async {
   ]);
 
   // Print app configuration
+  AppConfig.validate();
   AppConfig.printConfig();
 
   // Initialize date formatting for Spanish locale
@@ -54,16 +53,12 @@ Future<void> _initializeServices() async {
     await HiveService.initialize();
     await HiveService.instance.openBoxes();
 
-    // 2. Initialize Supabase (backend)
-    await SupabaseClientService.initialize();
-
     // 3. Initialize Connectivity Manager
     ConnectivityManager.instance;
 
     // Print debug info in development
     if (!AppConfig.isProduction) {
       HiveService.instance.printDebugInfo();
-      SupabaseClientService.instance.printDebugInfo();
       ConnectivityManager.instance.printDebugInfo();
     }
 
@@ -76,6 +71,10 @@ Future<void> _initializeServices() async {
   }
 }
 
+/// Root navigator, so signing out (or an expired session) clears every
+/// screen the user had open.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 class ZonaGolApp extends StatelessWidget {
   const ZonaGolApp({super.key});
 
@@ -87,6 +86,7 @@ class ZonaGolApp extends StatelessWidget {
         BlocProvider(create: (_) => sl<ConnectivityCubit>()),
       ],
       child: MaterialApp(
+        navigatorKey: rootNavigatorKey,
         title: 'Zona Gol',
         debugShowCheckedModeBanner: false,
 
@@ -182,12 +182,13 @@ class HomeScreen extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Unauthenticated) {
-          // Navigate to login
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-            ),
+          rootNavigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (_) => false,
           );
+          if (state.message != null) {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(state.message!)));
+          }
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(

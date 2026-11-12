@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../data/datasources/remote/supabase_client.dart';
+import '../../../core/di/injection.dart';
+import '../../../domain/entities/admin_user_entity.dart';
+import '../../../domain/repositories/user_admin_repository.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
@@ -12,16 +14,13 @@ class _StadiumNights {
   static const Color cardDark = Color(0xFF12121A);
 
   static const Color gold = Color(0xFFFFD700);
-  static const Color goldLight = Color(0xFFFFF0B3);
   static const Color amber = Color(0xFFF59E0B);
 
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color neonBlue = Color(0xFF00BFFF);
   static const Color neonPurple = Color(0xFF8B5CF6);
 
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color inactive = Color(0xFF6B7280);
 
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
@@ -48,7 +47,7 @@ class _UsersListScreenState extends State<UsersListScreen>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  List<Map<String, dynamic>> _users = [];
+  List<AdminUserEntity> _users = [];
   bool _isLoading = true;
   String? _error;
 
@@ -88,41 +87,33 @@ class _UsersListScreenState extends State<UsersListScreen>
       _error = null;
     });
 
-    try {
-      final client = SupabaseClientService.instance.client;
-      final response = await client
-          .from('users')
-          .select('*, leagues!users_league_id_fkey(name), teams!users_team_id_fkey(name)')
-          .order('created_at', ascending: false);
-
-      if (mounted) {
+    final result = await sl<UserAdminRepository>().getUsers();
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _error = 'Error al cargar usuarios: ${failure.message}';
+        _isLoading = false;
+      }),
+      (users) {
         setState(() {
-          _users = List<Map<String, dynamic>>.from(response);
+          _users = users;
           _isLoading = false;
         });
         _listController.forward();
-      }
-    } catch (e) {
-      print('❌ Error loading users: $e');
-      if (mounted) {
-        setState(() {
-          _error = 'Error al cargar usuarios: $e';
-          _isLoading = false;
-        });
-      }
-    }
+      },
+    );
   }
 
-  List<Map<String, dynamic>> _filterUsers() {
+  List<AdminUserEntity> _filterUsers() {
     return _users.where((user) {
       // Role filter
-      if (_roleFilter != 'all' && user['role'] != _roleFilter) return false;
+      if (_roleFilter != 'all' && user.role != _roleFilter) return false;
 
       // Search filter
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
-        final name = (user['name'] ?? '').toString().toLowerCase();
-        final email = (user['email'] ?? '').toString().toLowerCase();
+        final name = user.name.toLowerCase();
+        final email = user.email.toLowerCase();
         return name.contains(query) || email.contains(query);
       }
 
@@ -725,7 +716,7 @@ class _UsersListScreenState extends State<UsersListScreen>
     );
   }
 
-  Widget _buildUsersList(List<Map<String, dynamic>> users) {
+  Widget _buildUsersList(List<AdminUserEntity> users) {
     return RefreshIndicator(
       onRefresh: _loadUsers,
       color: _StadiumNights.neonBlue,
@@ -746,8 +737,8 @@ class _UsersListScreenState extends State<UsersListScreen>
     );
   }
 
-  void _showEditUserDialog(Map<String, dynamic> user) {
-    final nameController = TextEditingController(text: user['name'] ?? '');
+  void _showEditUserDialog(AdminUserEntity user) {
+    final nameController = TextEditingController(text: user.name);
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -825,7 +816,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                                 ),
                               ),
                               Text(
-                                user['email'] ?? '',
+                                user.email,
                                 style: GoogleFonts.outfit(
                                   fontSize: 14,
                                   color: _StadiumNights.textSecondary,
@@ -905,18 +896,17 @@ class _UsersListScreenState extends State<UsersListScreen>
                         child: GestureDetector(
                           onTap: () async {
                             if (formKey.currentState!.validate()) {
-                              try {
-                                await SupabaseClientService.instance.client
-                                    .from('users')
-                                    .update({'name': nameController.text.trim()})
-                                    .eq('id', user['id']);
-
-                                Navigator.pop(dialogContext);
-                                _showSuccessMessage('Usuario actualizado');
-                                _loadUsers();
-                              } catch (e) {
-                                _showErrorMessage('Error al actualizar: $e');
-                              }
+                              final result = await sl<UserAdminRepository>()
+                                  .updateUser(user.id, name: nameController.text.trim());
+                              if (!mounted) return;
+                              result.fold(
+                                (failure) => _showErrorMessage('Error al actualizar: ${failure.message}'),
+                                (_) {
+                                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                                  _showSuccessMessage('Usuario actualizado');
+                                  _loadUsers();
+                                },
+                              );
                             }
                           },
                           child: Container(
@@ -953,8 +943,8 @@ class _UsersListScreenState extends State<UsersListScreen>
     );
   }
 
-  void _showChangeRoleDialog(Map<String, dynamic> user) {
-    String selectedRole = user['role'] ?? 'public';
+  void _showChangeRoleDialog(AdminUserEntity user) {
+    String selectedRole = user.role;
 
     showDialog(
       context: context,
@@ -1003,7 +993,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                               ),
                             ),
                             Text(
-                              user['email'] ?? '',
+                              user.email,
                               style: GoogleFonts.outfit(
                                 fontSize: 12,
                                 color: _StadiumNights.textMuted,
@@ -1087,19 +1077,18 @@ class _UsersListScreenState extends State<UsersListScreen>
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
-                            if (selectedRole != user['role']) {
-                              try {
-                                await SupabaseClientService.instance.client
-                                    .from('users')
-                                    .update({'role': selectedRole})
-                                    .eq('id', user['id']);
-
-                                Navigator.pop(dialogContext);
-                                _showSuccessMessage('Rol actualizado a ${_getRoleName(selectedRole)}');
-                                _loadUsers();
-                              } catch (e) {
-                                _showErrorMessage('Error al cambiar rol: $e');
-                              }
+                            if (selectedRole != user.role) {
+                              final result = await sl<UserAdminRepository>()
+                                  .updateUser(user.id, role: selectedRole);
+                              if (!mounted) return;
+                              result.fold(
+                                (failure) => _showErrorMessage('Error al cambiar rol: ${failure.message}'),
+                                (_) {
+                                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                                  _showSuccessMessage('Rol actualizado a ${_getRoleName(selectedRole)}');
+                                  _loadUsers();
+                                },
+                              );
                             } else {
                               Navigator.pop(dialogContext);
                             }
@@ -1327,7 +1316,7 @@ class _AnimatedUserIcon extends StatelessWidget {
 
 /// User Card
 class _UserCard extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final AdminUserEntity user;
   final int index;
   final AnimationController listController;
   final VoidCallback onEdit;
@@ -1407,25 +1396,9 @@ class _UserCardState extends State<_UserCard>
     }
   }
 
-  String? _getLeagueName() {
-    // Try different possible keys for league relationship
-    final leagues = widget.user['leagues!users_league_id_fkey'] ??
-                    widget.user['leagues'];
-    if (leagues != null && leagues is Map && leagues['name'] != null) {
-      return leagues['name'] as String;
-    }
-    return null;
-  }
+  String? _getLeagueName() => widget.user.leagueName;
 
-  String? _getTeamName() {
-    // Try different possible keys for team relationship
-    final teams = widget.user['teams!users_team_id_fkey'] ??
-                  widget.user['teams'];
-    if (teams != null && teams is Map && teams['name'] != null) {
-      return teams['name'] as String;
-    }
-    return null;
-  }
+  String? _getTeamName() => widget.user.teamName;
 
   @override
   Widget build(BuildContext context) {
@@ -1439,7 +1412,7 @@ class _UserCardState extends State<_UserCard>
       ),
     );
 
-    final role = widget.user['role'] ?? 'public';
+    final role = widget.user.role;
     final roleColor = _getRoleColor(role);
 
     return AnimatedBuilder(
@@ -1502,7 +1475,7 @@ class _UserCardState extends State<_UserCard>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.user['name'] ?? widget.user['email'] ?? 'Sin nombre',
+                              widget.user.name.isNotEmpty ? widget.user.name : widget.user.email,
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
                                 color: _StadiumNights.textPrimary,
@@ -1511,7 +1484,7 @@ class _UserCardState extends State<_UserCard>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              widget.user['email'] ?? '',
+                              widget.user.email,
                               style: GoogleFonts.outfit(
                                 fontSize: 13,
                                 color: _StadiumNights.textMuted,
@@ -1556,8 +1529,7 @@ class _UserCardState extends State<_UserCard>
   }
 
   Widget _buildAvatar(String role, Color roleColor) {
-    final avatarUrl = widget.user['avatar_url'];
-    final name = widget.user['name'] ?? widget.user['email'] ?? '?';
+    final name = widget.user.name.isNotEmpty ? widget.user.name : widget.user.email;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
     return Container(
@@ -1577,16 +1549,7 @@ class _UserCardState extends State<_UserCard>
           color: roleColor.withOpacity(0.3),
         ),
       ),
-      child: avatarUrl != null && avatarUrl.isNotEmpty
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                avatarUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildInitialAvatar(initial, roleColor),
-              ),
-            )
-          : _buildInitialAvatar(initial, roleColor),
+      child: _buildInitialAvatar(initial, roleColor),
     );
   }
 

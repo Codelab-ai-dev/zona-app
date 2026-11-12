@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../domain/entities/finance_config_entity.dart';
 import '../../../domain/entities/finance_enums.dart';
 
 abstract class FinanceEvent extends Equatable {
@@ -40,68 +41,81 @@ class LoadTransactions extends FinanceEvent {
 /// Create a new transaction
 class CreateTransaction extends FinanceEvent {
   final String leagueId;
-  final String teamId;
+  final String? teamId;
   final String? playerId;
   final String? matchId;
-  final String transactionType;
+  final TransactionType type;
   final double amount;
-  final String? description;
-  final String? dueDate;
+  final String description;
+  final String? notes;
+  final DateTime? dueDate;
 
   const CreateTransaction({
     required this.leagueId,
-    required this.teamId,
+    this.teamId,
     this.playerId,
     this.matchId,
-    required this.transactionType,
+    required this.type,
     required this.amount,
-    this.description,
+    required this.description,
+    this.notes,
     this.dueDate,
   });
 
   @override
   List<Object?> get props => [
-        leagueId,
-        teamId,
-        playerId,
-        matchId,
-        transactionType,
-        amount,
-        description,
-        dueDate,
-      ];
+    leagueId,
+    teamId,
+    playerId,
+    matchId,
+    type,
+    amount,
+    description,
+    notes,
+    dueDate,
+  ];
 }
 
-/// Cancel a transaction
+/// Cancel an open transaction (the API requires a reason)
 class CancelTransaction extends FinanceEvent {
   final String transactionId;
   final String leagueId;
+  final String reason;
 
   const CancelTransaction({
     required this.transactionId,
     required this.leagueId,
+    required this.reason,
   });
 
   @override
-  List<Object?> get props => [transactionId, leagueId];
+  List<Object?> get props => [transactionId, leagueId, reason];
 }
 
 /// Register a payment for a transaction
 class RegisterPayment extends FinanceEvent {
   final String transactionId;
   final double amount;
-  final String paymentMethod;
+  final PaymentMethod paymentMethod;
+  final String? paymentReference;
   final String leagueId;
 
   const RegisterPayment({
     required this.transactionId,
     required this.amount,
     required this.paymentMethod,
+    this.paymentReference,
     required this.leagueId,
   });
 
   @override
-  List<Object?> get props => [transactionId, amount, paymentMethod, leagueId];
+  List<Object?> get props => [
+    transactionId,
+    amount,
+    paymentMethod,
+    paymentReference,
+    leagueId,
+  ];
 }
 
 /// Load finance configuration
@@ -114,54 +128,14 @@ class LoadConfig extends FinanceEvent {
   List<Object?> get props => [leagueId];
 }
 
-/// Update finance configuration
+/// Save the finance configuration
 class UpdateConfig extends FinanceEvent {
-  final String leagueId;
-  final double? registrationFee;
-  final double? monthlyFee;
-  final double? matchFee;
-  final double? yellowCardFine;
-  final double? redCardFine;
-  final double? noShowFine;
-  final double? lateArrivalFine;
-  final double? uniformViolationFine;
-  final double? misconductFine;
-  final double? forfeitFine;
-  final bool? autoGenerateFines;
-  final String? currency;
+  final FinanceConfigEntity config;
 
-  const UpdateConfig({
-    required this.leagueId,
-    this.registrationFee,
-    this.monthlyFee,
-    this.matchFee,
-    this.yellowCardFine,
-    this.redCardFine,
-    this.noShowFine,
-    this.lateArrivalFine,
-    this.uniformViolationFine,
-    this.misconductFine,
-    this.forfeitFine,
-    this.autoGenerateFines,
-    this.currency,
-  });
+  const UpdateConfig({required this.config});
 
   @override
-  List<Object?> get props => [
-        leagueId,
-        registrationFee,
-        monthlyFee,
-        matchFee,
-        yellowCardFine,
-        redCardFine,
-        noShowFine,
-        lateArrivalFine,
-        uniformViolationFine,
-        misconductFine,
-        forfeitFine,
-        autoGenerateFines,
-        currency,
-      ];
+  List<Object?> get props => [config];
 }
 
 /// Generate fines from a match
@@ -169,10 +143,7 @@ class GenerateFines extends FinanceEvent {
   final String matchId;
   final String leagueId;
 
-  const GenerateFines({
-    required this.matchId,
-    required this.leagueId,
-  });
+  const GenerateFines({required this.matchId, required this.leagueId});
 
   @override
   List<Object?> get props => [matchId, leagueId];

@@ -30,10 +30,7 @@ class _StadiumNights {
 class WhatsAppManagementScreen extends StatelessWidget {
   final UserEntity user;
 
-  const WhatsAppManagementScreen({
-    super.key,
-    required this.user,
-  });
+  const WhatsAppManagementScreen({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -84,8 +81,8 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
 
       if (hasFeature) {
         context.read<WhatsAppBloc>().add(
-              LoadWhatsAppLinks(leagueId: _leagueId),
-            );
+          LoadWhatsAppLinks(leagueId: _leagueId),
+        );
       }
     }
   }
@@ -123,11 +120,13 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.3),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                color: _StadiumNights.gold.withOpacity(0.2)),
+            border: Border.all(color: _StadiumNights.gold.withOpacity(0.2)),
           ),
-          child: const Icon(Icons.arrow_back,
-              color: _StadiumNights.gold, size: 18),
+          child: const Icon(
+            Icons.arrow_back,
+            color: _StadiumNights.gold,
+            size: 18,
+          ),
         ),
         onPressed: () => Navigator.pop(context),
       ),
@@ -154,12 +153,11 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
       actions: [
         if (_featureEnabled)
           IconButton(
-            icon:
-                const Icon(Icons.refresh, color: _StadiumNights.gold),
+            icon: const Icon(Icons.refresh, color: _StadiumNights.gold),
             onPressed: () {
               context.read<WhatsAppBloc>().add(
-                    LoadWhatsAppLinks(leagueId: _leagueId),
-                  );
+                LoadWhatsAppLinks(leagueId: _leagueId),
+              );
             },
           ),
       ],
@@ -183,8 +181,8 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             state is WhatsAppLinkToggled) {
           // Reload after mutation
           context.read<WhatsAppBloc>().add(
-                LoadWhatsAppLinks(leagueId: _leagueId),
-              );
+            LoadWhatsAppLinks(leagueId: _leagueId),
+          );
 
           String message = '';
           if (state is WhatsAppLinkCreated) {
@@ -192,7 +190,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           } else if (state is WhatsAppLinkUpdated) {
             message = 'Enlace actualizado exitosamente';
           } else if (state is WhatsAppLinkDeleted) {
-            message = 'Enlace eliminado exitosamente';
+            message = 'Enlace desactivado';
           } else if (state is WhatsAppLinkToggled) {
             final toggled = state.link;
             message = toggled.isActive
@@ -261,8 +259,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             height: 50,
             child: CircularProgressIndicator(
               strokeWidth: 3,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(_StadiumNights.gold),
+              valueColor: AlwaysStoppedAnimation<Color>(_StadiumNights.gold),
             ),
           ),
           const SizedBox(height: 20),
@@ -371,7 +368,9 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 backgroundColor: _StadiumNights.whatsappGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -425,8 +424,8 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             ElevatedButton(
               onPressed: () {
                 context.read<WhatsAppBloc>().add(
-                      LoadWhatsAppLinks(leagueId: _leagueId),
-                    );
+                  LoadWhatsAppLinks(leagueId: _leagueId),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _StadiumNights.gold,
@@ -441,7 +440,9 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
   }
 
   Widget _buildLinksContent(
-      BuildContext context, List<WhatsAppLinkEntity> links) {
+    BuildContext context,
+    List<WhatsAppLinkEntity> links,
+  ) {
     final activeCount = links.where((l) => l.isActive).length;
     final inactiveCount = links.length - activeCount;
 
@@ -452,14 +453,23 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
-              _buildStatCard('Total', links.length.toString(),
-                  _StadiumNights.gold),
+              _buildStatCard(
+                'Total',
+                links.length.toString(),
+                _StadiumNights.gold,
+              ),
               const SizedBox(width: 8),
-              _buildStatCard('Activos', activeCount.toString(),
-                  _StadiumNights.neonGreen),
+              _buildStatCard(
+                'Activos',
+                activeCount.toString(),
+                _StadiumNights.neonGreen,
+              ),
               const SizedBox(width: 8),
-              _buildStatCard('Inactivos', inactiveCount.toString(),
-                  _StadiumNights.error),
+              _buildStatCard(
+                'Inactivos',
+                inactiveCount.toString(),
+                _StadiumNights.error,
+              ),
             ],
           ),
         ),
@@ -491,10 +501,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           children: [
             Text(
               value,
-              style: GoogleFonts.bebasNeue(
-                fontSize: 24,
-                color: color,
-              ),
+              style: GoogleFonts.bebasNeue(fontSize: 24, color: color),
             ),
             const SizedBox(height: 2),
             Text(
@@ -570,10 +577,11 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                           // Role badge
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: _getRoleColor(link.role)
-                                  .withOpacity(0.1),
+                              color: _getRoleColor(link.role).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -595,29 +603,29 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                   value: link.isActive,
                   onChanged: (value) {
                     context.read<WhatsAppBloc>().add(
-                          ToggleWhatsAppLink(
-                            id: link.id,
-                            isActive: value,
-                          ),
-                        );
+                      ToggleWhatsAppLink(id: link.id, isActive: value),
+                    );
                   },
                   activeColor: _StadiumNights.whatsappGreen,
                   inactiveThumbColor: _StadiumNights.textMuted,
-                  inactiveTrackColor:
-                      _StadiumNights.textMuted.withOpacity(0.3),
+                  inactiveTrackColor: _StadiumNights.textMuted.withOpacity(0.3),
                 ),
-                // Delete button
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: _StadiumNights.error, size: 20),
-                  onPressed: () =>
-                      _showDeleteConfirmation(context, link),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
+                // Deactivate button (DELETE only deactivates the link)
+                if (link.isActive)
+                  IconButton(
+                    tooltip: 'Desactivar enlace',
+                    icon: const Icon(
+                      Icons.link_off,
+                      color: _StadiumNights.error,
+                      size: 20,
+                    ),
+                    onPressed: () => _showDeleteConfirmation(context, link),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -655,16 +663,9 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
         child: link.hasDisplayName
             ? Text(
                 link.initials,
-                style: GoogleFonts.bebasNeue(
-                  fontSize: 18,
-                  color: color,
-                ),
+                style: GoogleFonts.bebasNeue(fontSize: 18, color: color),
               )
-            : Icon(
-                Icons.chat,
-                color: color,
-                size: 22,
-              ),
+            : Icon(Icons.chat, color: color, size: 22),
       ),
     );
   }
@@ -677,26 +678,25 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
         return _StadiumNights.neonGreen;
       case 'team_owner':
         return const Color(0xFF60A5FA);
-      case 'public':
+      case 'user':
         return _StadiumNights.textSecondary;
       default:
         return _StadiumNights.textMuted;
     }
   }
 
-  void _showCreateEditDialog(BuildContext context,
-      {WhatsAppLinkEntity? link}) {
+  void _showCreateEditDialog(BuildContext context, {WhatsAppLinkEntity? link}) {
     final isEdit = link != null;
     final phoneController = TextEditingController(
-      text: isEdit
-          ? (link.phoneNumber.startsWith('+52')
-              ? link.phoneNumber.substring(3)
-              : link.phoneNumber)
-          : '',
+      text: isEdit ? link.localPhone : '',
     );
-    final nameController =
-        TextEditingController(text: link?.displayName ?? '');
-    String selectedRole = link?.role ?? 'public';
+    final nameController = TextEditingController(text: link?.displayName ?? '');
+    String selectedRole = link?.role ?? 'user';
+    // The API does not allow changing the role of an existing link.
+    final roleOptions = [
+      ...WhatsAppLinkEntity.roles,
+      if (!WhatsAppLinkEntity.roles.contains(selectedRole)) selectedRole,
+    ];
 
     final bloc = context.read<WhatsAppBloc>();
 
@@ -709,8 +709,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
               backgroundColor: _StadiumNights.surfaceDark,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                    color: _StadiumNights.gold.withOpacity(0.2)),
+                side: BorderSide(color: _StadiumNights.gold.withOpacity(0.2)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -746,19 +745,22 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                           color: _StadiumNights.cardDark,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: _StadiumNights.gold
-                                  .withOpacity(0.15)),
+                            color: _StadiumNights.gold.withOpacity(0.15),
+                          ),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 14),
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
                                 border: Border(
                                   right: BorderSide(
-                                    color: _StadiumNights.gold
-                                        .withOpacity(0.15),
+                                    color: _StadiumNights.gold.withOpacity(
+                                      0.15,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -775,25 +777,23 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                               child: TextField(
                                 controller: phoneController,
                                 style: GoogleFonts.outfit(
-                                    color:
-                                        _StadiumNights.textPrimary),
+                                  color: _StadiumNights.textPrimary,
+                                ),
                                 keyboardType: TextInputType.phone,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter
-                                      .digitsOnly,
-                                  LengthLimitingTextInputFormatter(
-                                      10),
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(10),
                                 ],
                                 decoration: InputDecoration(
-                                  hintText: '1234567890',
+                                  hintText: '5512345678',
                                   hintStyle: GoogleFonts.outfit(
-                                      color:
-                                          _StadiumNights.textMuted),
+                                    color: _StadiumNights.textMuted,
+                                  ),
                                   border: InputBorder.none,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 14),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 14,
+                                  ),
                                 ),
                               ),
                             ),
@@ -817,21 +817,24 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                           color: _StadiumNights.cardDark,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: _StadiumNights.gold
-                                  .withOpacity(0.15)),
+                            color: _StadiumNights.gold.withOpacity(0.15),
+                          ),
                         ),
                         child: TextField(
                           controller: nameController,
                           style: GoogleFonts.outfit(
-                              color: _StadiumNights.textPrimary),
+                            color: _StadiumNights.textPrimary,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Nombre del contacto',
                             hintStyle: GoogleFonts.outfit(
-                                color: _StadiumNights.textMuted),
+                              color: _StadiumNights.textMuted,
+                            ),
                             border: InputBorder.none,
-                            contentPadding:
-                                const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
                           ),
                         ),
                       ),
@@ -852,11 +855,10 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                           color: _StadiumNights.cardDark,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: _StadiumNights.gold
-                                  .withOpacity(0.15)),
+                            color: _StadiumNights.gold.withOpacity(0.15),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: selectedRole,
@@ -866,29 +868,33 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                               color: _StadiumNights.textPrimary,
                               fontSize: 14,
                             ),
-                            icon: const Icon(Icons.expand_more,
-                                color: _StadiumNights.gold),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'league_admin',
-                                child: Text('Admin Liga'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'team_owner',
-                                child: Text('Dueño Equipo'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'public',
-                                child: Text('Público'),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                setDialogState(() {
-                                  selectedRole = value;
-                                });
-                              }
-                            },
+                            icon: const Icon(
+                              Icons.expand_more,
+                              color: _StadiumNights.gold,
+                            ),
+                            items: roleOptions
+                                .map(
+                                  (role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(
+                                      WhatsAppLinkEntity(
+                                        id: '',
+                                        phoneNumber: '',
+                                        role: role,
+                                      ).roleDisplay,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: isEdit
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setDialogState(() {
+                                        selectedRole = value;
+                                      });
+                                    }
+                                  },
                           ),
                         ),
                       ),
@@ -899,26 +905,26 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () =>
-                                  Navigator.pop(dialogContext),
+                              onPressed: () => Navigator.pop(dialogContext),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor:
-                                    _StadiumNights.textSecondary,
+                                foregroundColor: _StadiumNights.textSecondary,
                                 side: BorderSide(
-                                    color: _StadiumNights.textMuted
-                                        .withOpacity(0.3)),
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                        vertical: 14),
+                                  color: _StadiumNights.textMuted.withOpacity(
+                                    0.3,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
                               child: Text(
                                 'Cancelar',
                                 style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w500),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -926,65 +932,57 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
-                                final phone = phoneController.text
-                                    .trim();
-                                if (phone.isEmpty ||
-                                    phone.length < 10) {
+                                final phone = phoneController.text.trim();
+                                if (phone.isEmpty || phone.length < 10) {
                                   ScaffoldMessenger.of(
-                                          dialogContext)
-                                      .showSnackBar(
+                                    dialogContext,
+                                  ).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         'Ingrese un número de 10 dígitos',
                                         style: GoogleFonts.outfit(),
                                       ),
-                                      backgroundColor:
-                                          _StadiumNights.error,
-                                      behavior: SnackBarBehavior
-                                          .floating,
+                                      backgroundColor: _StadiumNights.error,
+                                      behavior: SnackBarBehavior.floating,
                                     ),
                                   );
                                   return;
                                 }
 
-                                final fullPhone = '+52$phone';
-                                final displayName =
-                                    nameController.text.trim();
+                                final fullPhone = '52$phone';
+                                final displayName = nameController.text.trim();
 
                                 if (isEdit) {
-                                  bloc.add(UpdateWhatsAppLink(
-                                    id: link.id,
-                                    phoneNumber: fullPhone,
-                                    role: selectedRole,
-                                    displayName:
-                                        displayName.isNotEmpty
-                                            ? displayName
-                                            : null,
-                                  ));
+                                  bloc.add(
+                                    UpdateWhatsAppLink(
+                                      id: link.id,
+                                      phoneNumber: fullPhone,
+                                      displayName: displayName,
+                                    ),
+                                  );
                                 } else {
-                                  bloc.add(CreateWhatsAppLink(
-                                    phoneNumber: fullPhone,
-                                    role: selectedRole,
-                                    displayName:
-                                        displayName.isNotEmpty
-                                            ? displayName
-                                            : null,
-                                    leagueId: _leagueId,
-                                  ));
+                                  bloc.add(
+                                    CreateWhatsAppLink(
+                                      phoneNumber: fullPhone,
+                                      role: selectedRole,
+                                      displayName: displayName.isNotEmpty
+                                          ? displayName
+                                          : null,
+                                      leagueId: _leagueId,
+                                    ),
+                                  );
                                 }
 
                                 Navigator.pop(dialogContext);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    _StadiumNights.whatsappGreen,
+                                backgroundColor: _StadiumNights.whatsappGreen,
                                 foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                        vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
                               child: Text(
@@ -1008,8 +1006,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
     );
   }
 
-  void _showDeleteConfirmation(
-      BuildContext context, WhatsAppLinkEntity link) {
+  void _showDeleteConfirmation(BuildContext context, WhatsAppLinkEntity link) {
     final bloc = context.read<WhatsAppBloc>();
 
     showDialog(
@@ -1019,8 +1016,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           backgroundColor: _StadiumNights.surfaceDark,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-                color: _StadiumNights.error.withOpacity(0.3)),
+            side: BorderSide(color: _StadiumNights.error.withOpacity(0.3)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -1035,14 +1031,14 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.delete_outline,
+                    Icons.link_off,
                     color: _StadiumNights.error,
                     size: 30,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'ELIMINAR ENLACE',
+                  'DESACTIVAR ENLACE',
                   style: GoogleFonts.bebasNeue(
                     fontSize: 20,
                     color: _StadiumNights.error,
@@ -1051,7 +1047,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Se eliminará el enlace de WhatsApp para:',
+                  'Se desactivará el enlace de WhatsApp para:',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 14,
@@ -1079,7 +1075,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 ],
                 const SizedBox(height: 8),
                 Text(
-                  'Esta acción no se puede deshacer.',
+                  'Dejará de recibir mensajes del asistente. Puedes reactivarlo después con el interruptor.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 12,
@@ -1092,25 +1088,22 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () =>
-                            Navigator.pop(dialogContext),
+                        onPressed: () => Navigator.pop(dialogContext),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              _StadiumNights.textSecondary,
+                          foregroundColor: _StadiumNights.textSecondary,
                           side: BorderSide(
-                              color: _StadiumNights.textMuted
-                                  .withOpacity(0.3)),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
+                            color: _StadiumNights.textMuted.withOpacity(0.3),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: Text(
                           'Cancelar',
                           style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w500),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
@@ -1118,22 +1111,19 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          bloc.add(
-                              DeleteWhatsAppLink(id: link.id));
+                          bloc.add(DeleteWhatsAppLink(id: link.id));
                           Navigator.pop(dialogContext);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _StadiumNights.error,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: Text(
-                          'Eliminar',
+                          'Desactivar',
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w600,
                           ),

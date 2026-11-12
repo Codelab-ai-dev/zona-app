@@ -40,7 +40,6 @@ class CreatePlayerEvent extends PlayerEvent {
   final int? jerseyNumber;
   final String? photo;
   final DateTime? birthDate;
-  final String? idDocumentUrl;
 
   const CreatePlayerEvent({
     required this.name,
@@ -49,11 +48,10 @@ class CreatePlayerEvent extends PlayerEvent {
     this.jerseyNumber,
     this.photo,
     this.birthDate,
-    this.idDocumentUrl,
   });
 
   @override
-  List<Object?> get props => [name, teamId, position, jerseyNumber, photo, birthDate, idDocumentUrl];
+  List<Object?> get props => [name, teamId, position, jerseyNumber, photo, birthDate];
 }
 
 /// Update Player
@@ -64,9 +62,6 @@ class UpdatePlayerEvent extends PlayerEvent {
   final int? jerseyNumber;
   final String? photo;
   final DateTime? birthDate;
-  final bool? isActive;
-  final String? idDocumentUrl;
-  final bool? idVerified;
 
   const UpdatePlayerEvent({
     required this.playerId,
@@ -75,16 +70,13 @@ class UpdatePlayerEvent extends PlayerEvent {
     this.jerseyNumber,
     this.photo,
     this.birthDate,
-    this.isActive,
-    this.idDocumentUrl,
-    this.idVerified,
   });
 
   @override
-  List<Object?> get props => [playerId, name, position, jerseyNumber, photo, birthDate, isActive, idDocumentUrl, idVerified];
+  List<Object?> get props => [playerId, name, position, jerseyNumber, photo, birthDate];
 }
 
-/// Delete Player (soft delete)
+/// Delete Player (deactivates it)
 class DeletePlayerEvent extends PlayerEvent {
   final String playerId;
 
@@ -99,7 +91,7 @@ class ResetPlayerStateEvent extends PlayerEvent {
   const ResetPlayerStateEvent();
 }
 
-/// Load Players By League (for verification)
+/// Load Players By League (batch QR generation)
 class LoadPlayersByLeagueEvent extends PlayerEvent {
   final String leagueId;
   final bool? idVerified;
@@ -113,16 +105,30 @@ class LoadPlayersByLeagueEvent extends PlayerEvent {
   List<Object?> get props => [leagueId, idVerified];
 }
 
-/// Verify Player (approve/reject ID)
+/// Load the league's identity verification queue and counters
+class LoadPlayerVerificationEvent extends PlayerEvent {
+  final String leagueId;
+
+  const LoadPlayerVerificationEvent({required this.leagueId});
+
+  @override
+  List<Object?> get props => [leagueId];
+}
+
+/// Verify (with the reviewed document) or unverify a player's ID
 class VerifyPlayerEvent extends PlayerEvent {
   final String playerId;
+  final String playerName;
   final bool verified;
+  final String? documentKey;
 
   const VerifyPlayerEvent({
     required this.playerId,
+    required this.playerName,
     required this.verified,
+    this.documentKey,
   });
 
   @override
-  List<Object?> get props => [playerId, verified];
+  List<Object?> get props => [playerId, playerName, verified, documentKey];
 }
