@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
-import '../../../domain/repositories/team_repository.dart';
 import '../../../domain/usecases/create_team_usecase.dart';
 import '../../../domain/usecases/create_team_owner_usecase.dart';
 import '../../../domain/usecases/delete_team_usecase.dart';
@@ -19,13 +18,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
   final GetTeamsByTournamentUseCase getTeamsByTournamentUseCase;
   final GetTeamByIdUseCase getTeamByIdUseCase;
   final GetStandingsByTournamentUseCase? getStandingsByTournamentUseCase;
-  final GetStandingsByLeagueUseCase? getStandingsByLeagueUseCase;
   final CreateTeamUseCase? createTeamUseCase;
   final UpdateTeamUseCase? updateTeamUseCase;
   final DeleteTeamUseCase? deleteTeamUseCase;
   final CreateTeamOwnerUseCase? createTeamOwnerUseCase;
   final UpdateStandingsUseCase? updateStandingsUseCase;
-  final TeamRepository? teamRepository;
   final Logger logger = Logger();
 
   TeamBloc({
@@ -33,20 +30,17 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     required this.getTeamsByTournamentUseCase,
     required this.getTeamByIdUseCase,
     this.getStandingsByTournamentUseCase,
-    this.getStandingsByLeagueUseCase,
     this.createTeamUseCase,
     this.updateTeamUseCase,
     this.deleteTeamUseCase,
     this.createTeamOwnerUseCase,
     this.updateStandingsUseCase,
-    this.teamRepository,
   }) : super(const TeamInitial()) {
     on<LoadTeamsByLeagueEvent>(_onLoadTeamsByLeague);
     on<LoadTeamsByTournamentEvent>(_onLoadTeamsByTournament);
     on<LoadTeamByIdEvent>(_onLoadTeamById);
     on<ResetTeamEvent>(_onResetTeam);
     on<LoadStandingsByTournamentEvent>(_onLoadStandingsByTournament);
-    on<LoadStandingsByLeagueEvent>(_onLoadStandingsByLeague);
     on<CreateTeamEvent>(_onCreateTeam);
     on<CreateTeamWithOwnerEvent>(_onCreateTeamWithOwner);
     on<UpdateTeamEvent>(_onUpdateTeam);
@@ -71,7 +65,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error loading teams by league: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al cargar equipos'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al cargar equipos'));
       },
       (teams) {
         logger.i('Successfully loaded ${teams.length} teams for league');
@@ -97,7 +91,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error loading teams by tournament: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al cargar equipos'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al cargar equipos'));
       },
       (teams) {
         logger.i('Successfully loaded ${teams.length} teams for tournament');
@@ -120,7 +114,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error loading team by ID: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al cargar equipo'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al cargar equipo'));
       },
       (team) {
         logger.i('Successfully loaded team: ${team.name}');
@@ -156,39 +150,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error loading standings: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al cargar tabla de posiciones'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al cargar tabla de posiciones'));
       },
       (standings) {
         logger.i('Successfully loaded ${standings.length} standings');
         emit(StandingsLoaded(standings, tournamentId: event.tournamentId));
-      },
-    );
-  }
-
-  Future<void> _onLoadStandingsByLeague(
-    LoadStandingsByLeagueEvent event,
-    Emitter<TeamState> emit,
-  ) async {
-    if (getStandingsByLeagueUseCase == null) {
-      emit(const TeamError('Función no disponible'));
-      return;
-    }
-
-    emit(const TeamLoading());
-    logger.i('Loading standings for league: ${event.leagueId}');
-
-    final result = await getStandingsByLeagueUseCase!(
-      GetStandingsByLeagueParams(leagueId: event.leagueId),
-    );
-
-    result.fold(
-      (failure) {
-        logger.e('Error loading league standings: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al cargar tabla de posiciones'));
-      },
-      (standings) {
-        logger.i('Successfully loaded ${standings.length} standings for league');
-        emit(StandingsLoaded(standings));
       },
     );
   }
@@ -210,7 +176,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         name: event.name,
         slug: event.slug,
         leagueId: event.leagueId,
-        ownerId: event.ownerId,
         tournamentId: event.tournamentId,
         logo: event.logo,
         description: event.description,
@@ -220,7 +185,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error creating team: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al crear equipo'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al crear equipo'));
       },
       (team) {
         logger.i('Successfully created team: ${team.name}');
@@ -229,6 +194,9 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     );
   }
 
+  /// Creates the team (unless [CreateTeamWithOwnerEvent.existingTeamId] is
+  /// set) and then its owner account. If the owner fails the team is kept and
+  /// [TeamOwnerCreationFailed] carries its id to retry only the owner.
   Future<void> _onCreateTeamWithOwner(
     CreateTeamWithOwnerEvent event,
     Emitter<TeamState> emit,
@@ -241,50 +209,51 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     emit(const TeamLoading());
     logger.i('Creating team with owner: ${event.teamName}');
 
-    // Step 1: Create owner account
+    // Step 1: the team (or the one created in a previous attempt)
+    final teamResult = event.existingTeamId != null
+        ? await getTeamByIdUseCase(GetTeamParams(teamId: event.existingTeamId!))
+        : await createTeamUseCase!(
+            CreateTeamParams(
+              name: event.teamName,
+              slug: event.teamSlug,
+              leagueId: event.leagueId,
+              tournamentId: event.tournamentId,
+              logo: event.logo,
+              description: event.description,
+            ),
+          );
+
+    final team = teamResult.fold((failure) {
+      logger.e('Error creating team: ${failure.message}');
+      emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al crear equipo'));
+      return null;
+    }, (team) => team);
+    if (team == null) return;
+
+    // Step 2: the owner account, which becomes the team's owner
     final ownerResult = await createTeamOwnerUseCase!(
       CreateTeamOwnerParams(
         email: event.ownerEmail,
         name: event.ownerName,
         leagueId: event.leagueId,
+        teamId: team.id,
       ),
     );
 
-    final ownerData = ownerResult.fold(
+    ownerResult.fold(
       (failure) {
         logger.e('Error creating team owner: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al crear cuenta de owner'));
-        return null;
+        emit(TeamOwnerCreationFailed(
+          teamId: team.id,
+          message: failure.message.isNotEmpty ? failure.message : 'Error al crear cuenta de owner',
+        ));
       },
-      (result) => result,
-    );
-
-    if (ownerData == null) return;
-
-    // Step 2: Create team with owner ID
-    final teamResult = await createTeamUseCase!(
-      CreateTeamParams(
-        name: event.teamName,
-        slug: event.teamSlug,
-        leagueId: event.leagueId,
-        ownerId: ownerData.userId,
-        tournamentId: event.tournamentId,
-        logo: event.logo,
-        description: event.description,
-      ),
-    );
-
-    teamResult.fold(
-      (failure) {
-        logger.e('Error creating team: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al crear equipo'));
-      },
-      (team) {
+      (owner) {
         logger.i('Successfully created team with owner: ${team.name}');
         emit(TeamCreatedWithOwner(
           team: team,
-          ownerEmail: ownerData.email,
-          ownerPassword: ownerData.password,
+          ownerEmail: owner.email,
+          ownerPassword: owner.password,
         ));
       },
     );
@@ -317,7 +286,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error updating team: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al actualizar equipo'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al actualizar equipo'));
       },
       (team) {
         logger.i('Successfully updated team: ${team.name}');
@@ -345,7 +314,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error deleting team: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al eliminar equipo'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al eliminar equipo'));
       },
       (_) {
         logger.i('Successfully deleted team');
@@ -370,7 +339,6 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
       UpdateStandingsParams(
         teamId: event.teamId,
         tournamentId: event.tournamentId,
-        leagueId: event.leagueId,
         matchesPlayed: event.matchesPlayed,
         matchesWon: event.matchesWon,
         matchesDrawn: event.matchesDrawn,
@@ -385,7 +353,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     result.fold(
       (failure) {
         logger.e('Error updating standings: ${failure.message}');
-        emit(TeamError(failure.message ?? 'Error al actualizar standings'));
+        emit(TeamError(failure.message.isNotEmpty ? failure.message : 'Error al actualizar standings'));
       },
       (_) {
         logger.i('Successfully updated standings');

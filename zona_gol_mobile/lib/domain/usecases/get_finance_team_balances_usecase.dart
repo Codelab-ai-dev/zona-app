@@ -10,7 +10,8 @@ class GetFinanceTeamBalancesUseCase {
   GetFinanceTeamBalancesUseCase(this.repository);
 
   Future<Either<Failure, List<FinanceTeamBalanceEntity>>> call(
-      String leagueId) {
+    String leagueId,
+  ) {
     return repository.getTeamBalances(leagueId);
   }
 }

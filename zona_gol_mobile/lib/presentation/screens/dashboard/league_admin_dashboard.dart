@@ -74,7 +74,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
 
   Future<void> _checkFeatures() async {
     if (widget.user.leagueId == null) return;
-    final finances = await FeatureGate.hasFeature(widget.user.leagueId!, 'finances');
+    final finances = await FeatureGate.hasFeature(widget.user.leagueId!, 'finance');
     final whatsapp = await FeatureGate.hasFeature(widget.user.leagueId!, 'whatsapp');
     if (mounted) {
       setState(() {

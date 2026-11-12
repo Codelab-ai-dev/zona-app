@@ -11,7 +11,7 @@ class PlayerEntity extends Equatable {
   final DateTime? birthDate;
   final String? position;
   final bool isActive;
-  final String? idDocumentUrl;
+  final String? documentKey;
   final bool idVerified;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -25,7 +25,7 @@ class PlayerEntity extends Equatable {
     this.birthDate,
     this.position,
     this.isActive = true,
-    this.idDocumentUrl,
+    this.documentKey,
     this.idVerified = false,
     this.createdAt,
     this.updatedAt,
@@ -41,7 +41,7 @@ class PlayerEntity extends Equatable {
         birthDate,
         position,
         isActive,
-        idDocumentUrl,
+        documentKey,
         idVerified,
         createdAt,
         updatedAt,
@@ -109,7 +109,7 @@ class PlayerEntity extends Equatable {
     DateTime? birthDate,
     String? position,
     bool? isActive,
-    String? idDocumentUrl,
+    String? documentKey,
     bool? idVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -123,7 +123,7 @@ class PlayerEntity extends Equatable {
       birthDate: birthDate ?? this.birthDate,
       position: position ?? this.position,
       isActive: isActive ?? this.isActive,
-      idDocumentUrl: idDocumentUrl ?? this.idDocumentUrl,
+      documentKey: documentKey ?? this.documentKey,
       idVerified: idVerified ?? this.idVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

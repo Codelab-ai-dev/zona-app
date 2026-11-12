@@ -4,16 +4,18 @@ import '../../core/errors/failures.dart';
 import '../repositories/auth_repository.dart';
 
 class ChangePasswordParams extends Equatable {
+  final String currentPassword;
   final String newPassword;
 
-  const ChangePasswordParams({required this.newPassword});
+  const ChangePasswordParams({required this.currentPassword, required this.newPassword});
 
   @override
-  List<Object?> get props => [newPassword];
+  List<Object?> get props => [currentPassword, newPassword];
 
   /// Validates password requirements
   static String? validate(String password) {
-    if (password.length < 8) return 'Mínimo 8 caracteres';
+    if (password.length < 10) return 'Mínimo 10 caracteres';
+    if (password.length > 72) return 'Máximo 72 caracteres';
     if (!password.contains(RegExp(r'[A-Z]'))) return 'Debe contener una mayúscula';
     if (!password.contains(RegExp(r'[a-z]'))) return 'Debe contener una minúscula';
     if (!password.contains(RegExp(r'[0-9]'))) return 'Debe contener un número';
@@ -28,6 +30,9 @@ class ChangePasswordUseCase {
   ChangePasswordUseCase(this.repository);
 
   Future<Either<Failure, void>> call(ChangePasswordParams params) {
-    return repository.changePassword(newPassword: params.newPassword);
+    return repository.changePassword(
+      currentPassword: params.currentPassword,
+      newPassword: params.newPassword,
+    );
   }
 }

@@ -118,3 +118,112 @@ class LeagueStatsEntity extends Equatable {
         topScorer,
       ];
 }
+
+/// Platform-wide top scorer (`GET /admin/stats`).
+class GlobalScorerInfo extends Equatable {
+  final String playerId;
+  final String playerName;
+  final String teamName;
+  final String leagueName;
+  final int goals;
+
+  const GlobalScorerInfo({
+    required this.playerId,
+    required this.playerName,
+    required this.teamName,
+    required this.leagueName,
+    required this.goals,
+  });
+
+  @override
+  List<Object?> get props => [playerId, playerName, teamName, leagueName, goals];
+}
+
+/// Recently finished match (`GET /admin/stats`).
+class RecentMatchInfo extends Equatable {
+  final String id;
+  final DateTime? matchDate;
+  final String leagueName;
+  final String homeName;
+  final String awayName;
+  final int homeScore;
+  final int awayScore;
+
+  const RecentMatchInfo({
+    required this.id,
+    required this.matchDate,
+    required this.leagueName,
+    required this.homeName,
+    required this.awayName,
+    required this.homeScore,
+    required this.awayScore,
+  });
+
+  @override
+  List<Object?> get props => [id, matchDate, leagueName, homeName, awayName, homeScore, awayScore];
+}
+
+/// Platform statistics for the super admin (`GET /admin/stats`).
+class GlobalStatsEntity extends Equatable {
+  final int leagues;
+  final int activeLeagues;
+  final int tournaments;
+  final int activeTournaments;
+  final int teams;
+  final int activeTeams;
+  final int players;
+  final int activePlayers;
+  final int users;
+  final int activeUsers;
+  final int leagueAdmins;
+  final int teamOwners;
+  final int matches;
+  final int finishedMatches;
+  final int matchesThisMonth;
+  final int goalsThisMonth;
+  final List<GlobalScorerInfo> topScorers;
+  final List<RecentMatchInfo> recentMatches;
+
+  const GlobalStatsEntity({
+    this.leagues = 0,
+    this.activeLeagues = 0,
+    this.tournaments = 0,
+    this.activeTournaments = 0,
+    this.teams = 0,
+    this.activeTeams = 0,
+    this.players = 0,
+    this.activePlayers = 0,
+    this.users = 0,
+    this.activeUsers = 0,
+    this.leagueAdmins = 0,
+    this.teamOwners = 0,
+    this.matches = 0,
+    this.finishedMatches = 0,
+    this.matchesThisMonth = 0,
+    this.goalsThisMonth = 0,
+    this.topScorers = const [],
+    this.recentMatches = const [],
+  });
+
+  @override
+  List<Object?> get props => [
+        leagues,
+        activeLeagues,
+        tournaments,
+        activeTournaments,
+        teams,
+        activeTeams,
+        players,
+        activePlayers,
+        users,
+        activeUsers,
+        leagueAdmins,
+        teamOwners,
+        matches,
+        finishedMatches,
+        matchesThisMonth,
+        goalsThisMonth,
+        topScorers,
+        recentMatches,
+      ];
+}

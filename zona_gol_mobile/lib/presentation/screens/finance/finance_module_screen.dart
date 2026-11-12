@@ -11,10 +11,8 @@ class _SN {
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
 }
 
 /// Finance Module Screen
@@ -45,8 +43,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
   }
 
   Future<void> _checkFeature() async {
-    final enabled =
-        await FeatureGate.hasFeature(widget.leagueId, 'finances');
+    final enabled = await FeatureGate.hasFeature(widget.leagueId, 'finances');
     if (mounted) {
       setState(() {
         _isEnabled = enabled;
@@ -172,9 +169,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
                     decoration: BoxDecoration(
                       color: _SN.cardDark,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _SN.gold.withOpacity(0.3),
-                      ),
+                      border: Border.all(color: _SN.gold.withOpacity(0.3)),
                     ),
                     child: Text(
                       'VOLVER',

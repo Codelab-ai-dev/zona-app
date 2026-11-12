@@ -21,10 +21,7 @@ class FinanceDashboardLoaded extends FinanceState {
   final FinanceLeagueSummaryEntity summary;
   final List<FinanceTeamBalanceEntity> balances;
 
-  const FinanceDashboardLoaded({
-    required this.summary,
-    required this.balances,
-  });
+  const FinanceDashboardLoaded({required this.summary, required this.balances});
 
   @override
   List<Object?> get props => [summary, balances];
@@ -61,8 +58,9 @@ class FinanceConfigLoaded extends FinanceState {
 class FinanceTransactionCreated extends FinanceState {
   final String message;
 
-  const FinanceTransactionCreated(
-      {this.message = 'Transaccion creada exitosamente'});
+  const FinanceTransactionCreated({
+    this.message = 'Transacción creada exitosamente',
+  });
 
   @override
   List<Object?> get props => [message];
@@ -72,8 +70,7 @@ class FinanceTransactionCreated extends FinanceState {
 class FinanceTransactionCancelled extends FinanceState {
   final String message;
 
-  const FinanceTransactionCancelled(
-      {this.message = 'Transaccion cancelada'});
+  const FinanceTransactionCancelled({this.message = 'Transacción cancelada'});
 
   @override
   List<Object?> get props => [message];
@@ -83,8 +80,9 @@ class FinanceTransactionCancelled extends FinanceState {
 class FinancePaymentRegistered extends FinanceState {
   final String message;
 
-  const FinancePaymentRegistered(
-      {this.message = 'Pago registrado exitosamente'});
+  const FinancePaymentRegistered({
+    this.message = 'Pago registrado exitosamente',
+  });
 
   @override
   List<Object?> get props => [message];
@@ -94,8 +92,9 @@ class FinancePaymentRegistered extends FinanceState {
 class FinanceConfigUpdated extends FinanceState {
   final String message;
 
-  const FinanceConfigUpdated(
-      {this.message = 'Configuracion actualizada'});
+  const FinanceConfigUpdated({
+    this.message = 'Configuración actualizada exitosamente',
+  });
 
   @override
   List<Object?> get props => [message];
@@ -107,9 +106,9 @@ class FinanceFinesGenerated extends FinanceState {
   final String message;
 
   FinanceFinesGenerated({required this.count})
-      : message = count > 0
-            ? '$count multa${count > 1 ? 's' : ''} generada${count > 1 ? 's' : ''}'
-            : 'No se generaron multas';
+    : message = count > 0
+          ? '$count multa${count > 1 ? 's' : ''} generada${count > 1 ? 's' : ''}'
+          : 'No se generaron multas';
 
   @override
   List<Object?> get props => [count, message];

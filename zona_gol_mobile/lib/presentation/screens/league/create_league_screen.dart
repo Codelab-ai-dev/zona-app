@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -6,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 
-import '../../../core/config/app_config.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/utils/password_generator.dart';
+import '../../../domain/repositories/user_admin_repository.dart';
 import '../../bloc/league/league_bloc.dart';
 import '../../bloc/league/league_event.dart';
 import '../../bloc/league/league_state.dart';
@@ -20,11 +19,9 @@ class _StadiumNights {
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
-  static const Color goldLight = Color(0xFFFFF0B3);
   static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
@@ -42,7 +39,6 @@ class CreateLeagueScreen extends StatefulWidget {
 
 class _CreateLeagueScreenState extends State<CreateLeagueScreen>
     with TickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
   final PageController _pageController = PageController();
 
   // Animation controllers
@@ -158,14 +154,6 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
         .replaceAll(RegExp(r'^-|-$'), '');
   }
 
-  String _generatePassword() {
-    const chars =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%&*';
-    final random = math.Random.secure();
-    return List.generate(12, (index) => chars[random.nextInt(chars.length)])
-        .join();
-  }
-
   bool _validateCurrentStep() {
     if (_currentStep == 0) {
       // Validate league fields
@@ -269,52 +257,39 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
 
-    try {
-      // Step 1: Generate password and create auth user
-      _generatedPassword = _generatePassword();
-
-      final userResponse = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/auth/create-user'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _adminEmailController.text.trim(),
-          'password': _generatedPassword,
-          'user_metadata': {
-            'name': _adminNameController.text.trim(),
-            'phone': _adminPhoneController.text.trim(),
-            'role': 'league_admin',
-          },
-        }),
+    // Step 1: create the admin account (POST /admin/users). Kept across
+    // retries so a failed league creation never duplicates the user.
+    if (_createdAdminId == null) {
+      final password = generatePassword();
+      final phone = _adminPhoneController.text.trim();
+      final result = await sl<UserAdminRepository>().createUser(
+        email: _adminEmailController.text.trim(),
+        password: password,
+        name: _adminNameController.text.trim(),
+        phone: phone.isEmpty ? null : phone,
+        role: 'league_admin',
       );
-
-      if (userResponse.statusCode != 201) {
-        final errorData = jsonDecode(userResponse.body);
-        throw Exception(errorData['error'] ?? 'Error al crear usuario');
-      }
-
-      final userData = jsonDecode(userResponse.body);
-      _createdAdminId = userData['user']['id'];
-
-      if (_createdAdminId == null) {
-        throw Exception('No se pudo obtener el ID del usuario creado');
-      }
-
-      // Step 2: Create the league using the bloc
-      if (mounted) {
-        _leagueBloc.add(CreateLeagueEvent(
-              name: _nameController.text.trim(),
-              slug: _slugController.text.trim(),
-              description: _descriptionController.text.trim(),
-              adminId: _createdAdminId!,
-              productMode: _productMode,
-            ));
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        _showError(e.toString().replaceAll('Exception: ', ''));
+      if (!mounted) return;
+      final failure = result.fold((f) => f, (user) {
+        _createdAdminId = user.id;
+        _generatedPassword = password;
+        return null;
+      });
+      if (failure != null) {
+        setState(() => _isLoading = false);
+        _showError(failure.message);
+        return;
       }
     }
+
+    // Step 2: create the league, link its admin and set the plan.
+    _leagueBloc.add(CreateLeagueEvent(
+      name: _nameController.text.trim(),
+      slug: _slugController.text.trim(),
+      description: _descriptionController.text.trim(),
+      adminId: _createdAdminId!,
+      productMode: _productMode,
+    ));
   }
 
   void _showCredentialsDialog(String leagueName) {

@@ -123,7 +123,8 @@ class PlayoffBracketViewerScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) {
         final bloc = sl<MatchBloc>();
-        bloc.add(LoadMatchesByTournamentEvent(tournamentId: tournamentId));
+        bloc.add(LoadMatchesByTournamentEvent(
+            tournamentId: tournamentId, phase: MatchPhase.playoffs));
         return bloc;
       },
       child: _BracketViewerBody(
@@ -239,7 +240,8 @@ class _BracketViewerBody extends StatelessWidget {
   void _refresh(BuildContext context) {
     context
         .read<MatchBloc>()
-        .add(LoadMatchesByTournamentEvent(tournamentId: tournamentId));
+        .add(LoadMatchesByTournamentEvent(
+            tournamentId: tournamentId, phase: MatchPhase.playoffs));
   }
 
   Widget _buildLoadingState() {

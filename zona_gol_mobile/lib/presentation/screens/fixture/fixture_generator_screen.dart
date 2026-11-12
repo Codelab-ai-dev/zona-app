@@ -5,11 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/di/injection.dart';
-import '../../../core/utils/fixture_config.dart';
 import '../../../domain/entities/match_entity.dart';
 import '../../../domain/entities/team_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../../domain/repositories/match_repository.dart';
 import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
@@ -76,14 +76,10 @@ class _FixtureGeneratorView extends StatefulWidget {
 }
 
 enum _FixtureMode { auto, manual }
-enum _Algorithm { cpSat, traditional }
 
 class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
   // Mode toggle
   _FixtureMode _mode = _FixtureMode.auto;
-
-  // Algorithm selection (auto mode)
-  _Algorithm _algorithm = _Algorithm.traditional;
 
   // Selected tournament
   TournamentEntity? _selectedTournament;
@@ -154,6 +150,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                           fixtures: state.fixtures,
                           totalRounds: state.totalRounds,
                           totalMatches: state.totalMatches,
+                          request: state.request,
                           tournamentName: _selectedTournament?.name ?? '',
                         ),
                       ),
@@ -222,8 +219,6 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           String loadingText;
           if (_mode == _FixtureMode.manual) {
             loadingText = 'CARGANDO PARTIDOS';
-          } else if (_algorithm == _Algorithm.cpSat) {
-            loadingText = 'CALCULANDO CON CP-SAT';
           } else {
             loadingText = 'GENERANDO FIXTURE';
           }
@@ -250,12 +245,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 const SizedBox(height: 24),
 
                 if (_mode == _FixtureMode.auto) ...[
-                  // AUTO MODE: algorithm selection + configuration form
-                  _buildSectionHeader('ALGORITMO', Icons.auto_awesome),
-                  const SizedBox(height: 12),
-                  _buildAlgorithmToggle(),
-                  const SizedBox(height: 24),
-
+                  // AUTO MODE: configuration form (the server generates)
                   _buildSectionHeader('FECHAS', Icons.date_range),
                   const SizedBox(height: 12),
                   _buildDatePickers(context),
@@ -744,10 +734,8 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                     onlyActive: true,
                   ),
                 );
-                // Load existing matches for manual mode
-                if (_mode == _FixtureMode.manual) {
-                  _loadExistingMatches(context);
-                }
+                // Existing matches: rounds for manual mode, warning for auto mode
+                _loadExistingMatches(context);
               },
             ),
           ),
@@ -1454,91 +1442,16 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
     );
   }
 
-  Widget _buildAlgorithmToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _SN.cardDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _SN.purple.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildAlgorithmButton(
-              label: 'CP-SAT SOLVER',
-              icon: Icons.auto_awesome,
-              isSelected: _algorithm == _Algorithm.cpSat,
-              selectedColor: _SN.purple,
-              onTap: () => setState(() => _algorithm = _Algorithm.cpSat),
-            ),
-          ),
-          Expanded(
-            child: _buildAlgorithmButton(
-              label: 'TRADICIONAL',
-              icon: Icons.memory,
-              isSelected: _algorithm == _Algorithm.traditional,
-              selectedColor: const Color(0xFF3B82F6), // blue
-              onTap: () => setState(() => _algorithm = _Algorithm.traditional),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAlgorithmButton({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required Color selectedColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedColor.withOpacity(0.25) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: isSelected
-              ? Border.all(color: selectedColor.withOpacity(0.5))
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? selectedColor : _SN.textMuted,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.bebasNeue(
-                fontSize: 13,
-                color: isSelected ? selectedColor : _SN.textMuted,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildGenerateButton(BuildContext context) {
     final canGenerate = _selectedTournament != null &&
         _teams.length >= 2 &&
         _matchDays.isNotEmpty &&
         !_teamsLoading;
 
-    final isCpSat = _algorithm == _Algorithm.cpSat;
-    final buttonColor = isCpSat ? _SN.purple : _SN.neonGreen;
-    final textColor = isCpSat ? Colors.white : Colors.black;
-    final buttonText = isCpSat ? 'GENERAR CON CP-SAT' : 'GENERAR CALENDARIO';
-    final buttonIcon = isCpSat ? Icons.auto_awesome : Icons.calendar_month;
+    const buttonColor = _SN.neonGreen;
+    const textColor = Colors.black;
+    const buttonText = 'GENERAR CALENDARIO';
+    const buttonIcon = Icons.calendar_month;
 
     return SizedBox(
       width: double.infinity,
@@ -1565,35 +1478,83 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
     );
   }
 
-  void _generateFixtures(BuildContext context) {
-    final config = FixtureConfig(
-      tournamentId: _selectedTournament!.id,
-      startDate: _startDate,
-      endDate: _endDate,
-      matchDays: _matchDays.toList()..sort(),
-      startTime: '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
-      endTime: _endTime != null
-          ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
-          : null,
-      fieldsAvailable: _fieldsAvailable,
-      doubleRound: _doubleRound,
-      halfTime: _halfTime,
-      breakTime: _breakTime,
-      breakBetweenMatches: _breakBetweenMatches,
+  String _clock(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  /// Generating adds a full calendar: warn when the tournament already has one
+  Future<void> _generateFixtures(BuildContext context) async {
+    final existing =
+        _existingMatches.where((m) => m.phase == MatchPhase.regular).length;
+    if (existing > 0) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: _SN.cardDark,
+          title: Text(
+            'TORNEO CON PARTIDOS',
+            style: GoogleFonts.bebasNeue(
+              fontSize: 20,
+              color: _SN.textPrimary,
+              letterSpacing: 1.5,
+            ),
+          ),
+          content: Text(
+            'Este torneo ya tiene $existing partidos. Se generarán partidos nuevos además de los existentes.',
+            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancelar', style: GoogleFonts.outfit(color: _SN.textMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                'Continuar',
+                style: GoogleFonts.outfit(
+                  color: _SN.neonGreen,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !context.mounted) return;
+    }
+
+    final tournament = _selectedTournament!;
+    FixtureTeam toFixture(TeamEntity t) => FixtureTeam(id: t.id, name: t.name);
+
+    // Group stage: each group plays its own round robin
+    final groups = <String, List<FixtureTeam>>{};
+    if (tournament.format == TournamentFormat.groupKnockout) {
+      for (final team in _teams) {
+        groups.putIfAbsent(team.groupName ?? 'A', () => []).add(toFixture(team));
+      }
+    }
+
+    final request = FixtureRequest(
+      tournamentId: tournament.id,
+      teams: _teams.map(toFixture).toList(),
+      groups: groups,
+      isDoubleRound: _doubleRound,
+      schedule: FixtureSchedule(
+        startDate: _startDate,
+        endDate: _endDate,
+        matchDays: _matchDays.toList()..sort(),
+        startTime: _clock(_startTime),
+        endTime: _endTime != null ? _clock(_endTime!) : null,
+        fieldsAvailable: _fieldsAvailable,
+        halfMinutes: _halfTime,
+        halftimeBreakMinutes: _breakTime,
+        breakBetweenMatches: _breakBetweenMatches,
+      ),
     );
 
-    if (_algorithm == _Algorithm.cpSat) {
-      context.read<MatchBloc>().add(GenerateFixturesCpSatEvent(
-        config: config,
-        teams: _teams,
-        tournament: _selectedTournament!,
-      ));
-    } else {
-      context.read<MatchBloc>().add(GenerateFixturesEvent(
-        config: config,
-        teams: _teams,
-        tournament: _selectedTournament!,
-      ));
-    }
+    context.read<MatchBloc>().add(GenerateFixturesEvent(
+      request: request,
+      teams: _teams,
+    ));
   }
 }

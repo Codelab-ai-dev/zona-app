@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/create_tournament_usecase.dart';
-import '../../../domain/usecases/get_all_tournaments_usecase.dart';
 import '../../../domain/usecases/get_tournament_by_id_usecase.dart';
 import '../../../domain/usecases/get_tournaments_by_league_usecase.dart';
 import 'tournament_event.dart';
@@ -9,37 +8,19 @@ import 'tournament_state.dart';
 /// Tournament Bloc
 /// Manages tournament state and handles tournament-related events
 class TournamentBloc extends Bloc<TournamentEvent, TournamentState> {
-  final GetAllTournamentsUseCase getAllTournamentsUseCase;
   final GetTournamentByIdUseCase getTournamentByIdUseCase;
   final GetTournamentsByLeagueUseCase getTournamentsByLeagueUseCase;
   final CreateTournamentUseCase createTournamentUseCase;
 
   TournamentBloc({
-    required this.getAllTournamentsUseCase,
     required this.getTournamentByIdUseCase,
     required this.getTournamentsByLeagueUseCase,
     required this.createTournamentUseCase,
   }) : super(const TournamentInitial()) {
-    on<LoadAllTournamentsEvent>(_onLoadAllTournaments);
     on<LoadTournamentByIdEvent>(_onLoadTournamentById);
     on<LoadTournamentsByLeagueEvent>(_onLoadTournamentsByLeague);
     on<CreateTournamentEvent>(_onCreateTournament);
     on<ResetTournamentStateEvent>(_onResetTournamentState);
-  }
-
-  /// Handle Load All Tournaments Event
-  Future<void> _onLoadAllTournaments(
-    LoadAllTournamentsEvent event,
-    Emitter<TournamentState> emit,
-  ) async {
-    emit(const TournamentLoading());
-
-    final result = await getAllTournamentsUseCase(onlyActive: event.onlyActive);
-
-    result.fold(
-      (failure) => emit(TournamentError(failure.message ?? 'Error desconocido')),
-      (tournaments) => emit(TournamentsLoaded(tournaments)),
-    );
   }
 
   /// Handle Load Tournament By ID Event
@@ -54,7 +35,7 @@ class TournamentBloc extends Bloc<TournamentEvent, TournamentState> {
     );
 
     result.fold(
-      (failure) => emit(TournamentError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(TournamentError(failure.message)),
       (tournament) => emit(TournamentDetailLoaded(tournament)),
     );
   }
@@ -74,7 +55,7 @@ class TournamentBloc extends Bloc<TournamentEvent, TournamentState> {
     );
 
     result.fold(
-      (failure) => emit(TournamentError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(TournamentError(failure.message)),
       (tournaments) => emit(TournamentsLoaded(tournaments)),
     );
   }
@@ -103,7 +84,7 @@ class TournamentBloc extends Bloc<TournamentEvent, TournamentState> {
     );
 
     result.fold(
-      (failure) => emit(TournamentError(failure.message ?? 'Error desconocido')),
+      (failure) => emit(TournamentError(failure.message)),
       (tournament) => emit(TournamentCreated(tournament)),
     );
   }

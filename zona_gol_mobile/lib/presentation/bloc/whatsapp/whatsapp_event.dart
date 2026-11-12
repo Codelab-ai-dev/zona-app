@@ -22,7 +22,7 @@ class LoadWhatsAppLinks extends WhatsAppEvent {
 class CreateWhatsAppLink extends WhatsAppEvent {
   final String phoneNumber;
   final String? userId;
-  final String? role;
+  final String role;
   final String? displayName;
   final String leagueId;
   final String? preferredLanguage;
@@ -30,7 +30,7 @@ class CreateWhatsAppLink extends WhatsAppEvent {
   const CreateWhatsAppLink({
     required this.phoneNumber,
     this.userId,
-    this.role,
+    required this.role,
     this.displayName,
     required this.leagueId,
     this.preferredLanguage,
@@ -38,36 +38,34 @@ class CreateWhatsAppLink extends WhatsAppEvent {
 
   @override
   List<Object?> get props => [
-        phoneNumber,
-        userId,
-        role,
-        displayName,
-        leagueId,
-        preferredLanguage,
-      ];
+    phoneNumber,
+    userId,
+    role,
+    displayName,
+    leagueId,
+    preferredLanguage,
+  ];
 }
 
-/// Update an existing WhatsApp link
+/// Update an existing WhatsApp link (the API does not allow changing the role)
 class UpdateWhatsAppLink extends WhatsAppEvent {
   final String id;
   final String? phoneNumber;
-  final String? role;
   final String? displayName;
   final String? preferredLanguage;
 
   const UpdateWhatsAppLink({
     required this.id,
     this.phoneNumber,
-    this.role,
     this.displayName,
     this.preferredLanguage,
   });
 
   @override
-  List<Object?> get props => [id, phoneNumber, role, displayName, preferredLanguage];
+  List<Object?> get props => [id, phoneNumber, displayName, preferredLanguage];
 }
 
-/// Delete a WhatsApp link
+/// Deactivate a WhatsApp link (DELETE on the API only sets it inactive)
 class DeleteWhatsAppLink extends WhatsAppEvent {
   final String id;
 
@@ -82,10 +80,7 @@ class ToggleWhatsAppLink extends WhatsAppEvent {
   final String id;
   final bool isActive;
 
-  const ToggleWhatsAppLink({
-    required this.id,
-    required this.isActive,
-  });
+  const ToggleWhatsAppLink({required this.id, required this.isActive});
 
   @override
   List<Object?> get props => [id, isActive];

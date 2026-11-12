@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -54,10 +53,7 @@ class FinanceDashboardScreen extends StatelessWidget {
         bloc.add(LoadFinanceDashboard(leagueId: leagueId));
         return bloc;
       },
-      child: _FinanceDashboardView(
-        leagueId: leagueId,
-        leagueName: leagueName,
-      ),
+      child: _FinanceDashboardView(leagueId: leagueId, leagueName: leagueName),
     );
   }
 }
@@ -88,9 +84,9 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       if (_tabController.indexIsChanging) return;
       if (_tabController.index == 1) {
         // Load transactions when switching to transactions tab
-        context
-            .read<FinanceBloc>()
-            .add(LoadTransactions(leagueId: widget.leagueId));
+        context.read<FinanceBloc>().add(
+          LoadTransactions(leagueId: widget.leagueId),
+        );
       }
     });
   }
@@ -119,26 +115,30 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               final message = state is FinanceTransactionCreated
                   ? state.message
                   : state is FinanceTransactionCancelled
-                      ? state.message
-                      : (state as FinancePaymentRegistered).message;
+                  ? state.message
+                  : (state as FinancePaymentRegistered).message;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
               // Reload dashboard data
-              context
-                  .read<FinanceBloc>()
-                  .add(LoadFinanceDashboard(leagueId: widget.leagueId));
+              context.read<FinanceBloc>().add(
+                LoadFinanceDashboard(leagueId: widget.leagueId),
+              );
             }
             if (state is FinanceError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -205,9 +205,9 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         IconButton(
           icon: Icon(Icons.refresh, color: _SN.gold, size: 22),
           onPressed: () {
-            context
-                .read<FinanceBloc>()
-                .add(LoadFinanceDashboard(leagueId: widget.leagueId));
+            context.read<FinanceBloc>().add(
+              LoadFinanceDashboard(leagueId: widget.leagueId),
+            );
           },
         ),
       ],
@@ -218,8 +218,10 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         labelColor: _SN.gold,
         unselectedLabelColor: _SN.textMuted,
         labelStyle: GoogleFonts.bebasNeue(fontSize: 14, letterSpacing: 1.5),
-        unselectedLabelStyle:
-            GoogleFonts.bebasNeue(fontSize: 14, letterSpacing: 1.5),
+        unselectedLabelStyle: GoogleFonts.bebasNeue(
+          fontSize: 14,
+          letterSpacing: 1.5,
+        ),
         tabs: const [
           Tab(text: 'RESUMEN'),
           Tab(text: 'TRANSACCIONES'),
@@ -289,8 +291,8 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           _SN.neonGreen,
         ),
         _buildStatCard(
-          'Gastos',
-          _currencyFormat.format(summary.totalExpenses),
+          'Cargos',
+          _currencyFormat.format(summary.totalCharges),
           Icons.trending_down,
           _SN.error,
         ),
@@ -311,7 +313,11 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
   }
 
   Widget _buildStatCard(
-      String label, String value, IconData icon, Color color) {
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -358,34 +364,23 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
   }
 
   Widget _buildNetBalanceCard(FinanceLeagueSummaryEntity summary) {
-    final netBalance = summary.netBalance;
-    final isPositive = netBalance >= 0;
-
+    // Amount already paid on the league's charges.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            isPositive
-                ? _SN.neonGreen.withOpacity(0.1)
-                : _SN.error.withOpacity(0.1),
-            _SN.cardDark,
-          ],
+          colors: [_SN.neonGreen.withOpacity(0.1), _SN.cardDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isPositive
-              ? _SN.neonGreen.withOpacity(0.3)
-              : _SN.error.withOpacity(0.3),
-        ),
+        border: Border.all(color: _SN.neonGreen.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Text(
-            'BALANCE NETO',
+            'TOTAL COBRADO',
             style: GoogleFonts.bebasNeue(
               fontSize: 14,
               color: _SN.textSecondary,
@@ -394,10 +389,10 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           ),
           const SizedBox(height: 8),
           Text(
-            _currencyFormat.format(netBalance),
+            _currencyFormat.format(summary.totalCollected),
             style: GoogleFonts.bebasNeue(
               fontSize: 36,
-              color: isPositive ? _SN.neonGreen : _SN.error,
+              color: _SN.neonGreen,
               letterSpacing: 1,
             ),
           ),
@@ -417,13 +412,14 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildQuickStat('Equipos', summary.teamCount.toString()),
+          _buildQuickStat('Equipos', summary.teamsWithTransactions.toString()),
           Container(width: 1, height: 30, color: _SN.gold.withOpacity(0.15)),
           _buildQuickStat(
-              'Transacciones', summary.transactionCount.toString()),
+            'Transacciones',
+            summary.totalTransactions.toString(),
+          ),
           Container(width: 1, height: 30, color: _SN.gold.withOpacity(0.15)),
-          _buildQuickStat('Cobrado',
-              _currencyFormat.format(summary.totalPaid)),
+          _buildQuickStat('Vencidas', summary.overdueTransactions.toString()),
         ],
       ),
     );
@@ -434,26 +430,22 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       children: [
         Text(
           value,
-          style: GoogleFonts.bebasNeue(
-            fontSize: 20,
-            color: _SN.gold,
-          ),
+          style: GoogleFonts.bebasNeue(fontSize: 20, color: _SN.gold),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.outfit(
-            fontSize: 11,
-            color: _SN.textMuted,
-          ),
+          style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
         ),
       ],
     );
   }
 
   Widget _buildTopDebtors(List<FinanceTeamBalanceEntity> balances) {
-    final debtors =
-        balances.where((b) => b.totalPending > 0).take(5).toList();
+    final debtors = balances
+        .where((b) => b.pendingBalance > 0)
+        .take(5)
+        .toList();
     if (debtors.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -481,7 +473,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         color: _SN.surfaceDark,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: balance.totalOverdue > 0
+          color: balance.overdueCount > 0
               ? _SN.error.withOpacity(0.3)
               : _SN.gold.withOpacity(0.1),
         ),
@@ -504,11 +496,8 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${balance.transactionCount} transacciones',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    color: _SN.textMuted,
-                  ),
+                  '${balance.pendingFinesCount} multas pendientes',
+                  style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
                 ),
               ],
             ),
@@ -517,15 +506,12 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _currencyFormat.format(balance.totalPending),
-                style: GoogleFonts.bebasNeue(
-                  fontSize: 18,
-                  color: _SN.amber,
-                ),
+                _currencyFormat.format(balance.pendingBalance),
+                style: GoogleFonts.bebasNeue(fontSize: 18, color: _SN.amber),
               ),
-              if (balance.totalOverdue > 0)
+              if (balance.overdueCount > 0)
                 Text(
-                  '${_currencyFormat.format(balance.totalOverdue)} vencido',
+                  '${balance.overdueCount} vencido${balance.overdueCount == 1 ? '' : 's'}',
                   style: GoogleFonts.outfit(
                     fontSize: 10,
                     color: _SN.error,
@@ -549,9 +535,9 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         // Trigger loading
         if (state is FinanceDashboardLoaded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context
-                .read<FinanceBloc>()
-                .add(LoadTransactions(leagueId: widget.leagueId));
+            context.read<FinanceBloc>().add(
+              LoadTransactions(leagueId: widget.leagueId),
+            );
           });
         }
         return _buildLoading();
@@ -560,14 +546,15 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
   }
 
   Widget _buildTransactionsList(
-      BuildContext context, List<FinanceTransactionEntity> transactions) {
+    BuildContext context,
+    List<FinanceTransactionEntity> transactions,
+  ) {
     if (transactions.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long_outlined,
-                size: 60, color: _SN.textMuted),
+            Icon(Icons.receipt_long_outlined, size: 60, color: _SN.textMuted),
             const SizedBox(height: 16),
             Text(
               'SIN TRANSACCIONES',
@@ -580,10 +567,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 8),
             Text(
               'Aun no hay transacciones registradas.',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: _SN.textSecondary,
-              ),
+              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
             ),
           ],
         ),
@@ -598,12 +582,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         return _TransactionCard(
           transaction: transaction,
           currencyFormat: _currencyFormat,
-          onCancel: () {
-            context.read<FinanceBloc>().add(CancelTransaction(
-                  transactionId: transaction.id,
-                  leagueId: widget.leagueId,
-                ));
-          },
+          onCancel: () => _confirmCancel(context, transaction),
           onPay: () => _navigateToPayment(context, transaction),
         );
       },
@@ -630,10 +609,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 8),
             Text(
               'Aun no hay balances de equipos.',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: _SN.textSecondary,
-              ),
+              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
             ),
           ],
         ),
@@ -674,13 +650,21 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       if (logoData.startsWith('data:image/')) {
         final base64Data = logoData.split(',')[1];
         final Uint8List bytes = base64Decode(base64Data);
-        return Image.memory(bytes,
-            width: 36, height: 36, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _buildDefaultAvatar());
+        return Image.memory(
+          bytes,
+          width: 36,
+          height: 36,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+        );
       }
-      return Image.network(logoData,
-          width: 36, height: 36, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildDefaultAvatar());
+      return Image.network(
+        logoData,
+        width: 36,
+        height: 36,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+      );
     } catch (_) {
       return _buildDefaultAvatar();
     }
@@ -738,24 +722,22 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: _SN.textSecondary,
-              ),
+              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
               onTap: () {
-                context
-                    .read<FinanceBloc>()
-                    .add(LoadFinanceDashboard(leagueId: widget.leagueId));
+                context.read<FinanceBloc>().add(
+                  LoadFinanceDashboard(leagueId: widget.leagueId),
+                );
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  gradient:
-                      LinearGradient(colors: [_SN.gold, _SN.amber]),
+                  gradient: LinearGradient(colors: [_SN.gold, _SN.amber]),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -781,6 +763,95 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
     );
   }
 
+  /// The API requires a reason to cancel a transaction.
+  Future<void> _confirmCancel(
+    BuildContext context,
+    FinanceTransactionEntity transaction,
+  ) async {
+    final bloc = context.read<FinanceBloc>();
+    final reasonCtrl = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: _SN.cardDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: _SN.error.withOpacity(0.3)),
+          ),
+          title: Text(
+            'CANCELAR TRANSACCIÓN',
+            style: GoogleFonts.bebasNeue(
+              fontSize: 20,
+              color: _SN.error,
+              letterSpacing: 2,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${transaction.transactionType.display} · '
+                '${_currencyFormat.format(transaction.amount)}',
+                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                autofocus: true,
+                maxLines: 2,
+                style: GoogleFonts.outfit(color: _SN.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Motivo de la cancelación',
+                  hintStyle: GoogleFonts.outfit(color: _SN.textMuted),
+                  filled: true,
+                  fillColor: _SN.surfaceDark,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Volver',
+                style: GoogleFonts.outfit(color: _SN.textSecondary),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final text = reasonCtrl.text.trim();
+                if (text.isEmpty) return;
+                Navigator.pop(dialogContext, text);
+              },
+              child: Text(
+                'Cancelar transacción',
+                style: GoogleFonts.outfit(
+                  color: _SN.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    reasonCtrl.dispose();
+    if (reason == null) return;
+    bloc.add(
+      CancelTransaction(
+        transactionId: transaction.id,
+        leagueId: widget.leagueId,
+        reason: reason,
+      ),
+    );
+  }
+
   // ===== NAVIGATION =====
   void _navigateToConfig(BuildContext context) {
     Navigator.push(
@@ -795,30 +866,31 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            FinanceTransactionFormScreen(leagueId: widget.leagueId),
+        builder: (_) => FinanceTransactionFormScreen(leagueId: widget.leagueId),
       ),
     ).then((created) {
-      if (created == true) {
-        context
-            .read<FinanceBloc>()
-            .add(LoadFinanceDashboard(leagueId: widget.leagueId));
+      if (created == true && mounted) {
+        this.context.read<FinanceBloc>().add(
+          LoadFinanceDashboard(leagueId: widget.leagueId),
+        );
       }
     });
   }
 
   void _navigateToPayment(
-      BuildContext context, FinanceTransactionEntity transaction) {
+    BuildContext context,
+    FinanceTransactionEntity transaction,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FinancePaymentFormScreen(transaction: transaction),
       ),
     ).then((paid) {
-      if (paid == true) {
-        context
-            .read<FinanceBloc>()
-            .add(LoadFinanceDashboard(leagueId: widget.leagueId));
+      if (paid == true && mounted) {
+        this.context.read<FinanceBloc>().add(
+          LoadFinanceDashboard(leagueId: widget.leagueId),
+        );
       }
     });
   }
@@ -844,7 +916,7 @@ class _TransactionCard extends StatelessWidget {
         return _SN.neonGreen;
       case TransactionStatus.pending:
         return _SN.amber;
-      case TransactionStatus.partiallyPaid:
+      case TransactionStatus.partial:
         return _SN.amber;
       case TransactionStatus.overdue:
         return _SN.error;
@@ -876,8 +948,7 @@ class _TransactionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _statusColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
@@ -918,7 +989,7 @@ class _TransactionCard extends StatelessWidget {
               Icon(Icons.shield, size: 12, color: _SN.textMuted),
               const SizedBox(width: 4),
               Text(
-                transaction.teamName ?? 'Equipo',
+                transaction.teamName ?? 'Sin equipo',
                 style: GoogleFonts.outfit(
                   fontSize: 12,
                   color: _SN.textSecondary,
@@ -938,11 +1009,10 @@ class _TransactionCard extends StatelessWidget {
               ],
             ],
           ),
-          if (transaction.description != null &&
-              transaction.description!.isNotEmpty) ...[
+          if (transaction.description.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              transaction.description!,
+              transaction.description,
               style: GoogleFonts.outfit(
                 fontSize: 12,
                 color: _SN.textMuted,
@@ -963,8 +1033,7 @@ class _TransactionCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: transaction.amountPaid / transaction.amount,
                       backgroundColor: _SN.cardDark,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(_SN.neonGreen),
+                      valueColor: AlwaysStoppedAnimation<Color>(_SN.neonGreen),
                       minHeight: 4,
                     ),
                   ),
@@ -972,18 +1041,14 @@ class _TransactionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${currencyFormat.format(transaction.amountPaid)} pagado',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    color: _SN.neonGreen,
-                  ),
+                  style: GoogleFonts.outfit(fontSize: 10, color: _SN.neonGreen),
                 ),
               ],
             ),
           ],
           // Actions
-          if (transaction.status != TransactionStatus.paid &&
-              transaction.status != TransactionStatus.cancelled &&
-              transaction.status != TransactionStatus.waived) ...[
+          // Pay / cancel only while the API still accepts them
+          if (transaction.isOpen) ...[
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -992,7 +1057,9 @@ class _TransactionCard extends StatelessWidget {
                   onTap: onCancel,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: _SN.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -1013,11 +1080,11 @@ class _TransactionCard extends StatelessWidget {
                   onTap: onPay,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [_SN.gold, _SN.amber],
-                      ),
+                      gradient: LinearGradient(colors: [_SN.gold, _SN.amber]),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -1044,10 +1111,7 @@ class _TeamBalanceCard extends StatelessWidget {
   final FinanceTeamBalanceEntity balance;
   final NumberFormat currencyFormat;
 
-  const _TeamBalanceCard({
-    required this.balance,
-    required this.currencyFormat,
-  });
+  const _TeamBalanceCard({required this.balance, required this.currencyFormat});
 
   @override
   Widget build(BuildContext context) {
@@ -1055,8 +1119,8 @@ class _TeamBalanceCard extends StatelessWidget {
     final progressColor = percentage >= 80
         ? _SN.neonGreen
         : percentage >= 50
-            ? _SN.amber
-            : _SN.error;
+        ? _SN.amber
+        : _SN.error;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1122,16 +1186,20 @@ class _TeamBalanceCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildMiniStat(
-                  'Pagado', currencyFormat.format(balance.totalPaid),
-                  color: _SN.neonGreen),
+                'Pagado',
+                currencyFormat.format(balance.totalPaid),
+                color: _SN.neonGreen,
+              ),
               _buildMiniStat(
-                  'Pendiente', currencyFormat.format(balance.totalPending),
-                  color: _SN.amber),
+                'Pendiente',
+                currencyFormat.format(balance.pendingBalance),
+                color: _SN.amber,
+              ),
               _buildMiniStat(
-                  'Vencido', currencyFormat.format(balance.totalOverdue),
-                  color: balance.totalOverdue > 0
-                      ? _SN.error
-                      : _SN.textMuted),
+                'Vencidos',
+                balance.overdueCount.toString(),
+                color: balance.overdueCount > 0 ? _SN.error : _SN.textMuted,
+              ),
               Text(
                 '${percentage.toStringAsFixed(0)}%',
                 style: GoogleFonts.bebasNeue(
@@ -1168,15 +1236,23 @@ class _TeamBalanceCard extends StatelessWidget {
       if (logoData.startsWith('data:image/')) {
         final base64Data = logoData.split(',')[1];
         final Uint8List bytes = base64Decode(base64Data);
-        return Image.memory(bytes,
-            width: 36, height: 36, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Icon(Icons.shield, size: 20, color: _SN.gold.withOpacity(0.5)));
-      }
-      return Image.network(logoData,
-          width: 36, height: 36, fit: BoxFit.cover,
+        return Image.memory(
+          bytes,
+          width: 36,
+          height: 36,
+          fit: BoxFit.cover,
           errorBuilder: (_, __, ___) =>
-              Icon(Icons.shield, size: 20, color: _SN.gold.withOpacity(0.5)));
+              Icon(Icons.shield, size: 20, color: _SN.gold.withOpacity(0.5)),
+        );
+      }
+      return Image.network(
+        logoData,
+        width: 36,
+        height: 36,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Icon(Icons.shield, size: 20, color: _SN.gold.withOpacity(0.5)),
+      );
     } catch (_) {
       return Icon(Icons.shield, size: 20, color: _SN.gold.withOpacity(0.5));
     }
@@ -1196,10 +1272,7 @@ class _TeamBalanceCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(
-            fontSize: 10,
-            color: _SN.textMuted,
-          ),
+          style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
         ),
       ],
     );

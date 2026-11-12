@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/match_entity.dart';
-import '../../../domain/entities/player_stats_entity.dart';
 
 abstract class MatchDetailState extends Equatable {
   const MatchDetailState();
@@ -20,20 +19,15 @@ class MatchDetailLoading extends MatchDetailState {
 
 class MatchDetailLoaded extends MatchDetailState {
   final MatchEntity match;
-  final List<PlayerStatsEntity> homePlayerStats;
-  final List<PlayerStatsEntity> awayPlayerStats;
   final String? refereeObservations;
 
   const MatchDetailLoaded({
     required this.match,
-    this.homePlayerStats = const [],
-    this.awayPlayerStats = const [],
     this.refereeObservations,
   });
 
   @override
-  List<Object?> get props =>
-      [match, homePlayerStats, awayPlayerStats, refereeObservations];
+  List<Object?> get props => [match, refereeObservations];
 }
 
 class MatchDetailError extends MatchDetailState {
@@ -45,40 +39,41 @@ class MatchDetailError extends MatchDetailState {
   List<Object?> get props => [message];
 }
 
-class MatchPlayerStatsSaving extends MatchDetailState {
-  const MatchPlayerStatsSaving();
+class MatchResultSaving extends MatchDetailState {
+  const MatchResultSaving();
 }
 
-class MatchPlayerStatsSaved extends MatchDetailState {
-  const MatchPlayerStatsSaved();
+class MatchResultSaved extends MatchDetailState {
+  const MatchResultSaved();
 }
 
-class MatchPlayerStatsError extends MatchDetailState {
+class MatchResultError extends MatchDetailState {
   final String message;
 
-  const MatchPlayerStatsError(this.message);
+  const MatchResultError(this.message);
 
   @override
   List<Object?> get props => [message];
 }
 
-class MatchStatusUpdating extends MatchDetailState {
-  const MatchStatusUpdating();
+/// A status change or publication toggle is in progress
+class MatchActionInProgress extends MatchDetailState {
+  const MatchActionInProgress();
 }
 
-class MatchStatusUpdated extends MatchDetailState {
-  final MatchEntity match;
-
-  const MatchStatusUpdated(this.match);
-
-  @override
-  List<Object?> get props => [match];
-}
-
-class MatchStatusUpdateError extends MatchDetailState {
+class MatchActionSuccess extends MatchDetailState {
   final String message;
 
-  const MatchStatusUpdateError(this.message);
+  const MatchActionSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class MatchActionError extends MatchDetailState {
+  final String message;
+
+  const MatchActionError(this.message);
 
   @override
   List<Object?> get props => [message];

@@ -54,6 +54,7 @@ class _PaymentFormView extends StatefulWidget {
 class _PaymentFormViewState extends State<_PaymentFormView> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
+  final _referenceCtrl = TextEditingController();
   PaymentMethod _selectedMethod = PaymentMethod.cash;
   final _currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
 
@@ -61,15 +62,18 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   void initState() {
     super.initState();
     // Pre-fill with remaining amount
-    _amountCtrl.text =
-        widget.transaction.amountPending.toStringAsFixed(0);
+    _amountCtrl.text = _plain(widget.transaction.amountPending);
   }
 
   @override
   void dispose() {
     _amountCtrl.dispose();
+    _referenceCtrl.dispose();
     super.dispose();
   }
+
+  static String _plain(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
@@ -77,12 +81,15 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
     final amount = double.tryParse(_amountCtrl.text) ?? 0;
     if (amount <= 0) return;
 
-    context.read<FinanceBloc>().add(RegisterPayment(
-          transactionId: widget.transaction.id,
-          amount: amount,
-          paymentMethod: _selectedMethod.dbValue,
-          leagueId: widget.transaction.leagueId,
-        ));
+    context.read<FinanceBloc>().add(
+      RegisterPayment(
+        transactionId: widget.transaction.id,
+        amount: amount,
+        paymentMethod: _selectedMethod,
+        paymentReference: _referenceCtrl.text,
+        leagueId: widget.transaction.leagueId,
+      ),
+    );
   }
 
   @override
@@ -100,8 +107,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             if (state is FinancePaymentRegistered) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -111,8 +120,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             if (state is FinanceError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -191,6 +202,12 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             _buildLabel('Metodo de Pago'),
             const SizedBox(height: 8),
             _buildPaymentMethodSelector(),
+            const SizedBox(height: 20),
+
+            // Reference
+            _buildLabel('Referencia (opcional)'),
+            const SizedBox(height: 8),
+            _buildReferenceField(),
             const SizedBox(height: 32),
 
             // Save button
@@ -229,7 +246,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
               Icon(Icons.shield, size: 14, color: _SN.textMuted),
               const SizedBox(width: 6),
               Text(
-                tx.teamName ?? 'Equipo',
+                tx.teamName ?? 'Sin equipo',
                 style: GoogleFonts.outfit(
                   fontSize: 13,
                   color: _SN.textSecondary,
@@ -261,11 +278,20 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildSummaryItem(
-                  'Total', _currencyFormat.format(tx.amount), _SN.textPrimary),
-              _buildSummaryItem('Pagado', _currencyFormat.format(tx.amountPaid),
-                  _SN.neonGreen),
-              _buildSummaryItem('Pendiente',
-                  _currencyFormat.format(tx.amountPending), _SN.amber),
+                'Total',
+                _currencyFormat.format(tx.amount),
+                _SN.textPrimary,
+              ),
+              _buildSummaryItem(
+                'Pagado',
+                _currencyFormat.format(tx.amountPaid),
+                _SN.neonGreen,
+              ),
+              _buildSummaryItem(
+                'Pendiente',
+                _currencyFormat.format(tx.amountPending),
+                _SN.amber,
+              ),
             ],
           ),
           // Progress bar
@@ -287,10 +313,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   Widget _buildSummaryItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(
-          value,
-          style: GoogleFonts.bebasNeue(fontSize: 18, color: color),
-        ),
+        Text(value, style: GoogleFonts.bebasNeue(fontSize: 18, color: color)),
         Text(
           label,
           style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
@@ -313,8 +336,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   Widget _buildAmountField(FinanceTransactionEntity tx) {
     return TextFormField(
       controller: _amountCtrl,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
+      ],
       style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 20),
       textAlign: TextAlign.center,
       decoration: InputDecoration(
@@ -326,8 +351,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
         ),
         filled: true,
         fillColor: _SN.cardDark,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: _SN.gold.withOpacity(0.2)),
@@ -348,8 +375,8 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
       validator: (value) {
         if (value == null || value.isEmpty) return 'Ingresa un monto';
         final amount = double.tryParse(value);
-        if (amount == null || amount <= 0) return 'Monto invalido';
-        if (amount > tx.amountPending) {
+        if (amount == null || amount <= 0) return 'Monto inválido';
+        if (amount > tx.amountPending + 0.001) {
           return 'El monto excede el pendiente (${_currencyFormat.format(tx.amountPending)})';
         }
         return null;
@@ -362,7 +389,11 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
     final half = (pending / 2).roundToDouble();
     final quarter = (pending / 4).roundToDouble();
 
-    final amounts = <double>[quarter, half, pending].where((a) => a > 0).toList();
+    final amounts = <double>[
+      quarter,
+      half,
+      pending,
+    ].where((a) => a > 0).toList();
     if (amounts.length <= 1) return const SizedBox.shrink();
 
     return Row(
@@ -372,7 +403,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: GestureDetector(
               onTap: () {
-                _amountCtrl.text = amount.toStringAsFixed(0);
+                _amountCtrl.text = _plain(amount);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -394,8 +425,8 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                       amount == pending
                           ? 'Total'
                           : amount == half
-                              ? '50%'
-                              : '25%',
+                          ? '50%'
+                          : '25%',
                       style: GoogleFonts.outfit(
                         fontSize: 10,
                         color: _SN.textMuted,
@@ -413,7 +444,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
 
   Widget _buildPaymentMethodSelector() {
     return Column(
-      children: PaymentMethod.values.map((method) {
+      children: PaymentMethod.manual.map((method) {
         final isSelected = _selectedMethod == method;
         return GestureDetector(
           onTap: () => setState(() => _selectedMethod = method),
@@ -421,14 +452,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? _SN.gold.withOpacity(0.1)
-                  : _SN.cardDark,
+              color: isSelected ? _SN.gold.withOpacity(0.1) : _SN.cardDark,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected
-                    ? _SN.gold
-                    : _SN.gold.withOpacity(0.15),
+                color: isSelected ? _SN.gold : _SN.gold.withOpacity(0.15),
                 width: isSelected ? 1.5 : 1,
               ),
             ),
@@ -445,11 +472,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                     method.display,
                     style: GoogleFonts.outfit(
                       fontSize: 14,
-                      color: isSelected
-                          ? _SN.textPrimary
-                          : _SN.textSecondary,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected ? _SN.textPrimary : _SN.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -467,13 +493,49 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
     switch (method) {
       case PaymentMethod.cash:
         return Icons.money;
-      case PaymentMethod.transfer:
+      case PaymentMethod.bankTransfer:
+      case PaymentMethod.spei:
         return Icons.account_balance;
       case PaymentMethod.card:
+      case PaymentMethod.stripe:
         return Icons.credit_card;
+      case PaymentMethod.oxxo:
+        return Icons.storefront;
+      case PaymentMethod.mercadopago:
+      case PaymentMethod.paypal:
+        return Icons.account_balance_wallet;
       case PaymentMethod.other:
         return Icons.more_horiz;
     }
+  }
+
+  Widget _buildReferenceField() {
+    return TextFormField(
+      controller: _referenceCtrl,
+      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Folio, número de operación...',
+        hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14),
+        filled: true,
+        fillColor: _SN.cardDark,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _SN.gold.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _SN.gold.withOpacity(0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _SN.gold, width: 1.5),
+        ),
+      ),
+    );
   }
 
   Widget _buildSaveButton() {
@@ -497,10 +559,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             const SizedBox(width: 8),
             Text(
               'CONFIRMAR PAGO',
-              style: GoogleFonts.bebasNeue(
-                fontSize: 18,
-                letterSpacing: 2,
-              ),
+              style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
             ),
           ],
         ),

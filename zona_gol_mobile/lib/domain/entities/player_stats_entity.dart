@@ -126,3 +126,47 @@ class SuspensionInfo {
   int get matchesRemaining => matchesToServe - matchesServed;
   bool get isActive => matchesRemaining > 0;
 }
+
+/// A player's manual ("extemporaneous") stats in one tournament: totals
+/// recorded outside any match, added on top of the match data.
+class ManualStatsEntity extends Equatable {
+  final String playerId;
+  final String playerName;
+  final int? jerseyNumber;
+  final String teamId;
+  final String? teamName;
+  final int goals;
+  final int assists;
+  final int yellowCards;
+  final int redCards;
+
+  const ManualStatsEntity({
+    required this.playerId,
+    this.playerName = '',
+    this.jerseyNumber,
+    this.teamId = '',
+    this.teamName,
+    this.goals = 0,
+    this.assists = 0,
+    this.yellowCards = 0,
+    this.redCards = 0,
+  });
+
+  ManualStatsEntity copyWith({int? goals, int? assists, int? yellowCards, int? redCards}) {
+    return ManualStatsEntity(
+      playerId: playerId,
+      playerName: playerName,
+      jerseyNumber: jerseyNumber,
+      teamId: teamId,
+      teamName: teamName,
+      goals: goals ?? this.goals,
+      assists: assists ?? this.assists,
+      yellowCards: yellowCards ?? this.yellowCards,
+      redCards: redCards ?? this.redCards,
+    );
+  }
+
+  @override
+  List<Object?> get props =>
+      [playerId, playerName, jerseyNumber, teamId, teamName, goals, assists, yellowCards, redCards];
+}

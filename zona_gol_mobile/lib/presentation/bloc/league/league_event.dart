@@ -10,7 +10,7 @@ abstract class LeagueEvent extends Equatable {
 }
 
 /// Load All Leagues Event
-/// Fetches all leagues, optionally filtered by active status
+/// [onlyActive] true: public active leagues; false: every league (super admin)
 class LoadAllLeaguesEvent extends LeagueEvent {
   final bool onlyActive;
 
@@ -29,21 +29,6 @@ class LoadLeagueByIdEvent extends LeagueEvent {
 
   @override
   List<Object?> get props => [leagueId];
-}
-
-/// Load Leagues By Admin Event
-/// Fetches all leagues managed by a specific admin
-class LoadLeaguesByAdminEvent extends LeagueEvent {
-  final String adminId;
-  final bool onlyActive;
-
-  const LoadLeaguesByAdminEvent({
-    required this.adminId,
-    this.onlyActive = false,
-  });
-
-  @override
-  List<Object?> get props => [adminId, onlyActive];
 }
 
 /// Create League Event
@@ -67,21 +52,6 @@ class CreateLeagueEvent extends LeagueEvent {
 
   @override
   List<Object?> get props => [name, slug, description, adminId, logo, productMode];
-}
-
-/// Search Leagues Event
-/// Searches leagues by name or description
-class SearchLeaguesEvent extends LeagueEvent {
-  final String query;
-  final bool onlyActive;
-
-  const SearchLeaguesEvent({
-    required this.query,
-    this.onlyActive = true,
-  });
-
-  @override
-  List<Object?> get props => [query, onlyActive];
 }
 
 /// Reset League State Event

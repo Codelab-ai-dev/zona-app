@@ -26,8 +26,5 @@ class ToggleWhatsAppLinkParams {
   final String id;
   final bool isActive;
 
-  const ToggleWhatsAppLinkParams({
-    required this.id,
-    required this.isActive,
-  });
+  const ToggleWhatsAppLinkParams({required this.id, required this.isActive});
 }

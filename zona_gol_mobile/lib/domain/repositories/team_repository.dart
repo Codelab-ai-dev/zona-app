@@ -7,11 +7,6 @@ import '../usecases/create_team_owner_usecase.dart';
 /// Team Repository
 /// Defines the contract for team data operations
 abstract class TeamRepository {
-  /// Get all teams
-  Future<Either<Failure, List<TeamEntity>>> getAllTeams({
-    bool onlyActive = false,
-  });
-
   /// Get a team by ID
   Future<Either<Failure, TeamEntity>> getTeamById(String teamId);
 
@@ -21,40 +16,25 @@ abstract class TeamRepository {
     bool onlyActive = false,
   });
 
-  /// Get teams by tournament ID
+  /// Get teams by tournament ID. [leagueId] saves a lookup of the tournament.
   Future<Either<Failure, List<TeamEntity>>> getTeamsByTournamentId(
     String tournamentId, {
     bool onlyActive = false,
+    String? leagueId,
   });
 
-  /// Get teams by owner ID
-  Future<Either<Failure, List<TeamEntity>>> getTeamsByOwnerId(
-    String ownerId, {
-    bool onlyActive = false,
-  });
+  /// Teams owned by the signed-in user (team owners).
+  Future<Either<Failure, List<TeamEntity>>> getMyTeams();
 
-  /// Get teams by group (for group_knockout tournaments)
-  Future<Either<Failure, List<TeamEntity>>> getTeamsByGroup(
-    String tournamentId,
-    String groupName,
-  );
-
-  /// Create a new team
+  /// Create a new team. The caller (league admin) owns it until an owner
+  /// account is created for it (see [createTeamOwner]).
   Future<Either<Failure, TeamEntity>> createTeam({
     required String name,
     required String slug,
     required String leagueId,
-    required String ownerId,
     String? tournamentId,
     String? logo,
     String? description,
-    String? homePrimaryColor,
-    String? homeSecondaryColor,
-    String? homeAccentColor,
-    String? awayPrimaryColor,
-    String? awaySecondaryColor,
-    String? awayAccentColor,
-    String? groupName,
   });
 
   /// Update a team
@@ -66,69 +46,42 @@ abstract class TeamRepository {
     String? logo,
     String? description,
     bool? isActive,
-    String? homePrimaryColor,
-    String? homeSecondaryColor,
-    String? homeAccentColor,
-    String? awayPrimaryColor,
-    String? awaySecondaryColor,
-    String? awayAccentColor,
-    String? groupName,
   });
 
-  /// Delete a team (soft delete)
+  /// Delete a team permanently (players, staff and matches included).
   Future<Either<Failure, void>> deleteTeam(String teamId);
 
-  /// Search teams by name
-  Future<Either<Failure, List<TeamEntity>>> searchTeams(
-    String query, {
-    bool onlyActive = true,
-  });
-
-  /// Check if a slug is available for a league
-  Future<Either<Failure, bool>> isSlugAvailable(
-    String slug,
-    String leagueId, {
-    String? excludeTeamId,
-  });
-
-  /// Assign team to tournament
+  /// Assign team to tournament and group (null group = no group).
   Future<Either<Failure, TeamEntity>> assignToTournament(
     String teamId,
     String tournamentId, {
     String? groupName,
   });
 
-  /// Remove team from tournament
-  Future<Either<Failure, TeamEntity>> removeFromTournament(String teamId);
-
   /// Get team standings by tournament ID
   Future<Either<Failure, List<TeamStandingEntity>>> getStandingsByTournament(
     String tournamentId,
   );
 
-  /// Get team standings by league ID
-  Future<Either<Failure, List<TeamStandingEntity>>> getStandingsByLeague(
-    String leagueId,
-  );
-
-  /// Create a team owner account via Edge Function
+  /// Create the owner account of an existing team (it becomes its owner).
   Future<Either<Failure, CreateTeamOwnerResult>> createTeamOwner({
     required String email,
     required String name,
     required String leagueId,
+    required String teamId,
   });
 
-  /// Update team standings (upsert to team_stats)
+  /// Set a team's displayed totals in a tournament (the difference with the
+  /// match data is stored as adjustments) and its points adjustment.
   Future<Either<Failure, void>> updateStandings({
     required String teamId,
     required String tournamentId,
-    required String leagueId,
-    int? matchesPlayed,
-    int? matchesWon,
-    int? matchesDrawn,
-    int? matchesLost,
-    int? goalsFor,
-    int? goalsAgainst,
+    required int matchesPlayed,
+    required int matchesWon,
+    required int matchesDrawn,
+    required int matchesLost,
+    required int goalsFor,
+    required int goalsAgainst,
     int? pointsAdjustment,
     String? adjustmentReason,
   });

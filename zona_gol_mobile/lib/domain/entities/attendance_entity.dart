@@ -1,76 +1,61 @@
 import 'package:equatable/equatable.dart';
 
-/// Attendance Entity
-/// Represents a player attendance record (QR check-in)
-class AttendanceEntity extends Equatable {
-  final String id;
-  final String playerId;
-  final String? matchId;
-  final String teamId;
-  final DateTime checkedInAt;
-  final String recognitionMode; // 'quick' or 'thorough'
-  final String? deviceInfo;
-  final String? scannedByUserId;
-  final DateTime? serverTimestamp;
-  final DateTime? createdAt;
+/// A match the scanned player's team plays on the scan date and that can
+/// still take attendance (scheduled or in progress).
+class TodayMatchEntity extends Equatable {
+  final String matchId;
+  final String tournamentId;
 
-  // Joined fields
-  final String? playerName;
-  final int? jerseyNumber;
-  final String? teamName;
+  /// `HH:MM`, when the match has a kick-off time.
+  final String? matchTime;
+  final String status;
+  final String homeTeamName;
+  final String awayTeamName;
+  final int? fieldNumber;
 
-  const AttendanceEntity({
-    required this.id,
-    required this.playerId,
-    this.matchId,
-    required this.teamId,
-    required this.checkedInAt,
-    this.recognitionMode = 'quick',
-    this.deviceInfo,
-    this.scannedByUserId,
-    this.serverTimestamp,
-    this.createdAt,
-    this.playerName,
-    this.jerseyNumber,
-    this.teamName,
+  /// The player already has a QR check-in for this match.
+  final bool alreadyRegistered;
+
+  const TodayMatchEntity({
+    required this.matchId,
+    required this.tournamentId,
+    this.matchTime,
+    required this.status,
+    required this.homeTeamName,
+    required this.awayTeamName,
+    this.fieldNumber,
+    this.alreadyRegistered = false,
   });
+
+  /// "Local vs Visita"
+  String get teamsDisplay => '$homeTeamName vs $awayTeamName';
+
+  /// "Local vs Visita · HH:MM"
+  String get displayName =>
+      matchTime == null ? teamsDisplay : '$teamsDisplay \u00b7 $matchTime';
+
+  TodayMatchEntity copyWith({bool? alreadyRegistered}) => TodayMatchEntity(
+        matchId: matchId,
+        tournamentId: tournamentId,
+        matchTime: matchTime,
+        status: status,
+        homeTeamName: homeTeamName,
+        awayTeamName: awayTeamName,
+        fieldNumber: fieldNumber,
+        alreadyRegistered: alreadyRegistered ?? this.alreadyRegistered,
+      );
 
   @override
   List<Object?> get props => [
-        id,
-        playerId,
         matchId,
-        teamId,
-        checkedInAt,
-        recognitionMode,
-        scannedByUserId,
-        createdAt,
-        playerName,
-        jerseyNumber,
-        teamName,
+        tournamentId,
+        matchTime,
+        status,
+        homeTeamName,
+        awayTeamName,
+        fieldNumber,
+        alreadyRegistered,
       ];
-
-  bool get isQuickMode => recognitionMode == 'quick';
-  bool get isSynced => serverTimestamp != null;
-
-  String get checkedInTimeDisplay {
-    final hour = checkedInAt.hour.toString().padLeft(2, '0');
-    final minute = checkedInAt.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  bool get isCheckedInToday {
-    final now = DateTime.now();
-    return checkedInAt.year == now.year &&
-        checkedInAt.month == now.month &&
-        checkedInAt.day == now.day;
-  }
-
-  String get displayName {
-    if (playerName == null) return 'Jugador';
-    if (jerseyNumber != null) return '#$jerseyNumber $playerName';
-    return playerName!;
-  }
 }
 
 /// QR Player Data — parsed from QR code

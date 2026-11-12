@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
+import '../../../domain/entities/finance_config_entity.dart';
 import '../../../domain/entities/finance_enums.dart';
 import '../../../domain/entities/team_entity.dart';
 import '../../bloc/finance/finance_bloc.dart';
@@ -19,7 +20,6 @@ class _SN {
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
-  static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
@@ -39,7 +39,10 @@ class FinanceTransactionFormScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => sl<FinanceBloc>()),
+        // The config prefills the amount of each type and gives the currency.
+        BlocProvider(
+          create: (_) => sl<FinanceBloc>()..add(LoadConfig(leagueId: leagueId)),
+        ),
         BlocProvider(
           create: (_) {
             final bloc = sl<TeamBloc>();
@@ -67,9 +70,12 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
   final _amountCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
 
-  TransactionType _selectedType = TransactionType.registrationFee;
+  TransactionType? _selectedType;
   String? _selectedTeamId;
   DateTime? _dueDate;
+  FinanceConfigEntity? _config;
+
+  String get _symbol => (_config?.currency ?? Currency.mxn).symbol;
 
   @override
   void dispose() {
@@ -78,30 +84,57 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
     super.dispose();
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.outfit(color: Colors.white)),
+        backgroundColor: _SN.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Picking a type prefills description and amount from the league config.
+  void _pickType(TransactionType type) {
+    setState(() {
+      _selectedType = type;
+      _descriptionCtrl.text = type.defaultDescription;
+      final configured = _config?.defaultAmountFor(type) ?? 0;
+      if (configured > 0) {
+        _amountCtrl.text = configured == configured.roundToDouble()
+            ? configured.toStringAsFixed(0)
+            : configured.toStringAsFixed(2);
+      }
+      if (type.isIncome) {
+        _dueDate = null;
+      } else if (_dueDate == null && _config != null) {
+        _dueDate = DateTime.now().add(Duration(days: _config!.paymentDueDays));
+      }
+    });
+  }
+
   void _save() {
+    final type = _selectedType;
+    if (type == null) {
+      _showError('Selecciona un tipo de transacción');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedTeamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Selecciona un equipo',
-              style: GoogleFonts.outfit(color: Colors.white)),
-          backgroundColor: _SN.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (type.needsTeam && _selectedTeamId == null) {
+      _showError('Selecciona un equipo');
       return;
     }
 
-    context.read<FinanceBloc>().add(CreateTransaction(
-          leagueId: widget.leagueId,
-          teamId: _selectedTeamId!,
-          transactionType: _selectedType.dbValue,
-          amount: double.tryParse(_amountCtrl.text) ?? 0,
-          description: _descriptionCtrl.text.isNotEmpty
-              ? _descriptionCtrl.text
-              : null,
-          dueDate: _dueDate?.toIso8601String().split('T').first,
-        ));
+    context.read<FinanceBloc>().add(
+      CreateTransaction(
+        leagueId: widget.leagueId,
+        teamId: _selectedTeamId,
+        type: type,
+        amount: double.tryParse(_amountCtrl.text) ?? 0,
+        description: _descriptionCtrl.text.trim(),
+        dueDate: type.isIncome ? null : _dueDate,
+      ),
+    );
   }
 
   Future<void> _pickDueDate() async {
@@ -141,11 +174,16 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
         appBar: _buildAppBar(context),
         body: BlocConsumer<FinanceBloc, FinanceState>(
           listener: (context, state) {
+            if (state is FinanceConfigLoaded) {
+              setState(() => _config = state.config);
+            }
             if (state is FinanceTransactionCreated) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -155,8 +193,10 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
             if (state is FinanceError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message,
-                      style: GoogleFonts.outfit(color: Colors.white)),
+                  content: Text(
+                    state.message,
+                    style: GoogleFonts.outfit(color: Colors.white),
+                  ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -196,7 +236,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        'NUEVA TRANSACCION',
+        'NUEVA TRANSACCIÓN',
         style: GoogleFonts.bebasNeue(
           fontSize: 22,
           color: _SN.textPrimary,
@@ -216,13 +256,15 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Transaction type dropdown
-            _buildLabel('Tipo de Transaccion'),
+            _buildLabel('Tipo de Transacción'),
             const SizedBox(height: 8),
             _buildTypeDropdown(),
             const SizedBox(height: 20),
 
             // Team dropdown
-            _buildLabel('Equipo'),
+            _buildLabel(
+              _selectedType?.needsTeam ?? true ? 'Equipo' : 'Equipo (opcional)',
+            ),
             const SizedBox(height: 8),
             _buildTeamDropdown(),
             const SizedBox(height: 20),
@@ -234,15 +276,17 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
             const SizedBox(height: 20),
 
             // Description
-            _buildLabel('Descripcion (opcional)'),
+            _buildLabel('Descripción'),
             const SizedBox(height: 8),
             _buildDescriptionField(),
             const SizedBox(height: 20),
 
-            // Due date
-            _buildLabel('Fecha de Vencimiento (opcional)'),
-            const SizedBox(height: 8),
-            _buildDueDateField(),
+            // Due date (charges only)
+            if (!(_selectedType?.isIncome ?? false)) ...[
+              _buildLabel('Fecha de Vencimiento (opcional)'),
+              const SizedBox(height: 8),
+              _buildDueDateField(),
+            ],
             const SizedBox(height: 32),
 
             // Save button
@@ -277,6 +321,10 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
         child: DropdownButton<TransactionType>(
           value: _selectedType,
           isExpanded: true,
+          hint: Text(
+            'Seleccionar tipo',
+            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+          ),
           dropdownColor: _SN.cardDark,
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
           items: TransactionType.values.map((type) {
@@ -287,7 +335,11 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                   if (type.isFine)
                     Icon(Icons.warning_amber, size: 16, color: _SN.error),
                   if (!type.isFine)
-                    Icon(Icons.receipt, size: 16, color: _SN.gold),
+                    Icon(
+                      type.isIncome ? Icons.trending_up : Icons.receipt,
+                      size: 16,
+                      color: type.isIncome ? _SN.neonGreen : _SN.gold,
+                    ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -304,7 +356,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
             );
           }).toList(),
           onChanged: (value) {
-            if (value != null) setState(() => _selectedType = value);
+            if (value != null) _pickType(value);
           },
         ),
       ),
@@ -334,32 +386,42 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
               icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
               hint: Text(
                 teams.isEmpty ? 'Cargando equipos...' : 'Seleccionar equipo',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  color: _SN.textMuted,
-                ),
+                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
               ),
-              items: teams.map((team) {
-                return DropdownMenuItem(
-                  value: team.id,
-                  child: Row(
-                    children: [
-                      Icon(Icons.shield, size: 16, color: _SN.gold),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          team.name,
-                          style: GoogleFonts.outfit(
-                            fontSize: 14,
-                            color: _SN.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+              items: [
+                if (!(_selectedType?.needsTeam ?? true))
+                  DropdownMenuItem<String>(
+                    value: null,
+                    child: Text(
+                      'Sin equipo',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: _SN.textSecondary,
                       ),
-                    ],
+                    ),
                   ),
-                );
-              }).toList(),
+                ...teams.map((team) {
+                  return DropdownMenuItem<String>(
+                    value: team.id,
+                    child: Row(
+                      children: [
+                        Icon(Icons.shield, size: 16, color: _SN.gold),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            team.name,
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              color: _SN.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
               onChanged: (value) {
                 setState(() => _selectedTeamId = value);
               },
@@ -373,11 +435,13 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
   Widget _buildAmountField() {
     return TextFormField(
       controller: _amountCtrl,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
+      ],
       style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 16),
       decoration: InputDecoration(
-        prefixText: '\$ ',
+        prefixText: '$_symbol ',
         prefixStyle: GoogleFonts.outfit(
           color: _SN.gold,
           fontSize: 16,
@@ -387,8 +451,10 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
         hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 16),
         filled: true,
         fillColor: _SN.cardDark,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: _SN.gold.withOpacity(0.2)),
@@ -409,7 +475,8 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
       validator: (value) {
         if (value == null || value.isEmpty) return 'Ingresa un monto';
         final amount = double.tryParse(value);
-        if (amount == null || amount <= 0) return 'Monto invalido';
+        if (amount == null || amount <= 0) return 'Monto inválido';
+        if (amount > 999999.99) return 'No puede exceder 999,999.99';
         return null;
       },
     );
@@ -421,7 +488,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
       maxLines: 3,
       style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
       decoration: InputDecoration(
-        hintText: 'Agrega una nota o descripcion...',
+        hintText: 'Describe el cargo, multa o pago...',
         hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14),
         filled: true,
         fillColor: _SN.cardDark,
@@ -438,7 +505,17 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: _SN.gold, width: 1.5),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _SN.error),
+        ),
       ),
+      validator: (value) {
+        if ((value ?? '').trim().length < 3) {
+          return 'La descripción debe tener al menos 3 caracteres';
+        }
+        return null;
+      },
     );
   }
 
@@ -464,9 +541,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                     : 'Sin fecha de vencimiento',
                 style: GoogleFonts.outfit(
                   fontSize: 14,
-                  color: _dueDate != null
-                      ? _SN.textPrimary
-                      : _SN.textMuted,
+                  color: _dueDate != null ? _SN.textPrimary : _SN.textMuted,
                 ),
               ),
             ),
@@ -496,11 +571,8 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
           elevation: 0,
         ),
         child: Text(
-          'CREAR TRANSACCION',
-          style: GoogleFonts.bebasNeue(
-            fontSize: 18,
-            letterSpacing: 2,
-          ),
+          'CREAR TRANSACCIÓN',
+          style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
         ),
       ),
     );

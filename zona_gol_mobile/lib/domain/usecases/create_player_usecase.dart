@@ -12,20 +12,27 @@ class CreatePlayerUseCase {
     CreatePlayerParams params,
   ) async {
     if (params.name.trim().isEmpty) {
-      return Left(ValidationFailure('El nombre del jugador es requerido'));
+      return const Left(ValidationFailure('El nombre del jugador es requerido'));
     }
     if (params.teamId.isEmpty) {
-      return Left(ValidationFailure('ID del equipo es requerido'));
+      return const Left(ValidationFailure('ID del equipo es requerido'));
+    }
+    final position = params.position?.trim() ?? '';
+    if (position.isEmpty) {
+      return const Left(ValidationFailure('La posición es requerida'));
+    }
+    final jersey = params.jerseyNumber;
+    if (jersey == null || jersey < 1 || jersey > 99) {
+      return const Left(ValidationFailure('El número de camiseta debe estar entre 1 y 99'));
     }
 
     return await repository.createPlayer(
       name: params.name.trim(),
       teamId: params.teamId,
-      position: params.position,
-      jerseyNumber: params.jerseyNumber,
+      position: position,
+      jerseyNumber: jersey,
       photo: params.photo,
       birthDate: params.birthDate,
-      idDocumentUrl: params.idDocumentUrl,
     );
   }
 }
@@ -37,7 +44,6 @@ class CreatePlayerParams {
   final int? jerseyNumber;
   final String? photo;
   final DateTime? birthDate;
-  final String? idDocumentUrl;
 
   const CreatePlayerParams({
     required this.name,
@@ -46,6 +52,5 @@ class CreatePlayerParams {
     this.jerseyNumber,
     this.photo,
     this.birthDate,
-    this.idDocumentUrl,
   });
 }

@@ -61,17 +61,10 @@ class LoadStandingsByTournamentEvent extends TeamEvent {
   List<Object?> get props => [tournamentId];
 }
 
-/// Load Standings By League
-class LoadStandingsByLeagueEvent extends TeamEvent {
-  final String leagueId;
-
-  const LoadStandingsByLeagueEvent({required this.leagueId});
-
-  @override
-  List<Object?> get props => [leagueId];
-}
-
-/// Create Team With Owner
+/// Create Team and its owner account.
+///
+/// When the team was created but the owner failed ([TeamOwnerCreationFailed]),
+/// send it again with [existingTeamId] to retry only the owner.
 class CreateTeamWithOwnerEvent extends TeamEvent {
   final String teamName;
   final String teamSlug;
@@ -81,6 +74,7 @@ class CreateTeamWithOwnerEvent extends TeamEvent {
   final String? description;
   final String ownerEmail;
   final String ownerName;
+  final String? existingTeamId;
 
   const CreateTeamWithOwnerEvent({
     required this.teamName,
@@ -91,18 +85,19 @@ class CreateTeamWithOwnerEvent extends TeamEvent {
     this.description,
     required this.ownerEmail,
     required this.ownerName,
+    this.existingTeamId,
   });
 
   @override
-  List<Object?> get props => [teamName, teamSlug, leagueId, tournamentId, logo, description, ownerEmail, ownerName];
+  List<Object?> get props =>
+      [teamName, teamSlug, leagueId, tournamentId, logo, description, ownerEmail, ownerName, existingTeamId];
 }
 
-/// Create Team (with existing owner)
+/// Create Team without an owner account (the league admin owns it).
 class CreateTeamEvent extends TeamEvent {
   final String name;
   final String slug;
   final String leagueId;
-  final String ownerId;
   final String? tournamentId;
   final String? logo;
   final String? description;
@@ -111,14 +106,13 @@ class CreateTeamEvent extends TeamEvent {
     required this.name,
     required this.slug,
     required this.leagueId,
-    required this.ownerId,
     this.tournamentId,
     this.logo,
     this.description,
   });
 
   @override
-  List<Object?> get props => [name, slug, leagueId, ownerId, tournamentId, logo, description];
+  List<Object?> get props => [name, slug, leagueId, tournamentId, logo, description];
 }
 
 /// Update Team
@@ -159,33 +153,31 @@ class DeleteTeamEvent extends TeamEvent {
 class UpdateStandingsEvent extends TeamEvent {
   final String teamId;
   final String tournamentId;
-  final String leagueId;
-  final int? matchesPlayed;
-  final int? matchesWon;
-  final int? matchesDrawn;
-  final int? matchesLost;
-  final int? goalsFor;
-  final int? goalsAgainst;
+  final int matchesPlayed;
+  final int matchesWon;
+  final int matchesDrawn;
+  final int matchesLost;
+  final int goalsFor;
+  final int goalsAgainst;
   final int? pointsAdjustment;
   final String? adjustmentReason;
 
   const UpdateStandingsEvent({
     required this.teamId,
     required this.tournamentId,
-    required this.leagueId,
-    this.matchesPlayed,
-    this.matchesWon,
-    this.matchesDrawn,
-    this.matchesLost,
-    this.goalsFor,
-    this.goalsAgainst,
+    required this.matchesPlayed,
+    required this.matchesWon,
+    required this.matchesDrawn,
+    required this.matchesLost,
+    required this.goalsFor,
+    required this.goalsAgainst,
     this.pointsAdjustment,
     this.adjustmentReason,
   });
 
   @override
   List<Object?> get props => [
-        teamId, tournamentId, leagueId,
+        teamId, tournamentId,
         matchesPlayed, matchesWon, matchesDrawn, matchesLost,
         goalsFor, goalsAgainst, pointsAdjustment, adjustmentReason,
       ];

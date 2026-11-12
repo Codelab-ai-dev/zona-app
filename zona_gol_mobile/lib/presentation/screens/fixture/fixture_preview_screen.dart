@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/utils/fixture_config.dart';
+import '../../../domain/repositories/match_repository.dart';
 import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
@@ -32,12 +33,16 @@ class FixturePreviewScreen extends StatelessWidget {
   final int totalMatches;
   final String tournamentName;
 
+  /// Generation request of this preview; saving sends it without dry run
+  final FixtureRequest request;
+
   const FixturePreviewScreen({
     super.key,
     required this.fixtures,
     required this.totalRounds,
     required this.totalMatches,
     required this.tournamentName,
+    required this.request,
   });
 
   @override
@@ -512,7 +517,7 @@ class FixturePreviewScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          'Se crearán $totalMatches partidos para "$tournamentName". Esta acción no se puede deshacer.',
+          'Se crearán $totalMatches partidos para "$tournamentName" (sin publicar).',
           style: GoogleFonts.outfit(
             fontSize: 14,
             color: _SN.textSecondary,
@@ -531,8 +536,7 @@ class FixturePreviewScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              final maps = fixtures.map((f) => f.toInsertMap()).toList();
-              context.read<MatchBloc>().add(SaveFixturesEvent(matches: maps));
+              context.read<MatchBloc>().add(SaveFixturesEvent(request: request));
             },
             style: TextButton.styleFrom(foregroundColor: _SN.neonGreen),
             child: Text(

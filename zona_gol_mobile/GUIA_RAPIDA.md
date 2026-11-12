@@ -2,6 +2,14 @@
 
 ## ¿Cómo ejecutar la app?
 
+### Antes: levanta el backend
+
+```bash
+cd backend
+make db-up   # Postgres local en Docker (puerto 55432)
+make run     # API en http://localhost:8080
+```
+
 ### Opción 1: Forma más simple (Recomendada)
 
 ```bash
@@ -9,7 +17,7 @@ cd zona_gol_mobile
 flutter run
 ```
 
-Eso es todo! Las credenciales de Supabase ya están configuradas en el código.
+En el simulador de iOS la app llega a la API en `http://localhost:8080` sin configurar nada.
 
 ### Opción 2: Con script
 
@@ -44,11 +52,11 @@ El login con email y password ya está funcionando correctamente. ✨
 
 ### Lo que se implementó:
 
-1. ✅ **Autenticación con Supabase**
+1. ✅ **Autenticación con la API Zona Gol**
    - Login con email/password
-   - Logout
-   - Verificación de sesión
-   - Persistencia de sesión
+   - Logout (revoca el refresh token)
+   - Renovación automática del access token
+   - Persistencia de sesión en Secure Storage
 
 2. ✅ **Clean Architecture**
    - Domain layer (entities, repositories, use cases)
@@ -67,11 +75,17 @@ El login con email y password ya está funcionando correctamente. ✨
 
 ## 🐛 Problemas Comunes
 
-### "No host specified in URI"
+### "Connection refused" / la app no carga datos
 
-**Causa:** No se están pasando las credenciales de Supabase.
+**Causa:** La app no llega a la API.
 
-**Solución:** Ya está solucionado! Las credenciales están configuradas por defecto en `lib/core/config/app_config.dart`
+**Solución:** Verifica que el backend esté corriendo (`make run` en `backend/`) y que `API_BASE_URL` apunte al Mac: `localhost` en el simulador de iOS, `10.0.2.2` en el emulador de Android, o la IP local del Mac en un teléfono físico.
+
+### "Tu sesión expiró"
+
+**Causa:** El refresh token fue rechazado (expiró o se revocó).
+
+**Solución:** Vuelve a iniciar sesión.
 
 ### "Box user_profile not found"
 
@@ -87,34 +101,19 @@ El login con email y password ya está funcionando correctamente. ✨
 
 ## 🔧 Configuración
 
-### Cambiar las credenciales de Supabase
+### Cambiar el servidor de la API
 
-Si necesitas conectarte a otro servidor de Supabase, edita el archivo:
-
-```
-lib/core/config/app_config.dart
-```
-
-Y cambia los valores por defecto:
-
-```dart
-static const String supabaseUrl = String.fromEnvironment(
-  'SUPABASE_URL',
-  defaultValue: 'TU_URL_AQUI',
-);
-
-static const String supabaseAnonKey = String.fromEnvironment(
-  'SUPABASE_ANON_KEY',
-  defaultValue: 'TU_KEY_AQUI',
-);
-```
-
-O pasa las variables al ejecutar:
+La URL se define en `lib/core/config/app_config.dart` (`API_BASE_URL`, por defecto `http://localhost:8080`). Para cambiarla, pásala al ejecutar:
 
 ```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://tu-servidor.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=tu_key_aqui
+# Emulador Android
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
+
+# Teléfono físico en la misma red
+flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8080
+
+# Producción (debe ser https)
+flutter run --release --dart-define=ENV=prod --dart-define=API_BASE_URL=https://api.tu-dominio.com
 ```
 
 ## 📝 Próximos Pasos

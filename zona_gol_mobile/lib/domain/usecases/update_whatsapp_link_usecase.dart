@@ -17,14 +17,18 @@ class UpdateWhatsAppLinkUseCase {
 
     if (params.phoneNumber != null &&
         !WhatsAppLinkEntity.isValidPhoneNumber(params.phoneNumber!)) {
-      return Left(ValidationFailure(
-          'Formato de teléfono inválido. Use formato internacional: +521234567890'));
+      return Left(
+        ValidationFailure(
+          'Formato de teléfono inválido. Usa de 10 a 15 dígitos con lada de país, p. ej. 525512345678',
+        ),
+      );
     }
 
     return await repository.updateLink(
       id: params.id,
-      phoneNumber: params.phoneNumber?.trim(),
-      role: params.role,
+      phoneNumber: params.phoneNumber == null
+          ? null
+          : WhatsAppLinkEntity.normalizePhone(params.phoneNumber!),
       displayName: params.displayName?.trim(),
       preferredLanguage: params.preferredLanguage,
     );
@@ -34,14 +38,12 @@ class UpdateWhatsAppLinkUseCase {
 class UpdateWhatsAppLinkParams {
   final String id;
   final String? phoneNumber;
-  final String? role;
   final String? displayName;
   final String? preferredLanguage;
 
   const UpdateWhatsAppLinkParams({
     required this.id,
     this.phoneNumber,
-    this.role,
     this.displayName,
     this.preferredLanguage,
   });

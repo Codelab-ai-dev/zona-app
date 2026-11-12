@@ -245,6 +245,7 @@ class _CalendarViewState extends State<_CalendarView> {
 
   Widget _buildRoundFilter() {
     return BlocBuilder<MatchBloc, MatchState>(
+      buildWhen: (_, current) => current is! MatchActionResult,
       builder: (context, state) {
         if (state is! MatchesLoaded) return const SizedBox.shrink();
 
@@ -340,7 +341,19 @@ class _CalendarViewState extends State<_CalendarView> {
       );
     }
 
-    return BlocBuilder<MatchBloc, MatchState>(
+    return BlocConsumer<MatchBloc, MatchState>(
+      listenWhen: (_, current) => current is MatchActionResult,
+      listener: (context, state) {
+        if (state is MatchActionResult) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: state.success ? _SN.neonGreen.withOpacity(0.9) : _SN.error,
+            ),
+          );
+        }
+      },
+      buildWhen: (_, current) => current is! MatchActionResult,
       builder: (context, state) {
         if (state is MatchLoading) {
           return Center(
@@ -605,6 +618,10 @@ class _CalendarViewState extends State<_CalendarView> {
             style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
           ),
           const Spacer(),
+          if (_isAdmin) ...[
+            _buildPublishRoundButton(roundNum, matches),
+            const SizedBox(width: 6),
+          ],
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -618,6 +635,91 @@ class _CalendarViewState extends State<_CalendarView> {
               style: GoogleFonts.outfit(
                 fontSize: 11,
                 color: finished == total ? _SN.neonGreen : _SN.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _isAdmin => widget.user.isLeagueAdmin || widget.user.isSuperAdmin;
+
+  /// Publishes the round when any match is hidden, otherwise hides it
+  Widget _buildPublishRoundButton(int roundNum, List<MatchEntity> matches) {
+    final allPublished = matches.every((m) => m.isPublished);
+    final color = allPublished ? _SN.neonGreen : _SN.textMuted;
+    return GestureDetector(
+      onTap: roundNum <= 0
+          ? null
+          : () => _confirmPublishRound(roundNum, !allPublished),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              allPublished ? Icons.visibility : Icons.visibility_off,
+              size: 12,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              allPublished ? 'PUBLICADA' : 'PUBLICAR',
+              style: GoogleFonts.bebasNeue(
+                fontSize: 11,
+                color: color,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmPublishRound(int roundNum, bool publish) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _SN.cardDark,
+        title: Text(
+          publish ? 'PUBLICAR JORNADA $roundNum' : 'OCULTAR JORNADA $roundNum',
+          style: GoogleFonts.bebasNeue(
+            fontSize: 20,
+            color: _SN.textPrimary,
+            letterSpacing: 1.5,
+          ),
+        ),
+        content: Text(
+          publish
+              ? 'Todos los partidos de la jornada serán visibles en el portal público.'
+              : 'Los partidos de la jornada dejarán de verse en el portal público.',
+          style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancelar', style: GoogleFonts.outfit(color: _SN.textMuted)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<MatchBloc>().add(PublishRoundEvent(
+                    tournamentId: _selectedTournament!.id,
+                    round: roundNum,
+                    isPublished: publish,
+                  ));
+            },
+            child: Text(
+              publish ? 'Publicar' : 'Ocultar',
+              style: GoogleFonts.outfit(
+                color: _SN.neonGreen,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -868,6 +970,10 @@ class _CalendarViewState extends State<_CalendarView> {
               ],
             ),
 
+            if (_isAdmin && !match.isPublished) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.visibility_off, size: 14, color: _SN.textMuted),
+            ],
             const SizedBox(width: 4),
             Icon(Icons.chevron_right, size: 18, color: _SN.textMuted),
           ],

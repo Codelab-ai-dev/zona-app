@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
-import '../../../core/utils/fixture_config.dart';
+
+import '../../../domain/entities/match_entity.dart';
 import '../../../domain/entities/team_entity.dart';
-import '../../../domain/entities/tournament_entity.dart';
+import '../../../domain/repositories/match_repository.dart';
 
 /// Match Events
 abstract class MatchEvent extends Equatable {
@@ -21,94 +22,55 @@ class LoadPendingMatchesEvent extends MatchEvent {
   List<Object?> get props => [leagueId];
 }
 
-/// Load Matches by Tournament
+/// Load Matches by Tournament (optionally only one phase)
 class LoadMatchesByTournamentEvent extends MatchEvent {
   final String tournamentId;
+  final MatchPhase? phase;
 
-  const LoadMatchesByTournamentEvent({required this.tournamentId});
-
-  @override
-  List<Object?> get props => [tournamentId];
-}
-
-/// Update Match Result
-class UpdateMatchResultEvent extends MatchEvent {
-  final String matchId;
-  final int homeScore;
-  final int awayScore;
-
-  const UpdateMatchResultEvent({
-    required this.matchId,
-    required this.homeScore,
-    required this.awayScore,
-  });
+  const LoadMatchesByTournamentEvent({required this.tournamentId, this.phase});
 
   @override
-  List<Object?> get props => [matchId, homeScore, awayScore];
+  List<Object?> get props => [tournamentId, phase];
 }
 
-/// Reset Match State
-class ResetMatchStateEvent extends MatchEvent {
-  const ResetMatchStateEvent();
-}
-
-/// Generate Fixtures for a tournament
+/// Preview a fixture: the server generates it without saving (dry run)
 class GenerateFixturesEvent extends MatchEvent {
-  final FixtureConfig config;
+  final FixtureRequest request;
   final List<TeamEntity> teams;
-  final TournamentEntity tournament;
 
-  const GenerateFixturesEvent({
-    required this.config,
-    required this.teams,
-    required this.tournament,
-  });
+  const GenerateFixturesEvent({required this.request, required this.teams});
 
   @override
-  List<Object?> get props => [config, teams, tournament];
+  List<Object?> get props => [request, teams];
 }
 
-/// Generate Fixtures using CP-SAT solver (server-side)
-class GenerateFixturesCpSatEvent extends MatchEvent {
-  final FixtureConfig config;
-  final List<TeamEntity> teams;
-  final TournamentEntity tournament;
-
-  const GenerateFixturesCpSatEvent({
-    required this.config,
-    required this.teams,
-    required this.tournament,
-  });
-
-  @override
-  List<Object?> get props => [config, teams, tournament];
-}
-
-/// Save generated fixtures to database
+/// Save the previewed fixture (same request without dry run)
 class SaveFixturesEvent extends MatchEvent {
-  final List<Map<String, dynamic>> matches;
+  final FixtureRequest request;
 
-  const SaveFixturesEvent({required this.matches});
+  const SaveFixturesEvent({required this.request});
 
   @override
-  List<Object?> get props => [matches];
+  List<Object?> get props => [request];
 }
 
 /// Save a manually created/edited round
-/// Handles inserts, updates, and deletes atomically
 class SaveManualRoundEvent extends MatchEvent {
-  final List<Map<String, dynamic>> matchesToCreate;
+  final String tournamentId;
+  final List<NewMatch> matchesToCreate;
   final List<ManualMatchUpdate> matchesToUpdate;
   final List<String> matchIdsToDelete;
 
   const SaveManualRoundEvent({
+    required this.tournamentId,
     this.matchesToCreate = const [],
     this.matchesToUpdate = const [],
     this.matchIdsToDelete = const [],
   });
 
   @override
-  List<Object?> get props => [matchesToCreate, matchesToUpdate, matchIdsToDelete];
+  List<Object?> get props =>
+      [tournamentId, matchesToCreate, matchesToUpdate, matchIdsToDelete];
 }
 
 /// Create a single match
@@ -135,10 +97,29 @@ class CreateMatchEvent extends MatchEvent {
   List<Object?> get props => [tournamentId, homeTeamId, awayTeamId, matchDate, matchTime, fieldNumber, round];
 }
 
-/// Helper class for manual match updates
-class ManualMatchUpdate {
-  final String matchId;
-  final Map<String, dynamic> data;
+/// Publish or hide every match of a round, then reload the tournament
+class PublishRoundEvent extends MatchEvent {
+  final String tournamentId;
+  final int round;
+  final bool isPublished;
 
-  const ManualMatchUpdate({required this.matchId, required this.data});
+  const PublishRoundEvent({
+    required this.tournamentId,
+    required this.round,
+    required this.isPublished,
+  });
+
+  @override
+  List<Object?> get props => [tournamentId, round, isPublished];
+}
+
+/// Helper class for manual match updates
+class ManualMatchUpdate extends Equatable {
+  final String matchId;
+  final MatchScheduleUpdate update;
+
+  const ManualMatchUpdate({required this.matchId, required this.update});
+
+  @override
+  List<Object?> get props => [matchId, update];
 }

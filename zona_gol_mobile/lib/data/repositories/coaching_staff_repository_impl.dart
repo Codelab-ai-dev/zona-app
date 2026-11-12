@@ -1,26 +1,19 @@
 import 'package:dartz/dartz.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../core/errors/failures.dart';
-import '../../core/network/network_info.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/failure_mapper.dart';
+import '../../core/network/json.dart';
 import '../../domain/entities/coaching_staff_entity.dart';
 import '../../domain/repositories/coaching_staff_repository.dart';
-import '../datasources/remote/supabase_client.dart';
 import '../mappers/coaching_staff_mapper.dart';
 
-/// Coaching Staff Repository Implementation
+/// Coaching staff repository backed by the Zona Gol API
+/// (`/teams/{id}/coaching-staff`, `/coaching-staff/{id}`).
 class CoachingStaffRepositoryImpl implements CoachingStaffRepository {
-  final SupabaseClientService supabaseService;
-  final NetworkInfo networkInfo;
+  final ApiClient api;
 
-  static const _selectFields = '''
-    id, team_id, name, role, photo, birth_date,
-    cedula, is_active, created_at, updated_at
-  ''';
-
-  CoachingStaffRepositoryImpl({
-    required this.supabaseService,
-    required this.networkInfo,
-  });
+  CoachingStaffRepositoryImpl({required this.api});
 
   @override
   Future<Either<Failure, List<CoachingStaffEntity>>> getStaffByTeamId(
@@ -28,56 +21,13 @@ class CoachingStaffRepositoryImpl implements CoachingStaffRepository {
     bool onlyActive = false,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      var query = supabaseService.client
-          .from('coaching_staff')
-          .select(_selectFields)
-          .eq('team_id', teamId);
-
-      if (onlyActive) {
-        query = query.eq('is_active', true);
-      }
-
-      final response = await query.order('role', ascending: true);
-
-      final staff = (response as List)
-          .map((json) =>
-              CoachingStaffMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      return Right(staff);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      // The API lists the active members only (public fields).
+      final rows = await api.getAll('/teams/$teamId/coaching-staff');
+      final staff = rows.map(CoachingStaffMapper.fromJson).toList()
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return Right(onlyActive ? staff.where((s) => s.isActive).toList() : staff);
     } catch (e) {
-      return Left(ServerFailure('Error al obtener cuerpo técnico'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, CoachingStaffEntity>> getStaffById(
-      String staffId) async {
-    try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      final response = await supabaseService.client
-          .from('coaching_staff')
-          .select(_selectFields)
-          .eq('id', staffId)
-          .single();
-
-      final staff = CoachingStaffMapper.fromJson(response);
-      return Right(staff);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Error al obtener miembro del cuerpo técnico'));
+      return Left(failureFrom(e, 'Error al obtener el cuerpo técnico'));
     }
   }
 
@@ -91,33 +41,16 @@ class CoachingStaffRepositoryImpl implements CoachingStaffRepository {
     String? cedula,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      final data = {
+      final json = await api.post('/teams/$teamId/coaching-staff', {
         'name': name,
-        'team_id': teamId,
         'role': role,
-        if (photo != null) 'photo': photo,
-        if (birthDate != null)
-          'birth_date': birthDate.toIso8601String().split('T')[0],
-        if (cedula != null) 'cedula': cedula,
-      };
-
-      final response = await supabaseService.client
-          .from('coaching_staff')
-          .insert(data)
-          .select(_selectFields)
-          .single();
-
-      final staff = CoachingStaffMapper.fromJson(response);
-      return Right(staff);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+        if (photo != null && photo.isNotEmpty) 'photo': photo,
+        if (birthDate != null) 'birth_date': apiDate(birthDate),
+        if (cedula != null && cedula.isNotEmpty) 'cedula': cedula,
+      });
+      return Right(CoachingStaffMapper.fromJson((json as Map).cast<String, dynamic>()));
     } catch (e) {
-      return Left(ServerFailure('Error al crear miembro del cuerpo técnico'));
+      return Left(failureFrom(e, 'Error al agregar al miembro'));
     }
   }
 
@@ -132,57 +65,27 @@ class CoachingStaffRepositoryImpl implements CoachingStaffRepository {
     bool? isActive,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      final updateData = <String, dynamic>{};
-      if (name != null) updateData['name'] = name;
-      if (role != null) updateData['role'] = role;
-      if (photo != null) updateData['photo'] = photo;
-      if (birthDate != null) {
-        updateData['birth_date'] = birthDate.toIso8601String().split('T')[0];
-      }
-      if (cedula != null) updateData['cedula'] = cedula;
-      if (isActive != null) updateData['is_active'] = isActive;
-
-      final response = await supabaseService.client
-          .from('coaching_staff')
-          .update(updateData)
-          .eq('id', staffId)
-          .select(_selectFields)
-          .single();
-
-      final staff = CoachingStaffMapper.fromJson(response);
-      return Right(staff);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      final json = await api.patch('/coaching-staff/$staffId', {
+        if (name != null) 'name': name,
+        if (role != null) 'role': role,
+        if (photo != null) 'photo': photo,
+        if (birthDate != null) 'birth_date': apiDate(birthDate),
+        if (cedula != null) 'cedula': cedula,
+        if (isActive != null) 'is_active': isActive,
+      });
+      return Right(CoachingStaffMapper.fromJson((json as Map).cast<String, dynamic>()));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al actualizar miembro del cuerpo técnico'));
+      return Left(failureFrom(e, 'Error al actualizar al miembro'));
     }
   }
 
   @override
   Future<Either<Failure, void>> deleteStaff(String staffId) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No hay conexión a internet'));
-      }
-
-      await supabaseService.client
-          .from('coaching_staff')
-          .delete()
-          .eq('id', staffId);
-
+      await api.post('/coaching-staff/$staffId/deactivate');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al eliminar miembro del cuerpo técnico'));
+      return Left(failureFrom(e, 'Error al dar de baja al miembro'));
     }
   }
 }

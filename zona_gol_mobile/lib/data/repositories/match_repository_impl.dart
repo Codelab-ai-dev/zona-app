@@ -1,440 +1,280 @@
 import 'package:dartz/dartz.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/errors/failures.dart';
-import '../../core/network/network_info.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/network/failure_mapper.dart';
+import '../../core/network/json.dart';
 import '../../domain/entities/match_entity.dart';
 import '../../domain/repositories/match_repository.dart';
-import '../datasources/remote/supabase_client.dart';
 import '../mappers/match_mapper.dart';
 
-/// Match Repository Implementation
+/// Match repository backed by the Zona Gol API (`/matches`, `/tournaments/{id}/matches`,
+/// fixtures and playoffs generation).
 class MatchRepositoryImpl implements MatchRepository {
-  final SupabaseClientService supabaseService;
-  final NetworkInfo networkInfo;
+  final ApiClient api;
 
-  MatchRepositoryImpl({
-    required this.supabaseService,
-    required this.networkInfo,
-  });
+  MatchRepositoryImpl({required this.api});
 
   @override
   Future<Either<Failure, List<MatchEntity>>> getPendingMatchesByLeague(
     String leagueId,
   ) async {
     try {
-      print('📋 Fetching pending matches for league: $leagueId...');
+      final rows = await api.getList('/leagues/$leagueId/matches/pending', limit: 100);
+      var matches = rows.map(MatchMapper.fromJson).toList();
 
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+      // The pending list carries no tournament names; the screen groups by them.
+      try {
+        final tournaments = await api.getAll('/leagues/$leagueId/tournaments');
+        final names = {for (final t in tournaments) t.str('id'): t.strOrNull('name')};
+        matches = matches
+            .map((m) => names[m.tournamentId] == null
+                ? m
+                : m.copyWith(tournamentName: names[m.tournamentId]))
+            .toList();
+      } catch (_) {
+        // Names are cosmetic: keep the matches without them.
       }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments!inner(id, name, league_id)
-          ''')
-          .eq('tournament.league_id', leagueId)
-          .inFilter('status', ['scheduled', 'in_progress'])
-          .order('match_date', ascending: true)
-          .order('match_time', ascending: true)
-          .limit(50);
-
-      final matches = (response as List)
-          .map((json) => MatchMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      print('✅ Successfully fetched ${matches.length} pending matches');
       return Right(matches);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error fetching pending matches: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error fetching pending matches: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to fetch pending matches: ${e.toString()}'));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudieron cargar los partidos pendientes'));
     }
   }
 
   @override
   Future<Either<Failure, List<MatchEntity>>> getMatchesByTournament(
-    String tournamentId,
-  ) async {
+    String tournamentId, {
+    MatchStatus? status,
+    int? round,
+    MatchPhase? phase,
+  }) async {
     try {
-      print('📋 Fetching matches for tournament: $tournamentId...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''')
-          .eq('tournament_id', tournamentId)
-          .order('round', ascending: true)
-          .order('match_date', ascending: true)
-          .limit(200);
-
-      final matches = (response as List)
-          .map((json) => MatchMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      print('✅ Successfully fetched ${matches.length} matches for tournament');
+      final rows = await api.getAll('/tournaments/$tournamentId/matches', query: {
+        if (status != null) 'status': status.toDbString(),
+        if (round != null) 'round': round,
+        if (phase != null) 'phase': MatchMapper.phaseToApi(phase),
+      });
+      final matches = rows.map(MatchMapper.fromJson).toList()
+        ..sort((a, b) {
+          final byRound = (a.round ?? 0).compareTo(b.round ?? 0);
+          if (byRound != 0) return byRound;
+          final byDate = a.matchDate.compareTo(b.matchDate);
+          if (byDate != 0) return byDate;
+          return (a.matchTime ?? '').compareTo(b.matchTime ?? '');
+        });
       return Right(matches);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error fetching matches: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error fetching matches: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to fetch matches: ${e.toString()}'));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudieron cargar los partidos'));
     }
   }
 
   @override
   Future<Either<Failure, MatchEntity>> getMatchById(String matchId) async {
     try {
-      print('🔍 Fetching match: $matchId...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+      var match = MatchMapper.fromJson(await api.getObject('/matches/$matchId'));
+      try {
+        final tournament = await api.getObject('/tournaments/${match.tournamentId}');
+        match = match.copyWith(tournamentName: tournament.strOrNull('name'));
+      } catch (_) {
+        // The tournament name is only a subtitle.
       }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''')
-          .eq('id', matchId)
-          .single();
-
-      final match = MatchMapper.fromJson(response as Map<String, dynamic>);
-      print('✅ Successfully fetched match: ${match.displayText}');
       return Right(match);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error fetching match: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error fetching match: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to fetch match: ${e.toString()}'));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo cargar el partido'));
     }
   }
 
   @override
-  Future<Either<Failure, MatchEntity>> updateMatchResult({
-    required String matchId,
-    required int homeScore,
-    required int awayScore,
-  }) async {
+  Future<Either<Failure, void>> submitMatchResult(
+    String matchId,
+    MatchResultInput result,
+  ) async {
     try {
-      print('📝 Updating match result: $matchId ($homeScore - $awayScore)...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+      await api.post('/matches/$matchId/result', MatchMapper.resultToJson(result));
+      return const Right(null);
+    } on ApiException catch (e) {
+      if (e.isForbidden) {
+        return Left(PermissionFailure(
+          'No tienes permiso o algún jugador no pertenece a los equipos del partido',
+          e.code,
+        ));
       }
-
-      // Validate scores
-      if (homeScore < 0 || awayScore < 0) {
-        return Left(ValidationFailure('Los marcadores no pueden ser negativos'));
-      }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .update({
-            'home_score': homeScore,
-            'away_score': awayScore,
-            'status': 'finished',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', matchId)
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''')
-          .single();
-
-      final match = MatchMapper.fromJson(response as Map<String, dynamic>);
-      print('✅ Successfully updated match result: ${match.resultText}');
-      return Right(match);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error updating match result: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error updating match result: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to update match result: ${e.toString()}'));
+      return Left(failureFrom(e));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo guardar el resultado'));
     }
   }
 
   @override
-  Future<Either<Failure, MatchEntity>> updateMatchStatus({
+  Future<Either<Failure, void>> updateMatchStatus({
     required String matchId,
     required MatchStatus status,
   }) async {
     try {
-      print('📝 Updating match status: $matchId -> ${status.toDbString()}...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+      await api.patch('/matches/$matchId/status', {'status': status.toDbString()});
+      return const Right(null);
+    } on ApiException catch (e) {
+      if (e.isConflict) {
+        return Left(ValidationFailure(
+          'El partido ya finalizó; corrige su resultado en lugar de cambiar el estado',
+          e.code,
+        ));
       }
+      return Left(failureFrom(e));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo actualizar el estado'));
+    }
+  }
 
-      final response = await supabaseService.client
-          .from('matches')
-          .update({
-            'status': status.toDbString(),
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', matchId)
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''')
-          .single();
+  @override
+  Future<Either<Failure, void>> setMatchPublished(String matchId, bool isPublished) async {
+    try {
+      await api.patch('/matches/$matchId/publish', {'is_published': isPublished});
+      return const Right(null);
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo cambiar la publicación'));
+    }
+  }
 
-      final match = MatchMapper.fromJson(response as Map<String, dynamic>);
-      print('✅ Successfully updated match status');
-      return Right(match);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error updating match status: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error updating match status: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to update match status: ${e.toString()}'));
+  @override
+  Future<Either<Failure, void>> publishRound({
+    required String tournamentId,
+    required int round,
+    required bool isPublished,
+  }) async {
+    try {
+      await api.post(
+        '/tournaments/$tournamentId/rounds/$round/publish',
+        {'is_published': isPublished},
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo publicar la jornada'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MatchEntity>> createMatch(NewMatch match) async {
+    try {
+      final body = await api.post('/matches', MatchMapper.newMatchToJson(match));
+      return Right(MatchMapper.fromJson((body as Map).cast<String, dynamic>()));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo crear el partido'));
     }
   }
 
   @override
   Future<Either<Failure, List<MatchEntity>>> createMatches(
-    List<Map<String, dynamic>> matches,
-  ) async {
-    try {
-      print('📝 Creating ${matches.length} matches...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      if (matches.isEmpty) {
-        return const Right([]);
-      }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .insert(matches)
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''');
-
-      final created = (response as List)
-          .map((json) => MatchMapper.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      print('✅ Successfully created ${created.length} matches');
-      return Right(created);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error creating matches: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error creating matches: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to create matches: ${e.toString()}'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getExistingMatchPairs(
     String tournamentId,
+    List<NewMatch> matches,
   ) async {
+    if (matches.isEmpty) return const Right([]);
     try {
-      print('🔍 Fetching existing match pairs for tournament: $tournamentId...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('matches')
-          .select('home_team_id, away_team_id, round')
-          .eq('tournament_id', tournamentId);
-
-      final pairs = (response as List)
-          .map((json) => json as Map<String, dynamic>)
-          .toList();
-
-      print('✅ Found ${pairs.length} existing match pairs');
-      return Right(pairs);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error fetching match pairs: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error fetching match pairs: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to fetch match pairs: ${e.toString()}'));
+      final body = await api.post('/tournaments/$tournamentId/matches/bulk', {
+        'tournament_id': tournamentId,
+        'matches': matches.map(MatchMapper.newMatchToJson).toList(),
+      });
+      return Right(_list(body).map(MatchMapper.fromJson).toList());
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudieron crear los partidos'));
     }
   }
 
   @override
-  Future<Either<Failure, MatchEntity>> updateMatchDetails({
-    required String matchId,
-    required Map<String, dynamic> data,
-  }) async {
+  Future<Either<Failure, FixtureGenerationResult>> generateFixtures(
+    FixtureRequest request,
+  ) async {
     try {
-      print('📝 Updating match details: $matchId...');
+      final body = await api.post(
+        '/tournaments/${request.tournamentId}/fixtures/generate',
+        MatchMapper.fixtureRequestToJson(request),
+      );
+      final map = (body as Map).cast<String, dynamic>();
+      return Right(FixtureGenerationResult(
+        matches: map.objList('matches').map(MatchMapper.fromJson).toList(),
+        rounds: map.integer('rounds'),
+      ));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo generar el calendario'));
+    }
+  }
 
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+  @override
+  Future<Either<Failure, List<MatchEntity>>> generatePlayoffs(
+    PlayoffRequest request,
+  ) async {
+    try {
+      final body = await api.post(
+        '/tournaments/${request.tournamentId}/playoffs/generate',
+        MatchMapper.playoffRequestToJson(request),
+      );
+      return Right(_list(body).map(MatchMapper.fromJson).toList());
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo generar la liguilla'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MatchEntity>> updateMatchSchedule(
+    String matchId,
+    MatchScheduleUpdate update,
+  ) async {
+    try {
+      final body = await api.patch(
+        '/matches/$matchId/schedule',
+        MatchMapper.scheduleUpdateToJson(update),
+      );
+      return Right(MatchMapper.fromJson((body as Map).cast<String, dynamic>()));
+    } on ApiException catch (e) {
+      if (e.isConflict) {
+        return Left(ValidationFailure(
+          'Solo se pueden cambiar los equipos de un partido programado',
+          e.code,
+        ));
       }
-
-      data['updated_at'] = DateTime.now().toIso8601String();
-
-      final response = await supabaseService.client
-          .from('matches')
-          .update(data)
-          .eq('id', matchId)
-          .select('''
-            *,
-            home_team:teams!matches_home_team_id_fkey(id, name, logo, slug),
-            away_team:teams!matches_away_team_id_fkey(id, name, logo, slug),
-            tournament:tournaments(id, name)
-          ''')
-          .single();
-
-      final match = MatchMapper.fromJson(response as Map<String, dynamic>);
-      print('✅ Successfully updated match details');
-      return Right(match);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error updating match details: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error updating match details: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to update match details: ${e.toString()}'));
+      return Left(failureFrom(e));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudo actualizar el partido'));
     }
   }
 
   @override
   Future<Either<Failure, void>> deleteMatches(List<String> matchIds) async {
     try {
-      print('🗑️ Deleting ${matchIds.length} matches...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+      for (final id in matchIds) {
+        await api.delete('/matches/$id');
       }
-
-      if (matchIds.isEmpty) {
-        return const Right(null);
-      }
-
-      await supabaseService.client
-          .from('matches')
-          .delete()
-          .inFilter('id', matchIds);
-
-      print('✅ Successfully deleted ${matchIds.length} matches');
       return const Right(null);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error deleting matches: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error deleting matches: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to delete matches: ${e.toString()}'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> saveRefereeReport(
-    String matchId,
-    String observations,
-  ) async {
-    try {
-      print('📝 Saving referee report for match: $matchId...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
+    } on ApiException catch (e) {
+      if (e.isConflict) {
+        return Left(ValidationFailure(
+          'Solo se pueden eliminar partidos programados (sin iniciar ni finalizar)',
+          e.code,
+        ));
       }
-
-      await supabaseService.client.from('match_referee_reports').upsert(
-        {
-          'match_id': matchId,
-          'general_observations': observations,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'match_id',
-      );
-
-      print('✅ Successfully saved referee report');
-      return const Right(null);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error saving referee report: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error saving referee report: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to save referee report: ${e.toString()}'));
+      return Left(failureFrom(e));
+    } catch (e) {
+      return Left(failureFrom(e, 'No se pudieron eliminar los partidos'));
     }
   }
 
   @override
   Future<Either<Failure, String?>> getRefereeReport(String matchId) async {
     try {
-      print('🔍 Fetching referee report for match: $matchId...');
-
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('match_referee_reports')
-          .select('general_observations')
-          .eq('match_id', matchId)
-          .maybeSingle();
-
-      if (response == null) {
-        return const Right(null);
-      }
-
-      final observations = response['general_observations'] as String?;
-      print('✅ Fetched referee report');
-      return Right(observations);
-    } on PostgrestException catch (e) {
-      print('❌ Postgrest error fetching referee report: ${e.message}');
-      return Left(ServerFailure(e.message));
-    } catch (e, stackTrace) {
-      print('❌ Error fetching referee report: $e');
-      print('Stack trace: $stackTrace');
-      return Left(ServerFailure('Failed to fetch referee report: ${e.toString()}'));
+      final report = await api.getObject('/matches/$matchId/referee-report');
+      return Right(report.strOrNull('general_observations'));
+    } on ApiException catch (e) {
+      if (e.isNotFound) return const Right(null);
+      return Left(failureFrom(e));
+    } catch (e) {
+      return Left(failureFrom(e));
     }
+  }
+
+  static List<Map<String, dynamic>> _list(dynamic body) {
+    final data = body is Map ? body['data'] : body;
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,9 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/di/injection.dart';
 import '../../../core/utils/age_utils.dart';
-import '../../../data/datasources/remote/supabase_client.dart';
 import '../../../domain/entities/player_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../bloc/player/player_bloc.dart';
@@ -32,13 +29,25 @@ class _StadiumNights {
   static const Color textMuted = Color(0xFF6B7280);
 }
 
-/// Position options with DB values
+/// Position options (stored as the Spanish name, like the web app)
 const _positionOptions = [
-  {'label': 'Portero', 'value': 'GK'},
-  {'label': 'Defensa', 'value': 'DEF'},
-  {'label': 'Mediocampista', 'value': 'MID'},
-  {'label': 'Delantero', 'value': 'FWD'},
+  {'label': 'Portero', 'value': 'Portero'},
+  {'label': 'Defensa', 'value': 'Defensa'},
+  {'label': 'Mediocampista', 'value': 'Mediocampista'},
+  {'label': 'Delantero', 'value': 'Delantero'},
 ];
+
+/// Codes saved by older app versions.
+const _legacyPositions = {
+  'GK': 'Portero',
+  'DEF': 'Defensa',
+  'MID': 'Mediocampista',
+  'FWD': 'Delantero',
+  'goalkeeper': 'Portero',
+  'defender': 'Defensa',
+  'midfielder': 'Mediocampista',
+  'forward': 'Delantero',
+};
 
 /// Create/Edit Player Screen
 class CreateEditPlayerScreen extends StatefulWidget {
@@ -83,7 +92,8 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
     _jerseyController = TextEditingController(
       text: widget.player?.jerseyNumber?.toString() ?? '',
     );
-    _selectedPosition = widget.player?.position;
+    final position = widget.player?.position;
+    _selectedPosition = position == null ? null : (_legacyPositions[position] ?? position);
     _birthDate = widget.player?.birthDate;
     _existingPhotoUrl = widget.player?.photo;
   }
@@ -243,7 +253,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
             const SizedBox(height: 20),
 
             // Jersey number field
-            _buildLabel('Número de Camiseta'),
+            _buildLabel('Número de Camiseta *'),
             const SizedBox(height: 8),
             _buildTextField(
               controller: _jerseyController,
@@ -252,11 +262,9 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
-                if (value != null && value.isNotEmpty) {
-                  final number = int.tryParse(value);
-                  if (number == null || number < 0 || number > 99) {
-                    return 'Ingresa un número entre 0 y 99';
-                  }
+                final number = int.tryParse(value ?? '');
+                if (number == null || number < 1 || number > 99) {
+                  return 'Ingresa un número entre 1 y 99';
                 }
                 return null;
               },
@@ -264,7 +272,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
             const SizedBox(height: 20),
 
             // Position dropdown
-            _buildLabel('Posición'),
+            _buildLabel('Posición *'),
             const SizedBox(height: 8),
             _buildPositionDropdown(),
             const SizedBox(height: 20),
@@ -542,28 +550,34 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
     }
   }
 
-  /// Upload photo to Supabase Storage and return public URL
+  /// Uploads the selected photo (the player must exist) and returns its URL.
   Future<String?> _uploadPhoto(String playerId) async {
     if (_selectedPhotoFile == null) return null;
 
+    setState(() => _isUploadingPhoto = true);
     try {
-      setState(() => _isUploadingPhoto = true);
-
-      final supabase = sl<SupabaseClientService>();
       final bytes = await _selectedPhotoFile!.readAsBytes();
-      final fileName = 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final path = 'players/$playerId/$fileName';
-
-      final publicUrl = await supabase.uploadFile(
-        bucket: 'player-photos',
-        path: path,
-        file: Uint8List.fromList(bytes),
-        metadata: {'contentType': 'image/jpeg'},
+      if (!mounted) return null;
+      final result = await context.read<PlayerBloc>().uploadPhoto(
+            playerId: playerId,
+            bytes: bytes,
+            filename: 'photo.jpg',
+          );
+      return result.fold<String?>(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No se pudo subir la foto: ${failure.message}'),
+                backgroundColor: _StadiumNights.error,
+              ),
+            );
+          }
+          return null;
+        },
+        (url) => url,
       );
-
-      return publicUrl;
-    } catch (e) {
-      print('Error uploading photo: $e');
+    } catch (_) {
       return null;
     } finally {
       if (mounted) {
@@ -638,12 +652,18 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         hint: Text('Seleccionar posición', style: GoogleFonts.outfit(color: _StadiumNights.textMuted)),
-        items: _positionOptions.map((pos) {
-          return DropdownMenuItem<String>(
-            value: pos['value'],
-            child: Text(pos['label']!),
-          );
-        }).toList(),
+        items: [
+          ..._positionOptions.map((pos) {
+            return DropdownMenuItem<String>(
+              value: pos['value'],
+              child: Text(pos['label']!),
+            );
+          }),
+          // Keep a position set elsewhere (e.g. "Lateral Derecho" from the web).
+          if (_selectedPosition != null && !_positionOptions.any((p) => p['value'] == _selectedPosition))
+            DropdownMenuItem<String>(value: _selectedPosition, child: Text(_selectedPosition!)),
+        ],
+        validator: (value) => value == null || value.isEmpty ? 'Selecciona una posición' : null,
         onChanged: (value) => setState(() => _selectedPosition = value),
       ),
     );

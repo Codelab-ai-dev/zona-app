@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
-import '../../../core/utils/embedding_generator.dart';
 import '../../../domain/entities/team_standing_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../../domain/entities/user_entity.dart';
@@ -26,7 +25,6 @@ class _StadiumNights {
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
   static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
@@ -82,6 +80,9 @@ class _StandingsViewState extends State<_StandingsView> {
   TournamentEntity? _selectedTournament;
   String? _selectedGroupName;
 
+  /// A manual edit was sent: its error is shown as a message, not as the table.
+  bool _updatingStandings = false;
+
   bool get _isGroupKnockout =>
       _selectedTournament?.format == TournamentFormat.groupKnockout;
 
@@ -97,7 +98,23 @@ class _StandingsViewState extends State<_StandingsView> {
         appBar: _buildAppBar(context),
         body: BlocListener<TeamBloc, TeamState>(
           listener: (context, state) {
+            if (state is TeamError && _updatingStandings && _selectedTournamentId != null) {
+              _updatingStandings = false;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: _StadiumNights.error,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+              context.read<TeamBloc>().add(
+                LoadStandingsByTournamentEvent(tournamentId: _selectedTournamentId!),
+              );
+              return;
+            }
             if (state is StandingsUpdated && _selectedTournamentId != null) {
+              _updatingStandings = false;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Text('Estadísticas actualizadas'),
@@ -158,12 +175,6 @@ class _StandingsViewState extends State<_StandingsView> {
       ),
       centerTitle: true,
       actions: [
-        if (widget.user.leagueId != null)
-          IconButton(
-            icon: Icon(Icons.auto_awesome, color: _StadiumNights.neonGreen, size: 20),
-            tooltip: 'Generar embedding',
-            onPressed: () => _generateEmbedding(context),
-          ),
         if (_selectedTournamentId != null)
           IconButton(
             icon: Icon(Icons.refresh, color: _StadiumNights.gold),
@@ -414,33 +425,6 @@ class _StandingsViewState extends State<_StandingsView> {
             letterSpacing: 1,
           ),
         ),
-      ),
-    );
-  }
-
-  Future<void> _generateEmbedding(BuildContext context) async {
-    if (widget.user.leagueId == null) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Generando embedding de posiciones...'),
-        backgroundColor: _StadiumNights.neonGreen.withOpacity(0.8),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    final success = await EmbeddingGenerator.generateStandingsEmbedding(widget.user.leagueId!);
-
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? 'Embedding generado correctamente' : 'Error al generar embedding'),
-        backgroundColor: success ? _StadiumNights.neonGreen : _StadiumNights.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -935,11 +919,11 @@ class _StandingsViewState extends State<_StandingsView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
+                _updatingStandings = true;
                 context.read<TeamBloc>().add(
                   UpdateStandingsEvent(
                     teamId: standing.teamId,
                     tournamentId: standing.tournamentId ?? _selectedTournamentId!,
-                    leagueId: standing.leagueId ?? widget.user.leagueId!,
                     matchesPlayed: int.tryParse(pjController.text) ?? standing.matchesPlayed,
                     matchesWon: int.tryParse(pgController.text) ?? standing.matchesWon,
                     matchesDrawn: int.tryParse(peController.text) ?? standing.matchesDrawn,
@@ -947,7 +931,7 @@ class _StandingsViewState extends State<_StandingsView> {
                     goalsFor: int.tryParse(gfController.text) ?? standing.goalsFor,
                     goalsAgainst: int.tryParse(gcController.text) ?? standing.goalsAgainst,
                     pointsAdjustment: int.tryParse(adjustmentController.text) ?? 0,
-                    adjustmentReason: reasonController.text.isEmpty ? null : reasonController.text,
+                    adjustmentReason: reasonController.text.trim(),
                   ),
                 );
                 Navigator.pop(dialogContext);

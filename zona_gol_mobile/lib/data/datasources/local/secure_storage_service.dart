@@ -1,11 +1,12 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/storage_keys.dart';
 import '../../../core/errors/exceptions.dart';
+import '../../../core/network/token_store.dart';
 
 /// Secure Storage Service
 /// Uses flutter_secure_storage for sensitive data (tokens, user credentials)
 /// Data is stored in Keychain (iOS) or Keystore (Android)
-class SecureStorageService {
+class SecureStorageService implements KeyValueStore {
   static SecureStorageService? _instance;
   late final FlutterSecureStorage _storage;
 
@@ -35,6 +36,7 @@ class SecureStorageService {
   // ==================== Generic Methods ====================
 
   /// Write a value to secure storage
+  @override
   Future<void> write(String key, String value) async {
     try {
       await _storage.write(key: key, value: value);
@@ -44,6 +46,7 @@ class SecureStorageService {
   }
 
   /// Read a value from secure storage
+  @override
   Future<String?> read(String key) async {
     try {
       return await _storage.read(key: key);
@@ -53,6 +56,7 @@ class SecureStorageService {
   }
 
   /// Delete a value from secure storage
+  @override
   Future<void> delete(String key) async {
     try {
       await _storage.delete(key: key);

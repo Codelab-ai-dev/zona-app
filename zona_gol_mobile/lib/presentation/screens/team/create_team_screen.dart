@@ -16,7 +16,6 @@ class _SN {
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
   static const Color textMuted = Color(0xFF6B7280);
 }
 
@@ -41,9 +40,12 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   final _descriptionController = TextEditingController();
   final _ownerEmailController = TextEditingController();
   final _ownerNameController = TextEditingController();
-  final _existingOwnerIdController = TextEditingController();
 
   bool _createOwnerAccount = true;
+
+  /// Team created in a previous attempt whose owner account failed: the
+  /// next submit only retries the owner.
+  String? _createdTeamId;
   bool _isLoading = false;
   bool _slugManuallyEdited = false;
 
@@ -61,7 +63,6 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     _descriptionController.dispose();
     _ownerEmailController.dispose();
     _ownerNameController.dispose();
-    _existingOwnerIdController.dispose();
     super.dispose();
   }
 
@@ -114,6 +115,26 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             ),
           );
           Navigator.of(context).pop(true);
+        } else if (state is TeamOwnerCreationFailed) {
+          setState(() {
+            _isLoading = false;
+            _createdTeamId = state.teamId;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'El equipo se creó, pero no la cuenta del owner: ${state.message}. '
+                'Corrige los datos del owner y vuelve a intentar.',
+                style: GoogleFonts.outfit(fontSize: 13),
+              ),
+              backgroundColor: _SN.error,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
         } else if (state is TeamError) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -289,20 +310,6 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 return null;
               },
             ),
-          ] else ...[
-            _buildTextField(
-              controller: _existingOwnerIdController,
-              label: 'ID del Owner Existente',
-              hint: 'UUID del usuario owner',
-              icon: Icons.person_search,
-              validator: (value) {
-                if (_createOwnerAccount) return null;
-                if (value == null || value.trim().isEmpty) {
-                  return 'El ID del owner es requerido';
-                }
-                return null;
-              },
-            ),
           ],
           const SizedBox(height: 40),
 
@@ -359,7 +366,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                 Text(
                   _createOwnerAccount
                       ? 'Se generaran credenciales automaticamente'
-                      : 'Asignar un usuario existente como owner',
+                      : 'El equipo quedara a cargo de la liga',
                   style: GoogleFonts.outfit(
                     color: _SN.textMuted,
                     fontSize: 12,
@@ -370,7 +377,10 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           ),
           Switch(
             value: _createOwnerAccount,
-            onChanged: (value) => setState(() => _createOwnerAccount = value),
+            // Once the team exists only its owner can be retried.
+            onChanged: _createdTeamId != null
+                ? null
+                : (value) => setState(() => _createOwnerAccount = value),
             activeColor: _SN.neonGreen,
             activeTrackColor: _SN.neonGreen.withOpacity(0.3),
           ),
@@ -497,7 +507,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               const Icon(Icons.check, color: Colors.black, size: 22),
             const SizedBox(width: 10),
             Text(
-              _isLoading ? 'CREANDO...' : 'CREAR EQUIPO',
+              _isLoading
+                  ? 'CREANDO...'
+                  : _createdTeamId != null
+                      ? 'REINTENTAR OWNER'
+                      : 'CREAR EQUIPO',
               style: GoogleFonts.bebasNeue(
                 fontSize: 18,
                 color: Colors.black,
@@ -528,6 +542,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               description: description,
               ownerEmail: _ownerEmailController.text.trim(),
               ownerName: _ownerNameController.text.trim(),
+              existingTeamId: _createdTeamId,
             ),
           );
     } else {
@@ -536,7 +551,6 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               name: name,
               slug: slug,
               leagueId: widget.leagueId,
-              ownerId: _existingOwnerIdController.text.trim(),
               description: description,
             ),
           );

@@ -10,16 +10,6 @@ abstract class TournamentEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Load All Tournaments Event
-class LoadAllTournamentsEvent extends TournamentEvent {
-  final bool onlyActive;
-
-  const LoadAllTournamentsEvent({this.onlyActive = false});
-
-  @override
-  List<Object?> get props => [onlyActive];
-}
-
 /// Load Tournament By ID Event
 class LoadTournamentByIdEvent extends TournamentEvent {
   final String tournamentId;

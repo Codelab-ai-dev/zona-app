@@ -2,189 +2,75 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dartz/dartz.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/errors/failures.dart';
-import '../../core/network/network_info.dart';
+import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/network/failure_mapper.dart';
+import '../../core/network/json.dart';
 import '../../domain/entities/attendance_entity.dart';
 import '../../domain/repositories/attendance_repository.dart';
-import '../datasources/remote/supabase_client.dart';
 import '../mappers/attendance_mapper.dart';
 
-/// Attendance Repository Implementation
-/// Manages asistencias_qr table with Supabase
+/// QR attendance backed by the Zona Gol API
+/// (`/players/{id}/today-matches`, `/matches/{id}/attendance/qr`).
 class AttendanceRepositoryImpl implements AttendanceRepository {
-  final SupabaseClientService supabaseService;
-  final NetworkInfo networkInfo;
+  final ApiClient api;
 
-  AttendanceRepositoryImpl({
-    required this.supabaseService,
-    required this.networkInfo,
-  });
+  AttendanceRepositoryImpl({required this.api});
 
   @override
-  Future<Either<Failure, AttendanceEntity>> registerAttendance({
-    required String playerId,
-    required String teamId,
-    String? matchId,
-    required String scannedByUserId,
-    String recognitionMode = 'quick',
-  }) async {
-    try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final now = DateTime.now();
-      final deviceInfo = json.encode({
-        'platform': Platform.isAndroid ? 'android' : 'ios',
-        'scan_method': 'qr_camera',
-        'timestamp': now.toIso8601String(),
-      });
-
-      final response = await supabaseService.client
-          .from('asistencias_qr')
-          .insert({
-            'player_id': playerId,
-            'team_id': teamId,
-            'match_id': matchId,
-            'checked_in_at': now.toIso8601String(),
-            'recognition_mode': recognitionMode,
-            'device_info': deviceInfo,
-            'scanned_by_user_id': scannedByUserId,
-          })
-          .select('''
-            *, players(name, jersey_number)
-          ''')
-          .single();
-
-      return Right(AttendanceMapper.fromRow(response));
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(
-          ServerFailure('Error al registrar asistencia: ${e.toString()}'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool>> hasAttendanceForMatch(
+  Future<Either<Failure, List<TodayMatchEntity>>> getTodayMatches(
     String playerId,
-    String matchId,
+    DateTime date,
   ) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('asistencias_qr')
-          .select('id')
-          .eq('player_id', playerId)
-          .eq('match_id', matchId)
-          .maybeSingle();
-
-      return Right(response != null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      // Not paginated: every match of that day comes in one response.
+      final rows = await api.getList(
+        '/players/$playerId/today-matches',
+        query: {'date': apiDate(date)},
+      );
+      return Right(rows.map(AttendanceMapper.todayMatchFromJson).toList());
     } catch (e) {
-      return Left(
-          ServerFailure('Error al verificar asistencia: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al buscar los partidos del jugador'));
     }
   }
 
   @override
-  Future<Either<Failure, bool>> hasAttendanceToday(String playerId) async {
-    try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
-      final endOfDay = startOfDay.add(const Duration(days: 1));
-
-      final response = await supabaseService.client
-          .from('asistencias_qr')
-          .select('id')
-          .eq('player_id', playerId)
-          .gte('created_at', startOfDay.toIso8601String())
-          .lt('created_at', endOfDay.toIso8601String())
-          .maybeSingle();
-
-      return Right(response != null);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(
-          ServerFailure('Error al verificar asistencia: ${e.toString()}'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<AttendanceEntity>>> getMatchAttendance(
-    String matchId,
-  ) async {
-    try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('asistencias_qr')
-          .select('''
-            *, players(name, jersey_number)
-          ''')
-          .eq('match_id', matchId)
-          .order('checked_in_at', ascending: true);
-
-      final rows = response as List;
-      final attendance = rows
-          .map((row) => AttendanceMapper.fromRow(row as Map<String, dynamic>))
-          .toList();
-
-      return Right(attendance);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(
-          ServerFailure('Error al obtener asistencia: ${e.toString()}'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<AttendanceEntity>>> getPlayerAttendance(
-    String playerId, {
-    int limit = 20,
+  Future<Either<Failure, AttendanceResult>> registerAttendance({
+    required String playerId,
+    required String matchId,
   }) async {
     try {
-      final isConnected = await networkInfo.isConnected;
-      if (!isConnected) {
-        return Left(NetworkFailure('No internet connection'));
-      }
-
-      final response = await supabaseService.client
-          .from('asistencias_qr')
-          .select('*')
-          .eq('player_id', playerId)
-          .order('created_at', ascending: false)
-          .limit(limit);
-
-      final rows = response as List;
-      final attendance = rows
-          .map((row) => AttendanceMapper.fromRow(row as Map<String, dynamic>))
-          .toList();
-
-      return Right(attendance);
-    } on PostgrestException catch (e) {
-      return Left(ServerFailure(e.message));
+      await api.post('/matches/$matchId/attendance/qr', {
+        'player_id': playerId,
+        'recognition_mode': 'quick',
+        'confidence_score': 1,
+        'similarity_score': 1,
+        // Stored as jsonb, so it must be a JSON document.
+        'device_info': jsonEncode({
+          'platform': Platform.operatingSystem,
+          'scan_method': 'qr_camera',
+        }),
+        'local_timestamp': _rfc3339(DateTime.now()),
+      });
+      return const Right(AttendanceResult.registered);
+    } on ApiException catch (e) {
+      if (e.isConflict) return const Right(AttendanceResult.alreadyRegistered);
+      return Left(failureFrom(e));
     } catch (e) {
-      return Left(
-          ServerFailure('Error al obtener historial: ${e.toString()}'));
+      return Left(failureFrom(e, 'Error al registrar asistencia'));
     }
+  }
+
+  /// RFC 3339 with the device's UTC offset (e.g. `2026-11-12T16:05:00-06:00`).
+  static String _rfc3339(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final local = t.toLocal();
+    final offset = local.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final abs = offset.abs();
+    final base = '${apiDate(local)}T${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
+    return '$base$sign${two(abs.inHours)}:${two(abs.inMinutes % 60)}';
   }
 }

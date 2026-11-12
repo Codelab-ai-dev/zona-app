@@ -23,7 +23,6 @@ dependencies:
   injectable: ^2.5.0
 
   # Network & Backend
-  supabase_flutter: ^2.8.0
   http: ^1.2.2
   connectivity_plus: ^6.1.0
 
@@ -88,14 +87,12 @@ dev_dependencies:
 
   # Testing
   mockito: ^5.4.4
-  bloc_test: ^9.1.7
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
-    - assets/icons/
 
   # fonts:
   #   - family: Inter

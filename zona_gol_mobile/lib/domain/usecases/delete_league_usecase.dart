@@ -5,8 +5,8 @@ import '../repositories/league_repository.dart';
 
 /// Delete League Use Case
 ///
-/// Business logic for soft-deleting a league
-/// Sets is_active to false instead of physical deletion
+/// Permanently deletes a league with its tournaments, teams, players and
+/// matches (super admin only). Deactivating is `UpdateLeagueUseCase(isActive)`.
 class DeleteLeagueUseCase {
   final LeagueRepository repository;
 
@@ -26,7 +26,7 @@ class DeleteLeagueUseCase {
       return Left(ValidationFailure('El ID de la liga es requerido'));
     }
 
-    // Delete the league (soft delete)
+    // Delete the league (permanent)
     return repository.deleteLeague(params.leagueId);
   }
 }

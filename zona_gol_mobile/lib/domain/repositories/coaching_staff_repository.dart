@@ -5,14 +5,11 @@ import '../entities/coaching_staff_entity.dart';
 /// Coaching Staff Repository
 /// Defines the contract for coaching staff data operations
 abstract class CoachingStaffRepository {
-  /// Get all coaching staff for a team
+  /// Active coaching staff of a team
   Future<Either<Failure, List<CoachingStaffEntity>>> getStaffByTeamId(
     String teamId, {
     bool onlyActive = false,
   });
-
-  /// Get a coaching staff member by ID
-  Future<Either<Failure, CoachingStaffEntity>> getStaffById(String staffId);
 
   /// Create a new coaching staff member
   Future<Either<Failure, CoachingStaffEntity>> createStaff({
@@ -35,6 +32,6 @@ abstract class CoachingStaffRepository {
     bool? isActive,
   });
 
-  /// Delete a coaching staff member
+  /// Deactivate a coaching staff member
   Future<Either<Failure, void>> deleteStaff(String staffId);
 }

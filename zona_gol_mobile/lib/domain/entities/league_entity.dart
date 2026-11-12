@@ -16,6 +16,9 @@ class LeagueEntity extends Equatable {
   final DateTime? updatedAt;
   final Map<String, dynamic>? features;
 
+  /// Plan of the league: 'full' or 'web_only'.
+  final String productMode;
+
   const LeagueEntity({
     required this.id,
     required this.name,
@@ -27,6 +30,7 @@ class LeagueEntity extends Equatable {
     this.createdAt,
     this.updatedAt,
     this.features,
+    this.productMode = 'full',
   });
 
   /// Check if a feature is enabled for this league
@@ -46,6 +50,7 @@ class LeagueEntity extends Equatable {
         createdAt,
         updatedAt,
         features,
+        productMode,
       ];
 
   /// Creates a copy of this league with the given fields replaced
@@ -60,6 +65,7 @@ class LeagueEntity extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? features,
+    String? productMode,
   }) {
     return LeagueEntity(
       id: id ?? this.id,
@@ -72,6 +78,7 @@ class LeagueEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       features: features ?? this.features,
+      productMode: productMode ?? this.productMode,
     );
   }
 

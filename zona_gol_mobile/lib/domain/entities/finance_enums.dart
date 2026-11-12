@@ -1,371 +1,187 @@
 /// Finance Enums
-/// Defines transaction types, statuses, payment methods, and currencies
+/// Mirror the TransactionType / TransactionStatus / PaymentMethod / Currency
+/// values of the API (backend/internal/finance/finance.go).
 
 /// Transaction Type
 enum TransactionType {
-  registrationFee,
-  monthlyFee,
-  matchFee,
-  yellowCardFine,
-  redCardFine,
-  noShowFine,
-  lateArrivalFine,
-  uniformViolationFine,
-  misconductFine,
-  forfeitFine,
-  tournamentEntryFee,
-  transferFee,
-  sponsorship,
-  prizeMoney,
-  refund,
-  discount,
-  payment,
-  adjustment,
-  otherIncome,
-  otherExpense,
-  other;
+  // Cuotas
+  teamRegistration('team_registration', 'Inscripción de Equipo'),
+  playerRegistration('player_registration', 'Inscripción de Jugador'),
+  // Multas
+  yellowCardFine('yellow_card_fine', 'Multa Tarjeta Amarilla'),
+  redCardFine('red_card_fine', 'Multa Tarjeta Roja'),
+  doubleYellowFine('double_yellow_fine', 'Multa Doble Amarilla'),
+  absenceFine('absence_fine', 'Multa por Incomparecencia'),
+  lateArrivalFine('late_arrival_fine', 'Multa por Llegada Tarde'),
+  misconductFine('misconduct_fine', 'Multa por Mala Conducta'),
+  uniformViolationFine('uniform_violation_fine', 'Multa por Uniforme'),
+  // Operativos
+  refereeFee('referee_fee', 'Pago de Árbitro'),
+  fieldRental('field_rental', 'Renta de Cancha'),
+  equipmentFee('equipment_fee', 'Equipo/Materiales'),
+  // Pagos
+  paymentReceived('payment_received', 'Pago Recibido'),
+  partialPayment('partial_payment', 'Pago Parcial'),
+  refund('refund', 'Devolución'),
+  discount('discount', 'Descuento'),
+  // Otros
+  otherIncome('other_income', 'Otro Ingreso'),
+  sponsorship('sponsorship', 'Patrocinio'),
+  prizeMoney('prize_money', 'Premio/Bonificación'),
+  otherExpense('other_expense', 'Otro Gasto'),
+  adjustment('adjustment', 'Ajuste Manual');
 
-  String get display {
-    switch (this) {
-      case TransactionType.registrationFee:
-        return 'Cuota de Inscripción';
-      case TransactionType.monthlyFee:
-        return 'Mensualidad';
-      case TransactionType.matchFee:
-        return 'Cuota de Partido';
-      case TransactionType.yellowCardFine:
-        return 'Multa Tarjeta Amarilla';
-      case TransactionType.redCardFine:
-        return 'Multa Tarjeta Roja';
-      case TransactionType.noShowFine:
-        return 'Multa por Inasistencia';
-      case TransactionType.lateArrivalFine:
-        return 'Multa por Llegada Tarde';
-      case TransactionType.uniformViolationFine:
-        return 'Multa por Uniforme';
-      case TransactionType.misconductFine:
-        return 'Multa por Mala Conducta';
-      case TransactionType.forfeitFine:
-        return 'Multa por Forfeit';
-      case TransactionType.tournamentEntryFee:
-        return 'Inscripción a Torneo';
-      case TransactionType.transferFee:
-        return 'Cuota de Transferencia';
-      case TransactionType.sponsorship:
-        return 'Patrocinio';
-      case TransactionType.prizeMoney:
-        return 'Premio';
-      case TransactionType.refund:
-        return 'Reembolso';
-      case TransactionType.discount:
-        return 'Descuento';
-      case TransactionType.payment:
-        return 'Pago';
-      case TransactionType.adjustment:
-        return 'Ajuste';
-      case TransactionType.otherIncome:
-        return 'Otro Ingreso';
-      case TransactionType.otherExpense:
-        return 'Otro Gasto';
-      case TransactionType.other:
-        return 'Otro';
-    }
-  }
+  const TransactionType(this.dbValue, this.display);
 
-  String get dbValue {
-    switch (this) {
-      case TransactionType.registrationFee:
-        return 'registration_fee';
-      case TransactionType.monthlyFee:
-        return 'monthly_fee';
-      case TransactionType.matchFee:
-        return 'match_fee';
-      case TransactionType.yellowCardFine:
-        return 'yellow_card_fine';
-      case TransactionType.redCardFine:
-        return 'red_card_fine';
-      case TransactionType.noShowFine:
-        return 'no_show_fine';
-      case TransactionType.lateArrivalFine:
-        return 'late_arrival_fine';
-      case TransactionType.uniformViolationFine:
-        return 'uniform_violation_fine';
-      case TransactionType.misconductFine:
-        return 'misconduct_fine';
-      case TransactionType.forfeitFine:
-        return 'forfeit_fine';
-      case TransactionType.tournamentEntryFee:
-        return 'tournament_entry_fee';
-      case TransactionType.transferFee:
-        return 'transfer_fee';
-      case TransactionType.sponsorship:
-        return 'sponsorship';
-      case TransactionType.prizeMoney:
-        return 'prize_money';
-      case TransactionType.refund:
-        return 'refund';
-      case TransactionType.discount:
-        return 'discount';
-      case TransactionType.payment:
-        return 'payment';
-      case TransactionType.adjustment:
-        return 'adjustment';
-      case TransactionType.otherIncome:
-        return 'other_income';
-      case TransactionType.otherExpense:
-        return 'other_expense';
-      case TransactionType.other:
-        return 'other';
-    }
-  }
+  /// Value sent to and returned by the API.
+  final String dbValue;
 
-  /// Whether this transaction type represents income
-  bool get isIncome {
-    switch (this) {
-      case TransactionType.registrationFee:
-      case TransactionType.monthlyFee:
-      case TransactionType.matchFee:
-      case TransactionType.yellowCardFine:
-      case TransactionType.redCardFine:
-      case TransactionType.noShowFine:
-      case TransactionType.lateArrivalFine:
-      case TransactionType.uniformViolationFine:
-      case TransactionType.misconductFine:
-      case TransactionType.forfeitFine:
-      case TransactionType.tournamentEntryFee:
-      case TransactionType.transferFee:
-      case TransactionType.sponsorship:
-      case TransactionType.payment:
-      case TransactionType.otherIncome:
-        return true;
-      case TransactionType.prizeMoney:
-      case TransactionType.refund:
-      case TransactionType.discount:
-      case TransactionType.adjustment:
-      case TransactionType.otherExpense:
-      case TransactionType.other:
-        return false;
-    }
-  }
+  /// Spanish label.
+  final String display;
+
+  /// Money coming in (payments, sponsorship...) instead of a charge or an expense.
+  bool get isIncome => const {
+    TransactionType.paymentReceived,
+    TransactionType.partialPayment,
+    TransactionType.sponsorship,
+    TransactionType.otherIncome,
+    TransactionType.prizeMoney,
+  }.contains(this);
 
   /// Whether this transaction type is a fine
-  bool get isFine {
+  bool get isFine => const {
+    TransactionType.yellowCardFine,
+    TransactionType.redCardFine,
+    TransactionType.doubleYellowFine,
+    TransactionType.absenceFine,
+    TransactionType.lateArrivalFine,
+    TransactionType.misconductFine,
+    TransactionType.uniformViolationFine,
+  }.contains(this);
+
+  /// Registration fees and fines are billed to a team, so the team is mandatory.
+  bool get needsTeam =>
+      isFine ||
+      this == TransactionType.teamRegistration ||
+      this == TransactionType.playerRegistration;
+
+  /// Default description used to prefill the form.
+  String get defaultDescription {
     switch (this) {
+      case TransactionType.teamRegistration:
+        return 'Cuota de inscripción de equipo';
+      case TransactionType.playerRegistration:
+        return 'Cuota de inscripción de jugador';
       case TransactionType.yellowCardFine:
+        return 'Multa por tarjeta amarilla';
       case TransactionType.redCardFine:
-      case TransactionType.noShowFine:
+        return 'Multa por tarjeta roja';
+      case TransactionType.doubleYellowFine:
+        return 'Multa por doble amarilla';
+      case TransactionType.absenceFine:
+        return 'Multa por incomparecencia';
       case TransactionType.lateArrivalFine:
-      case TransactionType.uniformViolationFine:
-      case TransactionType.misconductFine:
-      case TransactionType.forfeitFine:
-        return true;
+        return 'Multa por llegada tarde';
+      case TransactionType.refereeFee:
+        return 'Pago de arbitraje';
       default:
-        return false;
+        return display;
     }
   }
 
   static TransactionType fromString(String value) {
-    switch (value) {
-      case 'registration_fee':
-        return TransactionType.registrationFee;
-      case 'monthly_fee':
-        return TransactionType.monthlyFee;
-      case 'match_fee':
-        return TransactionType.matchFee;
-      case 'yellow_card_fine':
-        return TransactionType.yellowCardFine;
-      case 'red_card_fine':
-        return TransactionType.redCardFine;
-      case 'no_show_fine':
-        return TransactionType.noShowFine;
-      case 'late_arrival_fine':
-        return TransactionType.lateArrivalFine;
-      case 'uniform_violation_fine':
-        return TransactionType.uniformViolationFine;
-      case 'misconduct_fine':
-        return TransactionType.misconductFine;
-      case 'forfeit_fine':
-        return TransactionType.forfeitFine;
-      case 'tournament_entry_fee':
-        return TransactionType.tournamentEntryFee;
-      case 'transfer_fee':
-        return TransactionType.transferFee;
-      case 'sponsorship':
-        return TransactionType.sponsorship;
-      case 'prize_money':
-        return TransactionType.prizeMoney;
-      case 'refund':
-        return TransactionType.refund;
-      case 'discount':
-        return TransactionType.discount;
-      case 'payment':
-        return TransactionType.payment;
-      case 'adjustment':
-        return TransactionType.adjustment;
-      case 'other_income':
-        return TransactionType.otherIncome;
-      case 'other_expense':
-        return TransactionType.otherExpense;
-      case 'other':
-        return TransactionType.other;
-      default:
-        return TransactionType.other;
+    for (final t in TransactionType.values) {
+      if (t.dbValue == value) return t;
     }
+    return TransactionType.adjustment;
   }
 }
 
 /// Transaction Status
 enum TransactionStatus {
-  pending,
-  paid,
-  partiallyPaid,
-  overdue,
-  cancelled,
-  waived;
+  pending('pending', 'Pendiente'),
+  paid('paid', 'Pagado'),
+  partial('partial', 'Pago Parcial'),
+  overdue('overdue', 'Vencido'),
+  cancelled('cancelled', 'Cancelado'),
+  waived('waived', 'Condonado');
 
-  String get display {
-    switch (this) {
-      case TransactionStatus.pending:
-        return 'Pendiente';
-      case TransactionStatus.paid:
-        return 'Pagado';
-      case TransactionStatus.partiallyPaid:
-        return 'Parcialmente Pagado';
-      case TransactionStatus.overdue:
-        return 'Vencido';
-      case TransactionStatus.cancelled:
-        return 'Cancelado';
-      case TransactionStatus.waived:
-        return 'Condonado';
-    }
-  }
+  const TransactionStatus(this.dbValue, this.display);
 
-  String get dbValue {
-    switch (this) {
-      case TransactionStatus.pending:
-        return 'pending';
-      case TransactionStatus.paid:
-        return 'paid';
-      case TransactionStatus.partiallyPaid:
-        return 'partially_paid';
-      case TransactionStatus.overdue:
-        return 'overdue';
-      case TransactionStatus.cancelled:
-        return 'cancelled';
-      case TransactionStatus.waived:
-        return 'waived';
-    }
-  }
+  final String dbValue;
+  final String display;
+
+  /// Statuses on which the API still accepts pay / cancel.
+  bool get isOpen =>
+      this == TransactionStatus.pending ||
+      this == TransactionStatus.partial ||
+      this == TransactionStatus.overdue;
 
   static TransactionStatus fromString(String value) {
-    switch (value) {
-      case 'pending':
-        return TransactionStatus.pending;
-      case 'paid':
-        return TransactionStatus.paid;
-      case 'partially_paid':
-        return TransactionStatus.partiallyPaid;
-      case 'overdue':
-        return TransactionStatus.overdue;
-      case 'cancelled':
-        return TransactionStatus.cancelled;
-      case 'waived':
-        return TransactionStatus.waived;
-      default:
-        return TransactionStatus.pending;
+    for (final s in TransactionStatus.values) {
+      if (s.dbValue == value) return s;
     }
+    return TransactionStatus.pending;
   }
 }
 
 /// Payment Method
 enum PaymentMethod {
-  cash,
-  transfer,
-  card,
-  other;
+  cash('cash', 'Efectivo'),
+  bankTransfer('bank_transfer', 'Transferencia'),
+  card('card', 'Tarjeta'),
+  mercadopago('mercadopago', 'MercadoPago'),
+  stripe('stripe', 'Stripe'),
+  paypal('paypal', 'PayPal'),
+  oxxo('oxxo', 'OXXO'),
+  spei('spei', 'SPEI'),
+  other('other', 'Otro');
 
-  String get display {
-    switch (this) {
-      case PaymentMethod.cash:
-        return 'Efectivo';
-      case PaymentMethod.transfer:
-        return 'Transferencia';
-      case PaymentMethod.card:
-        return 'Tarjeta';
-      case PaymentMethod.other:
-        return 'Otro';
-    }
-  }
+  const PaymentMethod(this.dbValue, this.display);
 
-  String get dbValue {
-    switch (this) {
-      case PaymentMethod.cash:
-        return 'cash';
-      case PaymentMethod.transfer:
-        return 'transfer';
-      case PaymentMethod.card:
-        return 'card';
-      case PaymentMethod.other:
-        return 'other';
-    }
-  }
+  final String dbValue;
+  final String display;
+
+  /// Methods offered when an admin registers a payment by hand.
+  static const manual = [
+    PaymentMethod.cash,
+    PaymentMethod.bankTransfer,
+    PaymentMethod.spei,
+    PaymentMethod.card,
+    PaymentMethod.oxxo,
+    PaymentMethod.other,
+  ];
 
   static PaymentMethod fromString(String value) {
-    switch (value) {
-      case 'cash':
-        return PaymentMethod.cash;
-      case 'transfer':
-        return PaymentMethod.transfer;
-      case 'card':
-        return PaymentMethod.card;
-      case 'other':
-        return PaymentMethod.other;
-      default:
-        return PaymentMethod.other;
+    for (final m in PaymentMethod.values) {
+      if (m.dbValue == value) return m;
     }
+    return PaymentMethod.other;
   }
 }
 
 /// Currency
 enum Currency {
-  mxn,
-  usd;
+  mxn('MXN', 'Peso mexicano', '\$'),
+  usd('USD', 'Dólar estadounidense', 'US\$'),
+  eur('EUR', 'Euro', '€'),
+  cop('COP', 'Peso colombiano', 'COL\$'),
+  ars('ARS', 'Peso argentino', 'AR\$'),
+  clp('CLP', 'Peso chileno', 'CLP\$'),
+  pen('PEN', 'Sol peruano', 'S/');
 
-  String get display {
-    switch (this) {
-      case Currency.mxn:
-        return 'MXN';
-      case Currency.usd:
-        return 'USD';
-    }
-  }
+  const Currency(this.dbValue, this.display, this.symbol);
 
-  String get dbValue {
-    switch (this) {
-      case Currency.mxn:
-        return 'mxn';
-      case Currency.usd:
-        return 'usd';
-    }
-  }
-
-  String get symbol {
-    switch (this) {
-      case Currency.mxn:
-        return '\$';
-      case Currency.usd:
-        return 'US\$';
-    }
-  }
+  /// ISO code, as the API sends it.
+  final String dbValue;
+  final String display;
+  final String symbol;
 
   static Currency fromString(String value) {
-    switch (value) {
-      case 'mxn':
-        return Currency.mxn;
-      case 'usd':
-        return Currency.usd;
-      default:
-        return Currency.mxn;
+    final upper = value.toUpperCase();
+    for (final c in Currency.values) {
+      if (c.dbValue == upper) return c;
     }
+    return Currency.mxn;
   }
 }

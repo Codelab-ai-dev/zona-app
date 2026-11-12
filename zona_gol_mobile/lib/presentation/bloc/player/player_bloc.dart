@@ -1,5 +1,7 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
+import '../../../core/errors/failures.dart';
 import '../../../domain/usecases/create_player_usecase.dart';
 import '../../../domain/usecases/delete_player_usecase.dart';
 import '../../../domain/usecases/get_player_by_id_usecase.dart';
@@ -38,7 +40,22 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<DeletePlayerEvent>(_onDeletePlayer);
     on<ResetPlayerStateEvent>(_onResetState);
     on<LoadPlayersByLeagueEvent>(_onLoadPlayersByLeague);
+    on<LoadPlayerVerificationEvent>(_onLoadVerification);
     on<VerifyPlayerEvent>(_onVerifyPlayer);
+  }
+
+  /// Uploads a photo of an existing player; returns its public URL.
+  Future<Either<Failure, String>> uploadPhoto({
+    required String playerId,
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      updatePlayerUseCase.uploadPhoto(playerId: playerId, bytes: bytes, filename: filename);
+
+  /// Temporary link to view a private identity document.
+  Future<Either<Failure, String>> documentUrl(String documentKey) async {
+    if (verifyPlayerUseCase == null) return const Left(ServerFailure('Función no disponible'));
+    return verifyPlayerUseCase!.documentUrl(documentKey);
   }
 
   Future<void> _onLoadPlayersByTeam(
@@ -105,7 +122,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         jerseyNumber: event.jerseyNumber,
         photo: event.photo,
         birthDate: event.birthDate,
-        idDocumentUrl: event.idDocumentUrl,
       ),
     );
 
@@ -136,9 +152,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         jerseyNumber: event.jerseyNumber,
         photo: event.photo,
         birthDate: event.birthDate,
-        isActive: event.isActive,
-        idDocumentUrl: event.idDocumentUrl,
-        idVerified: event.idVerified,
       ),
     );
 
@@ -215,6 +228,27 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     );
   }
 
+  Future<void> _onLoadVerification(
+    LoadPlayerVerificationEvent event,
+    Emitter<PlayerState> emit,
+  ) async {
+    if (verifyPlayerUseCase == null) {
+      emit(const PlayerError('Función no disponible'));
+      return;
+    }
+
+    emit(const PlayerLoading());
+    final result = await verifyPlayerUseCase!.queue(event.leagueId);
+
+    result.fold(
+      (failure) {
+        logger.e('Error loading verification queue: ${failure.message}');
+        emit(PlayerError(failure.message));
+      },
+      (queue) => emit(PlayerVerificationLoaded(queue.players, queue.summary)),
+    );
+  }
+
   Future<void> _onVerifyPlayer(
     VerifyPlayerEvent event,
     Emitter<PlayerState> emit,
@@ -231,6 +265,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       VerifyPlayerParams(
         playerId: event.playerId,
         verified: event.verified,
+        documentKey: event.documentKey,
       ),
     );
 
@@ -239,10 +274,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         logger.e('Error verifying player: ${failure.message}');
         emit(PlayerError(failure.message));
       },
-      (player) {
-        logger.i('Successfully verified player: ${player.name}');
-        emit(PlayerVerified(player));
-      },
+      (_) => emit(PlayerVerified(playerId: event.playerId, playerName: event.playerName, verified: event.verified)),
     );
   }
 }

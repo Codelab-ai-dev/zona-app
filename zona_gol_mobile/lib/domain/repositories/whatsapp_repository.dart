@@ -8,26 +8,25 @@ abstract class WhatsAppRepository {
   /// Get all WhatsApp links for a league
   Future<Either<Failure, List<WhatsAppLinkEntity>>> getLinks(String leagueId);
 
-  /// Create a new WhatsApp link
+  /// Create a new WhatsApp link ([phoneNumber] as digits only)
   Future<Either<Failure, WhatsAppLinkEntity>> createLink({
     required String phoneNumber,
     String? userId,
-    String? role,
+    required String role,
     String? displayName,
     required String leagueId,
     String? preferredLanguage,
   });
 
-  /// Update an existing WhatsApp link
+  /// Update an existing WhatsApp link (the role cannot be changed)
   Future<Either<Failure, WhatsAppLinkEntity>> updateLink({
     required String id,
     String? phoneNumber,
-    String? role,
     String? displayName,
     String? preferredLanguage,
   });
 
-  /// Delete a WhatsApp link
+  /// Deactivate a WhatsApp link (the API keeps the row; it can be reactivated)
   Future<Either<Failure, void>> deleteLink(String id);
 
   /// Toggle active status of a WhatsApp link

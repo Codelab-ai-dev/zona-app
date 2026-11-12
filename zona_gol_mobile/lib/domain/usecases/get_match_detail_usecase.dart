@@ -3,91 +3,53 @@ import 'package:equatable/equatable.dart';
 
 import '../../core/errors/failures.dart';
 import '../entities/match_entity.dart';
-import '../entities/player_stats_entity.dart';
 import '../repositories/match_repository.dart';
-import '../repositories/player_stats_repository.dart';
 
-/// Result object containing match data and per-team player stats
+/// Result object containing the match (with its goals and cards) and the
+/// referee observations
 class MatchDetailResult extends Equatable {
   final MatchEntity match;
-  final List<PlayerStatsEntity> homePlayerStats;
-  final List<PlayerStatsEntity> awayPlayerStats;
   final String? refereeObservations;
 
   const MatchDetailResult({
     required this.match,
-    this.homePlayerStats = const [],
-    this.awayPlayerStats = const [],
     this.refereeObservations,
   });
 
   @override
-  List<Object?> get props =>
-      [match, homePlayerStats, awayPlayerStats, refereeObservations];
+  List<Object?> get props => [match, refereeObservations];
 }
 
 /// Get Match Detail Use Case
-/// Composes match data + player stats for a single match
+/// Loads a match with its result events plus the referee observations
 class GetMatchDetailUseCase {
   final MatchRepository matchRepository;
-  final PlayerStatsRepository playerStatsRepository;
 
-  GetMatchDetailUseCase(this.matchRepository, this.playerStatsRepository);
+  GetMatchDetailUseCase(this.matchRepository);
 
   Future<Either<Failure, MatchDetailResult>> call(
     GetMatchDetailParams params,
   ) async {
     if (params.matchId.isEmpty) {
-      return Left(ValidationFailure('Match ID cannot be empty'));
+      return const Left(ValidationFailure('Partido no válido'));
     }
 
-    // Fetch match data
     final matchResult = await matchRepository.getMatchById(params.matchId);
 
     return matchResult.fold(
       (failure) => Left(failure),
       (match) async {
-        // Try to fetch player stats — gracefully degrade if it fails
-        List<PlayerStatsEntity> homeStats = [];
-        List<PlayerStatsEntity> awayStats = [];
-
-        try {
-          final statsResult = await playerStatsRepository.getPlayerStatsByMatch(
-            params.matchId,
-            homeTeamId: match.homeTeamId,
-            awayTeamId: match.awayTeamId,
-          );
-
-          statsResult.fold(
-            (failure) {
-              // Gracefully degrade — still show match info without stats
-            },
-            (statsMap) {
-              homeStats = statsMap['home'] ?? [];
-              awayStats = statsMap['away'] ?? [];
-            },
-          );
-        } catch (_) {
-          // Gracefully degrade
-        }
-
-        // Try to fetch referee observations — gracefully degrade
+        // Observations need a token of a manager of the match; without
+        // permission (or without report) the detail is shown without them.
         String? refereeObservations;
-        try {
+        if (match.status == MatchStatus.finished) {
           final reportResult =
               await matchRepository.getRefereeReport(params.matchId);
-          reportResult.fold(
-            (_) {}, // Gracefully degrade
-            (obs) => refereeObservations = obs,
-          );
-        } catch (_) {
-          // Gracefully degrade
+          reportResult.fold((_) {}, (obs) => refereeObservations = obs);
         }
 
         return Right(MatchDetailResult(
           match: match,
-          homePlayerStats: homeStats,
-          awayPlayerStats: awayStats,
           refereeObservations: refereeObservations,
         ));
       },

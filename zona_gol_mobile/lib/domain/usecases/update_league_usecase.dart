@@ -49,24 +49,9 @@ class UpdateLeagueUseCase {
           ),
         );
       }
-
-      // Check if slug is available (excluding current league)
-      final slugCheck = await repository.isSlugAvailable(
-        params.slug!,
-        excludeLeagueId: params.leagueId,
-      );
-      final isAvailable = slugCheck.fold(
-        (failure) => false,
-        (available) => available,
-      );
-      if (!isAvailable) {
-        return Left(
-          ValidationFailure('El slug ya está en uso, por favor elige otro'),
-        );
-      }
     }
 
-    // Update the league
+    // Update the league (a taken slug comes back as a validation failure)
     return repository.updateLeague(
       leagueId: params.leagueId,
       name: params.name?.trim(),

@@ -61,27 +61,14 @@ class CreateLeagueUseCase {
       return Left(ValidationFailure('El administrador es requerido'));
     }
 
-    // Check if slug is available
-    final slugCheck = await repository.isSlugAvailable(params.slug);
-    return slugCheck.fold(
-      (failure) => Left(failure),
-      (isAvailable) {
-        if (!isAvailable) {
-          return Left(
-            ValidationFailure('El slug ya está en uso, por favor elige otro'),
-          );
-        }
-
-        // Create the league
-        return repository.createLeague(
-          name: params.name.trim(),
-          slug: params.slug.toLowerCase().trim(),
-          description: params.description.trim(),
-          adminId: params.adminId,
-          logo: params.logo,
-          productMode: params.productMode,
-        );
-      },
+    // A taken slug comes back from the API as a validation failure.
+    return repository.createLeague(
+      name: params.name.trim(),
+      slug: params.slug.toLowerCase().trim(),
+      description: params.description.trim(),
+      adminId: params.adminId,
+      logo: params.logo,
+      productMode: params.productMode,
     );
   }
 

@@ -32,7 +32,13 @@ class Authenticated extends AuthState {
 
 /// Unauthenticated state (no user logged in)
 class Unauthenticated extends AuthState {
-  const Unauthenticated();
+  /// Optional notice for the login screen (e.g. the session expired).
+  final String? message;
+
+  const Unauthenticated({this.message});
+
+  @override
+  List<Object?> get props => [message];
 }
 
 /// Authentication error state

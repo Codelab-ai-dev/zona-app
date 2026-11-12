@@ -2,27 +2,29 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/qr_service.dart';
 import '../../../domain/repositories/attendance_repository.dart';
 import '../../../domain/usecases/register_attendance_usecase.dart';
-import '../../../domain/usecases/get_match_attendance_usecase.dart';
 import 'attendance_event.dart';
 import 'attendance_state.dart';
 
+/// Scanner flow: scan QR -> player's matches today -> pick/confirm -> check-in.
 class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
   final RegisterAttendanceUseCase _registerAttendanceUseCase;
-  final GetMatchAttendanceUseCase _getMatchAttendanceUseCase;
   final AttendanceRepository _attendanceRepository;
+
+  /// The device's local date; replaceable in tests.
+  final DateTime Function() _now;
 
   AttendanceBloc({
     required RegisterAttendanceUseCase registerAttendanceUseCase,
-    required GetMatchAttendanceUseCase getMatchAttendanceUseCase,
     required AttendanceRepository attendanceRepository,
+    DateTime Function()? now,
   })  : _registerAttendanceUseCase = registerAttendanceUseCase,
-        _getMatchAttendanceUseCase = getMatchAttendanceUseCase,
         _attendanceRepository = attendanceRepository,
+        _now = now ?? DateTime.now,
         super(AttendanceInitial()) {
     on<ScanQRCodeEvent>(_onScanQRCode);
+    on<LoadTodayMatchesEvent>(_onLoadTodayMatches);
+    on<SelectMatchEvent>(_onSelectMatch);
     on<RegisterAttendanceEvent>(_onRegisterAttendance);
-    on<CheckAttendanceEvent>(_onCheckAttendance);
-    on<LoadMatchAttendanceEvent>(_onLoadMatchAttendance);
     on<ResetScannerEvent>(_onResetScanner);
   }
 
@@ -33,46 +35,37 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     final parsed = QRService.parseQRCode(event.qrData);
     if (parsed == null) {
       emit(const QRScanError(
-          message: 'C\u00f3digo QR inv\u00e1lido. Intenta de nuevo.'));
+          message: 'Código QR inválido. Intenta de nuevo.'));
       return;
     }
-    emit(QRScanned(playerData: parsed));
+    await _onLoadTodayMatches(LoadTodayMatchesEvent(playerData: parsed), emit);
   }
 
-  Future<void> _onCheckAttendance(
-    CheckAttendanceEvent event,
+  Future<void> _onLoadTodayMatches(
+    LoadTodayMatchesEvent event,
     Emitter<AttendanceState> emit,
   ) async {
-    if (event.matchId != null) {
-      final result = await _attendanceRepository.hasAttendanceForMatch(
-          event.playerId, event.matchId!);
-      result.fold(
-        (_) {}, // Ignore errors for check
-        (hasAttendance) {
-          if (state is QRScanned) {
-            final current = state as QRScanned;
-            emit(QRScanned(
-              playerData: current.playerData,
-              alreadyCheckedIn: hasAttendance,
-            ));
-          }
-        },
-      );
-    } else {
-      final result =
-          await _attendanceRepository.hasAttendanceToday(event.playerId);
-      result.fold(
-        (_) {},
-        (hasAttendance) {
-          if (state is QRScanned) {
-            final current = state as QRScanned;
-            emit(QRScanned(
-              playerData: current.playerData,
-              alreadyCheckedIn: hasAttendance,
-            ));
-          }
-        },
-      );
+    final player = event.playerData;
+    emit(TodayMatchesLoading(playerData: player));
+
+    final result =
+        await _attendanceRepository.getTodayMatches(player.playerId, _now());
+
+    result.fold(
+      (failure) =>
+          emit(TodayMatchesError(playerData: player, message: failure.message)),
+      (matches) => emit(QRScanned(
+        playerData: player,
+        matches: matches,
+        selectedMatchId: matches.length == 1 ? matches.first.matchId : null,
+      )),
+    );
+  }
+
+  void _onSelectMatch(SelectMatchEvent event, Emitter<AttendanceState> emit) {
+    final current = state;
+    if (current is QRScanned) {
+      emit(current.copyWith(selectedMatchId: event.matchId));
     }
   }
 
@@ -80,38 +73,28 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     RegisterAttendanceEvent event,
     Emitter<AttendanceState> emit,
   ) async {
-    emit(AttendanceRegistering());
+    final current = state;
+    if (current is! QRScanned) return;
+    final match = current.selectedMatch;
+    if (match == null || match.alreadyRegistered) return;
+
+    emit(AttendanceRegistering(playerData: current.playerData, match: match));
 
     final result = await _registerAttendanceUseCase(
       RegisterAttendanceParams(
-        playerId: event.playerData.playerId,
-        teamId: event.playerData.teamId,
-        matchId: event.matchId,
-        scannedByUserId: event.scannedByUserId,
+        playerId: current.playerData.playerId,
+        matchId: match.matchId,
       ),
     );
 
     result.fold(
-      (failure) =>
-          emit(AttendanceRegisterError(message: failure.message)),
-      (attendance) =>
-          emit(AttendanceRegistered(attendance: attendance)),
-    );
-  }
-
-  Future<void> _onLoadMatchAttendance(
-    LoadMatchAttendanceEvent event,
-    Emitter<AttendanceState> emit,
-  ) async {
-    emit(MatchAttendanceLoading());
-
-    final result = await _getMatchAttendanceUseCase(event.matchId);
-
-    result.fold(
-      (failure) =>
-          emit(MatchAttendanceError(message: failure.message)),
-      (records) =>
-          emit(MatchAttendanceLoaded(records: records)),
+      (failure) => emit(current.copyWith(errorMessage: failure.message)),
+      (outcome) => emit(AttendanceRegistered(
+        playerData: current.playerData,
+        match: match.copyWith(alreadyRegistered: true),
+        alreadyRegistered: outcome == AttendanceResult.alreadyRegistered,
+        registeredAt: _now(),
+      )),
     );
   }
 

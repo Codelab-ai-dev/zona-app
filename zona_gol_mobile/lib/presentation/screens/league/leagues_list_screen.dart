@@ -30,7 +30,6 @@ class _StadiumNights {
   static const Color neonBlue = Color(0xFF00BFFF);
 
   // Status colors
-  static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color inactive = Color(0xFF6B7280);
 
@@ -53,7 +52,7 @@ class LeaguesListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => sl<LeagueBloc>()..add(const LoadAllLeaguesEvent()),
+      create: (context) => sl<LeagueBloc>()..add(LoadAllLeaguesEvent(onlyActive: !isSuperAdmin)),
       child: _LeaguesListView(isSuperAdmin: isSuperAdmin),
     );
   }
@@ -544,7 +543,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
   Widget _buildLeaguesList(List<LeagueEntity> leagues) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<LeagueBloc>().add(const LoadAllLeaguesEvent());
+        context.read<LeagueBloc>().add(LoadAllLeaguesEvent(onlyActive: !widget.isSuperAdmin));
       },
       color: _StadiumNights.gold,
       backgroundColor: _StadiumNights.cardDark,
@@ -781,7 +780,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
-        context.read<LeagueBloc>().add(const LoadAllLeaguesEvent());
+        context.read<LeagueBloc>().add(LoadAllLeaguesEvent(onlyActive: !widget.isSuperAdmin));
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
@@ -866,15 +865,15 @@ class _LeaguesListViewState extends State<_LeaguesListView>
   void _handleBlocState(BuildContext context, LeagueState state) {
     if (state is LeagueUpdated) {
       _showSuccessMessage('Liga "${state.league.name}" actualizada');
-      context.read<LeagueBloc>().add(const LoadAllLeaguesEvent());
+      context.read<LeagueBloc>().add(LoadAllLeaguesEvent(onlyActive: !widget.isSuperAdmin));
     } else if (state is LeagueDeleted) {
       _showSuccessMessage('Liga eliminada correctamente');
-      context.read<LeagueBloc>().add(const LoadAllLeaguesEvent());
+      context.read<LeagueBloc>().add(LoadAllLeaguesEvent(onlyActive: !widget.isSuperAdmin));
     } else if (state is LeagueStatusToggled) {
       _showSuccessMessage(
         'Liga ${state.league.isActive ? "activada" : "desactivada"}',
       );
-      context.read<LeagueBloc>().add(const LoadAllLeaguesEvent());
+      context.read<LeagueBloc>().add(LoadAllLeaguesEvent(onlyActive: !widget.isSuperAdmin));
     } else if (state is LeagueError) {
       _showErrorMessage(state.message);
     }
@@ -1000,7 +999,6 @@ class _LeagueCardState extends State<_LeagueCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _hoverController;
   late Animation<double> _scaleAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -1051,11 +1049,9 @@ class _LeagueCardState extends State<_LeagueCard>
   Widget _buildCard() {
     return GestureDetector(
       onTapDown: (_) {
-        setState(() => _isPressed = true);
         _hoverController.forward();
       },
       onTapUp: (_) {
-        setState(() => _isPressed = false);
         _hoverController.reverse();
         HapticFeedback.lightImpact();
         Navigator.of(context).push(
@@ -1082,7 +1078,6 @@ class _LeagueCardState extends State<_LeagueCard>
         );
       },
       onTapCancel: () {
-        setState(() => _isPressed = false);
         _hoverController.reverse();
       },
       child: AnimatedBuilder(
@@ -1813,7 +1808,7 @@ class _LeagueCardState extends State<_LeagueCard>
               ),
               const SizedBox(height: 12),
               Text(
-                '¿Eliminar "${widget.league.name}"?\nEsta acción no se puede deshacer.',
+                '¿Eliminar "${widget.league.name}"?\nSe borrarán para siempre sus torneos, equipos, jugadores y partidos. Esta acción no se puede deshacer.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
                   fontSize: 14,
