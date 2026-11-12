@@ -150,7 +150,6 @@ flutter run --release --dart-define=ENV=prod --dart-define=API_BASE_URL=https://
 
 - **README.md** - Documentación completa del proyecto
 - **GETTING_STARTED.md** - Guía de inicio detallada
-- **ZONA_GOL_MOBILE_ARCHITECTURE.md** - Arquitectura del proyecto
 
 ---
 

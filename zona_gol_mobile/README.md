@@ -229,7 +229,6 @@ lib/
 ## 📚 Documentación
 
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Guía de inicio y próximos pasos
-- **[ZONA_GOL_MOBILE_ARCHITECTURE.md](ZONA_GOL_MOBILE_ARCHITECTURE.md)** - Arquitectura completa
 
 ## 🛠️ Comandos Útiles
 
