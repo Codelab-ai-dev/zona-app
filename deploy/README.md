@@ -41,7 +41,7 @@ Crea dos ligas independientes con jugadores y partidos, y una jornada programada
 
 ## Copias de seguridad
 
-`make backup` guarda en `backups/<fecha>/` un volcado de la base (`db.dump`), los archivos públicos y los privados (`.tar.gz`) y sus sumas SHA-256. Contienen datos personales (incluidos documentos de identidad): se crean con permisos solo para tu usuario, `backups/` no se sube a git, y conviene guardar una copia fuera de esta máquina.
+`make backup` guarda en `backups/<fecha>/` un volcado de la base (`db.dump`), los archivos públicos y los privados (`.tar.gz`) y sus sumas SHA-256. Contienen datos personales (incluidos documentos de identidad): se crean con permisos solo para tu usuario, `backups/` no se sube a git, y conviene guardar una copia fuera de esta máquina. La rutina de respaldo, el simulacro de restauración y el procedimiento de soporte están en [`docs/operations/OPERACION_Y_SOPORTE.md`](../docs/operations/OPERACION_Y_SOPORTE.md).
 
 ## Integraciones opcionales
 
