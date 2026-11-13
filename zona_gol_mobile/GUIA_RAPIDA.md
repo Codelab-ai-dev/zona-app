@@ -71,7 +71,7 @@ El login con email y password ya está funcionando correctamente. ✨
 4. ✅ **Caché Local**
    - Hive para datos del usuario
    - Secure Storage para tokens
-   - Modo offline preparado
+   - Sin modo offline de escritura: ver "Conectividad limitada" en el README
 
 ## 🐛 Problemas Comunes
 
@@ -130,8 +130,8 @@ flutter run --release --dart-define=ENV=prod --dart-define=API_BASE_URL=https://
    - Login con Google (UI ya existe, solo falta conectar)
    - Login con Apple (UI ya existe, solo falta conectar)
 
-3. **Modo Offline**
-   - Sincronización automática
+3. **Modo Offline** (no implementado)
+   - Cola de asistencia y resultados para sincronizar al volver la red
    - Cola de operaciones pendientes
    - Manejo de conflictos
 

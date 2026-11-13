@@ -99,6 +99,22 @@ void main() {
     expect(await api.hasSession, isFalse);
   });
 
+  test('a 403 neither refreshes nor ends the session', () async {
+    await tokens.save(access: 'a1', refresh: 'r1', expiresAt: DateTime.now().add(const Duration(minutes: 15)));
+    final api = client((req) async => json({'error': {'code': 'forbidden', 'message': 'Sin permiso'}}, 403));
+    var expired = false;
+    final sub = api.sessionExpired.listen((_) => expired = true);
+
+    await expectLater(api.post('/matches/m1/result', {'home_score': 1, 'away_score': 0}),
+        throwsA(isA<ApiException>().having((e) => e.isForbidden, 'isForbidden', true)));
+    await sub.cancel();
+
+    expect(requests.map((r) => r.url.path), ['/api/v1/matches/m1/result']);
+    expect(expired, isFalse);
+    expect(await tokens.accessToken, 'a1');
+    expect(await tokens.refreshToken, 'r1');
+  });
+
   test('a network failure during refresh keeps the session', () async {
     await tokens.save(access: 'old', refresh: 'r1', expiresAt: DateTime.now().subtract(const Duration(minutes: 1)));
     final api = client((req) async => throw http.ClientException('offline'));

@@ -309,6 +309,8 @@ Al ejecutar, verás en consola:
 - ⏳ Image caching (implementar cuando sea necesario)
 
 ### Offline Mode
+> Estado real (2026-11-12): solo se guarda el perfil del usuario; no hay cola de sincronización. Ver "Conectividad limitada" en el README.
+
 - ✅ Hive para caché estructurado
 - ✅ Connectivity monitoring
 - ✅ Sync queue preparado

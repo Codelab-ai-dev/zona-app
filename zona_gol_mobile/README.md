@@ -20,7 +20,7 @@
 - ✅ Tablas de posiciones en tiempo real
 - ✅ Sistema de suspensiones automáticas
 - ✅ Estadísticas detalladas
-- ✅ Modo offline completo con sincronización
+- ⚠️ Requiere conexión para leer y guardar datos (ver [Conectividad limitada](#-conectividad-limitada))
 
 ## 🏗️ Arquitectura
 
@@ -179,19 +179,18 @@ lib/
 - ✅ No credentials hardcoded (use --dart-define)
 - ✅ Diferentes configs por ambiente (dev/staging/prod)
 
-## 🌐 Modo Offline
+## 🌐 Conectividad limitada
 
-### Estrategia Offline-First
-- **Caché local:** Hive para almacenamiento estructurado
-- **Sync Queue:** Cola de operaciones pendientes
-- **Conflict Resolution:** Estrategia last-write-wins
-- **Auto-sync:** Sincronización automática al reconectar
+La app **no tiene modo offline de escritura**: no hay cola de sincronización, así que nada se guarda para enviarlo después. Lo que sí hace sin conexión:
 
-### TTL (Time To Live)
-- **Sesión:** 48 horas
-- **Ligas:** 24 horas
-- **Partidos:** 6 horas
-- **Estadísticas:** 1 hora
+| Situación | Comportamiento |
+|---|---|
+| Se pierde la red con la app abierta | El dashboard muestra el aviso **Sin conexión a internet**. Las pantallas que cargan datos muestran el error "No se pudo conectar con el servidor" y se pueden reintentar al volver la red. |
+| Se abre la app sin red con una sesión guardada | Entra con el perfil guardado en el teléfono (solo nombre, rol, liga y equipo). Ligas, partidos, jugadores y estadísticas no están en caché y necesitan red. |
+| La red cae mientras se renueva la sesión | La sesión **no** se cierra; se renueva en la siguiente petición con red. Solo se cierra si el servidor rechaza la renovación ("Tu sesión expiró"). |
+| Registrar asistencia QR o capturar un resultado sin red | Falla con el aviso de conexión y **no queda pendiente**: hay que repetirlo cuando vuelva la red. La asistencia solo se acepta mientras el partido no esté finalizado. |
+
+Si la cancha no tiene señal, sigue el plan B en papel de [`docs/operations/OPERACION_Y_SOPORTE.md`](../docs/operations/OPERACION_Y_SOPORTE.md) y captura los resultados desde la web al volver la conexión.
 
 ## 📱 Soporte de Plataformas
 
@@ -224,7 +223,7 @@ lib/
 ### ⏳ Fase 4: Core Features
 - [ ] League Admin features
 - [ ] QR Scanner
-- [ ] Offline sync
+- [ ] Cola offline para asistencia y resultados (no implementada)
 
 ## 📚 Documentación
 
