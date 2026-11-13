@@ -25,7 +25,7 @@ Abre http://localhost:8088 e inicia sesión.
 make seed
 ```
 
-Crea una liga con 6 equipos, jugadores y partidos, y tres cuentas (`superadmin@zonagol.local`, `liga@zonagol.local`, `equipo@zonagol.local`) con la contraseña `SEED_PASSWORD` de `deploy/.env`.
+Crea dos ligas independientes con jugadores y partidos, y una jornada programada para hoy en cada una: la Liga Demo Zona Gol (6 equipos; cuentas `liga@zonagol.local` y `equipo@zonagol.local`) y la Liga Ensayo B (4 equipos; cuentas `liga-b@zonagol.local` y `equipo-b@zonagol.local`), más `superadmin@zonagol.local`. Todas usan la contraseña `SEED_PASSWORD` de `deploy/.env`. Si una liga ya existe la deja como está, así que en una instalación previa solo agrega la Liga Ensayo B. El ensayo de jornada que usa estos datos está en [`docs/operations/ENSAYO_JORNADA.md`](../docs/operations/ENSAYO_JORNADA.md).
 
 ## Comandos
 

@@ -22,7 +22,8 @@ up: env
 seed:
 	$(COMPOSE) run --rm --no-deps --entrypoint /seed \
 		-e SEED_PASSWORD="$$(grep '^SEED_PASSWORD=' deploy/.env | cut -d= -f2-)" api
-	@echo "Demo accounts: superadmin@zonagol.local, liga@zonagol.local, equipo@zonagol.local"
+	@echo "Demo accounts: superadmin@zonagol.local; league A liga@ / equipo@zonagol.local; league B liga-b@ / equipo-b@zonagol.local"
+	@echo "Matchday rehearsal guide: docs/operations/ENSAYO_JORNADA.md"
 	@echo "Password: SEED_PASSWORD in deploy/.env"
 
 # Creates or promotes a super admin: make admin EMAIL=ana@liga.mx NAME="Ana"
