@@ -162,6 +162,11 @@ func (s *Service) CreateTeam(ctx context.Context, caller auth.Principal, leagueI
 	if err := s.authz.CanManageLeague(ctx, caller, leagueID); err != nil {
 		return Team{}, err
 	}
+	if req.TournamentID != nil && *req.TournamentID != uuid.Nil {
+		if err := s.checkTournamentInLeague(ctx, *req.TournamentID, leagueID); err != nil {
+			return Team{}, err
+		}
+	}
 
 	// Business rule: owner_id is set to the caller
 	team := Team{

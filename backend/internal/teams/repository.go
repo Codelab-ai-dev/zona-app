@@ -813,9 +813,9 @@ func (r *PGRepository) CountCoachingStaffByTeam(ctx context.Context, teamID uuid
 // GetTournamentByID returns tournament info needed for validation.
 func (r *PGRepository) GetTournamentByID(ctx context.Context, tournamentID uuid.UUID) (Tournament, error) {
 	const q = `
-		SELECT id, league_id, registration_open, max_players, max_coaching_staff,
-		       age_validation_enabled, min_age, max_age, age_reference_date,
-		       age_exception_count, age_exception_min_age, age_exception_max_age
+		SELECT id, league_id, COALESCE(registration_open, true), max_players, COALESCE(max_coaching_staff, 10),
+		       COALESCE(age_validation_enabled, false), min_age, max_age, age_reference_date,
+		       COALESCE(age_exception_count, 0), age_exception_min_age, age_exception_max_age
 		FROM public.tournaments
 		WHERE id = $1`
 
