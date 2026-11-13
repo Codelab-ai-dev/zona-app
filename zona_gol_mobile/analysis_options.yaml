@@ -12,6 +12,9 @@ analyzer:
     - build/**
     - android/**
     - ios/**
+  errors:
+    # Freezed puts @JsonKey on factory parameters; the generated code handles it.
+    invalid_annotation_target: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

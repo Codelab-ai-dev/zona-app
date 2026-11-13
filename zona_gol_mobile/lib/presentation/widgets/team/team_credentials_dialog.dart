@@ -4,13 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
   static const Color surfaceDark = Color(0xFF0A0A0F);
   static const Color cardDark = Color(0xFF12121A);
   static const Color gold = Color(0xFFFFD700);
   static const Color neonGreen = Color(0xFF00FF7F);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
   static const Color textPrimary = Color(0xFFFAFAFA);
   static const Color textSecondary = Color(0xFF9CA3AF);
   static const Color textMuted = Color(0xFF6B7280);
