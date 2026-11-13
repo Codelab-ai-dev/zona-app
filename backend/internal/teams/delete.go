@@ -75,12 +75,17 @@ func (s *Service) checkTournamentChange(ctx context.Context, caller auth.Princip
 	if tournamentID == uuid.Nil {
 		return nil
 	}
+	return s.checkTournamentInLeague(ctx, tournamentID, team.LeagueID)
+}
+
+// checkTournamentInLeague rejects a tournament of another league.
+func (s *Service) checkTournamentInLeague(ctx context.Context, tournamentID, leagueID uuid.UUID) error {
 	if s.pool == nil {
 		return errors.New("teams: pool not configured")
 	}
 	var ok bool
 	if err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM public.tournaments WHERE id = $1 AND league_id = $2)`,
-		tournamentID, team.LeagueID).Scan(&ok); err != nil {
+		tournamentID, leagueID).Scan(&ok); err != nil {
 		return fmt.Errorf("check tournament: %w", err)
 	}
 	if !ok {

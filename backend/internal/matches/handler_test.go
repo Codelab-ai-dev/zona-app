@@ -3,6 +3,7 @@ package matches
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -28,6 +29,19 @@ type fakeRepository struct {
 	standings      []StandingsTeam
 	shouldFailErr  error
 	inactive       map[uuid.UUID]bool // tournaments whose league is inactive
+	foreignTeams   map[uuid.UUID]bool // teams of another league
+}
+
+func (f *fakeRepository) CountLeagueTeams(_ context.Context, _ uuid.UUID, teamIDs []uuid.UUID) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	n := 0
+	for _, id := range teamIDs {
+		if !f.foreignTeams[id] {
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (f *fakeRepository) TournamentLeagueActive(_ context.Context, tournamentID uuid.UUID) (bool, error) {
@@ -534,6 +548,39 @@ func TestCreateMatch_InvalidTeams(t *testing.T) {
 	_, err := svc.CreateMatch(context.Background(), caller, req)
 	if err == nil {
 		t.Fatal("expected validation error for same teams")
+	}
+}
+
+func TestCreateMatch_ForeignLeagueTeam(t *testing.T) {
+	repo := newFakeRepository()
+	foreign := uuid.New()
+	repo.foreignTeams = map[uuid.UUID]bool{foreign: true}
+	svc := NewService(repo, newFakeChecker(), nil)
+	caller := auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin}
+	tournamentID := uuid.New()
+
+	_, err := svc.CreateMatch(context.Background(), caller, CreateMatchRequest{
+		TournamentID: tournamentID, HomeTeamID: uuid.New(), AwayTeamID: foreign, MatchDate: time.Now(),
+	})
+	assertValidation(t, err, "teams")
+
+	_, err = svc.GenerateFixtures(context.Background(), caller, GenerateFixturesRequest{
+		TournamentID: tournamentID,
+		Teams:        []TeamFixtureData{{ID: uuid.New(), Name: "Local"}, {ID: foreign, Name: "Ajeno"}},
+		Schedule: &FixtureSchedule{StartDate: "2027-01-10", MatchDays: []string{"sunday"}, StartTime: "09:00",
+			FieldsAvailable: 1, HalfMinutes: 20, HalftimeBreakMinutes: 10, BreakBetweenMatches: 10},
+	})
+	assertValidation(t, err, "teams")
+	if len(repo.matches) != 0 {
+		t.Fatalf("created %d matches with a foreign team", len(repo.matches))
+	}
+}
+
+func assertValidation(t *testing.T, err error, field string) {
+	t.Helper()
+	var he *httpx.Error
+	if !errors.As(err, &he) || he.Status != http.StatusUnprocessableEntity || he.Fields[field] == "" {
+		t.Fatalf("want 422 on %q, got %v", field, err)
 	}
 }
 

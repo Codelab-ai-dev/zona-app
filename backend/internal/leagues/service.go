@@ -278,6 +278,13 @@ func (s *Service) CreateTournament(ctx context.Context, caller auth.Principal, r
 		hasThirdPlace = *req.HasThirdPlaceMatch
 	}
 
+	// An explicit NULL would bypass the column default (0); player
+	// registration reads it as a plain int.
+	ageExceptionCount := 0
+	if req.AgeExceptionCount != nil {
+		ageExceptionCount = *req.AgeExceptionCount
+	}
+
 	t := &Tournament{
 		ID:                     uuid.New(),
 		Name:                   req.Name,
@@ -297,7 +304,7 @@ func (s *Service) CreateTournament(ctx context.Context, caller auth.Principal, r
 		MinAge:                 req.MinAge,
 		MaxAge:                 req.MaxAge,
 		AgeReferenceDate:       req.AgeReferenceDate,
-		AgeExceptionCount:      req.AgeExceptionCount,
+		AgeExceptionCount:      &ageExceptionCount,
 		AgeExceptionMinAge:     req.AgeExceptionMinAge,
 		AgeExceptionMaxAge:     req.AgeExceptionMaxAge,
 		IDDocumentRequired:     false,

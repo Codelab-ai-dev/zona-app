@@ -866,6 +866,19 @@ func (r *PGRepository) TournamentLeagueActive(ctx context.Context, tournamentID 
 	return active, nil
 }
 
+// CountLeagueTeams implements Repository.
+func (r *PGRepository) CountLeagueTeams(ctx context.Context, tournamentID uuid.UUID, teamIDs []uuid.UUID) (int, error) {
+	var n int
+	err := r.db.QueryRow(ctx, `
+		SELECT count(*) FROM public.teams tm
+		JOIN public.tournaments t ON t.league_id = tm.league_id
+		WHERE t.id = $1 AND tm.id = ANY($2)`, tournamentID, teamIDs).Scan(&n)
+	if err != nil {
+		return 0, fmt.Errorf("count league teams: %w", err)
+	}
+	return n, nil
+}
+
 // attachTeams fills team names and logos for matches with one query.
 func (r *PGRepository) attachTeams(ctx context.Context, matches []Match) error {
 	if len(matches) == 0 {

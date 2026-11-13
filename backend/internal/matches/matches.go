@@ -587,6 +587,8 @@ type StandingsTeam struct {
 type Repository interface {
 	// TournamentLeagueActive reports whether the tournament's league is active.
 	TournamentLeagueActive(ctx context.Context, tournamentID uuid.UUID) (bool, error)
+	// CountLeagueTeams counts how many of teamIDs belong to the tournament's league.
+	CountLeagueTeams(ctx context.Context, tournamentID uuid.UUID, teamIDs []uuid.UUID) (int, error)
 
 	GetMatchByID(ctx context.Context, matchID uuid.UUID) (Match, error)
 	GetMatchWithRelations(ctx context.Context, matchID uuid.UUID) (MatchWithRelations, error)

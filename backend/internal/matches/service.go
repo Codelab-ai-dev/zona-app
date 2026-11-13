@@ -141,8 +141,35 @@ func (s *Service) CreateMatch(ctx context.Context, caller auth.Principal, req Cr
 	if err := s.authz.CanManageTournament(ctx, caller, req.TournamentID); err != nil {
 		return Match{}, err
 	}
+	if err := s.checkLeagueTeams(ctx, req.TournamentID, []uuid.UUID{req.HomeTeamID, req.AwayTeamID}); err != nil {
+		return Match{}, err
+	}
 
 	return s.repo.CreateMatch(ctx, req)
+}
+
+// checkLeagueTeams rejects teams that are not of the tournament's league, so
+// an admin cannot schedule (and later score) another league's teams.
+func (s *Service) checkLeagueTeams(ctx context.Context, tournamentID uuid.UUID, teamIDs []uuid.UUID) error {
+	unique := make(map[uuid.UUID]struct{}, len(teamIDs))
+	ids := make([]uuid.UUID, 0, len(teamIDs))
+	for _, id := range teamIDs {
+		if _, seen := unique[id]; !seen {
+			unique[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	n, err := s.repo.CountLeagueTeams(ctx, tournamentID, ids)
+	if err != nil {
+		return err
+	}
+	if n != len(ids) {
+		return httpx.Validation(map[string]string{"teams": "los equipos deben ser de la liga del torneo"})
+	}
+	return nil
 }
 
 // BulkCreateMatches creates multiple matches in one transaction.
@@ -162,6 +189,13 @@ func (s *Service) BulkCreateMatches(ctx context.Context, caller auth.Principal, 
 		if errs := req.Matches[i].Validate(); len(errs) > 0 {
 			return nil, httpx.Validation(errs)
 		}
+	}
+	var teamIDs []uuid.UUID
+	for _, m := range req.Matches {
+		teamIDs = append(teamIDs, m.HomeTeamID, m.AwayTeamID)
+	}
+	if err := s.checkLeagueTeams(ctx, req.TournamentID, teamIDs); err != nil {
+		return nil, err
 	}
 
 	var matches []Match
@@ -183,6 +217,18 @@ func (s *Service) GenerateFixtures(ctx context.Context, caller auth.Principal, r
 
 	// Authorize: must be tournament admin
 	if err := s.authz.CanManageTournament(ctx, caller, req.TournamentID); err != nil {
+		return nil, err
+	}
+	var teamIDs []uuid.UUID
+	for _, t := range req.Teams {
+		teamIDs = append(teamIDs, t.ID)
+	}
+	for _, g := range req.Groups {
+		for _, t := range g.Teams {
+			teamIDs = append(teamIDs, t.ID)
+		}
+	}
+	if err := s.checkLeagueTeams(ctx, req.TournamentID, teamIDs); err != nil {
 		return nil, err
 	}
 
