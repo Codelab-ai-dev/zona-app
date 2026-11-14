@@ -8,7 +8,7 @@ import { buildPlayerQrPayload } from './credential-qr'
 import { PlayerCredential } from './player-credential'
 
 const html2canvasMock = vi.hoisted(() => vi.fn())
-vi.mock('html2canvas', () => ({ default: html2canvasMock }))
+vi.mock('html2canvas-pro', () => ({ default: html2canvasMock }))
 
 // Capture the exact string encoded in the QR instead of decoding an SVG.
 const qrValues = vi.hoisted(() => [] as string[])

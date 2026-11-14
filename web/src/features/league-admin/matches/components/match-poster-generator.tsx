@@ -10,6 +10,18 @@ import { toast } from 'sonner'
 import type { MatchWithRelations } from '../types'
 import { PosterCanvas } from './poster-canvas'
 
+/**
+ * The preview shrinks the poster with CSS `zoom` inside a dialog centered with
+ * `transform`. html2canvas measures with getBoundingClientRect, which both
+ * distort, so the PNG came out squashed. Undo them on the cloned document.
+ */
+function unscalePreview(clone: HTMLElement) {
+  for (let node = clone.parentElement; node; node = node.parentElement) {
+    node.style.zoom = '1'
+    node.style.transform = 'none'
+  }
+}
+
 interface MatchPosterGeneratorProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -55,7 +67,7 @@ export function MatchPosterGenerator({ open, onOpenChange, matches, tournamentNa
       const el = posterRef.current
       if (!el) throw new Error('Poster element not found')
 
-      const html2canvas = (await import('html2canvas')).default
+      const html2canvas = (await import('html2canvas-pro')).default
 
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -63,6 +75,7 @@ export function MatchPosterGenerator({ open, onOpenChange, matches, tournamentNa
         allowTaint: true,
         backgroundColor: null,
         width: 900,
+        onclone: (_doc, clone) => unscalePreview(clone),
       })
 
       const link = document.createElement('a')
