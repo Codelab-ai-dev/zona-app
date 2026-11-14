@@ -123,6 +123,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, user User) error
 	// TeamLeague returns the league of a team (httpx.ErrNotFound if none).
 	TeamLeague(ctx context.Context, teamID uuid.UUID) (uuid.UUID, error)
+	// OwnedTeamLeagues returns the distinct leagues of the teams a user owns (teams.owner_id).
+	OwnedTeamLeagues(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error)
 	UpdateUser(ctx context.Context, userID uuid.UUID, updates UpdateUserRequest) (User, error)
 	GetByID(ctx context.Context, userID uuid.UUID) (User, error)
 }
