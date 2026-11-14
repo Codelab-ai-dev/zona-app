@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
 // PGRepository implements Repository with PostgreSQL.
@@ -351,7 +352,7 @@ func (r *PGRepository) ListTeamTransactions(ctx context.Context, leagueID uuid.U
 func (r *PGRepository) CreateTransaction(ctx context.Context, leagueID uuid.UUID, req *CreateTransactionRequest, createdBy uuid.UUID) (*Transaction, error) {
 	transactionDate := time.Now()
 	if req.TransactionDate != nil {
-		transactionDate = *req.TransactionDate
+		transactionDate = req.TransactionDate.Time
 	}
 
 	row := r.db.QueryRow(ctx, `
@@ -371,7 +372,7 @@ func (r *PGRepository) CreateTransaction(ctx context.Context, leagueID uuid.UUID
 		RETURNING `+transactionCols, leagueID, req.TournamentID, req.TeamID, req.PlayerID, req.MatchID,
 		string(req.TransactionType), req.Description, req.Notes,
 		req.Amount, req.IsIncome,
-		transactionDate, req.DueDate, createdBy)
+		transactionDate, dateArg(req.DueDate), createdBy)
 
 	return scanTransaction(row)
 }
@@ -394,7 +395,7 @@ func (r *PGRepository) UpdateTransaction(ctx context.Context, transactionID uuid
 	}
 	if updates.DueDate != nil {
 		cols = append(cols, fmt.Sprintf("due_date = $%d", argIndex))
-		args = append(args, *updates.DueDate)
+		args = append(args, updates.DueDate.Time)
 		argIndex++
 	}
 	if updates.Status != nil {
@@ -727,4 +728,12 @@ func (r *PGRepository) CreateDefaultConfig(ctx context.Context, leagueID, create
 		return fmt.Errorf("create default config: %w", err)
 	}
 	return nil
+}
+
+// dateArg passes an optional calendar date to a `date` column (nil -> NULL).
+func dateArg(d *httpx.Date) any {
+	if d == nil {
+		return nil
+	}
+	return d.Time
 }

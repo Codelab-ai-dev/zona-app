@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
 )
 
@@ -425,5 +426,51 @@ func enableFinance(t *testing.T, pool *pgxpool.Pool, leagueID uuid.UUID) {
 	if _, err := pool.Exec(context.Background(),
 		`UPDATE public.leagues SET features = features || '{"finance": true}'::jsonb WHERE id = $1`, leagueID); err != nil {
 		t.Fatalf("enable finance: %v", err)
+	}
+}
+
+// Calendar dates from the web ("YYYY-MM-DD") round-trip through the `date`
+// columns without shifting a day, and an omitted due date stays NULL.
+func TestTransactionDates_Integration(t *testing.T) {
+	ctx := context.Background()
+	pool := testdb.Pool(t)
+	f := testdb.Seed(t, pool)
+	enableFinance(t, pool, f.LeagueID)
+	repo := NewPGRepository(pool)
+
+	var req CreateTransactionRequest
+	body := `{"transaction_type":"team_registration","description":"Inscripción","amount":"1500.00","is_income":true,` +
+		`"team_id":"` + f.HomeTeamID.String() + `","transaction_date":"2026-11-13","due_date":"2026-11-20"}`
+	if err := json.Unmarshal([]byte(body), &req); err != nil {
+		t.Fatal(err)
+	}
+	txn, err := repo.CreateTransaction(ctx, f.LeagueID, &req, f.LeagueAdminID)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if got := txn.TransactionDate.Format(time.DateOnly); got != "2026-11-13" {
+		t.Errorf("transaction_date = %s", got)
+	}
+	if txn.DueDate == nil || txn.DueDate.Format(time.DateOnly) != "2026-11-20" {
+		t.Errorf("due_date = %v", txn.DueDate)
+	}
+
+	due := httpx.NewDate(time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC))
+	upd, err := repo.UpdateTransaction(ctx, txn.ID, f.LeagueID, &UpdateTransactionRequest{DueDate: &due}, f.LeagueAdminID)
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if upd.DueDate == nil || upd.DueDate.Format(time.DateOnly) != "2026-12-01" {
+		t.Errorf("updated due_date = %v", upd.DueDate)
+	}
+
+	noDue, err := repo.CreateTransaction(ctx, f.LeagueID, &CreateTransactionRequest{
+		TeamID: &f.HomeTeamID, TransactionType: TransactionTypeYellowCardFine, Description: "Multa", Amount: "100.00",
+	}, f.LeagueAdminID)
+	if err != nil {
+		t.Fatalf("create without due date: %v", err)
+	}
+	if noDue.DueDate != nil {
+		t.Errorf("due_date = %v, want NULL", noDue.DueDate)
 	}
 }
