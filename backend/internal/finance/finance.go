@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
 // TransactionType represents the kind of financial transaction.
@@ -258,8 +260,8 @@ type CreateTransactionRequest struct {
 	Notes           *string         `json:"notes,omitempty"`
 	Amount          json.Number     `json:"amount"`
 	IsIncome        bool            `json:"is_income"`
-	TransactionDate *time.Time      `json:"transaction_date,omitempty"`
-	DueDate         *time.Time      `json:"due_date,omitempty"`
+	TransactionDate *httpx.Date     `json:"transaction_date,omitempty"`
+	DueDate         *httpx.Date     `json:"due_date,omitempty"`
 }
 
 // Validate returns validation errors for CreateTransactionRequest.
@@ -308,7 +310,7 @@ func validateAmount(amount json.Number) error {
 type UpdateTransactionRequest struct {
 	Description *string            `json:"description,omitempty"`
 	Notes       *string            `json:"notes,omitempty"`
-	DueDate     *time.Time         `json:"due_date,omitempty"`
+	DueDate     *httpx.Date        `json:"due_date,omitempty"`
 	Status      *TransactionStatus `json:"status,omitempty"`
 }
 
