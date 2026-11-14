@@ -108,7 +108,7 @@ Resuelto en #43. El stream se cortaba por tres límites: `middleware.Timeout(30s
 - El límite por usuario vive en memoria: con varias réplicas, cada una cuenta aparte.
 
 ### P1 — Identidad deportiva
-Roles actuales globales: `super_admin`, `league_admin`, `team_owner`, `public`; principal incluye `LeagueID` y `TeamID`. Diseñar memberships por liga/equipo y permisos por partido sin alterar sesiones activas.
+Roles actuales globales: `super_admin`, `league_admin`, `team_owner`, `public`; principal incluye `LeagueID` y `TeamID`. Diseñar memberships por liga/equipo y permisos por partido sin alterar sesiones activas. Propuesta en [`ADR_MEMBERSHIPS.md`](ADR_MEMBERSHIPS.md) (#44): memberships por liga/equipo, asignaciones de árbitro por partido y entitlements diferidos, con expand → migrate → contract después de enero.
 
 Otros controles: firmar/validar webhooks, datos de menores, visibilidad de documentos y derechos de imagen según contexto legal, auditabilidad de resultados y respaldos restaurables.
 
@@ -176,6 +176,6 @@ No reescribir `00001_baseline.sql`; crear nuevas migraciones Goose. No reorganiz
 
 - Cómo se representan ligas de una federación/operador frente a ligas independientes, sin inventar una jerarquía organizacional innecesaria.
 - Si Zona Gol es una marca de fútbol o un administrador universal configurable; la decisión técnica provisional es independizar Core del deporte sin forzar cambio de marca.
-- Permisos de árbitros y delegados basados en asignaciones a encuentros.
+- Permisos de árbitros y delegados basados en asignaciones a encuentros. Propuesta: [`ADR_MEMBERSHIPS.md`](ADR_MEMBERSHIPS.md).
 - Política de rights/licencias para contenido de menores.
 - Criterio de elección de segunda disciplina y cómo representar individual vs equipos.
