@@ -408,13 +408,12 @@ func (s *Service) GetPlayerRegistrationRequest(ctx context.Context, caller auth.
 
 // GetTeamPlayerRegistrationRequests returns pending registration requests for a team.
 func (s *Service) GetTeamPlayerRegistrationRequests(ctx context.Context, caller auth.Principal, teamID uuid.UUID, limit, offset int) ([]PlayerRegistrationRequest, error) {
-	// Authorization: team owner can only see their own team's requests
-	if caller.Role == auth.RoleTeamOwner {
-		if err := s.authz.CanManageTeam(ctx, caller, teamID); err != nil {
-			return nil, err
-		}
+	// Requests carry player PII (birth date): only whoever manages the team
+	// (its owner, its league admin or a super admin) may list them, whatever
+	// the caller's role (#60).
+	if err := s.authz.CanManageTeam(ctx, caller, teamID); err != nil {
+		return nil, err
 	}
-	// League admin and super admin can see all
 	return s.repo.GetPlayerRegistrationRequestsByTeam(ctx, teamID, limit, offset)
 }
 
