@@ -66,7 +66,7 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
     setDownloading(true)
     try {
       if (!cardRef.current) throw new Error('Elemento de credencial no encontrado')
-      const html2canvas = (await import('html2canvas')).default
+      const html2canvas = (await import('html2canvas-pro')).default
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: '#ffffff',
         scale: 4,

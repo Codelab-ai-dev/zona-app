@@ -55,7 +55,7 @@ export function MatchPosterGenerator({ open, onOpenChange, matches, tournamentNa
       const el = posterRef.current
       if (!el) throw new Error('Poster element not found')
 
-      const html2canvas = (await import('html2canvas')).default
+      const html2canvas = (await import('html2canvas-pro')).default
 
       const canvas = await html2canvas(el, {
         scale: 2,
