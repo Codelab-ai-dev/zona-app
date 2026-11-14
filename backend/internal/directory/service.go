@@ -28,23 +28,18 @@ func (s *Service) ListUsers(ctx context.Context, caller auth.Principal, req *Lis
 		return s.repo.ListUsers(ctx, req.Role, nil, req.Search, req.Limit, req.Offset)
 	}
 
-	// League admin can only see users in their league
-	if caller.Role == auth.RoleLeagueAdmin && caller.LeagueID != nil {
-		users, err := s.repo.ListLeagueUsers(ctx, *caller.LeagueID, req.Search, req.Limit, req.Offset)
+	// A league admin sees the users of every league they administer
+	// (leagues.admin_id), not just the single users.league_id on their
+	// profile, which may be NULL or one of several (#63).
+	if caller.Role == auth.RoleLeagueAdmin {
+		leagueIDs, err := s.repo.AdminLeagueIDs(ctx, caller.UserID)
 		if err != nil {
 			return nil, err
 		}
-		// Filter by role if specified
-		if req.Role != nil {
-			var filtered []User
-			for _, u := range users {
-				if u.Role == *req.Role {
-					filtered = append(filtered, u)
-				}
-			}
-			return filtered, nil
+		if len(leagueIDs) == 0 {
+			return []User{}, nil
 		}
-		return users, nil
+		return s.repo.ListLeagueUsers(ctx, leagueIDs, req.Role, req.Search, req.Limit, req.Offset)
 	}
 
 	return nil, httpx.ErrForbidden
@@ -57,7 +52,7 @@ func (s *Service) ListLeagueUsers(ctx context.Context, caller auth.Principal, le
 		return nil, err
 	}
 
-	return s.repo.ListLeagueUsers(ctx, leagueID, search, limit, offset)
+	return s.repo.ListLeagueUsers(ctx, []uuid.UUID{leagueID}, nil, search, limit, offset)
 }
 
 // ListWhatsAppLinks lists WhatsApp links for a league (league admin only).

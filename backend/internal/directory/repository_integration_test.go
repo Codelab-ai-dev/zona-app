@@ -32,7 +32,7 @@ func TestListLeagueUsers_Integration(t *testing.T) {
 	fix := testdb.Seed(t, pool)
 	repo := NewPGRepository(pool)
 
-	users, err := repo.ListLeagueUsers(context.Background(), fix.LeagueID, "", 50, 0)
+	users, err := repo.ListLeagueUsers(context.Background(), []uuid.UUID{fix.LeagueID}, nil, "", 50, 0)
 	if err != nil {
 		t.Fatalf("ListLeagueUsers: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestListLeagueUsers_WithSearch_Integration(t *testing.T) {
 	fix := testdb.Seed(t, pool)
 	repo := NewPGRepository(pool)
 
-	users, err := repo.ListLeagueUsers(context.Background(), fix.LeagueID, "Test", 50, 0)
+	users, err := repo.ListLeagueUsers(context.Background(), []uuid.UUID{fix.LeagueID}, nil, "Test", 50, 0)
 	if err != nil {
 		t.Fatalf("ListLeagueUsers: %v", err)
 	}
