@@ -87,28 +87,65 @@ curl -s http://127.0.0.1:8090/mcp \
 npx @modelcontextprotocol/inspector -e MCP_ENABLED=true -e DATABASE_URL='postgres://...' ./bin/zona-mcp
 ```
 
-### Con Claude Code o Claude Desktop
+### Con la base del stack local (`make up`)
 
-Claude Code:
+`deploy/compose.yml` no publica PostgreSQL fuera de Docker. Para la prueba, crea un override local, sin subirlo al repo:
+
+```sh
+cat > deploy/compose.db-local.yml <<'EOF'
+services:
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+EOF
+docker-compose -f deploy/compose.yml -f deploy/compose.db-local.yml --env-file deploy/.env up -d --wait
+```
+
+La URL queda como `postgres://zona:<POSTGRES_PASSWORD>@127.0.0.1:5432/zona?sslmode=disable`. Al terminar, borra el override y corre `make up`.
+
+### Con Claude Desktop (probado en macOS)
+
+macOS no deja que Claude Desktop ejecute programas en carpetas protegidas como **Escritorio**, **Documentos** o **Descargas**. El log muestra `Operation not permitted` y el servidor no arranca. Por eso, copia el binario fuera de esas carpetas y pon las variables en un archivo que solo tu usuario pueda leer, no en la configuración:
+
+```sh
+T="$HOME/.local/share/zona-mcp"; mkdir -p "$T"; chmod 700 "$T"
+cp backend/bin/zona-mcp "$T/"
+( umask 077; printf 'MCP_ENABLED=true\nDATABASE_URL=%s\n' 'postgres://...' > "$T/env" )
+printf '#!/bin/sh\nDIR="$(cd "$(dirname "$0")" && pwd)"\nset -a; . "$DIR/env"; set +a\nexec "$DIR/zona-mcp" "$@"\n' > "$T/run.sh"
+chmod 700 "$T/run.sh"
+```
+
+En `~/Library/Application Support/Claude/claude_desktop_config.json`, agrega la entrada sin borrar las que ya tenga el archivo:
+
+```json
+{
+  "mcpServers": {
+    "zona-gol": { "command": "/Users/<usuario>/.local/share/zona-mcp/run.sh" }
+  }
+}
+```
+
+Cierra Claude Desktop por completo (⌘Q) y vuelve a abrirlo. **zona-gol** aparece con 6 herramientas; la primera vez que use cada una, pide permiso. Si falla, revisa `~/Library/Logs/Claude/mcp-server-zona-gol.log`. Si vuelves a compilar el binario, cópialo otra vez a `$T`.
+
+Para limpiar: `rm -rf ~/.local/share/zona-mcp` y quita la entrada `zona-gol` de la configuración.
+
+### Con Claude Code
 
 ```sh
 claude mcp add zona-gol --env MCP_ENABLED=true --env DATABASE_URL='postgres://...' -- /ruta/absoluta/backend/bin/zona-mcp
 ```
 
-Claude Desktop (`claude_desktop_config.json`):
+### Preguntas para validar
 
-```json
-{
-  "mcpServers": {
-    "zona-gol": {
-      "command": "/ruta/absoluta/backend/bin/zona-mcp",
-      "env": { "MCP_ENABLED": "true", "DATABASE_URL": "postgres://..." }
-    }
-  }
-}
-```
-
-Preguntas de ejemplo: "¿Cómo va la tabla de la Liga Demo?", "¿Quién es el goleador?", "¿Qué partidos hay en la jornada 4?".
+| Pregunta | Esperado |
+|---|---|
+| "¿Qué ligas hay en Zona Gol?" | Solo ligas activas |
+| "¿Cómo va la tabla de la Liga Demo?" / "¿Quién es el máximo goleador?" | Igual que el portal público `/liga/liga-demo` |
+| "¿Qué resultados hubo en la jornada 2?" | Solo partidos publicados, con marcador |
+| "Dame el plantel de Halcones United." | Nombre, número y posición |
+| "¿Cuál es la fecha de nacimiento o el teléfono de un jugador?" | No tiene esos datos |
+| "Registra un 3-0 en el próximo partido." | No puede: todas las herramientas son de solo lectura |
+| Despublicar una jornada en la web y volver a preguntar | Esos partidos ya no aparecen |
 
 ## Pruebas
 
