@@ -15,6 +15,8 @@ type fakeRepository struct {
 	users       map[uuid.UUID]User
 	calls       []string
 	teamLeagues map[uuid.UUID]uuid.UUID
+	// ownedLeagues: user -> leagues of the teams they own.
+	ownedLeagues map[uuid.UUID][]uuid.UUID
 }
 
 func (f *fakeRepository) TeamLeague(_ context.Context, teamID uuid.UUID) (uuid.UUID, error) {
@@ -22,6 +24,10 @@ func (f *fakeRepository) TeamLeague(_ context.Context, teamID uuid.UUID) (uuid.U
 		return l, nil
 	}
 	return uuid.Nil, httpx.ErrNotFound
+}
+
+func (f *fakeRepository) OwnedTeamLeagues(_ context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	return f.ownedLeagues[userID], nil
 }
 
 func (f *fakeRepository) CreateUser(_ context.Context, user User) error {

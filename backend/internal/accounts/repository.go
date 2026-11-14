@@ -145,6 +145,24 @@ func (r *PGRepository) GetByID(ctx context.Context, userID uuid.UUID) (User, err
 	return u, nil
 }
 
+// OwnedTeamLeagues implements Repository.
+func (r *PGRepository) OwnedTeamLeagues(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := r.db.Query(ctx, `SELECT DISTINCT league_id FROM public.teams WHERE owner_id = $1`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("owned team leagues: %w", err)
+	}
+	defer rows.Close()
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan league id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 // TeamLeague returns the league of a team.
 func (r *PGRepository) TeamLeague(ctx context.Context, teamID uuid.UUID) (uuid.UUID, error) {
 	var leagueID uuid.UUID

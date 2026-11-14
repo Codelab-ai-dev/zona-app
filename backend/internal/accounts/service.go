@@ -93,7 +93,7 @@ func (s *Service) CreateUser(ctx context.Context, caller auth.Principal, req Cre
 
 // UpdateUser updates a user's profile.
 // Authorization: super_admin can update any user and any role;
-// league_admin can only update team_owner users in their managed leagues (non-nil league_id),
+// league_admin can only update team owners of leagues they manage (canManageOwner),
 // and may not change role/is_active for themselves.
 func (s *Service) UpdateUser(ctx context.Context, caller auth.Principal, userID uuid.UUID, req UpdateUserRequest) (User, error) {
 	// Role gate first so callers without admin rights can't probe user IDs.
@@ -106,18 +106,9 @@ func (s *Service) UpdateUser(ctx context.Context, caller auth.Principal, userID 
 		return User{}, err
 	}
 
-	// league_admin: can only update team_owner users with non-nil league_id that they manage
+	// league_admin: can only update team owners of leagues they manage
 	if caller.Role == auth.RoleLeagueAdmin {
-		// Can only update team_owner users
-		if existingUser.Role != "team_owner" {
-			return User{}, httpx.ErrForbidden
-		}
-		// User must have a league_id (cannot edit users without a league)
-		if existingUser.LeagueID == nil {
-			return User{}, httpx.ErrForbidden
-		}
-		// Must be in a league they manage
-		if err := s.authz.CanManageLeague(ctx, caller, *existingUser.LeagueID); err != nil {
+		if err := s.canManageOwner(ctx, caller, existingUser); err != nil {
 			return User{}, err
 		}
 		// Cannot assign super_admin or league_admin roles
