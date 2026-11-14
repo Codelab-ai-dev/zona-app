@@ -46,8 +46,16 @@ function DashboardRedirect() {
   }
 }
 
-/** Every feature area, in navigation order. */
-export const areas: Area[] = [publicArea, playArea, adminArea, leagueMatchesArea, leagueFixturesArea, leagueTeamsArea, leagueCompetitionArea, teamOwnerArea]
+/**
+ * Every feature area, in navigation order. Zona Play is deferred and its API
+ * routes are off by default (PLAY_ENABLED, #51): its pages and nav tab only
+ * exist in builds made with VITE_PLAY_ENABLED=true.
+ */
+export function featureAreas(playEnabled: boolean): Area[] {
+  return [publicArea, ...(playEnabled ? [playArea] : []), adminArea, leagueMatchesArea, leagueFixturesArea, leagueTeamsArea, leagueCompetitionArea, teamOwnerArea]
+}
+
+export const areas: Area[] = featureAreas(import.meta.env.VITE_PLAY_ENABLED === 'true')
 
 const allNav = areas.flatMap((a) => a.nav ?? [])
 

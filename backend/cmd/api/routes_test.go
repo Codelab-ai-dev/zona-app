@@ -90,6 +90,12 @@ var anonymousAllowed = map[string]bool{
 // pool that never connects, for route-level tests.
 func newTestAPI(t *testing.T) http.Handler {
 	t.Helper()
+	return newTestAPIWith(t, nil)
+}
+
+// newTestAPIWith is newTestAPI with a hook to adjust the config first.
+func newTestAPIWith(t *testing.T, adjust func(*config.Config)) http.Handler {
+	t.Helper()
 	// The pool never connects: rejected requests must not reach the database.
 	poolCfg, err := pgxpool.ParseConfig("postgres://u:p@127.0.0.1:1/none?connect_timeout=1")
 	if err != nil {
@@ -106,9 +112,13 @@ func newTestAPI(t *testing.T) http.Handler {
 		JWTSecret:     strings.Repeat("x", 32),
 		Storage:       config.StorageConfig{Dir: t.TempDir()},
 		Notifications: config.NotificationsConfig{KapsoBaseURL: "http://kapso.invalid", KapsoAPIKey: "k", PhoneNumberID: "1", PublicSiteURL: "http://site.invalid"},
+		PlayEnabled:   true,
 		Mux:           config.MuxConfig{TokenID: "id", TokenSecret: "secret", WebhookSecret: "whsec"},
 		OpenAI:        config.OpenAIConfig{BaseURL: "http://openai.invalid", APIKey: "k", EmbeddingModel: "m"},
 		Agent:         config.AgentConfig{LLMBaseURL: "http://llm.invalid", LLMAPIKey: "k", LLMModel: "m", KapsoWebhookSecret: "whsec"},
+	}
+	if adjust != nil {
+		adjust(&cfg)
 	}
 	tokens := auth.NewTokenService(strings.Repeat("x", 32), "zona-api", time.Minute)
 	modules, err := buildModules(t.Context(), cfg, pool, tokens)

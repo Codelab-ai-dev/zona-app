@@ -218,15 +218,20 @@ func buildModules(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, to
 		slog.Warn("module disabled: notifications (KAPSO_* not set)")
 	}
 
-	// Zona Play reads always work; uploads and streams need Mux.
-	var video play.VideoProvider = play.UnconfiguredProvider{}
-	if cfg.Mux.Enabled() {
-		video = play.NewMuxClient(play.MuxConfig{TokenID: cfg.Mux.TokenID, TokenSecret: cfg.Mux.TokenSecret})
+	// Zona Play is deferred: its routes are not mounted unless PLAY_ENABLED=true (#51).
+	// When enabled, reads always work; uploads and streams need Mux.
+	if cfg.PlayEnabled {
+		var video play.VideoProvider = play.UnconfiguredProvider{}
+		if cfg.Mux.Enabled() {
+			video = play.NewMuxClient(play.MuxConfig{TokenID: cfg.Mux.TokenID, TokenSecret: cfg.Mux.TokenSecret})
+		} else {
+			slog.Warn("Zona Play: video uploads and streams disabled (MUX_* not set)")
+		}
+		modules = append(modules, play.NewHandler(play.NewService(play.NewPGRepository(pool), video, checker),
+			&play.Config{MuxWebhookSecret: cfg.Mux.WebhookSecret}))
 	} else {
-		slog.Warn("Zona Play: video uploads and streams disabled (MUX_* not set)")
+		slog.Warn("module disabled: play (deferred; set PLAY_ENABLED=true to mount /api/v1/play)")
 	}
-	modules = append(modules, play.NewHandler(play.NewService(play.NewPGRepository(pool), video, checker),
-		&play.Config{MuxWebhookSecret: cfg.Mux.WebhookSecret}))
 
 	if cfg.OpenAI.Enabled() {
 		embedder := knowledge.NewOpenAIEmbedder(knowledge.Config{
