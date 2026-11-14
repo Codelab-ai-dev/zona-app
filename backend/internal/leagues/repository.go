@@ -134,10 +134,21 @@ func (r *PGRepository) ListAllLeagues(ctx context.Context, limit int, offset int
 // CreateLeague inserts a new league and returns its ID.
 func (r *PGRepository) CreateLeague(ctx context.Context, l *League) (uuid.UUID, error) {
 	var id uuid.UUID
+	// The admin's users.league_id is what GET /me returns and what the Flutter
+	// league admin screens read. Fill it in the same statement when the admin
+	// has none yet; an admin who already has a league keeps it (#62).
 	err := r.db.QueryRow(ctx, `
-		INSERT INTO public.leagues (name, slug, description, logo, admin_id, is_active, product_mode, features)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id
+		WITH league AS (
+			INSERT INTO public.leagues (name, slug, description, logo, admin_id, is_active, product_mode, features)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			RETURNING id, admin_id
+		), scoped AS (
+			UPDATE public.users u
+			SET league_id = league.id, updated_at = now()
+			FROM league
+			WHERE u.id = league.admin_id AND u.league_id IS NULL AND u.role = 'league_admin'
+		)
+		SELECT id FROM league
 	`, l.Name, l.Slug, l.Description, l.Logo, l.AdminID, l.IsActive, l.ProductMode, l.Features).Scan(&id)
 	if err != nil {
 		if database.IsUniqueViolation(err) {
