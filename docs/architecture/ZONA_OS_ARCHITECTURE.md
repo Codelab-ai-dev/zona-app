@@ -100,7 +100,12 @@ En `play.Stream`, `MuxStreamKey` se serializa a JSON. `GET /api/v1/play/streams`
 `CreateClip` puede omitir `CanManageLeague` si no se resuelve `leagueID`. Exigir ámbito autorizado y coherencia de todas las referencias asociadas. Probar otros owners y ligas diferentes.
 
 ### P1 — Stream de asistencia y timeout
-`server/router.go` instala `middleware.Timeout(30*time.Second)`; attendance SSE deriva un contexto de hasta 30 minutos de la petición. Realizar prueba real de duración y aplicar política explícita de streaming.
+Resuelto en #43. El stream se cortaba por tres límites: `middleware.Timeout(30s)` del router, más el `ReadTimeout` (30 s) y el `WriteTimeout` (60 s) del `http.Server`. Política actual:
+
+- El router aplica el timeout de 30 s a todo, salvo a la lista exacta de rutas SSE (`streamRoutes` en `server/middleware.go`, hoy solo `GET /api/v1/matches/{matchID}/attendance/stream`).
+- El handler quita los deadlines del servidor solo para esa conexión. Pone uno de 10 s antes de cada escritura, manda un heartbeat cada 15 s y cierra a los 30 minutos.
+- Al desconectarse el cliente, se cancela el poller y el handler espera a que termine. Se mantienen `CanManageMatch` y el máximo de 3 streams por usuario.
+- El límite por usuario vive en memoria: con varias réplicas, cada una cuenta aparte.
 
 ### P1 — Identidad deportiva
 Roles actuales globales: `super_admin`, `league_admin`, `team_owner`, `public`; principal incluye `LeagueID` y `TeamID`. Diseñar memberships por liga/equipo y permisos por partido sin alterar sesiones activas.

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -24,6 +25,36 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// streamRoutes are the long-lived Server-Sent Events endpoints. Their handlers
+// bound their own lifetime and per-write deadlines, so the global request
+// timeout would only cut them at 30 s (#43). Keep this list exact.
+var streamRoutes = regexp.MustCompile(`^/api/v1/matches/[^/]+/attendance/stream$`)
+
+// isStream reports whether r targets a streaming route, matching the same
+// path chi routes on.
+func isStream(r *http.Request) bool {
+	path := r.URL.RawPath
+	if path == "" {
+		path = r.URL.Path
+	}
+	return r.Method == http.MethodGet && streamRoutes.MatchString(path)
+}
+
+// timeoutExceptStreams applies middleware.Timeout to every request except
+// the streaming routes.
+func timeoutExceptStreams(d time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		bounded := middleware.Timeout(d)(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if isStream(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			bounded.ServeHTTP(w, r)
+		})
+	}
 }
 
 // requestLogger logs one structured line per request.

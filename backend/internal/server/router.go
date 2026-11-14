@@ -26,6 +26,8 @@ type Deps struct {
 	Auth           *auth.Middleware
 	Health         http.Handler
 	Modules        []Module
+	// RequestTimeout bounds every non-streaming request; zero means 30s.
+	RequestTimeout time.Duration
 }
 
 // NewRouter builds the root handler.
@@ -40,7 +42,11 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(requestLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders)
-	r.Use(middleware.Timeout(30 * time.Second))
+	timeout := d.RequestTimeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	r.Use(timeoutExceptStreams(timeout))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   d.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
