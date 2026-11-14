@@ -396,14 +396,17 @@ func (s *Service) GetPlayerRegistrationRequest(ctx context.Context, caller auth.
 		return PlayerRegistrationRequest{}, err
 	}
 
-	// Authorization: CanManageTeam (team owner/league admin) OR CanManageTournament (league admin)
-	canManageTeam := s.authz.CanManageTeam(ctx, caller, req.TeamID) == nil
-	canManageTournament := s.authz.CanManageTournament(ctx, caller, req.TournamentID) == nil
-
-	if !canManageTeam && !canManageTournament {
-		return PlayerRegistrationRequest{}, fmt.Errorf("unauthorized to view this registration request")
+	// Authorization: CanManageTeam (team owner/league admin) OR CanManageTournament (league admin).
+	// The team check's error is returned as is: 403 for anyone else, and a
+	// real failure stays a logged 500 instead of every denial becoming one (#61).
+	teamErr := s.authz.CanManageTeam(ctx, caller, req.TeamID)
+	if teamErr == nil {
+		return req, nil
 	}
-	return req, nil
+	if err := s.authz.CanManageTournament(ctx, caller, req.TournamentID); err == nil {
+		return req, nil
+	}
+	return PlayerRegistrationRequest{}, teamErr
 }
 
 // GetTeamPlayerRegistrationRequests returns pending registration requests for a team.
