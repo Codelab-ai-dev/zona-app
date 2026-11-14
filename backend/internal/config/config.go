@@ -33,9 +33,12 @@ type Config struct {
 
 	Storage       StorageConfig
 	Notifications NotificationsConfig
-	Mux           MuxConfig
-	OpenAI        OpenAIConfig
-	Agent         AgentConfig
+	// PlayEnabled mounts the deferred Zona Play routes (/api/v1/play/*).
+	// Off by default: they stay unreachable until #38, #39 and #40 are fixed.
+	PlayEnabled bool
+	Mux         MuxConfig
+	OpenAI      OpenAIConfig
+	Agent       AgentConfig
 }
 
 // SMTPConfig configures the outgoing mail relay (STARTTLS required).
@@ -176,6 +179,9 @@ func Load() (Config, error) {
 
 	var err error
 	if cfg.MigrateOnStart, err = parseBool("MIGRATE_ON_START", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.PlayEnabled, err = parseBool("PLAY_ENABLED", false); err != nil {
 		return Config{}, err
 	}
 	if cfg.ShutdownTimeout, err = parseDuration("SHUTDOWN_TIMEOUT", 15*time.Second); err != nil {
