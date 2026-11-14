@@ -341,12 +341,6 @@ func TestListAttendance_Empty(t *testing.T) {
 	}
 }
 
-func TestHandler_StreamAttendance_OK(t *testing.T) {
-	// This test is skipped because testing SSE streaming requires proper chi routing
-	// and context setup. Integration tests will verify the functionality.
-	t.Skip("SSE streaming requires integration testing with proper chi routing")
-}
-
 // listResponseHelperAttendance is used to decode list responses in tests
 type listResponseHelperAttendance struct {
 	Data []AttendanceRecord `json:"data"`

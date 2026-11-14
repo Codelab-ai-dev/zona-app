@@ -3,6 +3,7 @@ package attendance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -16,20 +17,34 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/httpx"
 )
 
+// Stream limits. The router exempts the stream from the global request
+// timeout, so these are what bound it (#43).
+const (
+	maxStreamsPerUser      = 3
+	defaultStreamMaxAge    = 30 * time.Minute
+	defaultStreamHeartbeat = 15 * time.Second
+	defaultStreamWrite     = 10 * time.Second // per write, so a stalled client is dropped
+)
+
 // Handler translates HTTP to service calls for attendance.
 type Handler struct {
 	svc      *Service
 	authz    authz.Checker
 	streams  map[uuid.UUID]int // user_id -> count of active streams
 	streamMu sync.Mutex
+
+	streamMaxAge, streamHeartbeat, streamWrite time.Duration
 }
 
 // NewHandler builds the attendance HTTP handler.
 func NewHandler(svc *Service, authz authz.Checker) *Handler {
 	return &Handler{
-		svc:     svc,
-		authz:   authz,
-		streams: make(map[uuid.UUID]int),
+		svc:             svc,
+		authz:           authz,
+		streams:         make(map[uuid.UUID]int),
+		streamMaxAge:    defaultStreamMaxAge,
+		streamHeartbeat: defaultStreamHeartbeat,
+		streamWrite:     defaultStreamWrite,
 	}
 }
 
@@ -151,6 +166,10 @@ func (h *Handler) listAttendance(w http.ResponseWriter, r *http.Request) {
 }
 
 // streamAttendance handles GET /matches/{matchID}/attendance/stream (SSE).
+//
+// The stream lasts until the client disconnects, the service stops or
+// streamMaxAge passes. It clears the server's read and write timeouts for
+// this connection and sets its own deadline before every write instead.
 func (h *Handler) streamAttendance(w http.ResponseWriter, r *http.Request) {
 	caller, _ := auth.FromContext(r.Context())
 
@@ -166,9 +185,8 @@ func (h *Handler) streamAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check concurrent stream limit (max 3 per user)
 	h.streamMu.Lock()
-	if h.streams[caller.UserID] >= 3 {
+	if h.streams[caller.UserID] >= maxStreamsPerUser {
 		h.streamMu.Unlock()
 		httpx.WriteError(w, r, &httpx.Error{
 			Status:  http.StatusTooManyRequests,
@@ -189,66 +207,72 @@ func (h *Handler) streamAttendance(w http.ResponseWriter, r *http.Request) {
 		h.streamMu.Unlock()
 	}()
 
-	// Set SSE headers
-	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("X-Accel-Buffering", "no")
-
-	// Create context with 30 min timeout
-	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), h.streamMaxAge)
 	defer cancel()
 
-	ch := make(chan AttendanceRecord, 10)
+	// http.Server's ReadTimeout would cancel the request context and its
+	// WriteTimeout would fail every write after it; both are far shorter
+	// than a match. Clearing the read deadline keeps disconnect detection.
+	rc := http.NewResponseController(w)
+	if err := errors.Join(rc.SetReadDeadline(time.Time{}), rc.SetWriteDeadline(time.Time{})); err != nil {
+		slog.WarnContext(ctx, "attendance stream: cannot clear deadlines", "err", err)
+	}
+	send := func(b []byte) bool {
+		_ = rc.SetWriteDeadline(time.Now().Add(h.streamWrite))
+		if _, err := w.Write(b); err != nil {
+			return false
+		}
+		return rc.Flush() == nil
+	}
 
-	// Start streaming in a goroutine
+	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
+	if !send([]byte(": connected\n\n")) {
+		return
+	}
+
+	ch := make(chan AttendanceRecord, 10)
 	streamDone := make(chan error, 1)
 	go func() {
 		streamDone <- h.svc.StreamAttendance(ctx, matchID, ch)
 	}()
+	// Stop the poller and wait for it, so no goroutine outlives the request.
+	defer func() {
+		cancel()
+		if streamDone != nil {
+			<-streamDone
+		}
+	}()
 
-	heartbeatTicker := time.NewTicker(15 * time.Second)
-	defer heartbeatTicker.Stop()
+	heartbeat := time.NewTicker(h.streamHeartbeat)
+	defer heartbeat.Stop()
 
-	// Send records and heartbeats to client
 	for {
 		select {
 		case record := <-ch:
-			// Write SSE format: data: <json>\n\n
 			data, err := json.Marshal(record)
 			if err != nil {
 				slog.ErrorContext(ctx, "marshal attendance record", "err", err)
 				return
 			}
-			if _, err := w.Write([]byte("data: ")); err != nil {
+			if !send(append(append([]byte("data: "), data...), '\n', '\n')) {
 				return
-			}
-			if _, err := w.Write(data); err != nil {
-				return
-			}
-			if _, err := w.Write([]byte("\n\n")); err != nil {
-				return
-			}
-			if f, ok := w.(http.Flusher); ok {
-				f.Flush()
 			}
 
-		case <-heartbeatTicker.C:
-			// Send heartbeat comment every 15s
-			if _, err := w.Write([]byte(": heartbeat\n\n")); err != nil {
+		case <-heartbeat.C:
+			if !send([]byte(": heartbeat\n\n")) {
 				return
-			}
-			if f, ok := w.(http.Flusher); ok {
-				f.Flush()
 			}
 
 		case <-ctx.Done():
 			return
 
 		case err := <-streamDone:
-			if err != nil {
-				slog.DebugContext(ctx, "stream ended", "err", err)
+			streamDone = nil
+			if err != nil && ctx.Err() == nil {
+				slog.WarnContext(ctx, "attendance stream ended", "err", err)
 			}
 			return
 		}
