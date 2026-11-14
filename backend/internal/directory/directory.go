@@ -114,8 +114,12 @@ type Repository interface {
 	// ListUsers returns all users, optionally filtered by role/league/search term.
 	ListUsers(ctx context.Context, role *string, leagueID *uuid.UUID, search string, limit, offset int) ([]User, error)
 
-	// ListLeagueUsers returns users that belong to a league.
-	ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, search string, limit, offset int) ([]User, error)
+	// ListLeagueUsers returns users that belong to any of the leagues
+	// (users.league_id, or owner of one of their teams), optionally by role.
+	ListLeagueUsers(ctx context.Context, leagueIDs []uuid.UUID, role *string, search string, limit, offset int) ([]User, error)
+
+	// AdminLeagueIDs returns the leagues a user administers (leagues.admin_id).
+	AdminLeagueIDs(ctx context.Context, adminID uuid.UUID) ([]uuid.UUID, error)
 
 	// ListWhatsAppLinks returns all WhatsApp links for a league.
 	ListWhatsAppLinks(ctx context.Context, leagueID uuid.UUID, limit, offset int) ([]WhatsAppLink, error)

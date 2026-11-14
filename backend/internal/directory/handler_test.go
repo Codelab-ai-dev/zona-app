@@ -23,6 +23,7 @@ type fakeRepository struct {
 	whatsappLinks map[uuid.UUID]WhatsAppLink
 	phoneNumbers  map[string]bool
 	leagueUsers   map[uuid.UUID][]User
+	adminLeagues  map[uuid.UUID][]uuid.UUID
 }
 
 func (f *fakeRepository) ListUsers(ctx context.Context, role *string, leagueID *uuid.UUID, search string, limit, offset int) ([]User, error) {
@@ -42,14 +43,25 @@ func (f *fakeRepository) ListUsers(ctx context.Context, role *string, leagueID *
 	return users, nil
 }
 
-func (f *fakeRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, search string, limit, offset int) ([]User, error) {
+func (f *fakeRepository) ListLeagueUsers(ctx context.Context, leagueIDs []uuid.UUID, role *string, search string, limit, offset int) ([]User, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	if users, ok := f.leagueUsers[leagueID]; ok {
-		return users, nil
+	users := []User{}
+	for _, id := range leagueIDs {
+		for _, u := range f.leagueUsers[id] {
+			if role == nil || u.Role == *role {
+				users = append(users, u)
+			}
+		}
 	}
-	return []User{}, nil
+	return users, nil
+}
+
+func (f *fakeRepository) AdminLeagueIDs(ctx context.Context, adminID uuid.UUID) ([]uuid.UUID, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.adminLeagues[adminID], nil
 }
 
 func (f *fakeRepository) ListWhatsAppLinks(ctx context.Context, leagueID uuid.UUID, limit, offset int) ([]WhatsAppLink, error) {

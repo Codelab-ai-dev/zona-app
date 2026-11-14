@@ -79,24 +79,31 @@ func (r *PGRepository) ListUsers(ctx context.Context, role *string, leagueID *uu
 	return users, rows.Err()
 }
 
-// ListLeagueUsers returns users that belong to a league.
-func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, search string, limit, offset int) ([]User, error) {
+// ListLeagueUsers returns the users of the given leagues: those whose
+// users.league_id is one of them, and the owners of their teams (the same
+// ownership authz uses), even when their users.league_id is NULL. The role
+// filter runs in SQL so pages are never short.
+func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueIDs []uuid.UUID, role *string, search string, limit, offset int) ([]User, error) {
 	q := `
 		SELECT id, name, email, phone, role, league_id, team_id, is_active, created_at, ` + userNameCols + `
 		FROM public.users
-		WHERE league_id = $1
+		WHERE (users.league_id = ANY($1)
+		       OR EXISTS (SELECT 1 FROM public.teams t WHERE t.owner_id = users.id AND t.league_id = ANY($1)))
 	`
-	args := []any{leagueID}
+	args := []any{leagueIDs}
 
+	if role != nil {
+		args = append(args, *role)
+		q += fmt.Sprintf(` AND role = $%d`, len(args))
+	}
 	if search != "" {
 		search = escapeILike(search)
-		q += ` AND (name ILIKE $2 OR email ILIKE $3)`
-		args = append(args, "%"+search+"%", "%"+search+"%")
+		args = append(args, "%"+search+"%")
+		q += fmt.Sprintf(` AND (name ILIKE $%d OR email ILIKE $%d)`, len(args), len(args))
 	}
 
-	q += ` ORDER BY created_at DESC LIMIT $`
-	q += fmt.Sprintf("%d OFFSET $%d", len(args)+1, len(args)+2)
 	args = append(args, limit, offset)
+	q += fmt.Sprintf(` ORDER BY created_at DESC, id LIMIT $%d OFFSET $%d`, len(args)-1, len(args))
 
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
@@ -104,7 +111,7 @@ func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, 
 	}
 	defer rows.Close()
 
-	var users []User
+	users := []User{}
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Role, &u.LeagueID, &u.TeamID, &u.IsActive, &u.CreatedAt,
@@ -115,6 +122,24 @@ func (r *PGRepository) ListLeagueUsers(ctx context.Context, leagueID uuid.UUID, 
 	}
 
 	return users, rows.Err()
+}
+
+// AdminLeagueIDs returns the leagues a user administers (leagues.admin_id).
+func (r *PGRepository) AdminLeagueIDs(ctx context.Context, adminID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := r.db.Query(ctx, `SELECT id FROM public.leagues WHERE admin_id = $1`, adminID)
+	if err != nil {
+		return nil, fmt.Errorf("admin leagues: %w", err)
+	}
+	defer rows.Close()
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan league id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 // ListWhatsAppLinks returns WhatsApp links for a league.
