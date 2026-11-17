@@ -1,10 +1,15 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,4 +107,61 @@ func TestIsStream(t *testing.T) {
 			t.Errorf("%s %s = %v, want %v", c.method, c.target, got, c.want)
 		}
 	}
+}
+
+// Every response carries a server-generated X-Request-Id; error bodies and
+// the access log line repeat it (#54).
+func TestRequestID(t *testing.T) {
+	var logs bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h := NewRouter(Deps{
+		Auth:   auth.NewMiddleware(noTokens{}, noProfiles{}),
+		Health: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }),
+	})
+	valid := regexp.MustCompile(`^[23456789abcdefghjkmnpqrstuvwxyz]{10}$`)
+
+	seen := map[string]bool{}
+	for _, path := range []string{"/healthz", "/healthz", "/api/v1/nope"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		id := rec.Header().Get("X-Request-Id")
+		if !valid.MatchString(id) {
+			t.Fatalf("%s: X-Request-Id = %q", path, id)
+		}
+		if seen[id] {
+			t.Fatalf("request ID %q reused", id)
+		}
+		seen[id] = true
+	}
+
+	t.Run("error body and access log share the header's ID", func(t *testing.T) {
+		logs.Reset()
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/nope", nil))
+		id := rec.Header().Get("X-Request-Id")
+		var body struct {
+			Error struct {
+				RequestID string `json:"request_id"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Error.RequestID != id {
+			t.Fatalf("body request_id = %q (%v), header %q", body.Error.RequestID, err, id)
+		}
+		if !strings.Contains(logs.String(), `"msg":"http request"`) || !strings.Contains(logs.String(), `"request_id":"`+id+`"`) {
+			t.Fatalf("access log lacks %s: %s", id, logs.String())
+		}
+	})
+
+	t.Run("client-sent IDs are ignored", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/nope", nil)
+		req.Header.Set("X-Request-Id", "forged\nline")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if id := rec.Header().Get("X-Request-Id"); !valid.MatchString(id) || strings.Contains(rec.Body.String(), "forged") {
+			t.Fatalf("forged ID accepted: header %q body %s", id, rec.Body)
+		}
+	})
 }

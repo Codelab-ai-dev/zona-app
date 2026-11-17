@@ -9,7 +9,7 @@ Failure failureFrom(Object error, [String fallback = 'Ocurrió un error inespera
     if (error.isForbidden) return PermissionFailure('No tienes permiso para esta acción', error.code);
     if (error.isNotFound) return NotFoundFailure('No se encontró el recurso', error.code);
     if (error.isValidation) return ValidationFailure(error.fullMessage, error.code);
-    return ServerFailure(error.message, error.code);
+    return ServerFailure(error.fullMessage, error.code); // 5xx: ends with "(Código: <request id>)"
   }
   if (error is FormatException || error is TypeError) {
     return ServerFailure('Respuesta inesperada del servidor', 'bad_response');

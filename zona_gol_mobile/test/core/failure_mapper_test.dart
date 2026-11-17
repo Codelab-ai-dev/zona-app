@@ -57,4 +57,14 @@ void main() {
   test('anything else uses the fallback message', () {
     expect(failureFrom(StateError('x'), 'No se pudo guardar').message, 'No se pudo guardar');
   });
+
+  test('5xx is a ServerFailure that shows the request ID', () {
+    final f = failureFrom(const ApiException(500, 'internal_error', 'Error interno del servidor', {}, 'k7m2p9x4qa'));
+    expect(f, isA<ServerFailure>());
+    expect(f.message, 'Error interno del servidor (Código: k7m2p9x4qa)');
+  });
+
+  test('5xx without a request ID keeps the plain message', () {
+    expect(failureFrom(const ApiException(500, 'internal_error', 'Error interno del servidor')).message, 'Error interno del servidor');
+  });
 }

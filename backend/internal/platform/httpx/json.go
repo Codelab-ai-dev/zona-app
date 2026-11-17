@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 // DefaultMaxBodyBytes caps JSON request bodies unless a handler opts into more.
@@ -32,16 +34,20 @@ type errorPayload struct {
 	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Fields  map[string]string `json:"fields,omitempty"`
+	// RequestID matches the X-Request-Id header and the API logs, so a user
+	// can quote it to support.
+	RequestID string `json:"request_id,omitempty"`
 }
 
 // WriteError serializes err as a safe JSON error. 5xx causes are logged.
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	he := AsError(err)
+	reqID := middleware.GetReqID(r.Context())
 	if he.Status >= http.StatusInternalServerError {
 		slog.ErrorContext(r.Context(), "request failed",
-			"method", r.Method, "path", r.URL.Path, "err", err)
+			"method", r.Method, "path", r.URL.Path, "request_id", reqID, "err", err)
 	}
-	JSON(w, he.Status, errorBody{Error: errorPayload{Code: he.Code, Message: he.Message, Fields: he.Fields}})
+	JSON(w, he.Status, errorBody{Error: errorPayload{Code: he.Code, Message: he.Message, Fields: he.Fields, RequestID: reqID}})
 }
 
 // Validator is implemented by request DTOs that can validate themselves.

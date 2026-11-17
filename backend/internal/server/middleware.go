@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"crypto/rand"
 	"log/slog"
 	"net"
 	"net/http"
@@ -24,6 +26,34 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
 		h.Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
+	})
+}
+
+// requestIDAlphabet has no look-alike characters (0/o, 1/l/i), so a user
+// can read the code to support over the phone.
+const requestIDAlphabet = "23456789abcdefghjkmnpqrstuvwxyz"
+
+// newRequestID returns a 10-character random code (~49 bits): enough to find
+// one request in the logs, short enough to dictate.
+func newRequestID() string {
+	b := make([]byte, 10)
+	_, _ = rand.Read(b) // never fails on supported platforms
+	for i := range b {
+		b[i] = requestIDAlphabet[int(b[i])%len(requestIDAlphabet)]
+	}
+	return string(b)
+}
+
+// requestID gives every request a server-generated ID: in the context (under
+// chi's key, so middleware.GetReqID and the access log keep working), in the
+// X-Request-Id response header, and in error bodies (httpx.WriteError). Unlike
+// middleware.RequestID it ignores any client-sent X-Request-Id, so clients
+// cannot inject or reuse IDs in the logs (#54).
+func requestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := newRequestID()
+		w.Header().Set("X-Request-Id", id)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), middleware.RequestIDKey, id)))
 	})
 }
 

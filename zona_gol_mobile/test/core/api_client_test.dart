@@ -136,6 +136,40 @@ void main() {
     );
   });
 
+  test('server errors carry the request ID for support', () async {
+    final api = client((req) async => json({
+          'error': {'code': 'internal_error', 'message': 'Error interno del servidor', 'request_id': 'k7m2p9x4qa'}
+        }, 500));
+    await expectLater(
+      api.get('/teams'),
+      throwsA(isA<ApiException>()
+          .having((e) => e.requestId, 'requestId', 'k7m2p9x4qa')
+          .having((e) => e.fullMessage, 'fullMessage', 'Error interno del servidor (Código: k7m2p9x4qa)')),
+    );
+  });
+
+  test('the request ID comes from the header when the body is not JSON', () async {
+    final api = client((req) async => http.Response('Bad Gateway', 502, headers: {'x-request-id': 'h3d5f6g7h8'}));
+    await expectLater(
+      api.get('/teams'),
+      throwsA(isA<ApiException>()
+          .having((e) => e.requestId, 'requestId', 'h3d5f6g7h8')
+          .having((e) => e.fullMessage, 'fullMessage', 'Error del servidor (502) (Código: h3d5f6g7h8)')),
+    );
+  });
+
+  test('client errors keep their message without the code', () async {
+    final api = client((req) async => json({
+          'error': {'code': 'not_found', 'message': 'Recurso no encontrado', 'request_id': 'n4n4n4n4n4'}
+        }, 404));
+    await expectLater(
+      api.get('/teams/x'),
+      throwsA(isA<ApiException>()
+          .having((e) => e.requestId, 'requestId', 'n4n4n4n4n4')
+          .having((e) => e.fullMessage, 'fullMessage', 'Recurso no encontrado')),
+    );
+  });
+
   test('getAll pages until a short page and skips empty query values', () async {
     final api = client((req) async {
       final offset = int.parse(req.url.queryParameters['offset']!);

@@ -179,7 +179,7 @@ Pide siempre:
 
 - Liga, cuenta (correo) y dispositivo (web o app; modelo de teléfono).
 - Qué intentaba hacer, a qué hora y en qué pantalla.
-- El mensaje que vio y una captura.
+- El mensaje que vio y una captura. Si el mensaje termina en **"(Código: …)"**, pide ese código: es el `request_id` de la petición que falló (sección 5.3).
 - El partido, equipo o jugador afectado.
 
 ### 5.2 Severidad
@@ -194,7 +194,16 @@ Pide siempre:
 ### 5.3 Diagnóstico
 
 1. `curl -fsS https://<dominio>/healthz` y `make ps`.
-2. `make logs`. Cada petición deja una línea con método, ruta, estado, duración y `request_id`, y los errores 5xx dejan una línea `request failed` con la causa. Busca por la hora y la ruta que reportó el usuario.
+2. `make logs`. Cada petición deja una línea `http request` con método, ruta, estado, duración y `request_id`, y los errores 5xx dejan además una línea `request failed` con la causa y el **mismo** `request_id`.
+   - **Con código** (los errores 5xx en la web y la app terminan en "(Código: k7m2p9x4qa)"): búscalo directamente.
+
+     ```sh
+     docker-compose -f deploy/compose.yml --env-file deploy/.env logs --no-color api | grep k7m2p9x4qa
+     ```
+
+     Salen las dos líneas: la del acceso (ruta, estado, duración) y la de la causa.
+   - **Sin código** (errores 4xx, o una captura sin el mensaje completo): busca por la hora y la ruta que reportó el usuario.
+   - Cada respuesta de la API trae el código en el encabezado `X-Request-Id`, y las de error también en `error.request_id`. Lo genera el servidor: los 10 caracteres no incluyen `0`, `o`, `1`, `l` ni `i`, para que se puedan dictar. El servidor ignora el que mande un cliente.
 3. Reproduce en un entorno local con `make seed` (ver `docs/operations/ENSAYO_JORNADA.md`) antes de tocar producción.
 4. Corrige desde la web o la app (sección 3.1). SQL solo con la sección 3.2.
 5. Abre un issue en GitHub con la información de 5.1, la causa y lo que se hizo. Sin contraseñas, tokens ni documentos.
