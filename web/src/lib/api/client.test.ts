@@ -31,6 +31,31 @@ describe('api client', () => {
     expect(err).toMatchObject({ status: 422, code: 'validation_failed', message: 'Datos inválidos', fields: { name: 'requerido' } })
   })
 
+  it('shows the request ID on server errors so users can quote it to support', async () => {
+    stubFetch(500, { error: { code: 'internal_error', message: 'Error interno del servidor', request_id: 'k7m2p9x4qa' } })
+    const err = await api.get('/teams').catch((e: unknown) => e)
+    expect(err).toMatchObject({ status: 500, requestId: 'k7m2p9x4qa', message: 'Error interno del servidor (Código: k7m2p9x4qa)' })
+  })
+
+  it('reads the request ID from the header when the error has no JSON body', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('Bad Gateway', { status: 502, headers: { 'X-Request-Id': 'h3d5f6g7h8' } })))
+    const err = await api.get('/teams').catch((e: unknown) => e)
+    expect(err).toMatchObject({ status: 502, requestId: 'h3d5f6g7h8', message: 'Ocurrió un error inesperado. (Código: h3d5f6g7h8)' })
+  })
+
+  it('keeps 4xx messages clean but still exposes the request ID', async () => {
+    stubFetch(404, { error: { code: 'not_found', message: 'Recurso no encontrado', request_id: 'n4n4n4n4n4' } })
+    const err = await api.get('/teams/x').catch((e: unknown) => e)
+    expect(err).toMatchObject({ status: 404, requestId: 'n4n4n4n4n4', message: 'Recurso no encontrado' })
+  })
+
+  it('tolerates errors without a request ID', async () => {
+    stubFetch(500, { error: { code: 'internal_error', message: 'Error interno del servidor' } })
+    const err = await api.get('/teams').catch((e: unknown) => e)
+    expect(err).toMatchObject({ status: 500, message: 'Error interno del servidor' })
+    expect((err as ApiError).requestId).toBeUndefined()
+  })
+
   it('notifies on 401 so the session can be cleared', async () => {
     stubFetch(401, { error: { code: 'unauthorized', message: 'Autenticación requerida' } })
     const onUnauthorized = vi.fn()

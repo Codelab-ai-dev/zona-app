@@ -217,12 +217,15 @@ class ApiClient {
   }
 
   static ApiException _error(http.Response res) {
+    // The header also covers error responses without a JSON body.
+    final headerId = res.headers['x-request-id'];
     try {
       final err = (_decode(res) as Map)['error'] as Map;
       final fields = (err['fields'] as Map?)?.map((k, v) => MapEntry('$k', '$v')) ?? const <String, String>{};
-      return ApiException(res.statusCode, '${err['code'] ?? 'error'}', '${err['message'] ?? 'Error del servidor'}', fields);
+      final requestId = err['request_id'] as String? ?? headerId;
+      return ApiException(res.statusCode, '${err['code'] ?? 'error'}', '${err['message'] ?? 'Error del servidor'}', fields, requestId);
     } catch (_) {
-      return ApiException(res.statusCode, 'error', 'Error del servidor (${res.statusCode})');
+      return ApiException(res.statusCode, 'error', 'Error del servidor (${res.statusCode})', const {}, headerId);
     }
   }
 }

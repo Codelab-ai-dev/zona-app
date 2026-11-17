@@ -3,7 +3,8 @@
  * - single resources are returned as-is
  * - lists are { data: T[], page: { limit, offset, total? } }
  * - payload-less actions return 204
- * - errors are { error: { code, message, fields? } }
+ * - errors are { error: { code, message, fields?, request_id? } }; every
+ *   response also carries the same ID in the X-Request-Id header
  */
 
 import * as session from '@/lib/auth/session'
@@ -24,18 +25,24 @@ export interface PageParams {
   offset?: number
 }
 
-/** Error returned by the API; `message` is safe to show to users (Spanish). */
+/**
+ * Error returned by the API; `message` is safe to show to users (Spanish).
+ * On server errors (5xx) the message ends with the request ID ("Código: …")
+ * so the user can quote it to support, who finds it in the API logs.
+ */
 export class ApiError extends Error {
   readonly status: number
   readonly code: string
   readonly fields: Record<string, string>
+  readonly requestId?: string
 
-  constructor(status: number, code: string, message: string, fields: Record<string, string> = {}) {
-    super(message)
+  constructor(status: number, code: string, message: string, fields: Record<string, string> = {}, requestId?: string) {
+    super(status >= 500 && requestId ? `${message} (Código: ${requestId})` : message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.fields = fields
+    this.requestId = requestId || undefined
   }
 
   get isUnauthorized() {
@@ -119,8 +126,10 @@ async function request<T>(method: string, path: string, opts: RequestOptions = {
   const payload: unknown = await res.json().catch(() => null)
 
   if (!res.ok) {
-    const err = (payload as { error?: { code?: string; message?: string; fields?: Record<string, string> } } | null)?.error
-    const apiError = new ApiError(res.status, err?.code ?? 'http_error', err?.message ?? 'Ocurrió un error inesperado.', err?.fields)
+    const err = (payload as { error?: { code?: string; message?: string; fields?: Record<string, string>; request_id?: string } } | null)?.error
+    // The header also covers error responses without a JSON body.
+    const requestId = err?.request_id ?? res.headers.get('X-Request-Id') ?? undefined
+    const apiError = new ApiError(res.status, err?.code ?? 'http_error', err?.message ?? 'Ocurrió un error inesperado.', err?.fields, requestId)
     if (apiError.isUnauthorized) {
       // Expired access token: refresh once (single-flight) and retry once.
       if (!retried && !path.startsWith('/auth/') && (await refreshToken())) return request<T>(method, path, opts, true)

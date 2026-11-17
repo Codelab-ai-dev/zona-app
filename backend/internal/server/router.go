@@ -34,7 +34,7 @@ type Deps struct {
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
+	r.Use(requestID)
 	if d.TrustProxy {
 		// Only safe when the API is reachable exclusively through Caddy.
 		r.Use(middleware.RealIP)
