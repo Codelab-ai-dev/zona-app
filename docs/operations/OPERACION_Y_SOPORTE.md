@@ -34,16 +34,16 @@ Primero corrige desde la web o la app. Los procedimientos SQL de la sección 3.2
 |---|---|---|
 | **Resultado mal capturado** (marcador, goleador o tarjeta) | Vuelve a capturar el resultado completo del mismo partido: web **Resultados** o app **Registrar Resultado**. | Se reemplazan goles, tarjetas e incidentes del partido, y se recalculan la tabla del torneo y las estadísticas de jugadores. Las suspensiones automáticas por roja que **aún no se cumplieron** se rehacen; las que ya llevan partidos cumplidos se conservan y deben revisarse en **Suspensiones**. |
 | **Partido pospuesto** | En **Calendario**, cambia la fecha u hora del partido. | Sigue programado en la nueva fecha. |
-| **Partido cancelado** | No hay botón en la web ni en la app: lo hace el respaldo técnico (3.2). | Un partido **finalizado** no se puede cancelar; si se finalizó por error, ver 3.2. |
+| **Partido cancelado** | Web: **Calendario** → **Más acciones** (⋯) del partido → **Cancelar partido**. App: detalle del partido → **Cancelar partido**. Para deshacerlo, **Reactivar partido** en el mismo lugar. | El partido queda "Cancelado" sin borrarse; al reactivarlo vuelve a "Programado" con su fecha y hora. Un partido **finalizado** no se puede cancelar ni reactivar (la web muestra el motivo); si se finalizó por error, ver 3.2. |
 | **Fixture mal generado** | En **Calendario**, **Eliminar jornada** (una jornada) o **Eliminar Calendario** (todo el torneo). Después, vuelve a generarlo en **Jornadas**, revisando primero la vista previa. | Se borran también los partidos ya finalizados de esa jornada o calendario, y la tabla se recalcula. Antes, haz `make backup`. |
 | **Equipo con puntos que no cuadran por una sanción administrativa** | **Posiciones** → ajuste manual del equipo, con un motivo. | El ajuste queda registrado con su motivo y se muestra en la tabla. |
 | **Suspensión incorrecta** | **Suspensiones** → cancelar o dar por cumplida. | Deja de impedir que el jugador juegue. |
 | **Jugador en el equipo equivocado o dado de baja** | Desactiva al jugador y regístralo en el equipo correcto. | Su historial queda en el equipo original. |
 | **Escaneo duplicado** | Nada: la app avisa que ya tiene asistencia y no se duplica. | |
-| **No deja registrar asistencia: "partido cerrado"** | El partido ya está finalizado o cancelado. Si fue un error, corrige el estado del partido antes (3.2). | |
+| **No deja registrar asistencia: "partido cerrado"** | El partido ya está finalizado o cancelado. Si está cancelado por error, **Reactivar partido** (fila "Partido cancelado"). Si está finalizado por error, ver 3.2. | |
 | **Usuario no puede entrar: "Demasiadas solicitudes"** | Esperar un minuto. Tras 5 intentos fallidos seguidos se admite un intento cada 12 segundos por dispositivo y correo. | El límite se reinicia al entrar bien. |
 | **Usuario olvidó su contraseña** | Pantalla de inicio de sesión → **¿Olvidaste tu contraseña?** | Llega un enlace válido por 1 hora. Requiere SMTP configurado; en desarrollo el enlace solo queda en los logs. Para un super admin, `make admin EMAIL=...` también fija una contraseña nueva. |
-| **Cuenta desactivada** | La web solo permite desactivar; la reactivación la hace el respaldo técnico (3.2). | La cuenta vuelve a entrar con su contraseña de siempre. |
+| **Cuenta desactivada** | Super admin, web: **Usuarios** → botón **Reactivar usuario** de la cuenta inactiva. | La cuenta vuelve a entrar con su contraseña de siempre. |
 | **App móvil: "Tu sesión expiró"** | Volver a iniciar sesión. | La sesión dura 30 días sin uso o hasta cerrar sesión. |
 | **App móvil no carga datos** | Revisa `/healthz` y que el teléfono tenga internet. | Si `/healthz` falla, es incidencia S1 (sección 5). |
 
@@ -101,24 +101,6 @@ DELETE FROM public.asistencias_qr a
  USING public.matches m
  WHERE a.match_id = m.id AND m.status <> 'finished'
    AND a.match_id = '<MATCH_ID>' AND a.player_id = '<PLAYER_ID>';
-COMMIT;
-```
-
-**Cancelar un partido** (no finalizado):
-
-```sql
-BEGIN;
-UPDATE public.matches SET status = 'cancelled', updated_at = now()
- WHERE id = '<MATCH_ID>' AND status <> 'finished';
-COMMIT;
-```
-
-**Reactivar una cuenta:**
-
-```sql
-BEGIN;
-UPDATE public.users SET is_active = true, updated_at = now()
- WHERE lower(email) = lower('<CORREO>');
 COMMIT;
 ```
 

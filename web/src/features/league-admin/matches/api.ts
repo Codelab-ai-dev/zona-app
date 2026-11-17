@@ -102,6 +102,21 @@ export function useUpdateMatchSchedule() {
   })
 }
 
+/**
+ * Cancel a match or reactivate a cancelled one (PATCH /matches/{matchID}/status).
+ * The API refuses finished matches with 409.
+ */
+export function useUpdateMatchStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ matchId, status }: { matchId: string; status: 'scheduled' | 'cancelled' }) =>
+      api.patch<void>(`/matches/${matchId}/status`, { status }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.all })
+    },
+  })
+}
+
 /** Delete match (DELETE /matches/{matchID}). */
 export function useDeleteMatch() {
   const queryClient = useQueryClient()

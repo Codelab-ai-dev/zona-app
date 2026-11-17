@@ -219,11 +219,11 @@ export function useUpdateUser() {
   })
 }
 
-/** Delete/deactivate a user */
-export function useDeactivateUser() {
+/** Deactivate a user, or reactivate an inactive one (PATCH /admin/users/{id}). */
+export function useSetUserActive() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => api.patch<User>(`/admin/users/${id}`, { is_active: false }),
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.patch<User>(`/admin/users/${id}`, { is_active: isActive }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.allUsers })
     },

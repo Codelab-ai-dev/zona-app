@@ -21,6 +21,7 @@ interface RoundSectionProps {
   onQr: (match: MatchWithRelations) => void
   onAttendance: (match: MatchWithRelations) => void
   onReport: (match: MatchWithRelations) => void
+  onStatus: (match: MatchWithRelations) => void
 }
 
 /** One round: header with publish/poster actions plus its match rows. */
@@ -37,6 +38,7 @@ export function RoundSection({
   onQr,
   onAttendance,
   onReport,
+  onStatus,
 }: RoundSectionProps) {
   const isRoundPublished = matches.every((m) => m.is_published)
   return (
@@ -121,6 +123,7 @@ export function RoundSection({
               onQr={() => onQr(match)}
               onAttendance={() => onAttendance(match)}
               onReport={() => onReport(match)}
+              onStatus={() => onStatus(match)}
             />
           </li>
         ))}
