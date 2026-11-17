@@ -5,6 +5,7 @@ package matches
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -212,6 +213,9 @@ func TestUpdateStatus(t *testing.T) {
 	var e *httpx.Error
 	if err := svc.UpdateStatus(ctx, admin, f.MatchID, UpdateStatusRequest{Status: "cancelled"}); !errors.As(err, &e) || e.Status != 409 {
 		t.Fatalf("finished match: got %v, want 409", err)
+	}
+	if !errors.Is(e, httpx.ErrConflict) || !strings.Contains(e.Message, "ya finalizó") {
+		t.Fatalf("409 = %q, want the conflict code and an explanation", e.Message)
 	}
 	if err := svc.UpdateStatus(ctx, admin, uuid.New(), UpdateStatusRequest{Status: "cancelled"}); err == nil {
 		t.Fatal("unknown match accepted")

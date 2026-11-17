@@ -7,23 +7,20 @@ import type { User } from '../types'
 import { UsersTable } from './users-table'
 import { CreateUserDialog } from './create-user-dialog'
 import { EditUserDialog } from './edit-user-dialog'
-import { DeactivateUserDialog } from './deactivate-user-dialog'
+import { UserStatusDialog } from './user-status-dialog'
 
 export function UsersManagement() {
   const users = useAdminUsers()
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [deactivateConfirm, setDeactivateConfirm] = useState<User | null>(null)
+  const [statusConfirm, setStatusConfirm] = useState<User | null>(null)
 
   const handleEditClick = (user: User) => {
     setEditingUser(user)
     setEditOpen(true)
   }
 
-  const handleDeactivateClick = (user: User) => {
-    setDeactivateConfirm(user)
-  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -43,14 +40,14 @@ export function UsersManagement() {
           <UsersTable
             users={res.data}
             onEditClick={handleEditClick}
-            onDeactivateClick={handleDeactivateClick}
+            onStatusClick={setStatusConfirm}
           />
         )}
       </QueryState>
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
       <EditUserDialog key={editingUser?.id ?? 'none'} open={editOpen} onOpenChange={setEditOpen} user={editingUser} />
-      <DeactivateUserDialog open={!!deactivateConfirm} onOpenChange={() => setDeactivateConfirm(null)} user={deactivateConfirm} />
+      <UserStatusDialog open={!!statusConfirm} onOpenChange={() => setStatusConfirm(null)} user={statusConfirm} />
     </div>
   )
 }

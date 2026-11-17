@@ -24,6 +24,7 @@ import { MatchQRGenerator } from './components/match-qr-generator'
 import { AttendanceDialog } from './components/attendance-dialog'
 import { RefereeReportDialog } from './components/referee-report-dialog'
 import { MatchPosterGenerator } from './components/match-poster-generator'
+import { MatchStatusDialog } from './components/match-status-dialog'
 import type { MatchWithRelations } from './types'
 
 interface CalendarPageProps {
@@ -56,6 +57,7 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
   const [reportMatch, setReportMatch] = useState<MatchWithRelations | null>(null)
   const [posterRound, setPosterRound] = useState<number | null>(null)
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null)
+  const [statusMatch, setStatusMatch] = useState<MatchWithRelations | null>(null)
 
   // Filter rounds and teams
   const availableRounds = useMemo(() => {
@@ -227,6 +229,7 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
                     onQr={setQrMatch}
                     onAttendance={setAttendanceMatch}
                     onReport={setReportMatch}
+                    onStatus={setStatusMatch}
                   />
                 )
               })
@@ -242,6 +245,7 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
       {qrMatch && (
         <MatchQRGenerator match={qrMatch} tournamentName={tournamentName} leagueSlug={leagueSlug} open onOpenChange={() => setQrMatch(null)} />
       )}
+      {statusMatch && <MatchStatusDialog match={statusMatch} onClose={() => setStatusMatch(null)} />}
       {reportMatch && <RefereeReportDialog match={reportMatch} open onOpenChange={() => setReportMatch(null)} />}
       {attendanceMatch && <AttendanceDialog match={attendanceMatch} onClose={() => setAttendanceMatch(null)} />}
       {posterRound !== null && (

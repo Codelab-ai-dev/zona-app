@@ -47,12 +47,12 @@ describe('Deactivate user', () => {
     expect(requestsTo(fetchMock, 'PATCH /admin/users/user1')).toHaveLength(0)
   })
 
-  it('shows an error toast when the API fails', async () => {
+  it("shows the API's error message when it fails", async () => {
     const { user } = setup({ status: 500, body: errorBody('internal', 'Error del servidor') })
     await screen.findByText('Juan Pérez')
     await user.click(screen.getByRole('button', { name: 'Desactivar usuario' }))
     await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
 
-    expect(await screen.findByText('Error al desactivar el usuario')).toBeInTheDocument()
+    expect(await screen.findByText('Error del servidor')).toBeInTheDocument()
   })
 })

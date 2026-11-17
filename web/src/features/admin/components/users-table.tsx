@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Edit, ToggleLeft } from 'lucide-react'
+import { Edit, ToggleLeft, ToggleRight } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -13,10 +13,11 @@ import type { User } from '../types'
 interface UsersTableProps {
   users: User[]
   onEditClick: (user: User) => void
-  onDeactivateClick: (user: User) => void
+  /** Deactivates an active user or reactivates an inactive one. */
+  onStatusClick: (user: User) => void
 }
 
-export function UsersTable({ users, onEditClick, onDeactivateClick }: UsersTableProps) {
+export function UsersTable({ users, onEditClick, onStatusClick }: UsersTableProps) {
   return (
     <div className="rounded-xl bg-slate-800/50 border border-white/10 overflow-x-auto">
       <Table>
@@ -53,15 +54,25 @@ export function UsersTable({ users, onEditClick, onDeactivateClick }: UsersTable
                 >
                   <Edit className="h-3 w-3" />
                 </Button>
-                {user.is_active && (
+                {user.is_active ? (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDeactivateClick(user)}
+                    onClick={() => onStatusClick(user)}
                     className="text-destructive hover:text-destructive"
                     aria-label="Desactivar usuario"
                   >
                     <ToggleLeft className="h-3 w-3" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onStatusClick(user)}
+                    className="text-green-400 hover:text-green-300"
+                    aria-label="Reactivar usuario"
+                  >
+                    <ToggleRight className="h-3 w-3" />
                   </Button>
                 )}
               </TableCell>

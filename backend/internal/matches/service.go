@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -526,9 +527,17 @@ func (s *Service) UpdateStatus(ctx context.Context, caller auth.Principal, match
 		if _, err := s.repo.GetMatchByID(ctx, matchID); err != nil {
 			return err
 		}
-		return httpx.ErrConflict.Wrap(fmt.Errorf("match already finished"))
+		return errMatchFinished.Wrap(fmt.Errorf("match already finished"))
 	}
 	return nil
+}
+
+// errMatchFinished keeps the conflict code (errors.Is(err, httpx.ErrConflict)
+// still matches) with a message the admin can act on.
+var errMatchFinished = &httpx.Error{
+	Status:  http.StatusConflict,
+	Code:    httpx.ErrConflict.Code,
+	Message: "El partido ya finalizó: no se puede cancelar ni reactivar. Para corregirlo, edita su resultado.",
 }
 
 // PublishRound updates the is_published flag for all matches in a tournament round.

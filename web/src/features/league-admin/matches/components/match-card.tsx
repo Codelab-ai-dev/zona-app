@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Calendar as CalendarIcon, ClipboardList, Clock, Edit, MapPin, MoreHorizontal, QrCode, Shield, Target, Trash2, Users } from 'lucide-react'
+import { Ban, Calendar as CalendarIcon, ClipboardList, Clock, Edit, MapPin, MoreHorizontal, QrCode, RotateCcw, Shield, Target, Trash2, Users } from 'lucide-react'
 
 import type { MatchWithRelations } from '../types'
 
@@ -13,16 +13,19 @@ interface MatchCardProps {
   onQr: () => void
   onAttendance: () => void
   onReport: () => void
+  /** Asks to cancel the match, or to reactivate it when it is cancelled. */
+  onStatus: () => void
 }
 
 /** Card displaying a match with status and quick actions. */
-export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendance, onReport }: MatchCardProps) {
+export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendance, onReport, onStatus }: MatchCardProps) {
   const dateObj = new Date(match.match_date)
   const dateStr = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
   const timeStr = match.match_time ? match.match_time.slice(0, 5) : dateObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 
   const isFinished = match.status === 'finished'
   const isScheduled = match.status === 'scheduled'
+  const isCancelled = match.status === 'cancelled'
 
   const logo = (name: string) => (
     <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 md:h-6 md:w-6">
@@ -119,6 +122,12 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
                 <ClipboardList className="size-4" aria-hidden="true" />
                 Acta arbitral
               </DropdownMenuItem>
+              {!isFinished && (
+                <DropdownMenuItem onSelect={onStatus}>
+                  {isCancelled ? <RotateCcw className="size-4" aria-hidden="true" /> : <Ban className="size-4" aria-hidden="true" />}
+                  {isCancelled ? 'Reactivar partido' : 'Cancelar partido'}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" onClick={onDelete} title="Eliminar" className={`${ghost} bg-red-500/20 text-red-400 hover:bg-red-500/30`}>
