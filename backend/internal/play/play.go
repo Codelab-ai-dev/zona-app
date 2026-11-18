@@ -40,6 +40,10 @@ type Recording struct {
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 
+	// PlaybackRestricted: premium content whose playback fields were
+	// removed for this caller (see access.go).
+	PlaybackRestricted bool `json:"playback_restricted,omitempty"`
+
 	// Context for display (read-only, joined from the match and league).
 	HomeTeam *TeamRef   `json:"home_team,omitempty"`
 	AwayTeam *TeamRef   `json:"away_team,omitempty"`
@@ -172,6 +176,8 @@ type Clip struct {
 	IsFeatured      bool       `json:"is_featured"`
 	CreatedBy       uuid.UUID  `json:"created_by"`
 	CreatedAt       time.Time  `json:"created_at"`
+	// PlaybackRestricted: clip of premium content, playback removed (access.go).
+	PlaybackRestricted bool `json:"playback_restricted,omitempty"`
 }
 
 // ClipRequest is used for creating/updating clips.
@@ -252,6 +258,8 @@ type Stream struct {
 	EndedAt             *time.Time `json:"ended_at,omitempty"`
 	BroadcasterID       uuid.UUID  `json:"broadcaster_id"`
 	CreatedAt           time.Time  `json:"created_at"`
+	// PlaybackRestricted: pay-per-view stream, playback removed (access.go).
+	PlaybackRestricted bool `json:"playback_restricted,omitempty"`
 }
 
 // StreamKey is the response of GET /play/streams/{id}/key.
@@ -383,16 +391,19 @@ type ListRecordingsOpts struct {
 
 // ListClipsOpts filters clips list.
 type ListClipsOpts struct {
-	RecordingID *uuid.UUID
-	MatchID     *uuid.UUID
-	LeagueID    *uuid.UUID
-	TeamID      *uuid.UUID
-	ClipType    *string
-	IsFeatured  bool
-	Limit       int
-	Offset      int
-	SortBy      string
-	SortOrder   string
+	// PlayableOnly keeps clips without a recording or whose recording is
+	// public, ready and not premium (lists for non-managers, #39).
+	PlayableOnly bool
+	RecordingID  *uuid.UUID
+	MatchID      *uuid.UUID
+	LeagueID     *uuid.UUID
+	TeamID       *uuid.UUID
+	ClipType     *string
+	IsFeatured   bool
+	Limit        int
+	Offset       int
+	SortBy       string
+	SortOrder    string
 }
 
 // ListStreamsOpts filters streams list.

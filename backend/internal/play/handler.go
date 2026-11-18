@@ -288,7 +288,7 @@ func (h *Handler) listClips(w http.ResponseWriter, r *http.Request) {
 		opts.ClipType = &clipType
 	}
 
-	clips, count, err := h.svc.ListClips(r.Context(), opts)
+	clips, count, err := h.svc.ListClips(r.Context(), optionalCaller(r), opts)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -324,7 +324,7 @@ func (h *Handler) getClip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clip, err := h.svc.GetClip(r.Context(), clipID)
+	clip, err := h.svc.GetClip(r.Context(), optionalCaller(r), clipID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -377,7 +377,7 @@ func (h *Handler) listStreams(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	streams, count, err := h.svc.ListStreams(r.Context(), opts)
+	streams, count, err := h.svc.ListStreams(r.Context(), optionalCaller(r), opts)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -413,7 +413,7 @@ func (h *Handler) getStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stream, err := h.svc.GetStream(r.Context(), streamID)
+	stream, err := h.svc.GetStream(r.Context(), optionalCaller(r), streamID)
 	if err != nil {
 		httpx.WriteError(w, r, err)
 		return
@@ -506,4 +506,12 @@ func (h *Handler) webhookMux(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.NoContent(w)
+}
+
+// optionalCaller returns the signed-in principal of a public route, or nil.
+func optionalCaller(r *http.Request) *auth.Principal {
+	if p, ok := auth.FromContext(r.Context()); ok {
+		return &p
+	}
+	return nil
 }
