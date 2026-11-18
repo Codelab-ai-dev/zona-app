@@ -85,6 +85,8 @@ El contrato definitivo depende del estudio de modelos, resultados, suspensión, 
 
 **Validación de arquitectura posterior al lanzamiento:** implementar una competición piloto de voleibol por sets para probar si el motor separa realmente reglas y estructura de competición. Un deporte individual se evaluaría después.
 
+Propuesta concreta: [`ADR_SPORTS_ENGINE.md`](ADR_SPORTS_ENGINE.md) (#45). Plantea el deporte por torneo, un `Ruleset` acotado en Go, sets en `match_periods`, el piloto de voleibol y el plan de migración posterior a enero.
+
 ## 6. Seguridad y hallazgos pendientes de Zona Play (diferidos para su activación futura)
 
 **No implementar Zona Play en el ciclo de enero de 2027.** Los hallazgos siguientes siguen siendo válidos, pero su prioridad P0/P1 se refiere exclusivamente a **antes de habilitar Zona Play para usuarios**. Evaluar la exposición actual y asegurar que Play no esté accesible al público si no se va a corregir todavía; deshabilitar funcionalidad en despliegue requiere un cambio específico, fuera del alcance de esta documentación.
@@ -178,4 +180,4 @@ No reescribir `00001_baseline.sql`; crear nuevas migraciones Goose. No reorganiz
 - Si Zona Gol es una marca de fútbol o un administrador universal configurable; la decisión técnica provisional es independizar Core del deporte sin forzar cambio de marca.
 - Permisos de árbitros y delegados basados en asignaciones a encuentros. Propuesta: [`ADR_MEMBERSHIPS.md`](ADR_MEMBERSHIPS.md).
 - Política de rights/licencias para contenido de menores.
-- Criterio de elección de segunda disciplina y cómo representar individual vs equipos.
+- Criterio de elección de segunda disciplina y cómo representar individual vs equipos. Segunda disciplina propuesta: voleibol por sets ([`ADR_SPORTS_ENGINE.md`](ADR_SPORTS_ENGINE.md)); los deportes individuales quedan fuera del piloto.
