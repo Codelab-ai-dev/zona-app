@@ -2,6 +2,7 @@ package matches
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -472,13 +473,34 @@ func (s *Service) CreateRefereeReport(ctx context.Context, caller auth.Principal
 	return s.repo.CreateOrUpdateRefereeReport(ctx, matchID, req)
 }
 
-// GetRefereeReport retrieves a referee report (requires auth: tournament admin or team owner).
+// GetRefereeReport retrieves a referee report. Whoever manages the match
+// (league admin) may read it, and so may whoever manages either of its two
+// teams (team owner): it is their match's report. Writing stays with the
+// league admin (CreateRefereeReport). Owners of other teams get 403 (#65).
 func (s *Service) GetRefereeReport(ctx context.Context, caller auth.Principal, matchID uuid.UUID) (RefereeReport, error) {
-	// Authorize: must be tournament admin or own one of the teams
-	if err := s.authz.CanManageMatch(ctx, caller, matchID); err != nil {
+	if err := s.canViewRefereeReport(ctx, caller, matchID); err != nil {
 		return RefereeReport{}, err
 	}
 	return s.repo.GetRefereeReport(ctx, matchID)
+}
+
+func (s *Service) canViewRefereeReport(ctx context.Context, caller auth.Principal, matchID uuid.UUID) error {
+	err := s.authz.CanManageMatch(ctx, caller, matchID)
+	if err == nil || !errors.Is(err, httpx.ErrForbidden) {
+		return err // allowed, unknown match (404) or a real failure
+	}
+	match, mErr := s.repo.GetMatchByID(ctx, matchID)
+	if mErr != nil {
+		return mErr
+	}
+	for _, team := range []uuid.UUID{match.HomeTeamID, match.AwayTeamID} {
+		if tErr := s.authz.CanManageTeam(ctx, caller, team); tErr == nil {
+			return nil
+		} else if !errors.Is(tErr, httpx.ErrForbidden) {
+			return tErr
+		}
+	}
+	return err
 }
 
 // FixtureRound represents a round in the generated fixture.
