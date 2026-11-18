@@ -238,6 +238,8 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | GET | `/api/v1/tournaments/{tournamentID}` | público |
 | PATCH | `/api/v1/tournaments/{tournamentID}` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/discipline` | público |
+| GET | `/api/v1/tournaments/{tournamentID}/discipline-rules` | token |
+| PUT | `/api/v1/tournaments/{tournamentID}/discipline-rules` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/duplicates` | token |
 | POST | `/api/v1/tournaments/{tournamentID}/fixtures/generate` | token |
 | GET | `/api/v1/tournaments/{tournamentID}/manual-stats` | token |
@@ -266,4 +268,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 155 routes.
+Total: 157 routes.

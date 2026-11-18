@@ -10,6 +10,7 @@ import { useTeamsByLeague } from '@/features/league-admin/teams/api'
 
 import { useClearSuspensions, useSuspensions } from '../api'
 import type { Suspension } from '../types'
+import { DisciplineRulesCard } from './discipline-rules-card'
 import { SuspensionForm } from './suspension-form'
 import { SuspensionRow } from './suspension-card'
 
@@ -28,6 +29,7 @@ export function SuspensionsPage({ leagueId }: { leagueId: string }) {
 
   return (
     <section aria-labelledby="suspensions-title" className="space-y-6">
+      <DisciplineRulesCard leagueId={leagueId} />
       <Card className="backdrop-blur-xl bg-white/10 border-white/20">
         <CardHeader>
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">

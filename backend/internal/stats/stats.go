@@ -204,6 +204,10 @@ const (
 )
 
 type Repository interface {
+	// Discipline rules of a tournament (#82).
+	GetDisciplineRules(ctx context.Context, tournamentID uuid.UUID) (DisciplineRules, error)
+	SetDisciplineRules(ctx context.Context, tournamentID uuid.UUID, rules DisciplineRules) (DisciplineRules, error)
+
 	// IsPubliclyVisible reports whether the league owning the resource is active.
 	IsPubliclyVisible(ctx context.Context, scope Scope, id uuid.UUID) (bool, error)
 

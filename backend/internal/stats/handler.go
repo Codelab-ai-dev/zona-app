@@ -32,6 +32,12 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleLeagueAdmin, auth.RoleSuperAdmin)).
 		Post("/standings/adjust", h.updateTeamPointsAdjustment)
 
+	// Automatic suspension rules of a tournament (#82)
+	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleLeagueAdmin, auth.RoleSuperAdmin)).
+		Get("/tournaments/{tournamentID}/discipline-rules", h.getDisciplineRules)
+	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleLeagueAdmin, auth.RoleSuperAdmin)).
+		Put("/tournaments/{tournamentID}/discipline-rules", h.setDisciplineRules)
+
 	// Suspensions
 	r.Get("/teams/{teamID}/suspensions", h.getSuspensionsByTeam)
 	r.With(auth.RequireAuth, auth.RequireRole(auth.RoleLeagueAdmin, auth.RoleSuperAdmin)).

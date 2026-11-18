@@ -368,7 +368,7 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 		// Suspensions already partly served are kept untouched.
 		if _, err := tx.Exec(ctx, `
 			DELETE FROM public.player_suspensions
-			WHERE match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = $1)
+			WHERE `+automaticSuspensionsOf+`
 			  AND COALESCE(matches_served, 0) = 0`, matchID); err != nil {
 			return fmt.Errorf("delete automatic suspensions: %w", err)
 		}
@@ -424,6 +424,10 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 		// corrected score of a finished match would leave stale standings.
 		if _, err := tx.Exec(ctx, `SELECT public.rebuild_team_stats_for_tournament($1)`, match.TournamentID); err != nil {
 			return fmt.Errorf("rebuild standings: %w", err)
+		}
+		// Yellow card accumulation, when the tournament has it on (#82).
+		if _, err := tx.Exec(ctx, `SELECT public.generate_yellow_accumulation($1)`, matchID); err != nil {
+			return fmt.Errorf("yellow accumulation: %w", err)
 		}
 		// This match counts for the active suspensions of both teams' players
 		// (#81); idempotent when a result is corrected.
@@ -558,6 +562,11 @@ func (s *Service) UpdateStatus(ctx context.Context, caller auth.Principal, match
 	}
 	return nil
 }
+
+// automaticSuspensionsOf ($1 = match) matches the suspensions a result
+// creates by itself: red cards (by card) and yellow accumulation (by match).
+const automaticSuspensionsOf = `(match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = $1)
+	OR (suspension_type = 'yellow_accumulation' AND match_id = $1))`
 
 // errMatchFinished keeps the conflict code (errors.Is(err, httpx.ErrConflict)
 // still matches) with a message the admin can act on.

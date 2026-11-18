@@ -691,3 +691,19 @@ func TestGetStandingsByTournament_InvalidLimit(t *testing.T) {
 		t.Fatalf("status = %d, want %d (unprocessable entity)", rec.Code, http.StatusUnprocessableEntity)
 	}
 }
+
+func (f fakeRepo) GetDisciplineRules(context.Context, uuid.UUID) (DisciplineRules, error) {
+	return DisciplineRules{YellowAccumulationMatches: 1}, nil
+}
+
+func (f fakeRepo) SetDisciplineRules(_ context.Context, _ uuid.UUID, d DisciplineRules) (DisciplineRules, error) {
+	return d, nil
+}
+
+func (f *fakeIDORRepo) GetDisciplineRules(context.Context, uuid.UUID) (DisciplineRules, error) {
+	return DisciplineRules{YellowAccumulationMatches: 1}, nil
+}
+
+func (f *fakeIDORRepo) SetDisciplineRules(_ context.Context, _ uuid.UUID, d DisciplineRules) (DisciplineRules, error) {
+	return d, nil
+}
