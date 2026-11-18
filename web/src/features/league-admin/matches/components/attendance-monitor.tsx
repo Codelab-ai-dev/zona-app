@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, RefreshCw, QrCode, ScanFace } from 'lucide-react'
+import { Users, RefreshCw, QrCode, ScanFace, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-import { useMatchAttendance, useTeamPlayers } from '../api'
-import type { MatchWithRelations } from '../types'
+import { useDeleteAttendance, useMatchAttendance, useTeamPlayers } from '../api'
+import type { AttendanceRecord, MatchWithRelations } from '../types'
+import { ReasonConfirmDialog } from './reason-confirm-dialog'
 
 const confidenceColor = (c: number) => (c >= 0.9 ? 'bg-green-500' : c >= 0.8 ? 'bg-blue-500' : c >= 0.7 ? 'bg-yellow-500' : 'bg-red-500')
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`
@@ -47,6 +48,21 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
   }, [count])
 
   const totalAttendance = attendanceCounts.home + attendanceCounts.away
+
+  // Wrong check-ins can be removed while the match is not finished (#53).
+  const canDelete = match.status !== 'finished'
+  const deleteAttendance = useDeleteAttendance()
+  const [removing, setRemoving] = useState<AttendanceRecord | null>(null)
+  const confirmRemove = async (reason: string) => {
+    if (!removing) return
+    try {
+      await deleteAttendance.mutateAsync({ matchId: match.id, playerId: removing.player_id, reason })
+      toast.success(`Asistencia de ${removing.player_name} eliminada`)
+      setRemoving(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo eliminar la asistencia')
+    }
+  }
 
   const teamOf = useMemo(() => {
     const map = new Map<string, string>()
@@ -145,6 +161,18 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
                           />
                         </>
                       )}
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setRemoving(r)}
+                          aria-label={`Eliminar asistencia de ${r.player_name}`}
+                          title="Eliminar asistencia"
+                          className="h-7 w-7 p-0 text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="size-3.5" aria-hidden="true" />
+                        </Button>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -161,6 +189,20 @@ export function AttendanceMonitor({ match }: AttendanceMonitorProps) {
           )}
         </div>
       </CardContent>
+      {removing && (
+        <ReasonConfirmDialog
+          title="Eliminar asistencia"
+          acknowledge="Entiendo que el jugador deja de contar como presente en este partido."
+          confirmLabel="Eliminar asistencia"
+          pending={deleteAttendance.isPending}
+          onConfirm={(reason) => void confirmRemove(reason)}
+          onClose={() => setRemoving(null)}
+        >
+          <p>
+            Se eliminan todos los registros de <strong className="text-white">{removing.player_name}</strong> en este partido (QR y facial).
+          </p>
+        </ReasonConfirmDialog>
+      )}
     </Card>
   )
 }

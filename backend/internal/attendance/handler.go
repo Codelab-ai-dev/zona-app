@@ -54,6 +54,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/attendance/facial", h.recordFacialAttendance)
 	r.With(auth.RequireAuth).Get("/matches/{matchID}/attendance", h.listAttendance)
 	r.With(auth.RequireAuth).Get("/matches/{matchID}/attendance/stream", h.streamAttendance)
+	r.With(auth.RequireAuth).Delete("/matches/{matchID}/attendance/{playerID}", h.deleteAttendance)
 	r.With(auth.RequireAuth).Get("/players/{playerID}/today-matches", h.playerMatchesOn)
 }
 

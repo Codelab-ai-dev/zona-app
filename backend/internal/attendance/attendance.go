@@ -215,6 +215,10 @@ type Repository interface {
 	// GetMatchLeague fetches the league_id for a match (for auth checks).
 	GetMatchLeague(ctx context.Context, matchID uuid.UUID) (uuid.UUID, error)
 
+	// DeleteAttendance removes a player's attendance from a match that is not
+	// finished and records it in match_audit_log.
+	DeleteAttendance(ctx context.Context, matchID, playerID, actorID uuid.UUID, reason string) (DeleteAttendanceResult, error)
+
 	// GetMatchStatus fetches the status of a match to check if it's finished.
 	GetMatchStatus(ctx context.Context, matchID uuid.UUID) (string, error)
 

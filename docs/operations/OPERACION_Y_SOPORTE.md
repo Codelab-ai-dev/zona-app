@@ -34,13 +34,15 @@ Primero corrige desde la web o la app. Los procedimientos SQL de la sección 3.2
 |---|---|---|
 | **Resultado mal capturado** (marcador, goleador o tarjeta) | Vuelve a capturar el resultado completo del mismo partido: web **Resultados** o app **Registrar Resultado**. | Se reemplazan goles, tarjetas e incidentes del partido, y se recalculan la tabla del torneo y las estadísticas de jugadores. Las suspensiones automáticas por roja que **aún no se cumplieron** se rehacen; las que ya llevan partidos cumplidos se conservan y deben revisarse en **Suspensiones**. |
 | **Partido pospuesto** | En **Calendario**, cambia la fecha u hora del partido. | Sigue programado en la nueva fecha. |
-| **Partido cancelado** | Web: **Calendario** → **Más acciones** (⋯) del partido → **Cancelar partido**. App: detalle del partido → **Cancelar partido**. Para deshacerlo, **Reactivar partido** en el mismo lugar. | El partido queda "Cancelado" sin borrarse; al reactivarlo vuelve a "Programado" con su fecha y hora. Un partido **finalizado** no se puede cancelar ni reactivar (la web muestra el motivo); si se finalizó por error, ver 3.2. |
+| **Resultado capturado en el partido equivocado** (o partido finalizado por error) | Web: **Calendario** → **Más acciones** (⋯) del partido finalizado → **Reabrir partido**. Escribe el motivo y marca la casilla de confirmación. Después captura el resultado en el partido correcto. | El partido vuelve a "Programado" 0-0. Se borran sus goles, tarjetas e incidentes y se recalculan la tabla y las estadísticas. Las suspensiones por roja aún no cumplidas se borran y las ya en cumplimiento se conservan. Las multas automáticas sin pagar se cancelan y las pagadas se conservan (la web avisa cuántas). La asistencia y el acta se conservan. Queda registrado quién, cuándo y por qué (consulta en 3.2). Solo en la web; la app no tiene este botón. |
+| **Partido cancelado** | Web: **Calendario** → **Más acciones** (⋯) del partido → **Cancelar partido**. App: detalle del partido → **Cancelar partido**. Para deshacerlo, **Reactivar partido** en el mismo lugar. | El partido queda "Cancelado" sin borrarse; al reactivarlo vuelve a "Programado" con su fecha y hora. Un partido **finalizado** no se puede cancelar ni reactivar (la web muestra el motivo); si se finalizó por error, **Reabrir partido**. |
 | **Fixture mal generado** | En **Calendario**, **Eliminar jornada** (una jornada) o **Eliminar Calendario** (todo el torneo). Después, vuelve a generarlo en **Jornadas**, revisando primero la vista previa. | Se borran también los partidos ya finalizados de esa jornada o calendario, y la tabla se recalcula. Antes, haz `make backup`. |
 | **Equipo con puntos que no cuadran por una sanción administrativa** | **Posiciones** → ajuste manual del equipo, con un motivo. | El ajuste queda registrado con su motivo y se muestra en la tabla. |
 | **Suspensión incorrecta** | **Suspensiones** → cancelar o dar por cumplida. | Deja de impedir que el jugador juegue. |
 | **Jugador en el equipo equivocado o dado de baja** | Desactiva al jugador y regístralo en el equipo correcto. | Su historial queda en el equipo original. |
 | **Escaneo duplicado** | Nada: la app avisa que ya tiene asistencia y no se duplica. | |
-| **No deja registrar asistencia: "partido cerrado"** | El partido ya está finalizado o cancelado. Si está cancelado por error, **Reactivar partido** (fila "Partido cancelado"). Si está finalizado por error, ver 3.2. | |
+| **Asistencia registrada a un jugador equivocado** | Web: **Calendario** → **Más acciones** (⋯) → **Asistencia** → botón de borrar junto al jugador. Escribe el motivo y confirma. | Se quitan sus registros QR y facial de ese partido y deja de contar como presente. Solo en partidos no finalizados: si ya finalizó, reábrelo primero. Queda registrado (consulta en 3.2). |
+| **No deja registrar asistencia: "partido cerrado"** | El partido ya está finalizado o cancelado. Si está cancelado por error, **Reactivar partido** (fila "Partido cancelado"). Si está finalizado por error, **Reabrir partido** (fila "Resultado capturado en el partido equivocado"). | |
 | **Usuario no puede entrar: "Demasiadas solicitudes"** | Esperar un minuto. Tras 5 intentos fallidos seguidos se admite un intento cada 12 segundos por dispositivo y correo. | El límite se reinicia al entrar bien. |
 | **Usuario olvidó su contraseña** | Pantalla de inicio de sesión → **¿Olvidaste tu contraseña?** | Llega un enlace válido por 1 hora. Requiere SMTP configurado; en desarrollo el enlace solo queda en los logs. Para un super admin, `make admin EMAIL=...` también fija una contraseña nueva. |
 | **Cuenta desactivada** | Super admin, web: **Usuarios** → botón **Reactivar usuario** de la cuenta inactiva. | La cuenta vuelve a entrar con su contraseña de siempre. |
@@ -49,7 +51,7 @@ Primero corrige desde la web o la app. Los procedimientos SQL de la sección 3.2
 
 ### 3.2 Procedimientos SQL (solo respaldo técnico)
 
-No hay botón para estos casos. Todos se probaron en una base de ensayo. Reglas:
+Reglas para cualquier cambio directo en la base:
 
 1. `make backup` antes de cualquier cambio.
 2. Dos personas: una ejecuta y otra revisa los IDs.
@@ -64,45 +66,20 @@ docker-compose -f deploy/compose.yml --env-file deploy/.env exec db psql -U zona
 
 En hosts con Docker Compose v2 usa `docker compose` (con espacio).
 
-**Resultado capturado en el partido equivocado: regresar el partido a "programado".** Sustituye `<MATCH_ID>` y `<TOURNAMENT_ID>`:
+Las correcciones frecuentes de jornada ya tienen botón (3.1). Si aun así hace falta SQL para un caso no previsto, sigue las reglas de arriba y deja el motivo en el issue.
+
+**Consultar las correcciones registradas** (reabrir partido y borrar asistencia), solo lectura:
 
 ```sql
-SELECT m.id, ht.name AS local, at.name AS visita, m.home_score, m.away_score, m.status, m.tournament_id
-FROM public.matches m
-JOIN public.teams ht ON ht.id = m.home_team_id
-JOIN public.teams at ON at.id = m.away_team_id
-WHERE m.id = '<MATCH_ID>';
-
-BEGIN;
-DELETE FROM public.player_suspensions
- WHERE match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = '<MATCH_ID>')
-   AND COALESCE(matches_served, 0) = 0;
-DELETE FROM public.match_goals     WHERE match_id = '<MATCH_ID>';
-DELETE FROM public.match_cards     WHERE match_id = '<MATCH_ID>';
-DELETE FROM public.match_incidents WHERE match_id = '<MATCH_ID>';
-UPDATE public.matches SET status = 'scheduled', home_score = 0, away_score = 0, updated_at = now()
- WHERE id = '<MATCH_ID>';
-SELECT public.rebuild_match_player_stats('<MATCH_ID>');
-SELECT public.rebuild_team_stats_for_tournament('<TOURNAMENT_ID>');
-COMMIT;
+SELECT a.created_at, a.action, a.reason, u.email AS quien, a.match_id, a.details
+FROM public.match_audit_log a
+LEFT JOIN public.users u ON u.id = a.actor_id
+WHERE a.league_id = '<LEAGUE_ID>'
+ORDER BY a.created_at DESC
+LIMIT 50;
 ```
 
-Después captura el resultado en el partido correcto desde la web o la app.
-
-**Asistencia registrada a un jugador equivocado.** Solo funciona en partidos no finalizados:
-
-```sql
-SELECT a.id, p.name, a.created_at
-FROM public.asistencias_qr a JOIN public.players p ON p.id = a.player_id
-WHERE a.match_id = '<MATCH_ID>' AND a.player_id = '<PLAYER_ID>';
-
-BEGIN;
-DELETE FROM public.asistencias_qr a
- USING public.matches m
- WHERE a.match_id = m.id AND m.status <> 'finished'
-   AND a.match_id = '<MATCH_ID>' AND a.player_id = '<PLAYER_ID>';
-COMMIT;
-```
+`details` guarda el resultado anterior (marcador, goles, tarjetas e incidentes) en el caso de reabrir, y los registros borrados en el de asistencia.
 
 Si un `DELETE` o un `UPDATE` afecta un número de filas distinto del esperado, ejecuta `ROLLBACK;` en lugar de `COMMIT;`.
 
