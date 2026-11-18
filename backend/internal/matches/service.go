@@ -335,6 +335,9 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 	if err != nil {
 		return err
 	}
+	if err := goalsWithinScore(match, req); err != nil {
+		return err
+	}
 
 	// Run the whole update in a transaction with user context (for triggers and auth.uid())
 	err = database.WithUserTx(ctx, s.pool, caller.UserID, func(tx pgx.Tx) error {
@@ -1109,4 +1112,38 @@ func fixtureRounds(req GenerateFixturesRequest, double bool) ([]FixtureRound, ma
 		}
 	}
 	return merged, byes
+}
+
+// goalsWithinScore rejects results whose recorded goals exceed the score
+// of the team they count for (an own goal counts for the rival), the same
+// rule the web and the app apply (#84). Fewer goals than the score is fine:
+// a goal may have no recorded scorer.
+func goalsWithinScore(m Match, req PostMatchResultRequest) error {
+	var home, away int
+	for _, g := range req.Goals {
+		forHome := g.TeamID == m.HomeTeamID
+		if g.GoalType != nil && *g.GoalType == string(GoalTypeOwnGoal) {
+			forHome = !forHome
+		}
+		if forHome {
+			home++
+		} else {
+			away++
+		}
+	}
+	errs := map[string]string{}
+	if home > req.HomeScore {
+		errs["goals"] = fmt.Sprintf("Los goles registrados del local (%d) exceden el marcador (%d)", home, req.HomeScore)
+	}
+	if away > req.AwayScore {
+		msg := fmt.Sprintf("Los goles registrados del visitante (%d) exceden el marcador (%d)", away, req.AwayScore)
+		if errs["goals"] != "" {
+			msg = errs["goals"] + ". " + msg
+		}
+		errs["goals"] = msg
+	}
+	if len(errs) > 0 {
+		return httpx.Validation(errs)
+	}
+	return nil
 }
