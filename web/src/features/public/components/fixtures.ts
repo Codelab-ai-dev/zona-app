@@ -10,7 +10,7 @@ export const league2 = { ...league, id: 'l2', name: 'Liga Sur', slug: 'liga-sur'
 
 export const tournament = {
   id: 't1', name: 'Torneo Apertura', league_id: 'l1', start_date: '2024-01-01', end_date: '2099-12-31',
-  is_active: true, registration_open: false, tournament_format: 'round_robin', rounds_per_season: 10,
+  is_active: true, registration_open: false, tournament_format: 'league', rounds_per_season: 10,
   has_third_place_match: false, age_validation_enabled: false, id_document_required: false,
   created_at: '', updated_at: '',
 }

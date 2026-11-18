@@ -19,7 +19,7 @@ export function tournamentStatus(startDate: string, endDate: string, now: Date =
 
 export type TournamentLayout = 'league' | 'group_knockout' | 'knockout'
 
-/** Public layout of a tournament; unknown formats (e.g. round_robin) behave as a league. */
+/** Public layout of a tournament; a missing or unknown format behaves as a league. */
 export function tournamentLayout(format: string | undefined): TournamentLayout {
   return format === 'group_knockout' || format === 'knockout' ? format : 'league'
 }

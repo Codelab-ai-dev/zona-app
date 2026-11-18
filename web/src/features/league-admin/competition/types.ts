@@ -1,3 +1,5 @@
+import type { TournamentFormat } from '@/features/leagues/types'
+
 /** Mirrors backend/internal/leagues, stats, finance, directory and notifications. */
 
 export interface Tournament {
@@ -10,7 +12,7 @@ export interface Tournament {
   max_players?: number
   registration_open: boolean
   max_coaching_staff?: number
-  tournament_format: 'league' | 'knockout' | 'group_knockout'
+  tournament_format: TournamentFormat
   number_of_groups?: number
   teams_advancing_per_group?: number
   rounds_per_season: number

@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useLeagueBySlug } from '@/features/leagues/api'
 import { initials } from '@/features/leagues/leagues-page'
-import type { Tournament } from '@/features/leagues/types'
+import type { Tournament, TournamentFormat } from '@/features/leagues/types'
 
 import { useStandings, useTournamentMatches, useTournamentsByLeague } from '../api'
 import { formatDate, tournamentStatus, type TournamentStatus } from '../format'
@@ -18,11 +18,9 @@ const STATUS_CLASS: Record<TournamentStatus, string> = {
   Próximamente: 'border-blue-500/30 bg-blue-500/20 text-blue-400',
 }
 
-const FORMAT_LABEL: Record<string, string> = {
+const FORMAT_LABEL: Record<TournamentFormat, string> = {
   league: 'Liga',
-  round_robin: 'Liga',
   knockout: 'Eliminación',
-  groups: 'Grupos',
   group_knockout: 'Grupos y eliminación',
 }
 
