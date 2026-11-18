@@ -117,6 +117,34 @@ export function useDiscipline(tournamentId: string | undefined) {
 
 const suspensionsKey = [...competitionKeys.all, 'suspensions'] as const
 
+/** Automatic suspension rules of a tournament (#82). Null limit = yellows never suspend. */
+export interface DisciplineRules {
+  yellow_accumulation_limit: number | null
+  yellow_accumulation_matches: number
+}
+
+const disciplineRulesKey = (tournamentId: string) => [...competitionKeys.all, 'disciplineRules', tournamentId] as const
+
+export function useDisciplineRules(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: disciplineRulesKey(tournamentId ?? ''),
+    queryFn: ({ signal }) => api.get<DisciplineRules>(`/tournaments/${tournamentId}/discipline-rules`, { signal }),
+    enabled: Boolean(tournamentId),
+  })
+}
+
+export function useSetDisciplineRules(tournamentId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rules: DisciplineRules) => api.put<DisciplineRules>(`/tournaments/${tournamentId}/discipline-rules`, rules),
+    onSuccess: (data) => {
+      queryClient.setQueryData(disciplineRulesKey(tournamentId), data)
+      toast.success(data.yellow_accumulation_limit ? 'Acumulación de amarillas activada' : 'Acumulación de amarillas desactivada')
+    },
+    onError,
+  })
+}
+
 export function useSuspensions(leagueId: string | undefined) {
   return useQuery({
     queryKey: competitionKeys.suspensions(leagueId ?? ''),

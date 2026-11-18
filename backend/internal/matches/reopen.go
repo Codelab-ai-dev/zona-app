@@ -50,7 +50,8 @@ var errNotFinished = &httpx.Error{
 // ReopenMatch takes a finished match back to scheduled 0-0, in one
 // transaction (#53):
 //   - deletes its goals, cards and incidents;
-//   - deletes the automatic suspensions not served yet (served ones stay);
+//   - deletes the automatic suspensions (red card, yellow accumulation) not
+//     served yet (served ones stay);
 //   - cancels its automatic fines nobody paid yet (paid ones stay);
 //   - stops counting it for other players' suspensions (#81);
 //   - rebuilds player stats and the tournament standings;
@@ -106,13 +107,13 @@ func (s *Service) ReopenMatch(ctx context.Context, caller auth.Principal, matchI
 		}
 		if err := tx.QueryRow(ctx, `
 			SELECT count(*) FROM public.player_suspensions
-			WHERE match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = $1)
+			WHERE `+automaticSuspensionsOf+`
 			  AND COALESCE(matches_served, 0) > 0`, matchID).Scan(&res.SuspensionsKept); err != nil {
 			return fmt.Errorf("count served suspensions: %w", err)
 		}
 		if res.SuspensionsRemoved, err = exec("delete suspensions", `
 			DELETE FROM public.player_suspensions
-			WHERE match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = $1)
+			WHERE `+automaticSuspensionsOf+`
 			  AND COALESCE(matches_served, 0) = 0`, matchID); err != nil {
 			return err
 		}
