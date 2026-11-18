@@ -12,6 +12,7 @@ import (
 
 // FakeRepository is a test fake for Repository.
 type FakeRepository struct {
+	RefOwnersFunc                   func(ctx context.Context, refs Refs) (RefOwners, error)
 	SetStreamRecordingFunc          func(ctx context.Context, muxStreamID, assetID, playbackID string, duration float64) error
 	UpdateRecordingFromMuxAssetFunc func(ctx context.Context, assetID, playbackID string, duration int, resolution string) error
 	GetRecordingFunc                func(ctx context.Context, id uuid.UUID) (*Recording, error)
@@ -92,6 +93,13 @@ func (f *FakeRepository) DeleteClip(ctx context.Context, id uuid.UUID) error {
 		return f.DeleteClipFunc(ctx, id)
 	}
 	return nil
+}
+
+func (f *FakeRepository) RefOwners(ctx context.Context, refs Refs) (RefOwners, error) {
+	if f.RefOwnersFunc != nil {
+		return f.RefOwnersFunc(ctx, refs)
+	}
+	return RefOwners{}, nil
 }
 
 func (f *FakeRepository) GetStream(ctx context.Context, id uuid.UUID) (*Stream, error) {
@@ -316,7 +324,9 @@ func TestCreateClip_Happy(t *testing.T) {
 
 	ctx := context.Background()
 	caller := auth.Principal{UserID: uuid.New()}
+	league := uuid.New()
 	req := &ClipRequest{
+		LeagueID:     &league,
 		Title:        "Test Clip",
 		StartSeconds: 0,
 		EndSeconds:   30,

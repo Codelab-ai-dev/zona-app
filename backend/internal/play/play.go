@@ -335,6 +335,10 @@ type Upload struct {
 
 // Repository is the persistence contract.
 type Repository interface {
+	// RefOwners resolves the league and links of the sports resources a
+	// Play item points to (see checkRefs).
+	RefOwners(ctx context.Context, refs Refs) (RefOwners, error)
+
 	// Recordings
 	GetRecording(ctx context.Context, id uuid.UUID) (*Recording, error)
 	ListRecordings(ctx context.Context, opts *ListRecordingsOpts) ([]*Recording, int64, error)
