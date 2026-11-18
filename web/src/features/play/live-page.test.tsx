@@ -83,4 +83,12 @@ describe('LivePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Transmisión no encontrada')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
+
+  it('shows a notice instead of the player for pay-per-view without access (#39)', async () => {
+    mockApi({ 'GET /play/streams/s1': { body: { ...stream, is_pay_per_view: true, playback_restricted: true, mux_playback_id: undefined } } })
+    renderLive()
+
+    expect(await screen.findByText('Transmisión de pago')).toBeInTheDocument()
+    expect(screen.queryByTestId('mux-player')).not.toBeInTheDocument()
+  })
 })

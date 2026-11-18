@@ -51,6 +51,9 @@ func (s *Service) GetRecording(ctx context.Context, caller *auth.Principal, id u
 	if err := s.repo.AttachRecordingContext(ctx, []*Recording{rec}); err != nil {
 		return nil, err
 	}
+	if isPremium(rec) && !s.manages(ctx, caller, rec.LeagueID) {
+		redactRecording(rec) // metadata yes, playback no (#39)
+	}
 	return rec, nil
 }
 
@@ -65,7 +68,8 @@ func (s *Service) ListRecordings(ctx context.Context, caller *auth.Principal, op
 	// Only managers of the requested league (or super admins) may list
 	// private or unfinished recordings; everyone else gets public+ready,
 	// whatever filters they sent.
-	if !s.canSeeAllRecordings(ctx, caller, opts.LeagueID) {
+	manager := s.canSeeAllRecordings(ctx, caller, opts.LeagueID)
+	if !manager {
 		opts.Visibility = "public"
 		opts.Status = "ready"
 	}
@@ -75,6 +79,13 @@ func (s *Service) ListRecordings(ctx context.Context, caller *auth.Principal, op
 	}
 	if err := s.repo.AttachRecordingContext(ctx, recs); err != nil {
 		return nil, 0, err
+	}
+	if !manager {
+		for _, r := range recs {
+			if isPremium(r) {
+				redactRecording(r) // public listing of is_premium videos (#39)
+			}
+		}
 	}
 	return recs, total, nil
 }
@@ -229,8 +240,10 @@ func (s *Service) RefreshRecordingStatus(ctx context.Context, caller auth.Princi
 	return updated, nil
 }
 
-// GetClip retrieves a clip by ID (public reads allowed).
-func (s *Service) GetClip(ctx context.Context, id uuid.UUID) (*Clip, error) {
+// GetClip retrieves a clip by ID under its recording's rules: hidden (404)
+// when the recording is hidden from the caller, without playback when it
+// is premium (#39).
+func (s *Service) GetClip(ctx context.Context, caller *auth.Principal, id uuid.UUID) (*Clip, error) {
 	clip, err := s.repo.GetClip(ctx, id)
 	if err != nil {
 		return nil, err
@@ -238,17 +251,26 @@ func (s *Service) GetClip(ctx context.Context, id uuid.UUID) (*Clip, error) {
 	if clip == nil {
 		return nil, httpx.ErrNotFound
 	}
+	visible, err := s.guardClip(ctx, caller, clip)
+	if err != nil {
+		return nil, err
+	}
+	if !visible {
+		return nil, httpx.ErrNotFound
+	}
 	return clip, nil
 }
 
-// ListClips lists clips (public reads allowed).
-func (s *Service) ListClips(ctx context.Context, opts *ListClipsOpts) ([]*Clip, int64, error) {
+// ListClips lists clips. Everyone but the league's managers only gets
+// clips without a recording or of public, ready, non-premium recordings.
+func (s *Service) ListClips(ctx context.Context, caller *auth.Principal, opts *ListClipsOpts) ([]*Clip, int64, error) {
 	if opts == nil {
 		opts = &ListClipsOpts{}
 	}
 	if opts.Limit == 0 || opts.Limit > 100 {
 		opts.Limit = 100
 	}
+	opts.PlayableOnly = !s.manages(ctx, caller, opts.LeagueID)
 	return s.repo.ListClips(ctx, opts)
 }
 
@@ -326,8 +348,9 @@ func (s *Service) DeleteClip(ctx context.Context, caller auth.Principal, id uuid
 	return s.repo.DeleteClip(ctx, id)
 }
 
-// GetStream retrieves a stream by ID (public reads allowed).
-func (s *Service) GetStream(ctx context.Context, id uuid.UUID) (*Stream, error) {
+// GetStream retrieves a stream by ID (public reads allowed); pay-per-view
+// streams come without playback for everyone but the league's managers (#39).
+func (s *Service) GetStream(ctx context.Context, caller *auth.Principal, id uuid.UUID) (*Stream, error) {
 	stream, err := s.repo.GetStream(ctx, id)
 	if err != nil {
 		return nil, err
@@ -335,6 +358,7 @@ func (s *Service) GetStream(ctx context.Context, id uuid.UUID) (*Stream, error) 
 	if stream == nil {
 		return nil, httpx.ErrNotFound
 	}
+	s.guardStream(ctx, caller, stream)
 	return stream, nil
 }
 
@@ -370,14 +394,21 @@ func (s *Service) GetStreamKey(ctx context.Context, caller auth.Principal, id uu
 }
 
 // ListStreams lists streams (public reads allowed).
-func (s *Service) ListStreams(ctx context.Context, opts *ListStreamsOpts) ([]*Stream, int64, error) {
+func (s *Service) ListStreams(ctx context.Context, caller *auth.Principal, opts *ListStreamsOpts) ([]*Stream, int64, error) {
 	if opts == nil {
 		opts = &ListStreamsOpts{}
 	}
 	if opts.Limit == 0 || opts.Limit > 100 {
 		opts.Limit = 100
 	}
-	return s.repo.ListStreams(ctx, opts)
+	streams, total, err := s.repo.ListStreams(ctx, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, st := range streams {
+		s.guardStream(ctx, caller, st)
+	}
+	return streams, total, nil
 }
 
 // CreateStream creates a new stream (auth + authz required).

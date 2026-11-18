@@ -357,6 +357,10 @@ func (r *PGRepository) GetClip(ctx context.Context, id uuid.UUID) (*Clip, error)
 	return clip, nil
 }
 
+// playableClip is the PlayableOnly filter of ListClips.
+const playableClip = `(recording_id IS NULL OR EXISTS (SELECT 1 FROM public.match_recordings mr
+			WHERE mr.id = video_clips.recording_id AND mr.status = 'ready' AND mr.visibility = 'public' AND NOT COALESCE(mr.is_premium, false)))`
+
 // ListClips retrieves paginated clips matching filters.
 func (r *PGRepository) ListClips(ctx context.Context, opts *ListClipsOpts) ([]*Clip, int64, error) {
 	if opts == nil {
@@ -412,6 +416,9 @@ func (r *PGRepository) ListClips(ctx context.Context, opts *ListClipsOpts) ([]*C
 	}
 	if opts.IsFeatured {
 		query.WriteString(fmt.Sprintf(` AND is_featured = true`))
+	}
+	if opts.PlayableOnly {
+		query.WriteString(` AND ` + playableClip)
 	}
 
 	query.WriteString(clipOrderBy(opts.SortBy, opts.SortOrder))
@@ -472,6 +479,9 @@ func (r *PGRepository) ListClips(ctx context.Context, opts *ListClipsOpts) ([]*C
 	}
 	if opts.IsFeatured {
 		countQuery += ` AND is_featured = true`
+	}
+	if opts.PlayableOnly {
+		countQuery += ` AND ` + playableClip
 	}
 
 	var count int64

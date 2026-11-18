@@ -61,6 +61,15 @@ describe('WatchPage', () => {
     expect(requestsTo(fetchMock, 'GET /play/videos/r1')).toHaveLength(1)
   })
 
+  it('shows the premium notice and keeps the metadata when playback is restricted (#39)', async () => {
+    mockApi({ 'GET /play/videos/r1': { body: { ...recording, is_premium: true, playback_restricted: true, mux_playback_id: undefined } } })
+    renderWatch()
+
+    expect(await screen.findByText('Tigres FC vs Leones United - Final')).toBeInTheDocument()
+    expect(screen.getByText('Contenido premium')).toBeInTheDocument()
+    expect(screen.queryByTestId('mux-player')).not.toBeInTheDocument()
+  })
+
   it('omits the score box when the API leaves the scores out', async () => {
     const noScore: Record<string, unknown> = { ...recording }
     delete noScore.home_score
