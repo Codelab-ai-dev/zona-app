@@ -226,11 +226,14 @@ func isValidClipType(ct string) bool {
 
 // Stream represents a live stream.
 type Stream struct {
-	ID                  uuid.UUID  `json:"id"`
-	MatchID             *uuid.UUID `json:"match_id,omitempty"`
-	LeagueID            *uuid.UUID `json:"league_id,omitempty"`
-	MuxLiveStreamID     *string    `json:"mux_live_stream_id,omitempty"`
-	MuxStreamKey        *string    `json:"mux_stream_key,omitempty"`
+	ID              uuid.UUID  `json:"id"`
+	MatchID         *uuid.UUID `json:"match_id,omitempty"`
+	LeagueID        *uuid.UUID `json:"league_id,omitempty"`
+	MuxLiveStreamID *string    `json:"mux_live_stream_id,omitempty"`
+	// MuxStreamKey lets anyone who has it broadcast on this stream. It is
+	// never serialized with the stream: only GET /play/streams/{id}/key
+	// returns it, to whoever manages the stream's league (#38).
+	MuxStreamKey        *string    `json:"-"`
 	MuxPlaybackID       *string    `json:"mux_playback_id,omitempty"`
 	RecordingID         *uuid.UUID `json:"recording_id,omitempty"`
 	RecordingAssetID    *string    `json:"recording_asset_id,omitempty"`
@@ -249,6 +252,12 @@ type Stream struct {
 	EndedAt             *time.Time `json:"ended_at,omitempty"`
 	BroadcasterID       uuid.UUID  `json:"broadcaster_id"`
 	CreatedAt           time.Time  `json:"created_at"`
+}
+
+// StreamKey is the response of GET /play/streams/{id}/key.
+type StreamKey struct {
+	StreamID     uuid.UUID `json:"stream_id"`
+	MuxStreamKey string    `json:"mux_stream_key"`
 }
 
 // StreamRequest is used for creating streams.

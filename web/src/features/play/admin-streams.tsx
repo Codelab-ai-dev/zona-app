@@ -10,14 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { QueryState } from '@/components/states'
 import { ApiError } from '@/lib/api/client'
 
-import { useCreateStream, useDeleteStream, useStreams } from './api'
+import { useCreateStream, useDeleteStream, useStreamKey, useStreams } from './api'
 import { DeleteConfirm } from './delete-confirm'
 import type { Stream } from './types'
 
 function StreamRow({ stream }: { stream: Stream }) {
   const deleteStream = useDeleteStream()
   const [showKey, setShowKey] = useState(false)
-  const key = stream.mux_stream_key
+  // The list never carries the key: it is requested only while shown.
+  const streamKey = useStreamKey(stream.id, showKey)
+  const key = streamKey.data?.mux_stream_key
 
   const copyKey = async () => {
     if (!key) return
@@ -44,17 +46,15 @@ function StreamRow({ stream }: { stream: Stream }) {
         </div>
 
         <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-          {key && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowKey(!showKey)}
-              aria-label={showKey ? 'Ocultar clave' : 'Mostrar clave'}
-              aria-pressed={showKey}
-            >
-              {showKey ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowKey(!showKey)}
+            aria-label={showKey ? 'Ocultar clave' : 'Mostrar clave'}
+            aria-pressed={showKey}
+          >
+            {showKey ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+          </Button>
           <DeleteConfirm
             label={`Eliminar transmisión ${stream.title}`}
             title="¿Eliminar transmisión?"
@@ -64,6 +64,12 @@ function StreamRow({ stream }: { stream: Stream }) {
         </div>
       </div>
 
+      {showKey && streamKey.isPending && <p className="mt-4 text-xs text-muted-foreground">Cargando clave…</p>}
+      {showKey && streamKey.error && (
+        <p role="alert" className="mt-4 text-xs text-destructive">
+          {streamKey.error instanceof Error ? streamKey.error.message : 'No se pudo obtener la clave'}
+        </p>
+      )}
       {showKey && key && (
         <div className="mt-4 p-4 bg-destructive/10 rounded-lg">
           <p className="text-xs font-medium text-destructive mb-2">Clave secreta: no la compartas con nadie</p>

@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import { api, ApiError, type PageParams } from '@/lib/api/client'
 
-import type { Clip, DirectUploadResponse, Recording, Stream } from './types'
+import type { Clip, DirectUploadResponse, Recording, Stream, StreamKey } from './types'
 
 /** Live status and viewers refresh while a streams screen is mounted. */
 const STREAM_POLL_MS = 15_000
@@ -193,6 +193,21 @@ export function useStream(id: string) {
     queryFn: ({ signal }) => api.get<Stream>(`/play/streams/${encodeURIComponent(id)}`, { signal }),
     enabled: id !== '',
     refetchInterval: STREAM_POLL_MS,
+  })
+}
+
+/**
+ * The broadcast key of a stream, fetched only while it is shown and never
+ * kept in the cache: it lets anyone who has it broadcast (#38).
+ */
+export function useStreamKey(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...playKeys.streamsDetail(id), 'key'],
+    queryFn: ({ signal }) => api.get<StreamKey>(`/play/streams/${encodeURIComponent(id)}/key`, { signal }),
+    enabled,
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
   })
 }
 

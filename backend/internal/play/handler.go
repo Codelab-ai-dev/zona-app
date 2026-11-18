@@ -58,6 +58,7 @@ func (h *Handler) Routes(r chi.Router) {
 		r.With(auth.RequireAuth).Post("/streams", h.createStream)
 
 		r.Get("/streams/{streamId}", h.getStream)
+		r.With(auth.RequireAuth).Get("/streams/{streamId}/key", h.getStreamKey)
 		r.With(auth.RequireAuth).Patch("/streams/{streamId}", h.updateStream)
 		r.With(auth.RequireAuth).Delete("/streams/{streamId}", h.deleteStream)
 
@@ -419,6 +420,22 @@ func (h *Handler) getStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, stream)
+}
+
+// getStreamKey handles GET /play/streams/{streamId}/key (league admins only).
+func (h *Handler) getStreamKey(w http.ResponseWriter, r *http.Request) {
+	streamID, err := uuid.Parse(chi.URLParam(r, "streamId"))
+	if err != nil {
+		httpx.WriteError(w, r, httpx.ErrBadRequest)
+		return
+	}
+	caller, _ := auth.FromContext(r.Context())
+	key, err := h.svc.GetStreamKey(r.Context(), caller, streamID)
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, key)
 }
 
 // updateStream handles PATCH /play/streams/{streamId}
