@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Ban, Calendar as CalendarIcon, ClipboardList, Clock, Edit, MapPin, MoreHorizontal, QrCode, RotateCcw, Shield, Target, Trash2, Users } from 'lucide-react'
+import { Ban, Calendar as CalendarIcon, ClipboardList, Clock, Edit, History, MapPin, MoreHorizontal, QrCode, RotateCcw, Shield, Target, Trash2, Users } from 'lucide-react'
 
 import type { MatchWithRelations } from '../types'
 
@@ -15,10 +15,12 @@ interface MatchCardProps {
   onReport: () => void
   /** Asks to cancel the match, or to reactivate it when it is cancelled. */
   onStatus: () => void
+  /** Asks to take a finished match back to scheduled. */
+  onReopen: () => void
 }
 
 /** Card displaying a match with status and quick actions. */
-export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendance, onReport, onStatus }: MatchCardProps) {
+export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendance, onReport, onStatus, onReopen }: MatchCardProps) {
   const dateObj = new Date(match.match_date)
   const dateStr = dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
   const timeStr = match.match_time ? match.match_time.slice(0, 5) : dateObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
@@ -122,6 +124,12 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
                 <ClipboardList className="size-4" aria-hidden="true" />
                 Acta arbitral
               </DropdownMenuItem>
+              {isFinished && (
+                <DropdownMenuItem onSelect={onReopen}>
+                  <History className="size-4" aria-hidden="true" />
+                  Reabrir partido
+                </DropdownMenuItem>
+              )}
               {!isFinished && (
                 <DropdownMenuItem onSelect={onStatus}>
                   {isCancelled ? <RotateCcw className="size-4" aria-hidden="true" /> : <Ban className="size-4" aria-hidden="true" />}

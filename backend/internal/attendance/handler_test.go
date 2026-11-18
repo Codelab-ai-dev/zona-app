@@ -114,6 +114,10 @@ func (f *fakeRepository) StreamAttendance(ctx context.Context, matchID uuid.UUID
 	return nil
 }
 
+func (f *fakeRepository) DeleteAttendance(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string) (DeleteAttendanceResult, error) {
+	return DeleteAttendanceResult{}, nil
+}
+
 func (f *fakeRepository) GetMatchLeague(ctx context.Context, matchID uuid.UUID) (uuid.UUID, error) {
 	if l, ok := f.matchLeagues[matchID]; ok {
 		return l, nil

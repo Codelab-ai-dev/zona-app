@@ -109,9 +109,11 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | POST | `/api/v1/matches/{matchID}/attendance/facial` | token |
 | POST | `/api/v1/matches/{matchID}/attendance/qr` | token |
 | GET | `/api/v1/matches/{matchID}/attendance/stream` | token |
+| DELETE | `/api/v1/matches/{matchID}/attendance/{playerID}` | token |
 | PATCH | `/api/v1/matches/{matchID}/publish` | token |
 | GET | `/api/v1/matches/{matchID}/referee-report` | token |
 | POST | `/api/v1/matches/{matchID}/referee-report` | token |
+| POST | `/api/v1/matches/{matchID}/reopen` | token |
 | POST | `/api/v1/matches/{matchID}/result` | token |
 | PATCH | `/api/v1/matches/{matchID}/schedule` | token |
 | PATCH | `/api/v1/matches/{matchID}/status` | token |
@@ -263,4 +265,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 152 routes.
+Total: 154 routes.

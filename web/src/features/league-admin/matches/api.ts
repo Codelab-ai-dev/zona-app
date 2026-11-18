@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api, ApiError } from '@/lib/api/client'
 
+import { competitionKeys } from '../competition/keys'
+
 import type {
   MatchWithRelations,
   UpdateMatchScheduleRequest,
@@ -113,6 +115,46 @@ export function useUpdateMatchStatus() {
       api.patch<void>(`/matches/${matchId}/status`, { status }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.all })
+    },
+  })
+}
+
+/** What reopening a match undid (POST /matches/{matchID}/reopen). */
+export interface ReopenMatchResult {
+  goals_removed: number
+  cards_removed: number
+  incidents_removed: number
+  suspensions_removed: number
+  suspensions_kept: number
+  fines_cancelled: number
+  fines_kept: number
+}
+
+/**
+ * Take a finished match back to scheduled 0-0, with a reason kept in the
+ * audit log. Standings, scorers, suspensions and fines change, so the whole
+ * competition cache is refreshed too.
+ */
+export function useReopenMatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ matchId, reason }: { matchId: string; reason: string }) =>
+      api.post<ReopenMatchResult>(`/matches/${matchId}/reopen`, { reason }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.all })
+      void queryClient.invalidateQueries({ queryKey: competitionKeys.all })
+    },
+  })
+}
+
+/** Remove a player's attendance from a match that is not finished, with a reason (audited). */
+export function useDeleteAttendance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ matchId, playerId, reason }: { matchId: string; playerId: string; reason: string }) =>
+      api.delete<{ qr_removed: number; facial_removed: number }>(`/matches/${matchId}/attendance/${playerId}`, { body: { reason } }),
+    onSuccess: (_, { matchId }) => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.attendance(matchId) })
     },
   })
 }

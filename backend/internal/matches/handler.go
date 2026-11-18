@@ -43,6 +43,7 @@ func (h *Handler) Routes(r chi.Router) {
 	r.With(auth.RequireAuth).Post("/matches/{matchID}/referee-report", h.createRefereeReport)
 	r.With(auth.RequireAuth).Patch("/matches/{matchID}/publish", h.publishMatch)
 	r.With(auth.RequireAuth).Patch("/matches/{matchID}/status", h.updateStatus)
+	r.With(auth.RequireAuth).Post("/matches/{matchID}/reopen", h.reopenMatch)
 	r.With(auth.RequireAuth).Post("/tournaments/{tournamentID}/rounds/{round}/publish", h.publishRound)
 	r.With(auth.RequireAuth).Post("/tournaments/{tournamentID}/playoffs/generate", h.generatePlayoffs)
 }
