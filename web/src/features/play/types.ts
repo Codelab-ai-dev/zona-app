@@ -86,7 +86,6 @@ export interface Stream {
   match_id?: string
   league_id?: string
   mux_live_stream_id?: string
-  mux_stream_key?: string
   mux_playback_id?: string
   recording_id?: string
   recording_asset_id?: string
@@ -115,4 +114,10 @@ export interface Upload {
 export interface DirectUploadResponse {
   recording: Recording
   upload: Upload
+}
+
+/** GET /play/streams/{id}/key: the broadcast key, only for the league's admins. */
+export interface StreamKey {
+  stream_id: string
+  mux_stream_key: string
 }

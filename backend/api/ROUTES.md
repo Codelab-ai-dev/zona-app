@@ -151,6 +151,7 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/play/streams/{streamId}` | token |
 | GET | `/api/v1/play/streams/{streamId}` | público |
 | PATCH | `/api/v1/play/streams/{streamId}` | token |
+| GET | `/api/v1/play/streams/{streamId}/key` | token |
 | POST | `/api/v1/play/upload` | token |
 | GET | `/api/v1/play/videos` | público |
 | POST | `/api/v1/play/videos` | token |
@@ -265,4 +266,4 @@ Response contract, pagination and errors: see `CONVENTIONS.md` → API contract.
 | DELETE | `/api/v1/whatsapp-links/{linkID}` | token |
 | PUT | `/api/v1/whatsapp-links/{linkID}` | token |
 
-Total: 154 routes.
+Total: 155 routes.

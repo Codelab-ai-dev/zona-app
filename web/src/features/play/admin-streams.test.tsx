@@ -15,7 +15,6 @@ const stream = {
   current_viewers: 0,
   broadcaster_id: 'u1',
   created_at: '2024-12-20T10:00:00Z',
-  mux_stream_key: 'sk-secret-123',
 }
 const list = (data: unknown[]) => ({ body: { data, page: { limit: 50, offset: 0 } } })
 const base = { 'GET /play/videos': list([]) }
@@ -91,7 +90,11 @@ describe('AdminPage streams', () => {
   }, 10000)
 
   it('hides the stream key until revealed, copies it with the clipboard and hides it again', async () => {
-    mockApi({ ...base, 'GET /play/streams': list([stream]) })
+    mockApi({
+      ...base,
+      'GET /play/streams': list([stream]),
+      'GET /play/streams/s1/key': { body: { stream_id: 's1', mux_stream_key: 'sk-secret-123' } },
+    })
     const { user } = renderWithProviders(<AdminPage />)
     // userEvent.setup({ delay: null }) installs its own clipboard stub; spy on it
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
@@ -101,7 +104,7 @@ describe('AdminPage streams', () => {
     expect(screen.queryByText('sk-secret-123')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Mostrar clave' }))
-    expect(screen.getByText('sk-secret-123')).toBeInTheDocument()
+    expect(await screen.findByText('sk-secret-123')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Copiar clave' }))
     expect(writeText).toHaveBeenCalledWith('sk-secret-123')
@@ -111,13 +114,27 @@ describe('AdminPage streams', () => {
     expect(screen.queryByText('sk-secret-123')).not.toBeInTheDocument()
   }, 15000)
 
-  it('does not offer the key button when the API does not return a key', async () => {
-    mockApi({ ...base, 'GET /play/streams': list([{ ...stream, mux_stream_key: undefined }]) })
+  it("shows the API's message when the key cannot be shown", async () => {
+    mockApi({
+      ...base,
+      'GET /play/streams': list([stream]),
+      'GET /play/streams/s1/key': { status: 403, body: { error: { code: 'forbidden', message: 'No tienes permiso para esta acción' } } },
+    })
+    const { user } = renderWithProviders(<AdminPage />)
+    await openStreamsTab(user)
+
+    await user.click(await screen.findByRole('button', { name: 'Mostrar clave' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No tienes permiso para esta acción')
+    expect(screen.queryByRole('button', { name: 'Copiar clave' })).not.toBeInTheDocument()
+  }, 10000)
+
+  it('never reads the key from the stream list (#38)', async () => {
+    const fetchMock = mockApi({ ...base, 'GET /play/streams': list([stream]) })
     const { user } = renderWithProviders(<AdminPage />)
     await openStreamsTab(user)
 
     expect(await screen.findByText('Jornada 15')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Mostrar clave' })).not.toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/key'))).toBe(false)
   }, 10000)
 
   it('deletes a stream after confirmation and shows API errors', async () => {

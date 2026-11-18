@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -324,6 +325,37 @@ func (s *Service) GetStream(ctx context.Context, id uuid.UUID) (*Stream, error) 
 		return nil, httpx.ErrNotFound
 	}
 	return stream, nil
+}
+
+var errNoStreamKey = &httpx.Error{
+	Status:  http.StatusNotFound,
+	Code:    httpx.ErrNotFound.Code,
+	Message: "Esta transmisión no tiene clave de emisión.",
+}
+
+// GetStreamKey returns the broadcast key of a stream to whoever manages its
+// league. A stream without a league has no league admin, so only a super
+// admin gets its key (#38).
+func (s *Service) GetStreamKey(ctx context.Context, caller auth.Principal, id uuid.UUID) (StreamKey, error) {
+	stream, err := s.repo.GetStream(ctx, id)
+	if err != nil {
+		return StreamKey{}, err
+	}
+	if stream == nil {
+		return StreamKey{}, httpx.ErrNotFound
+	}
+	switch {
+	case stream.LeagueID != nil:
+		if err := s.authz.CanManageLeague(ctx, caller, *stream.LeagueID); err != nil {
+			return StreamKey{}, err
+		}
+	case !caller.IsSuperAdmin():
+		return StreamKey{}, httpx.ErrForbidden
+	}
+	if stream.MuxStreamKey == nil || *stream.MuxStreamKey == "" {
+		return StreamKey{}, errNoStreamKey
+	}
+	return StreamKey{StreamID: stream.ID, MuxStreamKey: *stream.MuxStreamKey}, nil
 }
 
 // ListStreams lists streams (public reads allowed).
