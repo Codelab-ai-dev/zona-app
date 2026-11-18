@@ -37,7 +37,7 @@ const LABELS = {
   },
 } as const
 
-const AUTO_FORMAT = ['4. Formato automático:', 'Los emparejamientos se crean automáticamente: 1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos).']
+const AUTO_FORMAT = ['4. Formato automático:', 'Los emparejamientos se crean automáticamente: 1° vs 8°, 2° vs 7°, etc. (para 8 equipos) o 1° vs 4°, 2° vs 3° (para 4 equipos). Las siguientes rondas se crean solas con los ganadores; los empates se definen por penales.']
 
 const STEPS: Record<keyof typeof LABELS, string[][]> = {
   knockout: [

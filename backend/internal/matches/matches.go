@@ -83,9 +83,12 @@ type Match struct {
 	PlayoffPosition *int          `json:"playoff_position,omitempty"`
 	Leg             *Leg          `json:"leg,omitempty"`
 	ByeTeamID       *uuid.UUID    `json:"bye_team_id,omitempty"`
-	IsPublished     bool          `json:"is_published"`
-	CreatedAt       time.Time     `json:"created_at"`
-	UpdatedAt       time.Time     `json:"updated_at"`
+	// Penalty shoot-out that decided a knockout tie (#83).
+	HomePenalties *int      `json:"home_penalties,omitempty"`
+	AwayPenalties *int      `json:"away_penalties,omitempty"`
+	IsPublished   bool      `json:"is_published"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 	// Team display data, filled for list and detail responses so clients
 	// don't need one request per team.
 	HomeTeamName string  `json:"home_team_name"`
@@ -343,11 +346,23 @@ type PostMatchResultRequest struct {
 	// Observations are the referee's general observations; stored in the
 	// match referee report (legacy behaviour of the result form).
 	Observations *string `json:"observations,omitempty"`
+	// Penalty shoot-out of a level knockout tie (#83); both or neither.
+	HomePenalties *int `json:"home_penalties,omitempty"`
+	AwayPenalties *int `json:"away_penalties,omitempty"`
 }
 
 // Validate checks request constraints.
 func (r PostMatchResultRequest) Validate() map[string]string {
 	errs := make(map[string]string)
+	if (r.HomePenalties == nil) != (r.AwayPenalties == nil) {
+		errs["home_penalties"] = "captura los penales de ambos equipos"
+	} else if r.HomePenalties != nil {
+		if *r.HomePenalties < 0 || *r.AwayPenalties < 0 {
+			errs["home_penalties"] = "los penales no pueden ser negativos"
+		} else if *r.HomePenalties == *r.AwayPenalties {
+			errs["home_penalties"] = "los penales no pueden quedar empatados"
+		}
+	}
 	if r.HomeScore < 0 {
 		errs["home_score"] = "no puede ser negativo"
 	}

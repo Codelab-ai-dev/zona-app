@@ -58,7 +58,8 @@ export function PlayoffPreview({ numTeams, seedNames, startDate, startTime, fiel
       </div>
       <p className="text-xs text-white/60">
         {homeAndAway ? 'Cada eliminatoria se juega a ida y vuelta. ' : ''}
-        La llave también incluye {later}.
+        Las siguientes rondas ({later}) se crean solas con los ganadores al capturar los resultados. Si una eliminatoria
+        termina empatada (o empatada en el global, a ida y vuelta), se define por penales.
       </p>
       <div className="flex gap-2">
         <Button onClick={onBack} disabled={pending} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
