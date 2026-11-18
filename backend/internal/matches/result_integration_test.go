@@ -141,8 +141,9 @@ func TestPostResultFeedsPlayerStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	own := "own_goal"
+	// The home player's own goal counts for the away team: 2-1 (#84).
 	req := PostMatchResultRequest{
-		HomeScore: 3, AwayScore: 0,
+		HomeScore: 2, AwayScore: 1,
 		Goals: []PostGoalRequest{
 			{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 10, AssistPlayerID: &assistant},
 			{PlayerID: f.HomePlayerID, TeamID: f.HomeTeamID, Minute: 20},
