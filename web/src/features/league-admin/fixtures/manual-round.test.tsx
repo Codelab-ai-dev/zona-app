@@ -8,7 +8,7 @@ import { FixturesPage } from './fixtures-page'
 const page = { limit: 100, offset: 0 }
 const tournament = {
   id: 'tour-1', name: 'Torneo A', league_id: 'league-1', is_active: true, start_date: '2024-01-01', end_date: '2024-03-01',
-  registration_open: false, tournament_format: 'round_robin', rounds_per_season: 10, has_third_place_match: false,
+  registration_open: false, tournament_format: 'league', rounds_per_season: 10, has_third_place_match: false,
   age_validation_enabled: false, id_document_required: false, created_at: '', updated_at: '',
 }
 const team = (n: number) => ({ id: `team-${n}`, name: `Equipo ${n}`, slug: `e${n}`, league_id: 'league-1', tournament_id: 'tour-1', is_active: true })

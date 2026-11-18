@@ -16,7 +16,8 @@ export interface League {
   updated_at: string
 }
 
-export type TournamentFormat = 'round_robin' | 'groups' | 'knockout' | string
+/** Mirrors the backend's tournaments.tournament_format CHECK (#86). */
+export type TournamentFormat = 'league' | 'knockout' | 'group_knockout'
 
 export interface Tournament {
   id: string

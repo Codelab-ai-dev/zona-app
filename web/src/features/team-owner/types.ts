@@ -1,3 +1,5 @@
+import type { TournamentFormat } from '@/features/leagues/types'
+
 /** Mirrors backend/internal/{teams,matches,stats,finance} types. */
 
 export interface Team {
@@ -137,7 +139,7 @@ export interface Tournament {
   end_date: string
   is_active: boolean
   registration_open: boolean
-  tournament_format: string
+  tournament_format: TournamentFormat
   rounds_per_season: number
   has_third_place_match: boolean
   max_players?: number

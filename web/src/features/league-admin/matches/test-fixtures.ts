@@ -13,7 +13,7 @@ export const tournament = {
   end_date: '2024-12-31',
   is_active: true,
   registration_open: true,
-  tournament_format: 'round_robin',
+  tournament_format: 'league',
   rounds_per_season: 10,
   has_third_place_match: false,
   age_validation_enabled: false,

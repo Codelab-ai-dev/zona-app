@@ -35,7 +35,7 @@ describe('GroupsPage', () => {
   })
 
   it('says groups are unavailable when the active tournament is not Grupos + Eliminación', async () => {
-    mockApi({ ...base, 'GET /leagues/league-1/tournaments': page([{ ...tournament, tournament_format: 'round_robin' }]) })
+    mockApi({ ...base, 'GET /leagues/league-1/tournaments': page([{ ...tournament, tournament_format: 'league' }]) })
     renderWithProviders(<GroupsPage />)
     expect(await screen.findByText('No disponible')).toBeInTheDocument()
     expect(screen.getByText(/solo está disponible para torneos de formato/)).toBeInTheDocument()

@@ -14,7 +14,7 @@ const tournament = {
   start_date: '2024-01-01',
   end_date: '2024-03-01',
   registration_open: false,
-  tournament_format: 'round_robin',
+  tournament_format: 'league',
   rounds_per_season: 10,
   has_third_place_match: false,
   age_validation_enabled: false,
