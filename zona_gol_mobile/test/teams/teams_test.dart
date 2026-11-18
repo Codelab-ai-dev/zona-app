@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zona_gol_mobile/domain/entities/team_standing_entity.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:zona_gol_mobile/core/errors/failures.dart';
@@ -144,6 +145,22 @@ void main() {
       expect(s.recentForm, isNull);
     });
 
+    test('standings keep the API order, which ranks the table for every client (#85)', () {
+      TeamStandingEntity row(String name, int position, {int points = 3}) =>
+          TeamStandingEntity(id: name, teamId: name, teamName: name, points: points, position: position);
+      // Fully tied teams: the API's order wins over a local name sort
+      // (Dart sorts 'Águilas' after 'Zorros'; PostgreSQL does not).
+      final sorted = TeamStandingMapper.sortStandings([row('Zorros', 2), row('Águilas', 1), row('Leones', 3, points: 1)]);
+      expect(sorted.map((s) => s.teamName), ['Águilas', 'Zorros', 'Leones']);
+      expect(TeamStandingMapper.fromJson({...standingJson, 'position': 4}).position, 4);
+    });
+
+    test('standings without positions (older API) are still sorted by points', () {
+      TeamStandingEntity row(String name, int points) => TeamStandingEntity(id: name, teamId: name, teamName: name, points: points);
+      final sorted = TeamStandingMapper.sortStandings([row('B', 1), row('A', 6)]);
+      expect(sorted.map((s) => s.teamName), ['A', 'B']);
+    });
+
     test('public player and league player', () {
       final p = PlayerMapper.fromJson(publicPlayerJson);
       expect(p.jerseyNumber, 1);
@@ -272,10 +289,10 @@ void main() {
       expect(requests.single.method, 'DELETE');
     });
 
-    test('standings are sorted by total points', () async {
+    test('standings come in the API order (total points first)', () async {
       handler = (req) async => json(page([
-            {...standingJson, 'team_id': 'b', 'team_name': 'B', 'points': 4},
-            {...standingJson, 'team_id': 'a', 'team_name': 'A', 'points': 3, 'points_adjustment': 3},
+            {...standingJson, 'team_id': 'b', 'team_name': 'B', 'points': 4, 'position': 2},
+            {...standingJson, 'team_id': 'a', 'team_name': 'A', 'points': 3, 'points_adjustment': 3, 'position': 1},
           ]));
       final result = await TeamRepositoryImpl(api: api).getStandingsByTournament(tournamentId);
       expect(requests.single.url.path, '/api/v1/tournaments/$tournamentId/standings');

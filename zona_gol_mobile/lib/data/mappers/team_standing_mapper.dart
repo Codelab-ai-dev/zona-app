@@ -27,12 +27,19 @@ class TeamStandingMapper {
       pointsAdjustment: json.integer('points_adjustment'),
       adjustmentReason: json.strOrNull('adjustment_reason'),
       recentForm: form == null || form.isEmpty ? null : form,
+      position: json.integer('position'),
     );
   }
 
-  /// Sort by total points, goal difference, goals for and name.
+  /// Keeps the API's order: it ranks the table in one place for every
+  /// client (#85). Only rows without a position (older API) are sorted here,
+  /// by total points, goal difference and goals for.
   static List<TeamStandingEntity> sortStandings(List<TeamStandingEntity> standings) {
     final sorted = List<TeamStandingEntity>.from(standings);
+    if (sorted.every((s) => s.position > 0)) {
+      sorted.sort((a, b) => a.position.compareTo(b.position));
+      return sorted;
+    }
     sorted.sort((a, b) {
       final points = b.totalPoints.compareTo(a.totalPoints);
       if (points != 0) return points;
