@@ -27,6 +27,11 @@ export function LivePage() {
             )
           }
 
+          if (data.playback_restricted) {
+            // Pay-per-view without purchases yet: protected (#39).
+            return <EmptyState title="Transmisión de pago" description="Esta transmisión todavía no está disponible para el público." />
+          }
+
           const replayReady = data.recording_ready && !!data.recording_playback_id
           const playbackId = data.status === 'live' ? data.mux_playback_id : replayReady ? data.recording_playback_id : undefined
 

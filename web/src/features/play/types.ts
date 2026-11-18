@@ -41,6 +41,8 @@ export interface Recording {
   visibility: Visibility
   is_premium: boolean
   price_cents?: number
+  /** Premium content: the API left out playback for this viewer (#39). */
+  playback_restricted?: boolean
   views_count: number
   likes_count: number
   published_at?: string
@@ -61,6 +63,8 @@ export interface Clip {
   league_id?: string
   clip_type?: ClipType
   clip_url?: string
+  /** Clip of premium content: no playback for this viewer (#39). */
+  playback_restricted?: boolean
   mux_asset_id?: string
   mux_playback_id?: string
   thumbnail_url?: string
@@ -97,6 +101,8 @@ export interface Stream {
   status: StreamStatus
   source_type: StreamSourceType
   is_pay_per_view: boolean
+  /** Pay-per-view: no playback for this viewer (#39). */
+  playback_restricted?: boolean
   price_cents?: number
   current_viewers: number
   scheduled_start?: string

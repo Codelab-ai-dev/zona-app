@@ -1,5 +1,5 @@
 import MuxPlayer from '@mux/mux-player-react'
-import { AlertCircle, Calendar, ChevronLeft, Clock, Eye, Loader2 } from 'lucide-react'
+import { AlertCircle, Calendar, ChevronLeft, Clock, Eye, Loader2, Lock } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 
@@ -23,6 +23,18 @@ function PlayerPlaceholder({ children }: { children: ReactNode }) {
 }
 
 function Player({ video, title }: { video: Recording; title: string }) {
+  if (video.playback_restricted) {
+    // No paywall yet: premium videos stay protected until purchases exist (#39).
+    return (
+      <PlayerPlaceholder>
+        <Lock className="mx-auto size-12 text-muted-foreground" aria-hidden="true" />
+        <div role="status">
+          <p className="font-medium">Contenido premium</p>
+          <p className="text-sm text-muted-foreground">Este video todavía no está disponible para el público.</p>
+        </div>
+      </PlayerPlaceholder>
+    )
+  }
   if (video.status === 'ready' && video.mux_playback_id) {
     return (
       <MuxPlayer
