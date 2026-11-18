@@ -820,17 +820,15 @@ func (r *PGRepository) PublishRound(ctx context.Context, tournamentID uuid.UUID,
 	return nil
 }
 
-// GetTournamentStandings retrieves standings sorted by points + adjustment, goal difference, goals for.
+// GetTournamentStandings retrieves standings in the tournament_standings order (#85).
 func (r *PGRepository) GetTournamentStandings(ctx context.Context, tournamentID uuid.UUID) ([]StandingsTeam, error) {
 	const q = `
 		SELECT team_id, points, goal_difference, goals_for, goals_against,
 		       matches_played, matches_won, matches_drawn, matches_lost,
 		       COALESCE(points_adjustment, 0) as points_adjustment
-		FROM public.team_stats
+		FROM public.tournament_standings
 		WHERE tournament_id = $1
-		ORDER BY (points + COALESCE(points_adjustment, 0)) DESC,
-		         goal_difference DESC,
-		         goals_for DESC`
+		ORDER BY position -- the one standings order (#85)`
 
 	rows, err := r.db.Query(ctx, q, tournamentID)
 	if err != nil {

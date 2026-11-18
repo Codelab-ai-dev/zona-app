@@ -137,11 +137,10 @@ func (r *PGRepository) GenerateStandingsContent(ctx context.Context, leagueID, t
 		SELECT ts.team_id, ts.matches_played, ts.matches_won, ts.matches_drawn,
 		       ts.matches_lost, ts.goals_for, ts.goals_against, ts.goal_difference,
 		       ts.points, ts.points_adjustment, ts.adjustment_reason, t.name as team_name
-		FROM public.team_stats ts
+		FROM public.tournament_standings ts
 		JOIN public.teams t ON t.id = ts.team_id
 		WHERE ts.tournament_id = $1
-		ORDER BY (ts.points + COALESCE(ts.points_adjustment, 0)) DESC,
-		         ts.goal_difference DESC, ts.goals_for DESC
+		ORDER BY ts.position -- the one standings order (#85)
 	`
 
 	rows, err := r.db.Query(ctx, q, tournamentID)

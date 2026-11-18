@@ -322,10 +322,10 @@ func (p *PGDataProvider) getStandings(ctx context.Context, id Identity) ([]stand
 		SELECT tm.name, ts.matches_played, ts.matches_won, ts.matches_drawn, ts.matches_lost,
 		       ts.goals_for, ts.goals_against, ts.goal_difference,
 		       ts.points + COALESCE(ts.points_adjustment, 0)
-		FROM public.team_stats ts
+		FROM public.tournament_standings ts
 		JOIN public.teams tm ON tm.id = ts.team_id
 		WHERE ts.league_id = $1 AND ts.tournament_id = $2
-		ORDER BY ts.points + COALESCE(ts.points_adjustment, 0) DESC, ts.goal_difference DESC, ts.goals_for DESC
+		ORDER BY ts.position -- the one standings order (#85)
 		LIMIT 100`
 	rows, err := p.db.Query(ctx, query, id.LeagueID, id.TournamentID)
 	if err != nil {

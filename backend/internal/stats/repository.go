@@ -18,20 +18,20 @@ type PGRepository struct {
 // NewPGRepository builds a PostgreSQL-backed repository.
 func NewPGRepository(db database.Querier) *PGRepository { return &PGRepository{db: db} }
 
-// GetStandingsByTournament returns the league standings ordered with points_adjustment.
+// GetStandingsByTournament returns the standings in the tournament_standings order (#85).
 func (r *PGRepository) GetStandingsByTournament(ctx context.Context, tournamentID uuid.UUID, limit int) ([]Standings, error) {
 	const q = `
 		SELECT
-			ROW_NUMBER() OVER (ORDER BY (ts.points + ts.points_adjustment) DESC, ts.goal_difference DESC, ts.goals_for DESC) AS position,
+			ts.position,
 			ts.team_id, t.name, t.logo,
 			ts.matches_played, ts.matches_won, ts.matches_drawn, ts.matches_lost,
 			ts.goals_for, ts.goals_against, ts.goal_difference,
 			ts.points, ts.points_adjustment, ts.adjustment_reason,
 			ts.recent_form, ts.last_match_date, t.group_name
-		FROM public.team_stats ts
+		FROM public.tournament_standings ts
 		JOIN public.teams t ON t.id = ts.team_id
 		WHERE ts.tournament_id = $1
-		ORDER BY (ts.points + ts.points_adjustment) DESC, ts.goal_difference DESC, ts.goals_for DESC
+		ORDER BY ts.position -- the one standings order (#85)
 		LIMIT $2`
 
 	rows, err := r.db.Query(ctx, q, tournamentID, limit)

@@ -33,6 +33,9 @@ class TeamStandingEntity extends Equatable {
   // Last results, e.g. "WDL"
   final String? recentForm;
 
+  /// Rank computed by the API (1 = first); 0 when unknown.
+  final int position;
+
   const TeamStandingEntity({
     required this.id,
     required this.teamId,
@@ -51,6 +54,7 @@ class TeamStandingEntity extends Equatable {
     this.pointsAdjustment = 0,
     this.adjustmentReason,
     this.recentForm,
+    this.position = 0,
   });
 
   /// Total points including adjustments
@@ -88,5 +92,6 @@ class TeamStandingEntity extends Equatable {
         pointsAdjustment,
         adjustmentReason,
         recentForm,
+        position,
       ];
 }
