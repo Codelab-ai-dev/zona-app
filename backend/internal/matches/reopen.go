@@ -52,6 +52,7 @@ var errNotFinished = &httpx.Error{
 //   - deletes its goals, cards and incidents;
 //   - deletes the automatic suspensions not served yet (served ones stay);
 //   - cancels its automatic fines nobody paid yet (paid ones stay);
+//   - stops counting it for other players' suspensions (#81);
 //   - rebuilds player stats and the tournament standings;
 //   - records who, when, why and the previous result in match_audit_log.
 //
@@ -113,6 +114,11 @@ func (s *Service) ReopenMatch(ctx context.Context, caller auth.Principal, matchI
 			DELETE FROM public.player_suspensions
 			WHERE match_card_id IN (SELECT id FROM public.match_cards WHERE match_id = $1)
 			  AND COALESCE(matches_served, 0) = 0`, matchID); err != nil {
+			return err
+		}
+		// The match no longer counts for other suspensions: the trigger gives
+		// back the served match (and reactivates them if it completed them).
+		if _, err := exec("undo suspension applications", `DELETE FROM public.suspension_match_applications WHERE match_id = $1`, matchID); err != nil {
 			return err
 		}
 		if res.GoalsRemoved, err = exec("delete goals", `DELETE FROM public.match_goals WHERE match_id = $1`, matchID); err != nil {
