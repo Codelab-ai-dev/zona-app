@@ -78,6 +78,9 @@ export interface Match {
   playoff_round?: PlayoffRound
   playoff_position?: number
   leg?: Leg
+  /** Penalty shoot-out that decided a knockout tie (#83). */
+  home_penalties?: number
+  away_penalties?: number
   bye_team_id?: string
   is_published: boolean
   created_at: string
@@ -149,6 +152,9 @@ export interface PostMatchResultRequest {
   cards?: PostCardRequest[]
   observations?: string
   incidents?: PostIncidentRequest[]
+  /** Only for a level knockout tie; the API says when they are required. */
+  home_penalties?: number
+  away_penalties?: number
 }
 
 export interface PostGoalRequest {

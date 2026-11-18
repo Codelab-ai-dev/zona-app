@@ -359,6 +359,11 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 			}
 		}
 
+		// Knockout ties: penalties exactly when the tie is level (#83).
+		if err := checkPenalties(ctx, tx, match, req); err != nil {
+			return err
+		}
+
 		// IDEMPOTENCY: Delete existing goals, cards, incidents for this match (replace semantics)
 		if _, err := tx.Exec(ctx, `DELETE FROM public.match_goals WHERE match_id = $1`, matchID); err != nil {
 			return fmt.Errorf("delete goals: %w", err)
@@ -424,6 +429,14 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 		// corrected score of a finished match would leave stale standings.
 		if _, err := tx.Exec(ctx, `SELECT public.rebuild_team_stats_for_tournament($1)`, match.TournamentID); err != nil {
 			return fmt.Errorf("rebuild standings: %w", err)
+		}
+		if _, err := tx.Exec(ctx, `UPDATE public.matches SET home_penalties = $2, away_penalties = $3 WHERE id = $1`,
+			matchID, req.HomePenalties, req.AwayPenalties); err != nil {
+			return fmt.Errorf("save penalties: %w", err)
+		}
+		// A decided knockout tie advances (creates or updates the next round).
+		if err := advance(ctx, tx, match); err != nil {
+			return err
 		}
 		// Yellow card accumulation, when the tournament has it on (#82).
 		if _, err := tx.Exec(ctx, `SELECT public.generate_yellow_accumulation($1)`, matchID); err != nil {
@@ -635,8 +648,30 @@ func (s *Service) GeneratePlayoffs(ctx context.Context, caller auth.Principal, r
 	var created []Match
 	err = database.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		txRepo := NewPGRepository(tx)
+		// Only the first round has known teams; later rounds are planned
+		// and created as their ties are decided (#83).
+		firstRound := string(PlayoffRoundSemifinals)
+		if req.NumTeams == 8 {
+			firstRound = string(PlayoffRoundQuarterfinals)
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM public.playoff_slots WHERE tournament_id = $1`, req.TournamentID); err != nil {
+			return fmt.Errorf("reset playoff plan: %w", err)
+		}
 		var reqs []CreateMatchRequest
 		for _, m := range matches {
+			if string(*m.PlayoffRound) != firstRound {
+				leg := "single"
+				if m.Leg != nil {
+					leg = string(*m.Leg)
+				}
+				if _, err := tx.Exec(ctx, `
+					INSERT INTO public.playoff_slots (tournament_id, playoff_round, playoff_position, leg, match_date, match_time, field_number)
+					VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+					req.TournamentID, string(*m.PlayoffRound), *m.PlayoffPosition, leg, m.MatchDate, m.MatchTime, m.FieldNumber); err != nil {
+					return fmt.Errorf("plan playoff slot: %w", err)
+				}
+				continue
+			}
 			creq := CreateMatchRequest{
 				TournamentID:    req.TournamentID,
 				HomeTeamID:      m.HomeTeamID,

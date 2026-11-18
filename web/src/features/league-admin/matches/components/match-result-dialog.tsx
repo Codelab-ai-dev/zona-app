@@ -22,7 +22,7 @@ import {
 } from '../api'
 import type { MatchWithRelations } from '../types'
 import { ResultEventsTabs } from './result-events-tabs'
-import { buildResultRequest, EMPTY_FORM, formFromMatch, goalsExceedingScore, hasUnpickedPlayer, type ResultFormState } from './result-form'
+import { buildResultRequest, canHavePenalties, EMPTY_FORM, formFromMatch, goalsExceedingScore, hasUnpickedPlayer, type ResultFormState } from './result-form'
 
 interface MatchResultDialogProps {
   match: MatchWithRelations
@@ -198,6 +198,40 @@ function ResultDialogBody({
                 />
               </div>
             </div>
+            {canHavePenalties(match) && (
+              <fieldset className="space-y-2 rounded-md border p-3">
+                <legend className="px-1 text-sm font-medium">Penales</legend>
+                <p className="text-xs text-muted-foreground">
+                  Solo si la eliminatoria quedó empatada{match.leg === 'second' ? ' en el global' : ''}. Déjalos vacíos si no hubo.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="home-penalties">Penales {teamNames.home}</Label>
+                    <Input
+                      id="home-penalties"
+                      type="number"
+                      min="0"
+                      value={form.homePenalties}
+                      onChange={(e) => setForm({ ...form, homePenalties: e.target.value })}
+                      disabled={pending}
+                      aria-invalid={!!errors.home_penalties}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="away-penalties">Penales {teamNames.away}</Label>
+                    <Input
+                      id="away-penalties"
+                      type="number"
+                      min="0"
+                      value={form.awayPenalties}
+                      onChange={(e) => setForm({ ...form, awayPenalties: e.target.value })}
+                      disabled={pending}
+                      aria-invalid={!!errors.home_penalties}
+                    />
+                  </div>
+                </div>
+              </fieldset>
+            )}
           </TabsContent>
 
           <ResultEventsTabs form={form} setForm={setForm} teamNames={teamNames} rosters={rosters} rostersLoading={homePlayers.isPending || awayPlayers.isPending} />

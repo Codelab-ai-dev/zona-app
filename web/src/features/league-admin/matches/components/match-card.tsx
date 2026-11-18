@@ -56,6 +56,11 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
           {isFinished ? (
             <span className="text-sm font-bold text-green-400 md:text-base">
               {match.home_score} - {match.away_score}
+              {match.home_penalties != null && match.away_penalties != null && (
+                <span className="ml-1 text-xs font-normal text-gray-400">
+                  (pen. {match.home_penalties}-{match.away_penalties})
+                </span>
+              )}
             </span>
           ) : (
             <span className="text-xs text-gray-500">vs</span>

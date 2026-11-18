@@ -72,11 +72,14 @@ func (s *Service) ReopenMatch(ctx context.Context, caller auth.Principal, matchI
 		var status string
 		var homeScore, awayScore *int
 		var tournamentID, leagueID uuid.UUID
+		var playoffRound *string
+		var playoffPosition *int
 		err := tx.QueryRow(ctx, `
-			SELECT m.status, m.home_score, m.away_score, m.tournament_id, t.league_id
+			SELECT m.status, m.home_score, m.away_score, m.tournament_id, t.league_id,
+			       CASE WHEN m.phase = 'playoffs' THEN m.playoff_round END, m.playoff_position
 			FROM public.matches m JOIN public.tournaments t ON t.id = m.tournament_id
 			WHERE m.id = $1
-			FOR UPDATE OF m`, matchID).Scan(&status, &homeScore, &awayScore, &tournamentID, &leagueID)
+			FOR UPDATE OF m`, matchID).Scan(&status, &homeScore, &awayScore, &tournamentID, &leagueID, &playoffRound, &playoffPosition)
 		if database.IsNoRows(err) {
 			return httpx.ErrNotFound
 		}
@@ -85,6 +88,12 @@ func (s *Service) ReopenMatch(ctx context.Context, caller auth.Principal, matchI
 		}
 		if status != string(MatchStatusFinished) {
 			return errNotFinished
+		}
+		// A knockout tie's next round goes too, unless it was already played (#83).
+		if playoffRound != nil && playoffPosition != nil {
+			if err := undoAdvance(ctx, tx, tournamentID, *playoffRound, *playoffPosition); err != nil {
+				return err
+			}
 		}
 
 		// The previous result, events included, goes to the audit log.
@@ -146,7 +155,8 @@ func (s *Service) ReopenMatch(ctx context.Context, caller auth.Principal, matchI
 			return fmt.Errorf("count kept fines: %w", err)
 		}
 		if _, err := exec("reopen match", `
-			UPDATE public.matches SET status = 'scheduled', home_score = 0, away_score = 0, updated_at = now()
+			UPDATE public.matches SET status = 'scheduled', home_score = 0, away_score = 0,
+			       home_penalties = NULL, away_penalties = NULL, updated_at = now()
 			WHERE id = $1`, matchID); err != nil {
 			return err
 		}

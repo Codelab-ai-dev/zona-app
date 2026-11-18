@@ -26,7 +26,7 @@ func (r *PGRepository) GetMatchByID(ctx context.Context, matchID uuid.UUID) (Mat
 	const q = `
 		SELECT id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		       match_date, match_time, status, round, field_number, phase, playoff_round,
-		       playoff_position, leg, bye_team_id, is_published, created_at, updated_at
+		       playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at
 		FROM public.matches
 		WHERE id = $1`
 
@@ -37,7 +37,7 @@ func (r *PGRepository) GetMatchByID(ctx context.Context, matchID uuid.UUID) (Mat
 	err := r.db.QueryRow(ctx, q, matchID).Scan(
 		&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 		&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phase, &playoffRound,
-		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
+		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
 	)
 	if database.IsNoRows(err) {
 		return Match{}, httpx.ErrNotFound
@@ -165,7 +165,7 @@ func (r *PGRepository) ListMatchesByTournament(ctx context.Context, tournamentID
 	q := `
 		SELECT id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		       match_date, match_time, status, round, field_number, phase, playoff_round,
-		       playoff_position, leg, bye_team_id, is_published, created_at, updated_at
+		       playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at
 		FROM public.matches
 		WHERE tournament_id = $1`
 
@@ -219,7 +219,7 @@ func (r *PGRepository) ListMatchesByTournament(ctx context.Context, tournamentID
 		var leg *string
 		if err := rows.Scan(&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 			&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phase, &playoffRound,
-			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan match: %w", err)
 		}
 		m.Phase = Phase(phase)
@@ -255,7 +255,7 @@ func (r *PGRepository) ListMatchesByTeam(ctx context.Context, teamID uuid.UUID, 
 	q := `
 		SELECT id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		       match_date, match_time, status, round, field_number, phase, playoff_round,
-		       playoff_position, leg, bye_team_id, is_published, created_at, updated_at
+		       playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at
 		FROM public.matches
 		WHERE home_team_id = $1 OR away_team_id = $1`
 
@@ -297,7 +297,7 @@ func (r *PGRepository) ListMatchesByTeam(ctx context.Context, teamID uuid.UUID, 
 		var leg *string
 		if err := rows.Scan(&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 			&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phase, &playoffRound,
-			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan match: %w", err)
 		}
 		m.Phase = Phase(phase)
@@ -334,7 +334,7 @@ func (r *PGRepository) ListUpcomingMatches(ctx context.Context, tournamentID uui
 	const q = `
 		SELECT id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		       match_date, match_time, status, round, field_number, phase, playoff_round,
-		       playoff_position, leg, bye_team_id, is_published, created_at, updated_at
+		       playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at
 		FROM public.matches
 		WHERE tournament_id = $1 AND status = 'scheduled' AND match_date >= $2
 		ORDER BY match_date ASC
@@ -354,7 +354,7 @@ func (r *PGRepository) ListUpcomingMatches(ctx context.Context, tournamentID uui
 		var leg *string
 		if err := rows.Scan(&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 			&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phase, &playoffRound,
-			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan match: %w", err)
 		}
 		m.Phase = Phase(phase)
@@ -390,7 +390,7 @@ func (r *PGRepository) ListPendingMatchesByLeague(ctx context.Context, leagueID 
 	const q = `
 		SELECT m.id, m.tournament_id, m.home_team_id, m.away_team_id, m.home_score, m.away_score,
 		       m.match_date, m.match_time, m.status, m.round, m.field_number, m.phase, m.playoff_round,
-		       m.playoff_position, m.leg, m.bye_team_id, m.is_published, m.created_at, m.updated_at
+		       m.playoff_position, m.leg, m.bye_team_id, m.home_penalties, m.away_penalties, m.is_published, m.created_at, m.updated_at
 		FROM public.matches m
 		JOIN public.tournaments t ON t.id = m.tournament_id
 		WHERE t.league_id = $1 AND m.status IN ('scheduled', 'in_progress')
@@ -411,7 +411,7 @@ func (r *PGRepository) ListPendingMatchesByLeague(ctx context.Context, leagueID 
 		var leg *string
 		if err := rows.Scan(&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 			&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phase, &playoffRound,
-			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan match: %w", err)
 		}
 		m.Phase = Phase(phase)
@@ -513,7 +513,7 @@ func (r *PGRepository) CreateMatch(ctx context.Context, req CreateMatchRequest) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'scheduled', 0, 0)
 		RETURNING id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		          match_date, match_time, status, round, field_number, phase, playoff_round,
-		          playoff_position, leg, bye_team_id, is_published, created_at, updated_at`
+		          playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at`
 
 	var m Match
 	var phaseStr string
@@ -525,7 +525,7 @@ func (r *PGRepository) CreateMatch(ctx context.Context, req CreateMatchRequest) 
 		req.PlayoffPosition, req.Leg, req.ByeTeamID,
 	).Scan(&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 		&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phaseStr, &playoffRound,
-		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
+		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {
 		return Match{}, fmt.Errorf("create match: %w", err)
@@ -593,7 +593,7 @@ func (r *PGRepository) UpdateMatchSchedule(ctx context.Context, matchID uuid.UUI
 		WHERE id = $1
 		RETURNING id, tournament_id, home_team_id, away_team_id, home_score, away_score,
 		          match_date, match_time, status, round, field_number, phase, playoff_round,
-		          playoff_position, leg, bye_team_id, is_published, created_at, updated_at`
+		          playoff_position, leg, bye_team_id, home_penalties, away_penalties, is_published, created_at, updated_at`
 
 	var phaseStr string
 	var playoffRound *string
@@ -601,7 +601,7 @@ func (r *PGRepository) UpdateMatchSchedule(ctx context.Context, matchID uuid.UUI
 	err = r.db.QueryRow(ctx, q, matchID, m.MatchDate, m.MatchTime, m.FieldNumber, m.Round, m.HomeTeamID, m.AwayTeamID).Scan(
 		&m.ID, &m.TournamentID, &m.HomeTeamID, &m.AwayTeamID, &m.HomeScore, &m.AwayScore,
 		&m.MatchDate, &m.MatchTime, &m.Status, &m.Round, &m.FieldNumber, &phaseStr, &playoffRound,
-		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
+		&m.PlayoffPosition, &leg, &m.ByeTeamID, &m.HomePenalties, &m.AwayPenalties, &m.IsPublished, &m.CreatedAt, &m.UpdatedAt,
 	)
 	if database.IsNoRows(err) {
 		return Match{}, httpx.ErrNotFound

@@ -26,6 +26,9 @@ export interface ResultFormState {
   goals: FormGoal[]
   cards: FormCard[]
   observations: string
+  /** Penalty shoot-out of a knockout tie; '' when there was none. */
+  homePenalties: string
+  awayPenalties: string
 }
 
 /** True when every goal/card has a player picked. */
@@ -73,10 +76,19 @@ export function buildResultRequest(match: MatchWithRelations, form: ResultFormSt
     })),
   }
   if (observations) data.observations = observations
+  if (form.homePenalties !== '' && form.awayPenalties !== '') {
+    data.home_penalties = Number(form.homePenalties)
+    data.away_penalties = Number(form.awayPenalties)
+  }
   return data
 }
 
-export const EMPTY_FORM: ResultFormState = { homeScore: 0, awayScore: 0, goals: [], cards: [], observations: '' }
+export const EMPTY_FORM: ResultFormState = { homeScore: 0, awayScore: 0, goals: [], cards: [], observations: '', homePenalties: '', awayPenalties: '' }
+
+/** Knockout matches that can be decided on penalties: not a first leg (#83). */
+export function canHavePenalties(match: MatchWithRelations): boolean {
+  return match.phase === 'playoffs' && match.leg !== 'first'
+}
 
 /** Prefills the form from a stored result (goals/cards come with GET /matches/{id}). */
 export function formFromMatch(match: MatchWithRelations, observations = ''): ResultFormState {
@@ -85,6 +97,8 @@ export function formFromMatch(match: MatchWithRelations, observations = ''): Res
     homeScore: match.home_score,
     awayScore: match.away_score,
     observations,
+    homePenalties: match.home_penalties != null ? String(match.home_penalties) : '',
+    awayPenalties: match.away_penalties != null ? String(match.away_penalties) : '',
     goals: (match.goals ?? []).map((g) => ({
       id: g.id,
       side: sideOf(g.team_id),
