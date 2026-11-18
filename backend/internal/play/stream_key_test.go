@@ -50,8 +50,8 @@ func serve(t *testing.T, h *Handler, method, path string, caller *auth.Principal
 	return rec
 }
 
-// Public reads and the create/update responses carry no key, including a
-// league-less stream that any authenticated user could PATCH (#40).
+// Public reads and the create/update responses carry no key, including the
+// update of a league-less stream.
 func TestStreamResponsesCarryNoKey(t *testing.T) {
 	h, repo, _, _ := newTestHandler()
 	league := uuid.New()
@@ -68,14 +68,14 @@ func TestStreamResponsesCarryNoKey(t *testing.T) {
 	}
 	repo.CreateStreamFunc = func(context.Context, *StreamRequest, uuid.UUID) (*Stream, error) { return stream, nil }
 	repo.UpdateStreamFunc = func(_ context.Context, id uuid.UUID, _ *UpdateStreamRequest) (*Stream, error) { return orphan, nil }
-	user := &auth.Principal{UserID: uuid.New(), Role: auth.RolePublic, IsActive: true}
+	super := &auth.Principal{UserID: uuid.New(), Role: auth.RoleSuperAdmin, IsActive: true} // league-less: super admin only (#40)
 	admin := &auth.Principal{UserID: uuid.New(), Role: auth.RoleLeagueAdmin, IsActive: true}
 
 	for name, rec := range map[string]*httptest.ResponseRecorder{
 		"public list":        serve(t, h, http.MethodGet, "/play/streams", nil, ""),
 		"public detail":      serve(t, h, http.MethodGet, "/play/streams/"+stream.ID.String(), nil, ""),
 		"create (admin)":     serve(t, h, http.MethodPost, "/play/streams", admin, `{"league_id":"`+league.String()+`","title":"Final","source_type":"obs"}`),
-		"update league-less": serve(t, h, http.MethodPatch, "/play/streams/"+orphan.ID.String(), user, `{"title":"Otro"}`),
+		"update league-less": serve(t, h, http.MethodPatch, "/play/streams/"+orphan.ID.String(), super, `{"title":"Otro"}`),
 	} {
 		if rec.Code >= 300 {
 			t.Errorf("%s: status %d: %s", name, rec.Code, rec.Body)

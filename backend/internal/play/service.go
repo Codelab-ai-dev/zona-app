@@ -99,6 +99,9 @@ func (s *Service) CreateRecording(ctx context.Context, caller auth.Principal, re
 	if err := s.authz.CanManageLeague(ctx, caller, *req.LeagueID); err != nil {
 		return nil, err
 	}
+	if err := s.checkRefs(ctx, *req.LeagueID, Refs{TournamentID: req.TournamentID, MatchID: req.MatchID}); err != nil {
+		return nil, err
+	}
 
 	rec, err := s.repo.CreateRecording(ctx, req, caller.UserID)
 	if err != nil {
@@ -119,10 +122,8 @@ func (s *Service) UpdateRecording(ctx context.Context, caller auth.Principal, id
 		return nil, httpx.ErrNotFound
 	}
 
-	if rec.LeagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *rec.LeagueID); err != nil {
-			return nil, err
-		}
+	if err := s.authorizeLeague(ctx, caller, rec.LeagueID); err != nil {
+		return nil, err
 	}
 
 	updated, err := s.repo.UpdateRecording(ctx, id, req)
@@ -147,10 +148,8 @@ func (s *Service) DeleteRecording(ctx context.Context, caller auth.Principal, id
 		return httpx.ErrNotFound
 	}
 
-	if rec.LeagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *rec.LeagueID); err != nil {
-			return err
-		}
+	if err := s.authorizeLeague(ctx, caller, rec.LeagueID); err != nil {
+		return err
 	}
 
 	// Delete from Mux if present
@@ -169,6 +168,9 @@ func (s *Service) CreateDirectUpload(ctx context.Context, caller auth.Principal,
 	}
 
 	if err := s.authz.CanManageLeague(ctx, caller, *req.LeagueID); err != nil {
+		return nil, err
+	}
+	if err := s.checkRefs(ctx, *req.LeagueID, Refs{TournamentID: req.TournamentID, MatchID: req.MatchID}); err != nil {
 		return nil, err
 	}
 
@@ -201,10 +203,8 @@ func (s *Service) RefreshRecordingStatus(ctx context.Context, caller auth.Princi
 	}
 
 	// Authorize
-	if rec.LeagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *rec.LeagueID); err != nil {
-			return nil, err
-		}
+	if err := s.authorizeLeague(ctx, caller, rec.LeagueID); err != nil {
+		return nil, err
 	}
 
 	if rec.MuxAssetID == nil {
@@ -252,27 +252,42 @@ func (s *Service) ListClips(ctx context.Context, opts *ListClipsOpts) ([]*Clip, 
 	return s.repo.ListClips(ctx, opts)
 }
 
-// CreateClip creates a new clip (auth + authz required).
+// CreateClip creates a new clip (auth + authz required). Its league comes
+// from its recording when it has one (the body's league_id must agree),
+// otherwise league_id is required; every other reference must belong to
+// that league and to the recording's match (#40).
 func (s *Service) CreateClip(ctx context.Context, caller auth.Principal, req *ClipRequest) (*Clip, error) {
-	// Load recording to get league info for authorization
-	var leagueID *uuid.UUID
+	leagueID := req.LeagueID
+	var recMatch *uuid.UUID
 	if req.RecordingID != nil {
 		rec, err := s.repo.GetRecording(ctx, *req.RecordingID)
 		if err != nil {
 			return nil, err
 		}
-		if rec != nil {
-			leagueID = rec.LeagueID
+		if rec == nil || rec.LeagueID == nil {
+			return nil, httpx.Validation(map[string]string{"recording_id": "no existe o no pertenece a una liga"})
 		}
-	} else if req.LeagueID != nil {
-		leagueID = req.LeagueID
-	}
-
-	if leagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *leagueID); err != nil {
-			return nil, err
+		if leagueID != nil && *leagueID != *rec.LeagueID {
+			return nil, httpx.Validation(map[string]string{"league_id": "no coincide con la liga de la grabación"})
 		}
+		leagueID, recMatch = rec.LeagueID, rec.MatchID
 	}
+	if leagueID == nil {
+		return nil, httpx.Validation(map[string]string{"league_id": "league_id o recording_id es obligatorio"})
+	}
+	if err := s.authz.CanManageLeague(ctx, caller, *leagueID); err != nil {
+		return nil, err
+	}
+	if recMatch != nil {
+		if req.MatchID != nil && *req.MatchID != *recMatch {
+			return nil, httpx.Validation(map[string]string{"match_id": "no coincide con el partido de la grabación"})
+		}
+		req.MatchID = recMatch
+	}
+	if err := s.checkRefs(ctx, *leagueID, Refs{MatchID: req.MatchID, TeamID: req.TeamID, PlayerID: req.PlayerID}); err != nil {
+		return nil, err
+	}
+	req.LeagueID = leagueID // stored, so later deletes authorize on it
 
 	clip, err := s.repo.CreateClip(ctx, req, caller.UserID)
 	if err != nil {
@@ -292,24 +307,20 @@ func (s *Service) DeleteClip(ctx context.Context, caller auth.Principal, id uuid
 		return httpx.ErrNotFound
 	}
 
-	// Load recording to get league info for authorization
-	var leagueID *uuid.UUID
+	// The recording's league wins; the clip's own league otherwise.
+	leagueID := clip.LeagueID
 	if clip.RecordingID != nil {
 		rec, err := s.repo.GetRecording(ctx, *clip.RecordingID)
 		if err != nil {
 			return err
 		}
-		if rec != nil {
+		if rec != nil && rec.LeagueID != nil {
 			leagueID = rec.LeagueID
 		}
-	} else if clip.LeagueID != nil {
-		leagueID = clip.LeagueID
 	}
 
-	if leagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *leagueID); err != nil {
-			return err
-		}
+	if err := s.authorizeLeague(ctx, caller, leagueID); err != nil {
+		return err
 	}
 
 	return s.repo.DeleteClip(ctx, id)
@@ -379,6 +390,10 @@ func (s *Service) CreateStream(ctx context.Context, caller auth.Principal, req *
 		return nil, err
 	}
 
+	if err := s.checkRefs(ctx, *req.LeagueID, Refs{MatchID: req.MatchID}); err != nil {
+		return nil, err
+	}
+
 	stream, err := s.repo.CreateStream(ctx, req, caller.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("create stream: %w", err)
@@ -398,10 +413,8 @@ func (s *Service) UpdateStream(ctx context.Context, caller auth.Principal, id uu
 	}
 
 	// Load from DB for authorization, not from request
-	if stream.LeagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *stream.LeagueID); err != nil {
-			return nil, err
-		}
+	if err := s.authorizeLeague(ctx, caller, stream.LeagueID); err != nil {
+		return nil, err
 	}
 
 	updated, err := s.repo.UpdateStream(ctx, id, req)
@@ -426,10 +439,8 @@ func (s *Service) DeleteStream(ctx context.Context, caller auth.Principal, id uu
 	}
 
 	// Load from DB for authorization, not from request
-	if stream.LeagueID != nil {
-		if err := s.authz.CanManageLeague(ctx, caller, *stream.LeagueID); err != nil {
-			return err
-		}
+	if err := s.authorizeLeague(ctx, caller, stream.LeagueID); err != nil {
+		return err
 	}
 
 	// Delete from Mux if present
