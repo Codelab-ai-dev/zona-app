@@ -86,6 +86,7 @@ type Suspension struct {
 	TeamID         uuid.UUID  `json:"team_id"`
 	LeagueID       uuid.UUID  `json:"league_id"`
 	TournamentID   *uuid.UUID `json:"tournament_id,omitempty"`
+	MatchID        *uuid.UUID `json:"match_id,omitempty"` // match that caused it, if any
 	SuspensionType string     `json:"suspension_type"`
 	Reason         string     `json:"reason"`
 	MatchesToServe int        `json:"matches_to_serve"`

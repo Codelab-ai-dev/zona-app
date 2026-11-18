@@ -262,7 +262,7 @@ func (r *PGRepository) GetPlayerStatsByTeam(ctx context.Context, teamID uuid.UUI
 // GetSuspensionByID returns a specific suspension.
 func (r *PGRepository) GetSuspensionByID(ctx context.Context, suspensionID uuid.UUID) (Suspension, error) {
 	const q = `
-		SELECT id, player_id, team_id, league_id, tournament_id, suspension_type, reason,
+		SELECT id, player_id, team_id, league_id, tournament_id, match_id, suspension_type, reason,
 		       matches_to_serve, matches_served, status, notes, start_date, end_date,
 		       created_by, updated_by, created_at, updated_at
 		FROM public.player_suspensions
@@ -270,7 +270,7 @@ func (r *PGRepository) GetSuspensionByID(ctx context.Context, suspensionID uuid.
 
 	var s Suspension
 	err := r.db.QueryRow(ctx, q, suspensionID).Scan(
-		&s.ID, &s.PlayerID, &s.TeamID, &s.LeagueID, &s.TournamentID, &s.SuspensionType, &s.Reason,
+		&s.ID, &s.PlayerID, &s.TeamID, &s.LeagueID, &s.TournamentID, &s.MatchID, &s.SuspensionType, &s.Reason,
 		&s.MatchesToServe, &s.MatchesServed, &s.Status, &s.Notes, &s.StartDate, &s.EndDate,
 		&s.CreatedBy, &s.UpdatedBy, &s.CreatedAt, &s.UpdatedAt,
 	)

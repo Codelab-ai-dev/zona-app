@@ -425,6 +425,11 @@ func (s *Service) PostResult(ctx context.Context, caller auth.Principal, matchID
 		if _, err := tx.Exec(ctx, `SELECT public.rebuild_team_stats_for_tournament($1)`, match.TournamentID); err != nil {
 			return fmt.Errorf("rebuild standings: %w", err)
 		}
+		// This match counts for the active suspensions of both teams' players
+		// (#81); idempotent when a result is corrected.
+		if _, err := tx.Exec(ctx, `SELECT public.apply_suspensions_for_match($1)`, matchID); err != nil {
+			return fmt.Errorf("apply suspensions: %w", err)
+		}
 		return nil
 	})
 	if err != nil {

@@ -210,6 +210,9 @@ func (s *Service) ApplySuspensionToMatch(ctx context.Context, caller auth.Princi
 	if suspension.TeamID != match.HomeTeamID && suspension.TeamID != match.AwayTeamID {
 		return httpx.ErrBadRequest.Wrap(fmt.Errorf("suspended player's team does not play in this match"))
 	}
+	if suspension.MatchID != nil && *suspension.MatchID == matchID {
+		return httpx.Validation(map[string]string{"match_id": "es el partido que causó la suspensión"})
+	}
 
 	return s.repo.ApplySuspensionToMatch(ctx, suspensionID, matchID)
 }
