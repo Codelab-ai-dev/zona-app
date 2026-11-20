@@ -1,5 +1,5 @@
 // Package mcpserver exposes public, read-only Zona Gol data to AI clients
-// through the Model Context Protocol (issue #50, phase A).
+// through the Model Context Protocol (issue #50, phases A and B).
 //
 // Every tool calls the existing domain services as an anonymous caller, so
 // the same visibility rules as the public portal apply: inactive leagues,
@@ -11,6 +11,7 @@ package mcpserver
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -57,7 +58,13 @@ type Deps struct {
 	Stats   Stats
 	Teams   Teams
 	Logger  *slog.Logger
+	// CallTimeout bounds every tool call, also over stdio. Zero means
+	// DefaultCallTimeout.
+	CallTimeout time.Duration
 }
+
+// DefaultCallTimeout bounds a tool call when Deps.CallTimeout is not set.
+const DefaultCallTimeout = 10 * time.Second
 
 // NewServer builds an MCP server with the public read-only tool catalog.
 // It is transport-agnostic: callers connect it over stdio, Streamable HTTP
@@ -72,7 +79,57 @@ func NewServer(d Deps) *mcp.Server {
 			"Solo hay información publicada; no hay datos de contacto ni documentos.",
 		Logger: d.Logger,
 	})
+	if d.CallTimeout <= 0 {
+		d.CallTimeout = DefaultCallTimeout
+	}
+	s.AddReceivingMiddleware(observe(d.Logger, d.CallTimeout))
 	t := &tools{d: d}
 	t.register(s)
 	return s
+}
+
+// observe bounds and logs every tool call. The call stops at the timeout or
+// when its HTTP request ends (client gone, request timeout). One log line per
+// call carries the tool, outcome, duration and HTTP request ID; arguments are
+// never logged, since they hold whatever text an AI client chose to send.
+func observe(logger *slog.Logger, timeout time.Duration) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			if method != "tools/call" {
+				return next(ctx, method, req)
+			}
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			if done, ok := ctx.Value(requestDoneKey).(<-chan struct{}); ok {
+				// Ends with the call: the deferred cancel closes ctx.Done().
+				go func() {
+					select {
+					case <-done:
+						cancel()
+					case <-ctx.Done():
+					}
+				}()
+			}
+			start := time.Now()
+			tool := ""
+			if p, ok := req.GetParams().(*mcp.CallToolParamsRaw); ok {
+				tool = p.Name
+			}
+			res, err := next(ctx, method, req)
+			outcome := "ok"
+			switch r, _ := res.(*mcp.CallToolResult); {
+			case err != nil:
+				outcome = "protocol_error"
+			case r != nil && r.IsError:
+				outcome = "tool_error"
+			}
+			logger.Info("mcp tool call",
+				"tool", tool,
+				"outcome", outcome,
+				"duration_ms", time.Since(start).Milliseconds(),
+				"request_id", RequestID(ctx),
+			)
+			return res, err
+		}
+	}
 }
