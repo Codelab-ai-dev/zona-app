@@ -19,7 +19,7 @@ export function outcomeFor(match: Match, teamId: string): Outcome | null {
   return { letter: 'E', label: 'Empate' }
 }
 
-const OUTCOME = { G: 'bg-green-500/20 text-green-400', E: 'bg-yellow-500/20 text-yellow-400', P: 'bg-red-500/20 text-red-400' }
+const OUTCOME = { G: 'bg-gol-500/20 text-gol-400', E: 'bg-yellow-500/20 text-yellow-400', P: 'bg-red-500/20 text-red-400' }
 
 const STATUS_LABEL: Partial<Record<Match['status'], string>> = {
   scheduled: 'Programado',

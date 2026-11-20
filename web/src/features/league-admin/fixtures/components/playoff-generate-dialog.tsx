@@ -287,7 +287,7 @@ export function PlayoffGenerateDialog({
             <Button
               onClick={handleGenerate}
               disabled={generatePlayoffs.isPending || !tournamentId || !startDate}
-              className="flex-1 bg-green-500 text-white hover:bg-green-600"
+              className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-300"
             >
               {generatePlayoffs.isPending ? 'Generando…' : seeds.complete ? 'Vista previa' : 'Generar'}
             </Button>

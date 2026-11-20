@@ -21,7 +21,7 @@ const clipTypeLabels: Record<string, string> = {
 }
 
 const clipTypeColors = {
-  goal: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/50' },
+  goal: { bg: 'bg-gol-500/20', text: 'text-gol-400', border: 'border-gol-500/50' },
   save: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50' },
   highlight: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/50' },
   penalty: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/50' },

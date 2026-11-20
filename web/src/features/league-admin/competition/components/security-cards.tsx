@@ -37,7 +37,7 @@ export function SecurityCards() {
           <ul className="space-y-2 text-sm text-white/80 drop-shadow">
             {tips.map((tip) => (
               <li key={tip} className="flex items-center">
-                <CheckCircle className="w-4 h-4 text-green-300 mr-2" aria-hidden="true" />
+                <CheckCircle className="w-4 h-4 text-emerald-300 mr-2" aria-hidden="true" />
                 {tip}
               </li>
             ))}

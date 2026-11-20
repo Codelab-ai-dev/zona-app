@@ -16,7 +16,7 @@ function Box({ label, value, tone = 'text-white', box = 'border-white/10 bg-slat
   )
 }
 
-const green = 'border-green-500/20 bg-green-500/10'
+const green = 'border-gol-500/20 bg-gol-500/10'
 const blue = 'border-blue-500/20 bg-blue-500/10'
 
 export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStats | null; onClose: () => void }) {
@@ -27,14 +27,14 @@ export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStat
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3 text-white">
-                <Avatar className="size-10 border-2 border-green-500/30 md:size-12">
+                <Avatar className="size-10 border-2 border-gol-500/30 md:size-12">
                   {player.photo && <AvatarImage src={player.photo} alt="" />}
-                  <AvatarFallback className="bg-green-500/20 text-green-400" aria-hidden="true">{initials(player.name)}</AvatarFallback>
+                  <AvatarFallback className="bg-gol-500/20 text-gol-400" aria-hidden="true">{initials(player.name)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-base md:text-lg">{player.name}</span>
-                    <Badge className="border-0 bg-green-500/20 text-green-400">#{player.jersey_number}</Badge>
+                    <Badge className="border-0 bg-gol-500/20 text-gol-400">#{player.jersey_number}</Badge>
                   </div>
                   <p className="text-xs font-normal text-gray-400 md:text-sm">{player.position || '-'}</p>
                 </div>
@@ -45,7 +45,7 @@ export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStat
             <div className="mt-3 space-y-4">
               <section className="rounded-lg border border-white/10 bg-slate-800/50 p-3">
                 <div className="mb-2 flex items-center gap-2">
-                  <Users className="size-4 text-green-400" aria-hidden="true" />
+                  <Users className="size-4 text-gol-400" aria-hidden="true" />
                   <h3 className="text-sm font-medium text-white">Información</h3>
                 </div>
                 <dl className="grid grid-cols-2 gap-3">
@@ -55,7 +55,7 @@ export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStat
                   </div>
                   <div>
                     <dt className="text-[10px] text-gray-500">Número</dt>
-                    <dd className="text-xs font-bold text-green-400">#{player.jersey_number}</dd>
+                    <dd className="text-xs font-bold text-gol-400">#{player.jersey_number}</dd>
                   </div>
                 </dl>
               </section>
@@ -67,7 +67,7 @@ export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStat
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Box label="PJ" value={player.matches_played} />
-                  <Box label="Goles" value={player.goals} tone="text-green-400" box={green} />
+                  <Box label="Goles" value={player.goals} tone="text-gol-400" box={green} />
                   <Box label="Asist." value={player.assists} tone="text-blue-400" box={blue} />
                   <Box label="TA" value={player.yellow_cards} tone="text-yellow-400" box="border-yellow-500/20 bg-yellow-500/10" />
                   <Box label="TR" value={player.red_cards} tone="text-red-400" box="border-red-500/20 bg-red-500/10" />
@@ -78,11 +78,11 @@ export function PlayerDetailDialog({ player, onClose }: { player: TeamPlayerStat
               {player.matches_played > 0 && (
                 <section>
                   <div className="mb-2 flex items-center gap-2">
-                    <Target className="size-4 text-green-400" aria-hidden="true" />
+                    <Target className="size-4 text-gol-400" aria-hidden="true" />
                     <h3 className="text-sm font-medium text-white">Promedios</h3>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Box small label="G/Partido" value={(player.goals / player.matches_played).toFixed(2)} tone="text-green-400" box={green} />
+                    <Box small label="G/Partido" value={(player.goals / player.matches_played).toFixed(2)} tone="text-gol-400" box={green} />
                     <Box small label="A/Partido" value={(player.assists / player.matches_played).toFixed(2)} tone="text-blue-400" box={blue} />
                     <Box small label="Min/Partido" value={`${Math.round(player.minutes_played / player.matches_played)}'`} />
                   </div>

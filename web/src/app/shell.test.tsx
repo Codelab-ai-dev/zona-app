@@ -20,6 +20,6 @@ describe('app shell', () => {
   it('sets the page title from the route', () => {
     const router = createMemoryRouter([{ path: '*', element: <DocumentTitle /> }], { initialEntries: ['/play/clips'] })
     render(<RouterProvider router={router} />)
-    expect(document.title).toBe('Zona Play - Revive cada jugada · Zona Gol')
+    expect(document.title).toBe('Zona Play - Revive cada jugada · Zona OS')
   })
 })

@@ -26,7 +26,7 @@ export function PreviewStep({ matches, rounds, teamNames, pending, onBack, onSav
     <div className="space-y-4">
       <div>
         <h3 className="flex items-center gap-2 text-sm font-semibold text-white md:text-base">
-          <Calendar className="h-4 w-4 text-green-400" aria-hidden="true" />
+          <Calendar className="h-4 w-4 text-gol-400" aria-hidden="true" />
           Vista Previa del Calendario
         </h3>
         <p className="text-xs text-gray-400 md:text-sm">
@@ -68,7 +68,7 @@ export function PreviewStep({ matches, rounds, teamNames, pending, onBack, onSav
         <Button className="border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white" onClick={onBack} disabled={pending}>
           Volver
         </Button>
-        <Button onClick={onSave} disabled={pending} className="flex-1 bg-green-500 text-white hover:bg-green-600">
+        <Button onClick={onSave} disabled={pending} className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-300">
           {pending ? 'Guardando…' : 'Guardar Calendario'}
         </Button>
       </div>

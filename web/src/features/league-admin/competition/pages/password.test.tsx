@@ -19,7 +19,7 @@ describe('Change password (Configuración)', () => {
     await user.type(screen.getByLabelText('Nueva Contraseña'), 'abc')
     expect(screen.getByText('Requisitos de contraseña:')).toBeInTheDocument()
     expect(screen.getByText('Al menos 10 caracteres')).toHaveClass('text-red-300')
-    expect(screen.getByText('Al menos una letra minúscula')).toHaveClass('text-green-300')
+    expect(screen.getByText('Al menos una letra minúscula')).toHaveClass('text-emerald-300')
     await user.type(screen.getByLabelText('Confirmar Nueva Contraseña'), 'abd')
     expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cambiar Contraseña' })).toBeDisabled()

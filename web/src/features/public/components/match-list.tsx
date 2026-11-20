@@ -22,7 +22,7 @@ const STATUS_LABEL: Record<Match['status'], string> = {
 
 const BADGE: Record<Match['status'], string> = {
   scheduled: 'bg-blue-500/20 text-blue-400',
-  in_progress: 'bg-green-500/20 text-green-400',
+  in_progress: 'bg-gol-500/20 text-gol-400',
   finished: 'bg-gray-500/20 text-gray-400',
   cancelled: 'bg-red-500/20 text-red-400',
 }
@@ -92,7 +92,7 @@ function TeamAvatar({ name, logo }: { name: string; logo?: string }) {
   return (
     <Avatar className="size-8 border border-white/10">
       {logo && <AvatarImage src={logo} alt="" />}
-      <AvatarFallback className="bg-green-500/20 text-xs font-bold text-green-400" aria-hidden="true">
+      <AvatarFallback className="bg-gol-500/20 text-xs font-bold text-gol-400" aria-hidden="true">
         {initials(name)}
       </AvatarFallback>
     </Avatar>

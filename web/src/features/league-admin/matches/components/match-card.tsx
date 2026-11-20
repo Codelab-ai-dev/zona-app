@@ -38,7 +38,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
   const statusBadge = isFinished ? (
     <Badge className="border-0 bg-gray-500/80 text-white">Finalizado</Badge>
   ) : match.status === 'in_progress' ? (
-    <Badge className="border-0 bg-green-500/80 text-white">En juego</Badge>
+    <Badge className="border-0 bg-gol-500/80 text-slate-950">En juego</Badge>
   ) : match.status === 'cancelled' ? (
     <Badge className="border-0 bg-red-500/80 text-white">Cancelado</Badge>
   ) : (
@@ -54,7 +54,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
         </div>
         <div className="flex-shrink-0 px-2">
           {isFinished ? (
-            <span className="text-sm font-bold text-green-400 md:text-base">
+            <span className="text-sm font-bold text-gol-400 md:text-base">
               {match.home_score} - {match.away_score}
               {match.home_penalties != null && match.away_penalties != null && (
                 <span className="ml-1 text-xs font-normal text-gray-400">
@@ -88,7 +88,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
               Campo {match.field_number}
             </span>
           )}
-          <Badge className={match.is_published ? 'border-0 bg-green-500/80 text-white' : 'border-orange-500/30 bg-orange-500/20 text-orange-400'}>
+          <Badge className={match.is_published ? 'border-0 bg-gol-500/80 text-slate-950' : 'border-orange-500/30 bg-orange-500/20 text-orange-400'}>
             {match.is_published ? 'Publicado' : 'Borrador'}
           </Badge>
           {statusBadge}
@@ -104,7 +104,7 @@ export function MatchCard({ match, onEdit, onResult, onDelete, onQr, onAttendanc
               size="sm"
               onClick={onResult}
               title={isFinished ? 'Editar Marcador' : 'Ingresar resultado'}
-              className={`${ghost} ${isFinished ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'}`}
+              className={`${ghost} ${isFinished ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' : 'bg-gol-500/20 text-gol-400 hover:bg-gol-500/30'}`}
             >
               <Target className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="sr-only">{isFinished ? 'Editar Marcador' : 'Ingresar resultado'}</span>

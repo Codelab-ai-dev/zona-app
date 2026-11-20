@@ -100,7 +100,7 @@ export function PlayerCredential({ open, onOpenChange, player, teamName, teamLog
       <DialogContent className="max-w-2xl backdrop-blur-xl bg-gradient-to-br from-slate-900/95 via-blue-900/95 to-indigo-900/95 border-white/20 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white drop-shadow-lg">
-            <IdCard className="w-5 h-5 text-green-300" aria-hidden="true" />
+            <IdCard className="w-5 h-5 text-gol-300" aria-hidden="true" />
             {staff ? 'Credencial de Cuerpo Técnico' : 'Credencial de Jugador'}
           </DialogTitle>
           <DialogDescription className="text-white/80 drop-shadow">Credencial imprimible para {player.name}</DialogDescription>

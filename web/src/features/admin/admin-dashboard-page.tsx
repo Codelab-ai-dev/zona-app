@@ -13,7 +13,7 @@ const tabs = [
   { value: 'apps', label: 'App Móvil' },
 ]
 
-const triggerClass = 'text-gray-400 dark:text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 dark:data-[state=active]:bg-green-500/20 dark:data-[state=active]:text-green-400 dark:data-[state=active]:border-transparent'
+const triggerClass = 'text-gray-400 dark:text-gray-400 data-[state=active]:bg-gol-500/20 data-[state=active]:text-gol-400 dark:data-[state=active]:bg-gol-500/20 dark:data-[state=active]:text-gol-400 dark:data-[state=active]:border-transparent'
 
 /** Super admin dashboard: same tab strip as the original (Resumen, Gestión de Ligas, App Móvil) plus users. */
 export function AdminDashboardPage() {

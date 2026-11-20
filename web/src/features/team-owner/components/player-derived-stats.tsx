@@ -30,7 +30,7 @@ export function DisciplineTiles({ players }: { players: TeamPlayerStats[] }) {
       <StatTile
         label="Jugadores sin Tarjetas"
         value={players.filter((p) => p.yellow_cards === 0 && p.red_cards === 0).length}
-        valueClass="text-green-400"
+        valueClass="text-gol-400"
       />
     </>
   )
@@ -49,7 +49,7 @@ export function ParticipationSection({ players }: { players: TeamPlayerStats[] }
         <StatTile label="Partidos Jugados (Total)" value={sum(players, (p) => p.matches_played)} tint={glassTile} />
         <StatTile label="Minutos Jugados (Total)" value={`${minutes.toLocaleString('es-MX')}'`} />
         <StatTile label="Promedio Minutos por Jugador" value={`${players.length > 0 ? Math.round(minutes / players.length) : 0}'`} />
-        <StatTile label="Jugadores Activos" value={players.filter((p) => p.matches_played > 0).length} valueClass="text-green-400" />
+        <StatTile label="Jugadores Activos" value={players.filter((p) => p.matches_played > 0).length} valueClass="text-emerald-400" />
       </div>
     </div>
   )

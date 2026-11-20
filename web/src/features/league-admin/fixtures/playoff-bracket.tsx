@@ -93,14 +93,14 @@ function PlayoffMatchCard({ match, teamNames }: { match: Match; teamNames: Recor
   const matchTime = match.match_time ?? '—'
 
   return (
-    <Card className="overflow-hidden border-green-400/20 bg-white/5 backdrop-blur-md">
+    <Card className="overflow-hidden border-gol-400/20 bg-white/5 backdrop-blur-md">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 truncate text-sm font-medium text-white">{homeTeam}</div>
 
           <div className="flex flex-col items-center gap-1">
             {match.status === 'finished' && (
-              <div className="text-lg font-bold text-green-400">
+              <div className="text-lg font-bold text-gol-400">
                 {match.home_score} - {match.away_score}
               </div>
             )}
@@ -110,7 +110,7 @@ function PlayoffMatchCard({ match, teamNames }: { match: Match; teamNames: Recor
               </Badge>
             )}
             {match.status === 'in_progress' && (
-              <Badge className="border-0 bg-green-500/80 text-xs text-white">
+              <Badge className="border-0 bg-gol-500/80 text-xs text-slate-950">
                 EN VIVO
               </Badge>
             )}

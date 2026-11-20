@@ -189,7 +189,7 @@ export function LeagueFormDialog({ open, onOpenChange, league, onCreated }: Leag
             <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => handleOpenChange(false)} disabled={isPending}>
               Cancelar
             </Button>
-            <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={() => void (isEditing ? handleUpdate() : handleCreate())} disabled={isPending}>
+            <Button className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0" onClick={() => void (isEditing ? handleUpdate() : handleCreate())} disabled={isPending}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
               {isPending ? 'Guardando…' : isEditing ? 'Actualizar Liga' : admin.mode === 'new' ? 'Crear Liga y Administrador' : 'Crear Liga'}
             </Button>

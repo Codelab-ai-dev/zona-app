@@ -26,7 +26,7 @@ function TeamSide({ name, own, side }: { name: string; own: boolean; side: 'Loca
   )
   const label = (
     <div className={cn('min-w-0', side === 'Visitante' && 'text-right')}>
-      <p className={cn('font-semibold text-xs sm:text-sm truncate drop-shadow', own ? 'text-green-300' : 'text-white')}>{name}</p>
+      <p className={cn('font-semibold text-xs sm:text-sm truncate drop-shadow', own ? 'text-gol-300' : 'text-white')}>{name}</p>
       <p className="text-[10px] sm:text-xs text-white/60">{side}</p>
     </div>
   )
@@ -38,7 +38,7 @@ function TeamSide({ name, own, side }: { name: string; own: boolean; side: 'Loca
 }
 
 const scoreTone = (result: MatchResult) =>
-  result === 'win' ? 'text-green-400' : result === 'loss' ? 'text-red-400' : 'text-yellow-400'
+  result === 'win' ? 'text-emerald-400' : result === 'loss' ? 'text-red-400' : 'text-yellow-400'
 
 interface MatchCardProps {
   match: Match
@@ -60,7 +60,7 @@ export function MatchCard({ match, teamId, homeName, awayName, onViewReport }: M
     <div
       className={cn(
         'p-3 sm:p-4 backdrop-blur-md rounded-xl border shadow-lg transition-all',
-        result === 'win' && 'bg-green-500/20 border-green-300/30',
+        result === 'win' && 'bg-emerald-500/20 border-emerald-300/30',
         result === 'loss' && 'bg-red-500/20 border-red-300/30',
         result === 'draw' && 'bg-yellow-500/20 border-yellow-300/30',
         !isFinished && 'bg-white/10 border-white/20',
@@ -83,7 +83,7 @@ export function MatchCard({ match, teamId, homeName, awayName, onViewReport }: M
             <Badge
               className={cn(
                 'mt-1 text-[10px] sm:text-xs',
-                result === 'win' && 'bg-green-500/80',
+                result === 'win' && 'bg-emerald-600/90',
                 result === 'loss' && 'bg-red-500/80',
                 result === 'draw' && 'bg-yellow-500/80',
               )}

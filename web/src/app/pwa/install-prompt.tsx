@@ -73,10 +73,10 @@ export function InstallPrompt() {
 
   return (
     <div role="dialog" aria-labelledby="install-title" className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
-      <div className="border border-green-500/20 bg-slate-900/95 backdrop-blur shadow-lg p-4">
+      <div className="rounded-2xl border border-gol-500/25 bg-slate-900/95 backdrop-blur shadow-[0_20px_50px_-20px_rgb(0_0_0/0.6)] p-4">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-            <Smartphone className="w-5 h-5 text-green-400" aria-hidden="true" />
+          <div className="flex-shrink-0 w-10 h-10 bg-gol-500/10 rounded-full flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-gol-400" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
@@ -90,19 +90,19 @@ export function InstallPrompt() {
                 <p className="text-xs text-gray-400 mt-2">Para instalar la app en tu iPhone:</p>
                 <ol className="text-xs text-gray-400 mt-2 space-y-2">
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 bg-slate-800 flex items-center justify-center text-[10px] font-bold">1</span>
+                    <span className="w-5 h-5 rounded-md bg-slate-800 flex items-center justify-center text-[10px] font-bold">1</span>
                     <span>
-                      Toca el botón <Share className="inline w-4 h-4 text-green-400" aria-label="compartir" /> de compartir
+                      Toca el botón <Share className="inline w-4 h-4 text-gol-400" aria-label="compartir" /> de compartir
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 bg-slate-800 flex items-center justify-center text-[10px] font-bold">2</span>
+                    <span className="w-5 h-5 rounded-md bg-slate-800 flex items-center justify-center text-[10px] font-bold">2</span>
                     <span>
                       Selecciona <Plus className="inline w-4 h-4" aria-hidden="true" /> "Agregar a Inicio"
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-5 h-5 bg-slate-800 flex items-center justify-center text-[10px] font-bold">3</span>
+                    <span className="w-5 h-5 rounded-md bg-slate-800 flex items-center justify-center text-[10px] font-bold">3</span>
                     <span>Toca "Agregar"</span>
                   </li>
                 </ol>
@@ -110,7 +110,7 @@ export function InstallPrompt() {
             ) : (
               <>
                 <p className="text-xs text-gray-400 mt-1">Instala la app para acceso rápido y uso sin conexión.</p>
-                <Button size="sm" onClick={() => void install()} className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white">
+                <Button size="sm" onClick={() => void install()} className="mt-3 w-full bg-gol-400 hover:bg-gol-500 text-slate-950">
                   <Download className="w-4 h-4 mr-1" aria-hidden="true" />
                   Instalar
                 </Button>

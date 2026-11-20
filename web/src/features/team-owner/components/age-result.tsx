@@ -18,7 +18,7 @@ export function AgeResultBox({ result }: { result: AgeResult }) {
     ? ['bg-red-500/20 border-red-400/30', 'text-red-300', 'No cumple requisitos']
     : result.isException
       ? ['bg-yellow-500/20 border-yellow-400/30', 'text-yellow-300', 'Válido como excepción']
-      : ['bg-green-500/20 border-green-400/30', 'text-green-300', 'Cumple requisitos']
+      : ['bg-gol-500/20 border-gol-400/30', 'text-gol-300', 'Cumple requisitos']
   const Icon = result.isValid ? CheckCircle : XCircle
   return (
     <div className={`p-3 rounded-lg border ${tone[0]}`} role="status">

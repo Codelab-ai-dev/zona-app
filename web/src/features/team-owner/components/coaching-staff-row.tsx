@@ -42,7 +42,7 @@ export function CoachingStaffRow({ staff, onEdit, onDeactivate, onReactivate, on
             <CardDescription className="text-white/70 drop-shadow">{staff.role}</CardDescription>
           </div>
         </div>
-        <Badge className={`w-fit backdrop-blur-md border-0 text-white ${staff.is_active ? 'bg-green-500/80' : 'bg-gray-500/80'}`}>
+        <Badge className={`w-fit backdrop-blur-md border-0 text-white ${staff.is_active ? 'bg-emerald-600/90' : 'bg-gray-500/80'}`}>
           {staff.is_active ? 'Activo' : 'Inactivo'}
         </Badge>
       </CardHeader>

@@ -37,8 +37,8 @@ export function RefereeEvents({ match }: { match: Match }) {
           <CardContent>
             <ul className="space-y-3">
               {goals.map((goal) => (
-                <li key={goal.id} className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-                  <Badge variant="outline" className="bg-green-100 border-green-300">{goal.minute}'</Badge>
+                <li key={goal.id} className="flex items-center gap-3 p-3 bg-gol-50 rounded-xl border border-gol-200">
+                  <Badge variant="outline" className="bg-gol-100 border-gol-300">{goal.minute}'</Badge>
                   <div>
                     <div className="font-medium">{who(goal.player_name, goal.player_jersey)}</div>
                     <div className="text-sm text-muted-foreground">

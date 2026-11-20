@@ -59,7 +59,7 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, leagueI
   const toneClass = {
     orange: 'border-orange-500/20 bg-orange-500/10 text-orange-400',
     yellow: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400',
-    green: 'border-green-500/20 bg-green-500/10 text-green-400',
+    green: 'border-gol-500/20 bg-gol-500/10 text-gol-400',
   }[tone]
 
   return (
@@ -96,14 +96,14 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, leagueI
           )}
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-green-500/20 bg-slate-800/50 p-3">
+            <div className="rounded-lg border border-gol-500/20 bg-slate-800/50 p-3">
               <h4 className="mb-2 flex items-center gap-2 text-xs font-medium text-white md:text-sm">
-                <Users className="h-4 w-4 text-green-400" aria-hidden="true" />
+                <Users className="h-4 w-4 text-gol-400" aria-hidden="true" />
                 Activos ({analysis.activeTeams.length})
               </h4>
               <ul className="max-h-40 space-y-1.5 overflow-y-auto">
                 {analysis.teamStats.map((s) => (
-                  <li key={s.teamId} className={`flex items-center justify-between rounded border p-2 ${s.total === 0 ? 'border-red-500/20 bg-red-500/10' : 'border-green-500/10 bg-green-500/10'}`}>
+                  <li key={s.teamId} className={`flex items-center justify-between rounded border p-2 ${s.total === 0 ? 'border-red-500/20 bg-red-500/10' : 'border-gol-500/10 bg-gol-500/10'}`}>
                     <span className="max-w-[150px] truncate text-[10px] text-white md:text-xs">{s.teamName}</span>
                     <span className="text-[10px] text-gray-400">
                       {s.total === 0 ? 'Sin partidos' : `${s.finished}/${s.total}`}
@@ -186,7 +186,7 @@ export function AdjustCalendarDialog({ open, onOpenChange, tournamentId, leagueI
             <Button
               onClick={() => void handleCreate()}
               disabled={bulkCreate.isPending || missing === 0}
-              className="h-9 flex-1 bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm"
+              className="h-9 flex-1 bg-gol-400 text-xs text-slate-950 hover:bg-gol-300 md:text-sm"
             >
               {bulkCreate.isPending ? (
                 <Loader2 className="mr-1.5 h-3 w-3 animate-spin md:h-4 md:w-4" aria-hidden="true" />

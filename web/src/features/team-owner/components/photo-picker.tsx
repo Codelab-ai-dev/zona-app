@@ -83,7 +83,7 @@ export function PhotoPicker({ label, currentUrl, disabled, onChange }: PhotoPick
             {error}
           </div>
         )}
-        {photo && <p className="text-sm text-green-400">✓ Foto seleccionada: {photo.name}</p>}
+        {photo && <p className="text-sm text-emerald-400">✓ Foto seleccionada: {photo.name}</p>}
       </div>
     </div>
   )

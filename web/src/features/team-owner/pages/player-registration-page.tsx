@@ -27,7 +27,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-300/50',
-  approved: 'bg-green-500/20 text-green-300 border-green-300/50',
+  approved: 'bg-gol-500/20 text-gol-300 border-gol-300/50',
   rejected: 'bg-red-500/20 text-red-300 border-red-300/50',
 }
 
@@ -68,7 +68,7 @@ export function PlayerRegistrationPage({
         {tournamentId && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto">
+              <Button className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Nueva Solicitud
               </Button>

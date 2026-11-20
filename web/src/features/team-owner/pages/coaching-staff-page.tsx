@@ -95,7 +95,7 @@ export function CoachingStaffPage({ teamId }: { teamId: string }) {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={atLimit} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg rounded-xl w-full sm:w-auto">
+            <Button disabled={atLimit} className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg rounded-xl w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
               {atLimit ? 'Límite Alcanzado' : 'Nuevo Miembro'}
             </Button>

@@ -23,7 +23,7 @@ function StatusBadge({ status }: { status: string }) {
     case 'pending':
       return <Badge className="border-0 bg-yellow-500/80 text-white"><Clock className="mr-1 h-3 w-3" aria-hidden="true" />Pendiente</Badge>
     case 'approved':
-      return <Badge className="border-0 bg-green-500/80 text-white"><CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />Aprobada</Badge>
+      return <Badge className="border-0 bg-emerald-600/90 text-white"><CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />Aprobada</Badge>
     case 'rejected':
       return <Badge className="border-0 bg-red-500/80 text-white"><XCircle className="mr-1 h-3 w-3" aria-hidden="true" />Rechazada</Badge>
     default:
@@ -93,7 +93,7 @@ export function RequestsTable({ requests, teamNames, userNames, isPending, onRev
                 </div>
                 <p className="text-xs text-gray-500">Solicitado: {formatDate(request.created_at)}</p>
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="flex-1 bg-green-600 text-white hover:bg-green-700" onClick={() => setReviewing(request)}>
+                  <Button size="sm" className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-500" onClick={() => setReviewing(request)}>
                     <CheckCircle className="mr-1 h-4 w-4" aria-hidden="true" />
                     Revisar
                   </Button>
@@ -109,7 +109,7 @@ export function RequestsTable({ requests, teamNames, userNames, isPending, onRev
           <h2 className="mb-3 text-base font-semibold text-white sm:text-lg">Historial de Solicitudes ({reviewed.length})</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             {reviewed.map((request) => (
-              <RequestCard key={request.id} request={request} teamName={nameOf(request.team_id)} accent={request.status === 'approved' ? 'border-l-green-500' : 'border-l-red-500'}>
+              <RequestCard key={request.id} request={request} teamName={nameOf(request.team_id)} accent={request.status === 'approved' ? 'border-l-gol-500' : 'border-l-red-500'}>
                 {request.review_notes && (
                   <div>
                     <p className="text-sm font-semibold text-white">Notas de revisión:</p>

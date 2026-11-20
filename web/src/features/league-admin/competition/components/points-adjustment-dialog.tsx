@@ -147,7 +147,7 @@ export function PointsAdjustmentDialog({
             {adjustment !== 0 && (
               <div className="flex justify-between items-center mt-1 text-xs md:text-sm">
                 <span className="text-gray-400">Ajuste:</span>
-                <span className={adjustment < 0 ? 'text-red-400' : 'text-green-400'}>
+                <span className={adjustment < 0 ? 'text-red-400' : 'text-gol-400'}>
                   {adjustment > 0 ? '+' : ''}
                   {adjustment}
                 </span>
@@ -155,7 +155,7 @@ export function PointsAdjustmentDialog({
             )}
             <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/10">
               <span className="text-white font-medium text-xs md:text-sm">Puntos totales:</span>
-              <span className="text-green-400 font-bold text-base md:text-lg">{standing.points + adjustment}</span>
+              <span className="text-gol-400 font-bold text-base md:text-lg">{standing.points + adjustment}</span>
             </div>
           </div>
 
@@ -163,7 +163,7 @@ export function PointsAdjustmentDialog({
             <Button type="button" variant="ghost" onClick={onClose} disabled={adjust.isPending} className="text-gray-400 hover:text-white hover:bg-slate-800/50">
               Cancelar
             </Button>
-            <Button type="submit" disabled={adjust.isPending} className="bg-green-500 hover:bg-green-600 text-white">
+            <Button type="submit" disabled={adjust.isPending} className="bg-gol-400 hover:bg-gol-300 text-slate-950">
               {adjust.isPending ? 'Guardando…' : 'Ajustar'}
             </Button>
           </DialogFooter>

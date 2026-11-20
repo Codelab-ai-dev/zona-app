@@ -50,7 +50,7 @@ export function UserStatusDialog({ open, onOpenChange, user }: UserStatusDialogP
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={setActive.isPending}
-            className={reactivate ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+            className={reactivate ? 'bg-gol-400 text-slate-950 hover:bg-gol-500' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
           >
             {setActive.isPending && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
             {reactivate ? 'Reactivar' : 'Desactivar'}

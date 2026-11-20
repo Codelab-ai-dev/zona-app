@@ -117,7 +117,7 @@ export function LeagueManagement() {
               {activateAll.isPending ? 'Activando…' : `Activar todas (${inactive.length})`}
             </Button>
           )}
-          <Button onClick={() => setFormOpen(true)} className="bg-green-500 hover:bg-green-600 text-white border-0" size="sm">
+          <Button onClick={() => setFormOpen(true)} className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0" size="sm">
             <Plus className="w-3 h-3 mr-1" aria-hidden="true" />
             Nueva Liga
           </Button>

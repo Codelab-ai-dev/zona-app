@@ -95,7 +95,7 @@ export function PlayerManagementPage({ teamId }: { teamId: string }) {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={!canRegister} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg w-full sm:w-auto">
+            <Button disabled={!canRegister} className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg w-full sm:w-auto">
               {rules.registrationOpen ? <Plus className="w-4 h-4 mr-2" aria-hidden="true" /> : <Lock className="w-4 h-4 mr-2" aria-hidden="true" />}
               {buttonLabel}
             </Button>

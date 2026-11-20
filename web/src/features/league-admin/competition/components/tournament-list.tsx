@@ -44,7 +44,7 @@ export function TournamentList({ leagueId }: { leagueId: string }) {
           </h2>
           <p className="text-white/80 drop-shadow">Administra los torneos de tu liga</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm">
+        <Button onClick={() => setShowForm(true)} className="h-9 bg-gol-400 hover:bg-gol-300 text-slate-950 text-xs md:text-sm">
           <Plus className="w-4 h-4 mr-1.5" aria-hidden="true" />
           Nuevo Torneo
         </Button>
@@ -109,7 +109,7 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
               ) : null}
             </div>
             <div className="flex flex-col gap-2 items-end">
-              <Badge className={tournament.is_active ? 'backdrop-blur-md bg-green-500/80 text-white border-0' : 'backdrop-blur-md bg-gray-500/80 text-white border-0'}>
+              <Badge className={tournament.is_active ? 'backdrop-blur-md bg-emerald-600/90 text-white border-0' : 'backdrop-blur-md bg-gray-500/80 text-white border-0'}>
                 {tournament.is_active ? 'Activo' : 'Inactivo'}
               </Badge>
               <Badge className={`backdrop-blur-md text-white border-0 flex items-center gap-1 ${tournament.registration_open ? 'bg-blue-500/80' : 'bg-red-500/80'}`}>
@@ -157,7 +157,7 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
               className={
                 tournament.registration_open
                   ? 'backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 text-white border-0'
-                  : 'backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0'
+                  : 'backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0'
               }
             >
               {tournament.registration_open ? <Lock className="w-4 h-4 mr-1" aria-hidden="true" /> : <Unlock className="w-4 h-4 mr-1" aria-hidden="true" />}
@@ -190,7 +190,7 @@ function TournamentCard({ tournament, leagueId }: { tournament: Tournament; leag
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
-              className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm"
+              className="flex-1 h-9 bg-gol-400 hover:bg-gol-300 text-slate-950 text-xs md:text-sm"
               onClick={() => {
                 lastChange.current = 'registration'
                 update.mutate({ registration_open: !tournament.registration_open })

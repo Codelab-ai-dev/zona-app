@@ -14,7 +14,7 @@ import { TeamMatches } from './team-matches'
 import { TeamPlayersTable } from './team-players-table'
 
 const iconBtn =
-  'inline-flex size-8 items-center justify-center rounded-md border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 md:size-9'
+  'inline-flex size-8 items-center justify-center rounded-md border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gol-400 md:size-9'
 
 function SectionTitle({ id, children, count }: { id: string; children: string; count?: number }) {
   return (
@@ -46,21 +46,21 @@ export function TeamDetailPage() {
               <header className={`${panelClass} p-3 md:rounded-2xl md:p-5`}>
                 <div className="flex items-center gap-3 md:gap-4">
                   <div className="flex gap-2">
-                    <Link to="/" aria-label="Inicio" className={`${iconBtn} border-green-500/30 bg-green-500/20 text-green-400 hover:bg-green-500/30`}>
+                    <Link to="/" aria-label="Inicio" className={`${iconBtn} border-gol-500/30 bg-gol-500/20 text-gol-400 hover:bg-gol-500/30`}>
                       <Home className="size-4" aria-hidden="true" />
                     </Link>
                     <button type="button" onClick={() => window.history.back()} aria-label="Volver" className={`${iconBtn} border-white/10 bg-slate-700/50 text-white hover:bg-slate-700`}>
                       <ArrowLeft className="size-4" aria-hidden="true" />
                     </button>
                   </div>
-                  <Avatar className="size-12 border-2 border-green-500/30 md:size-16">
+                  <Avatar className="size-12 border-2 border-gol-500/30 md:size-16">
                     {teamData.logo && <AvatarImage src={teamData.logo} alt="" />}
-                    <AvatarFallback className="bg-green-500/20 text-sm font-bold text-green-400 md:text-lg" aria-hidden="true">{initials(teamData.name)}</AvatarFallback>
+                    <AvatarFallback className="bg-gol-500/20 text-sm font-bold text-gol-400 md:text-lg" aria-hidden="true">{initials(teamData.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-xl font-bold text-white md:text-2xl">{teamData.name}</h1>
-                      <Badge className={`border-0 ${teamData.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                      <Badge className={`border-0 ${teamData.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                         {teamData.is_active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </div>
@@ -68,7 +68,7 @@ export function TeamDetailPage() {
                     {league.data && (
                       <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
                         {league.data.logo && <img src={league.data.logo} alt="" className="size-4 rounded-sm object-contain" />}
-                        <Link to={`/liga/${league.data.slug}`} className="hover:text-green-400">{league.data.name}</Link>
+                        <Link to={`/liga/${league.data.slug}`} className="hover:text-gol-400">{league.data.name}</Link>
                       </p>
                     )}
                   </div>
@@ -85,13 +85,13 @@ export function TeamDetailPage() {
                     {(s) => (
                       <dl className="grid grid-cols-3 gap-2 md:grid-cols-4 md:gap-3 lg:grid-cols-8">
                         <Stat label="Partidos" value={s.matches_played} />
-                        <Stat label="Victorias" value={s.matches_won} tone="text-green-400" />
+                        <Stat label="Victorias" value={s.matches_won} tone="text-emerald-400" />
                         <Stat label="Empates" value={s.matches_drawn} tone="text-yellow-400" />
                         <Stat label="Derrotas" value={s.matches_lost} tone="text-red-400" />
-                        <Stat label="Goles a favor" value={s.goals_for} tone="text-green-400" />
+                        <Stat label="Goles a favor" value={s.goals_for} tone="text-gol-400" />
                         <Stat label="Goles en contra" value={s.goals_against} tone="text-red-400" />
-                        <Stat label="Diferencia de goles" value={s.goal_difference} tone={s.goal_difference < 0 ? 'text-red-400' : 'text-green-400'} />
-                        <Stat label="Puntos" value={s.points + s.points_adjustment} tone="text-green-400" />
+                        <Stat label="Diferencia de goles" value={s.goal_difference} tone={s.goal_difference < 0 ? 'text-red-400' : 'text-gol-400'} />
+                        <Stat label="Puntos" value={s.points + s.points_adjustment} tone="text-gol-400" />
                       </dl>
                     )}
                   </QueryState>
@@ -139,7 +139,7 @@ export function TeamDetailPage() {
         </QueryState>
       </div>
       <footer className="py-3 text-center">
-        <p className="text-[10px] text-gray-700">© {new Date().getFullYear()} Zona Gol</p>
+        <p className="text-xs text-slate-500">© {new Date().getFullYear()} Zona OS · Zona Gol</p>
       </footer>
     </div>
   )

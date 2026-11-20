@@ -48,7 +48,7 @@ export function ConfirmStep({
         <Button className="border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white" onClick={onBack} disabled={pending}>
           Atrás
         </Button>
-        <Button onClick={onGenerate} disabled={pending} className="flex-1 bg-green-500 text-white hover:bg-green-600">
+        <Button onClick={onGenerate} disabled={pending} className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-300">
           {pending ? 'Generando…' : 'Generar Vista Previa'}
         </Button>
       </div>

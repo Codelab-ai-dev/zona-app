@@ -96,7 +96,7 @@ export function DisciplineTable({ leagueId, rows }: { leagueId: string; rows: Pl
                           {reason && <p className="text-xs text-white/70 mt-1 drop-shadow">{reason}</p>}
                         </div>
                       ) : (
-                        <Badge className="backdrop-blur-md bg-green-500/80 text-white border-0">Habilitado</Badge>
+                        <Badge className="backdrop-blur-md bg-gol-500/80 text-slate-950 border-0">Habilitado</Badge>
                       )}
                     </TableCell>
                   </TableRow>

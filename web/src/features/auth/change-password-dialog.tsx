@@ -84,9 +84,9 @@ export function ChangePasswordDialog({ trigger }: { trigger?: ReactElement } = {
       </DialogTrigger>
       <DialogContent className="rounded-2xl border-white/10 bg-[#0a0f1a] text-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 font-[family-name:var(--font-orbitron)] text-white">
-            <span className="rounded-lg bg-emerald-500/20 p-2">
-              <KeyRound className="size-5 text-emerald-400" aria-hidden="true" />
+          <DialogTitle className="flex items-center gap-3 font-display text-white">
+            <span className="rounded-lg bg-gol-500/15 p-2">
+              <KeyRound className="size-5 text-gol-400" aria-hidden="true" />
             </span>
             Cambiar contraseña
           </DialogTitle>
@@ -97,7 +97,7 @@ export function ChangePasswordDialog({ trigger }: { trigger?: ReactElement } = {
           <Field id="new-password" label="Nueva contraseña" error={errors.next} autoComplete="new-password" />
           <Field id="confirm-password" label="Confirmar nueva contraseña" error={errors.confirm} autoComplete="new-password" />
           <DialogFooter>
-            <Button type="submit" className="h-12 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400" disabled={change.isPending}>
+            <Button type="submit" className="h-12 rounded-xl bg-gol-400 text-slate-950 hover:bg-gol-300" disabled={change.isPending}>
               {change.isPending ? 'Guardando…' : 'Guardar contraseña'}
             </Button>
           </DialogFooter>

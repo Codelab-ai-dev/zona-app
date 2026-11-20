@@ -77,7 +77,7 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
         </Card>
         <Card className={glassCard}>
           <CardContent className="pt-6 text-center">
-            <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
+            <Target className="w-8 h-8 text-gol-400 mx-auto mb-2" />
             <p className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{teamTotals.goals}</p>
             <p className="text-sm text-white/80 drop-shadow">Goles Totales</p>
           </CardContent>
@@ -153,7 +153,7 @@ export function PlayerStatisticsPage({ teamId }: { teamId: string }) {
                           <Badge variant="outline" className="backdrop-blur-md bg-white/20 border-white/30 text-white">#{player.jersey_number}</Badge>
                         </TableCell>
                         {columns.map((c) => (
-                          <TableCell key={c.key} className={`text-center ${c.key === 'goals' ? 'font-bold text-green-400' : 'text-white/90'}`}>
+                          <TableCell key={c.key} className={`text-center ${c.key === 'goals' ? 'font-bold text-gol-400' : 'text-white/90'}`}>
                             {player[c.key]}
                           </TableCell>
                         ))}

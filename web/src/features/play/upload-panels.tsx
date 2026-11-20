@@ -60,7 +60,7 @@ export function FileField({
         <label htmlFor="video" className="cursor-pointer block">
           {file ? (
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" aria-hidden="true" />
+              <CheckCircle className="w-5 h-5 text-emerald-500" aria-hidden="true" />
               <span className="text-sm">{file.name}</span>
               <span className="text-xs text-muted-foreground">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
             </div>

@@ -74,7 +74,7 @@ export function CalendarActions({ leagueId, tournamentId, tournamentName, matche
         disabled={!matches.some((m) => m.status === 'scheduled')}
         className={outline}
       >
-        <ImageDown className="mr-1.5 h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+        <ImageDown className="mr-1.5 h-3.5 w-3.5 text-gol-400" aria-hidden="true" />
         Generar Imagen
       </Button>
       {(['regular', 'playoffs'] as const).map(

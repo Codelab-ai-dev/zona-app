@@ -91,7 +91,7 @@ export function ResultsPage({ leagueId }: ResultsPageProps) {
   return (
     <section className="space-y-4 py-6">
       <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-green-500/20 p-2"><CalendarDays className="h-5 w-5 text-green-400" aria-hidden="true" /></div>
+        <div className="rounded-lg bg-gol-500/20 p-2"><CalendarDays className="h-5 w-5 text-gol-400" aria-hidden="true" /></div>
         <div>
           <h1 className="text-base font-bold text-white md:text-lg">Captura de Resultados</h1>
           <p className="text-xs text-gray-500">Selecciona un partido para registrar su resultado</p>
@@ -130,7 +130,7 @@ export function ResultsPage({ leagueId }: ResultsPageProps) {
               <SelectContent>
                 <SelectItem value="all"><Shield className="h-3 w-3 text-blue-400" aria-hidden="true" />Todos los equipos</SelectItem>
                 {teams.map((t) => (
-                  <SelectItem key={t.id} value={t.id}><Shield className="h-3 w-3 text-green-400" aria-hidden="true" />{t.name}</SelectItem>
+                  <SelectItem key={t.id} value={t.id}><Shield className="h-3 w-3 text-gol-400" aria-hidden="true" />{t.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -164,7 +164,7 @@ export function ResultsPage({ leagueId }: ResultsPageProps) {
                 <span className="mb-2 flex flex-wrap items-center gap-1.5">
                   <span className="rounded bg-slate-700/50 px-1.5 py-0.5 text-[10px] text-gray-400">{names.get(m.tournament_id)}</span>
                   {m.round !== undefined && <span className="rounded bg-slate-700/50 px-1.5 py-0.5 text-[10px] text-gray-400">J{m.round}</span>}
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] ${m.status === 'in_progress' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] ${m.status === 'in_progress' ? 'bg-gol-500/20 text-gol-400' : 'bg-blue-500/20 text-blue-400'}`}>
                     {m.status === 'in_progress' ? 'En Juego' : 'Programado'}
                   </span>
                 </span>
@@ -181,7 +181,7 @@ export function ResultsPage({ leagueId }: ResultsPageProps) {
                 </span>
                 <span className="flex items-center justify-between">
                   <span className="text-[10px] text-gray-500 md:text-xs">{formatDate(m.match_date, m.match_time)}</span>
-                  <span className="rounded bg-green-500/20 px-2 py-1 text-[10px] font-medium text-green-400">Registrar</span>
+                  <span className="rounded bg-gol-500/20 px-2 py-1 text-[10px] font-medium text-gol-400">Registrar</span>
                 </span>
               </button>
             </li>
@@ -206,7 +206,7 @@ export function ResultsPage({ leagueId }: ResultsPageProps) {
         <DialogContent>
           <DialogHeader>
             <div className="mb-4 flex items-center justify-center">
-              <div className="rounded-full bg-green-100 p-3"><CheckCircle2 className="h-8 w-8 text-green-600" aria-hidden="true" /></div>
+              <div className="rounded-full bg-emerald-100 p-3"><CheckCircle2 className="h-8 w-8 text-emerald-600" aria-hidden="true" /></div>
             </div>
             <DialogTitle className="text-center text-xl">¡Resultado Guardado!</DialogTitle>
             <DialogDescription className="text-center">

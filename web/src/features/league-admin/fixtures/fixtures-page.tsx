@@ -64,7 +64,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
                 <strong>Torneos activos:</strong> {(tournaments.data?.data ?? []).filter((t) => t.is_active).length}
               </p>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)} className="border-0 bg-green-500/80 text-white shadow-lg backdrop-blur-md hover:bg-green-500/90">
+            <Button onClick={() => setIsDialogOpen(true)} className="border-0 bg-gol-500/80 text-slate-950 shadow-lg backdrop-blur-md hover:bg-gol-500/90">
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
               Generar Jornadas
             </Button>
@@ -88,7 +88,7 @@ export function FixturesPage({ leagueId }: FixturesPageProps) {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto border-white/10 bg-slate-900">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm text-white md:text-lg">
-              <Calendar className="h-4 w-4 text-green-400 md:h-5 md:w-5" aria-hidden="true" />
+              <Calendar className="h-4 w-4 text-gol-400 md:h-5 md:w-5" aria-hidden="true" />
               Generar Jornadas
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-400 md:text-sm">

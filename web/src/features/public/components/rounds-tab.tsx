@@ -27,7 +27,7 @@ export function RoundsTab({ matches, teams }: { matches: Match[]; teams: TeamLoo
           </SelectTrigger>
           <SelectContent className="border-white/10 bg-slate-900 text-white">
             {rounds.map((r) => (
-              <SelectItem key={r} value={String(r)} className="focus:bg-green-500/20 focus:text-green-400">Jornada {r}</SelectItem>
+              <SelectItem key={r} value={String(r)} className="focus:bg-gol-500/20 focus:text-gol-400">Jornada {r}</SelectItem>
             ))}
           </SelectContent>
         </Select>

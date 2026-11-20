@@ -115,7 +115,7 @@ export function PasswordForm() {
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {message && (
         <Alert
-          className={`backdrop-blur-xl shadow-xl ${message.type === 'success' ? 'border-green-300/30 bg-green-500/20' : 'border-red-300/30 bg-red-500/20'}`}
+          className={`backdrop-blur-xl shadow-xl ${message.type === 'success' ? 'border-emerald-300/30 bg-emerald-500/20' : 'border-red-300/30 bg-red-500/20'}`}
         >
           <AlertDescription className="text-white drop-shadow">{message.text}</AlertDescription>
         </Alert>
@@ -130,8 +130,8 @@ export function PasswordForm() {
               const passed = req.test(next)
               return (
                 <div key={req.label} className="flex items-center text-sm">
-                  {passed ? <CheckCircle className="w-4 h-4 text-green-300 mr-2" aria-hidden="true" /> : <X className="w-4 h-4 text-red-300 mr-2" aria-hidden="true" />}
-                  <span className={passed ? 'text-green-300 drop-shadow' : 'text-red-300 drop-shadow'}>{req.label}</span>
+                  {passed ? <CheckCircle className="w-4 h-4 text-emerald-300 mr-2" aria-hidden="true" /> : <X className="w-4 h-4 text-red-300 mr-2" aria-hidden="true" />}
+                  <span className={passed ? 'text-emerald-300 drop-shadow' : 'text-red-300 drop-shadow'}>{req.label}</span>
                 </div>
               )
             })}
@@ -145,7 +145,7 @@ export function PasswordForm() {
       <Button
         type="submit"
         disabled={change.isPending || !canSubmit}
-        className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+        className="w-full backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg"
       >
         {change.isPending ? (
           <>

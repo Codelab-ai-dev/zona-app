@@ -3,131 +3,125 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================ */
+/* ZONA OS: tokens de marca (Brand Kit v1.1)    */
+/* ============================================ */
+/* Referencia: #8B4DF6 primario, #A66CFF lila, #4A28D8 índigo, #A3FF12 verde
+   energía (Zona Gol), #080F1A carbón, #F5F7FF niebla. Los grises de panel y
+   los semánticos son derivados propuestos por el kit. */
 :root {
-  /* Paleta oscura que la app original usaba en todas sus pantallas
-     (slate-950 de fondo, superficies slate-900, verde para acciones). */
   color-scheme: dark;
-  --background: #020617;          /* slate-950 */
+
+  --zona-primary: #8B4DF6;
+  --zona-secondary: #A66CFF;
+  --zona-accent-dark: #4A28D8;
+  --zona-product-gol: #A3FF12;
+  --zona-bg: #080F1A;
+  --zona-surface-light: #F5F7FF;
+  --zona-surface: #101827;
+  --zona-surface-raised: #161F33;
+  --zona-line: #303A4C;
+  --zona-text-muted: #9EACC4;
+  --zona-success: #50E3A4;
+  --zona-error: #FF6B85;
+  --zona-gradient: linear-gradient(135deg, #B266FF 0%, #8B4DF6 58%, #692CE4 100%);
+  --zona-ease: cubic-bezier(.2, .8, .2, 1);
+
+  --background: var(--zona-bg);
   --foreground: #ffffff;
 
-  --card: #0f172a;                /* slate-900 */
+  --card: var(--zona-surface);
   --card-foreground: #ffffff;
-  --popover: #0f172a;
+  --popover: var(--zona-surface-raised);
   --popover-foreground: #ffffff;
 
-  --primary: #16a34a;             /* green-600 */
-  --primary-foreground: #ffffff;
+  /* La app opera el módulo Zona Gol: sus acciones usan el verde del producto.
+     El púrpura queda para la identidad Zona OS (logo, acceso a la plataforma). */
+  --primary: var(--zona-product-gol);
+  --primary-foreground: var(--zona-bg);
 
-  --secondary: #1e293b;           /* slate-800 */
+  --secondary: var(--zona-surface-raised);
   --secondary-foreground: #ffffff;
 
-  --muted: #1e293b;
-  --muted-foreground: #9ca3af;    /* gray-400 */
+  --muted: var(--zona-surface-raised);
+  --muted-foreground: var(--zona-text-muted);
 
-  --accent: #334155;              /* slate-700, hover */
+  --accent: #1E2940;
   --accent-foreground: #ffffff;
 
-  --destructive: #ef4444;         /* red-500 */
+  --destructive: #E5484D;
   --destructive-foreground: #ffffff;
 
-  --border: rgb(255 255 255 / 0.1);
-  --input: rgb(255 255 255 / 0.1);
-  --ring: #22c55e;                /* green-500 */
+  --border: rgb(158 172 196 / 0.16);
+  --input: rgb(158 172 196 / 0.2);
+  --ring: var(--zona-product-gol);
 
-  --chart-1: #22c55e;
-  --chart-2: #3b82f6;
-  --chart-3: #eab308;
-  --chart-4: #ef4444;
-  --chart-5: #9ca3af;
+  --chart-1: var(--zona-product-gol);
+  --chart-2: var(--zona-secondary);
+  --chart-3: #38BDF8;
+  --chart-4: #FBBF24;
+  --chart-5: var(--zona-text-muted);
 
-  --radius: 0rem;
+  /* Radios del kit: 8 / 12 / 20px. */
+  --radius: 0.75rem;
 
-  --sidebar: #0f172a;
+  --sidebar: var(--zona-surface);
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #16a34a;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
+  --sidebar-primary: var(--zona-product-gol);
+  --sidebar-primary-foreground: var(--zona-bg);
+  --sidebar-accent: var(--zona-surface-raised);
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgb(255 255 255 / 0.1);
-  --sidebar-ring: #22c55e;
+  --sidebar-border: rgb(158 172 196 / 0.16);
+  --sidebar-ring: var(--zona-product-gol);
 
-  --font-geist-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
-  --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
-  --font-orbitron: 'Orbitron', sans-serif;
+  --font-brand: 'Montserrat', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-code: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
-.dark {
-  /* Fondo principal - Azul profundo de la paleta de fútbol (#2C3E50) */
-  --background: oklch(0.25 0.05 220);          /* Azul profundo #2C3E50 */
-  --foreground: oklch(0.96 0.002 120);         /* Blanco más brillante para mejor legibilidad */
+/* Paletas de marca disponibles como utilidades (bg-zona-500, text-gol-400…).
+   slate se reasigna a la escala carbón de Zona OS para que las superficies
+   existentes adopten la marca sin reescribir cada pantalla. */
+@theme {
+  --font-display: var(--font-brand);
 
-  /* Cards con mejor jerarquía visual y contraste mejorado */
-  --card: oklch(0.35 0.04 220);                /* Cards más claras para mejor contraste */
-  --card-foreground: oklch(0.95 0.002 120);    /* Texto más blanco y claro */
-  --popover: oklch(0.37 0.04 220);             /* Popovers más elevados */
-  --popover-foreground: oklch(0.95 0.002 120);
+  --color-zona-50: #F5F0FF;
+  --color-zona-100: #EBE0FF;
+  --color-zona-200: #D7C2FF;
+  --color-zona-300: #C09CFF;
+  --color-zona-400: #A66CFF;
+  --color-zona-500: #8B4DF6;
+  --color-zona-600: #7338EE;
+  --color-zona-700: #4A28D8;
+  --color-zona-800: #3720A6;
+  --color-zona-900: #261873;
+  --color-zona-950: #150D42;
 
-  /* Primary - Verde césped vibrante pero cómodo */
-  --primary: oklch(0.58 0.15 150);             /* Verde más vibrante y natural */
-  --primary-foreground: oklch(0.05 0.005 240); /* Texto oscuro para mejor contraste */
+  /* Zona Gol: verde energía. Sobre relleno sólido el texto va en carbón
+     (#A3FF12 con blanco no alcanza contraste AA). */
+  --color-gol-50: #F6FFE6;
+  --color-gol-100: #ECFFC8;
+  --color-gol-200: #DAFF95;
+  --color-gol-300: #C4FF66;
+  --color-gol-400: #A3FF12;
+  --color-gol-500: #8FE600;
+  --color-gol-600: #76C000;
+  --color-gol-700: #5A9100;
+  --color-gol-800: #446B05;
+  --color-gol-900: #33500A;
+  --color-gol-950: #1A2C00;
 
-  /* Secondary más suave y legible */
-  --secondary: oklch(0.35 0.04 220);           /* Azul profundo más claro, armónico con el fondo */
-  --secondary-foreground: oklch(0.90 0.005 120);
-
-  /* Muted con mejor legibilidad */
-  --muted: oklch(0.30 0.04 220);               /* Fondo muted más claro */
-  --muted-foreground: oklch(0.75 0.015 200);   /* Texto muted más legible y claro */
-
-  /* Accent - Verde césped suave para hover en modo oscuro */
-  --accent: oklch(0.28 0.04 145);              /* Verde oscuro sutil para hover */
-  --accent-foreground: oklch(0.75 0.12 145);   /* Verde claro para texto */
-
-  /* Destructive más suave pero visible */
-  --destructive: oklch(0.55 0.20 30);          /* Rojo coral más cálido */
-  --destructive-foreground: oklch(0.98 0.002 0);
-
-  /* Bordes más definidos pero suaves */
-  --border: oklch(0.40 0.04 220);              /* Bordes más visibles con el azul profundo */
-  --input: oklch(0.32 0.04 220);               /* Inputs más claros para mejor contraste */
-  --ring: oklch(0.58 0.15 150);                /* Ring verde vibrante */
-
-  /* Charts con colores más vibrantes para modo oscuro */
-  --chart-1: oklch(0.58 0.15 150);             /* Verde césped vibrante */
-  --chart-2: oklch(0.60 0.12 240);             /* Azul más vibrante */
-  --chart-3: oklch(0.75 0.12 80);              /* Amarillo más brillante */
-  --chart-4: oklch(0.55 0.20 30);              /* Rojo coral cálido */
-  --chart-5: oklch(0.70 0.08 280);             /* Púrpura suave para variedad */
-
-  /* Sidebar con mejor contraste */
-  --sidebar: oklch(0.27 0.04 220);             /* Sidebar ligeramente más claro que el fondo */
-  --sidebar-foreground: oklch(0.94 0.003 120);
-  --sidebar-primary: oklch(0.58 0.15 150);     /* Verde vibrante */
-  --sidebar-primary-foreground: oklch(0.05 0.005 240);
-  --sidebar-accent: oklch(0.30 0.04 220);
-  --sidebar-accent-foreground: oklch(0.88 0.005 120);
-  --sidebar-border: oklch(0.38 0.04 220);      /* Bordes más definidos */
-  --sidebar-ring: oklch(0.58 0.15 150);
-}
-
-/* Paleta de colores específica para fútbol */
-:root {
-  --soccer-green: #27AE60;        /* Verde césped */
-  --soccer-blue: #2C3E50;         /* Azul profundo */
-  --soccer-gold: #F1C40F;         /* Amarillo dorado */
-  --soccer-white: #ECF0F1;        /* Blanco humo */
-  --soccer-gray: #7F8C8D;         /* Gris medio */
-  --soccer-red: #E74C3C;          /* Rojo pasión */
-
-  /* Variaciones para diferentes usos */
-  --soccer-green-light: #2ECC71;
-  --soccer-green-dark: #229954;
-  --soccer-blue-light: #34495E;
-  --soccer-blue-dark: #1B2631;
-  --soccer-gold-light: #F4D03F;
-  --soccer-gold-dark: #D68910;
-  --soccer-red-light: #EC7063;
-  --soccer-red-dark: #C0392B;
+  --color-slate-50: #F5F7FF;
+  --color-slate-100: #E9EDF8;
+  --color-slate-200: #D6DAE6;
+  --color-slate-300: #B6C0D3;
+  --color-slate-400: #9EACC4;
+  --color-slate-500: #6B7891;
+  --color-slate-600: #3E4A60;
+  --color-slate-700: #303A4C;
+  --color-slate-800: #161F33;
+  --color-slate-900: #101827;
+  --color-slate-950: #080F1A;
 }
 
 /* ============================================ */
@@ -193,8 +187,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -232,21 +226,6 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Soccer theme colors for Tailwind */
-  --color-soccer-green: var(--soccer-green);
-  --color-soccer-blue: var(--soccer-blue);
-  --color-soccer-gold: var(--soccer-gold);
-  --color-soccer-white: var(--soccer-white);
-  --color-soccer-gray: var(--soccer-gray);
-  --color-soccer-red: var(--soccer-red);
-  --color-soccer-green-light: var(--soccer-green-light);
-  --color-soccer-green-dark: var(--soccer-green-dark);
-  --color-soccer-blue-light: var(--soccer-blue-light);
-  --color-soccer-blue-dark: var(--soccer-blue-dark);
-  --color-soccer-gold-light: var(--soccer-gold-light);
-  --color-soccer-gold-dark: var(--soccer-gold-dark);
-  --color-soccer-red-light: var(--soccer-red-light);
-  --color-soccer-red-dark: var(--soccer-red-dark);
 
   /* Zona-play colors for Tailwind */
   --color-play-purple: var(--play-purple);
@@ -265,59 +244,75 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--zona-line) var(--zona-bg);
+  }
   body {
-    @apply bg-background text-foreground;
-    /* Mejor anti-aliasing para texto en modo oscuro */
+    @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
   }
-
-  /* Mejoras específicas para modo oscuro */
-  .dark {
-    /* Scrollbars más suaves en modo oscuro */
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.35 0.04 220) oklch(0.25 0.05 220);
-
-    /* Color scheme para navegadores */
-    color-scheme: dark;
+  /* Montserrat para títulos, Inter para UI y datos (normativa §4). */
+  h1, h2, h3 {
+    font-family: var(--font-brand);
+    letter-spacing: -0.01em;
   }
-
-  /* Transiciones suaves al cambiar de tema */
-  .dark,
-  .dark *,
-  *,
-  html {
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  ::selection {
+    background-color: rgb(139 77 246 / 0.35);
+    color: #ffffff;
   }
-
-  .dark *::-webkit-scrollbar {
+  *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-
-  .dark *::-webkit-scrollbar-track {
-    background: oklch(0.25 0.05 220);
+  *::-webkit-scrollbar-track {
+    background: var(--zona-bg);
   }
-
-  .dark *::-webkit-scrollbar-thumb {
-    background-color: oklch(0.35 0.04 220);
-    border-radius: 4px;
-    border: 2px solid oklch(0.25 0.05 220);
-  }
-
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.40 0.04 220);
-  }
-
-  /* Selección de texto más agradable en modo oscuro */
-  .dark ::selection {
-    background-color: oklch(0.58 0.15 150 / 0.3);
-    color: oklch(0.95 0.003 120);
-  }
-
-  .dark ::-moz-selection {
-    background-color: oklch(0.58 0.15 150 / 0.3);
-    color: oklch(0.95 0.003 120);
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--zona-line);
+    border-radius: 8px;
+    border: 2px solid var(--zona-bg);
   }
 }
 
+@layer utilities {
+  /* Cifras tabulares para marcadores y tablas de posiciones. */
+  .tabular { font-variant-numeric: tabular-nums; }
+  .zona-gradient { background-image: var(--zona-gradient); }
+  .zona-text-gradient {
+    background-image: var(--zona-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Patrón de barras diagonales del brandbook, para fondos decorativos. */
+  .gol-gradient { background-image: linear-gradient(135deg, #C4FF66 0%, #A3FF12 55%, #76C000 100%); }
+  .gol-text-gradient {
+    background-image: linear-gradient(135deg, #DAFF95 0%, #A3FF12 60%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gol-stripes {
+    background-image: repeating-linear-gradient(-62deg, rgb(163 255 18 / 0.05) 0 18px, transparent 18px 72px);
+  }
+  .zona-stripes {
+    background-image: repeating-linear-gradient(-62deg, rgb(139 77 246 / 0.06) 0 18px, transparent 18px 72px);
+  }
+  .zona-grid {
+    background-image:
+      linear-gradient(rgb(158 172 196 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(158 172 196 / 0.05) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

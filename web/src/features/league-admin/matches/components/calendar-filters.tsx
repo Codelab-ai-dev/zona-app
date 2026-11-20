@@ -65,7 +65,7 @@ export function CalendarFilters({ round, team, rounds, teams, onRound, onTeam }:
                 {teams.map((t) => (
                   <SelectItem key={t.id} value={t.id} className="text-white">
                     <span className="flex items-center gap-2">
-                      <Shield className="h-3.5 w-3.5 text-green-400" aria-hidden="true" />
+                      <Shield className="h-3.5 w-3.5 text-gol-400" aria-hidden="true" />
                       {t.name}
                     </span>
                   </SelectItem>

@@ -32,7 +32,7 @@ export function MatchesTab({ matches, teams }: { matches: Match[]; teams: TeamLo
       <Section icon={<Calendar className="size-4 text-blue-400" aria-hidden="true" />} title="Próximos Partidos">
         {upcoming.length ? <MatchList matches={upcoming} teams={teams} /> : <EmptyState title="No hay partidos próximos" />}
       </Section>
-      <Section icon={<CheckCircle2 className="size-4 text-green-400" aria-hidden="true" />} title="Resultados Recientes">
+      <Section icon={<CheckCircle2 className="size-4 text-emerald-400" aria-hidden="true" />} title="Resultados Recientes">
         {recent.length ? <MatchList matches={recent} teams={teams} /> : <EmptyState title="Aún no hay resultados" />}
       </Section>
       <Section icon={<Calendar className="size-4 text-purple-400" aria-hidden="true" />} title="Todos los partidos">

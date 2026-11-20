@@ -77,7 +77,7 @@ export function LeagueAdminFields({ value, onChange, admins, errors, locked }: L
       >
         {([['new', 'Crear nuevo administrador'], ['existing', 'Administrador existente']] as const).map(([mode, label]) => (
           <Label key={mode} htmlFor={`admin-mode-${mode}`} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-            <RadioGroupItem value={mode} id={`admin-mode-${mode}`} disabled={locked && mode === 'existing'} className="border-white/30 text-green-400" />
+            <RadioGroupItem value={mode} id={`admin-mode-${mode}`} disabled={locked && mode === 'existing'} className="border-white/30 text-gol-400" />
             {label}
           </Label>
         ))}

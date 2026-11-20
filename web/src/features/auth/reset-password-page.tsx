@@ -65,9 +65,8 @@ export function ResetPasswordPage() {
   const missing = !token
   const fieldError = 'text-sm text-red-400'
   return (
-    <AuthShell title="Nueva contraseña">
-      <h1 className="sr-only">Nueva contraseña</h1>
-      <p className="mb-5 text-sm text-gray-400">Entre 10 y 72 caracteres.</p>
+    <AuthShell eyebrow="Acceso" title="Nueva contraseña">
+      <p className="mb-5 text-sm text-slate-400">Entre 10 y 72 caracteres.</p>
       {(missing || errors.token) && (
         <p role="alert" className={`${authErrorClass} mb-5`}>
           El enlace no es válido o ya venció.{' '}

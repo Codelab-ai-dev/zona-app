@@ -41,7 +41,7 @@ export function TeamInfoPage({ teamId }: { teamId: string }) {
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
                     {data.logo && <AvatarImage src={data.logo} alt={data.name} className="object-cover" />}
-                    <AvatarFallback className="bg-green-500/30 text-green-300 font-bold text-base sm:text-lg border border-green-300/50">
+                    <AvatarFallback className="bg-gol-500/30 text-gol-300 font-bold text-base sm:text-lg border border-gol-300/50">
                       {initials(data.name)}
                     </AvatarFallback>
                   </Avatar>

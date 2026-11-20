@@ -142,7 +142,7 @@ function ScorersTables({ teamId, tournamentId }: { teamId: string; tournamentId:
                             </TableCell>
                             <TableCell className="text-center text-white/80 bg-transparent">{s.assists}</TableCell>
                             <TableCell className="text-center bg-transparent">
-                              <Badge className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border-0">⚽ {s.goals}</Badge>
+                              <Badge className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 border-0">⚽ {s.goals}</Badge>
                             </TableCell>
                           </TableRow>
                         )
@@ -174,11 +174,11 @@ function ScorersTables({ teamId, tournamentId }: { teamId: string; tournamentId:
                   </TableHeader>
                   <TableBody>
                     {res.data.slice(0, 10).map((s, index) => (
-                      <TableRow key={s.player_id} className={cn('border-white/10 hover:bg-white/5', s.team_id === teamId ? 'bg-green-500/20' : 'bg-transparent')}>
+                      <TableRow key={s.player_id} className={cn('border-white/10 hover:bg-white/5', s.team_id === teamId ? 'bg-gol-500/20' : 'bg-transparent')}>
                         <TableCell className="font-semibold text-white/80">{index + 1}</TableCell>
                         <TableCell className="font-medium text-white">{s.player_name}</TableCell>
                         <TableCell className="text-white/80">{s.team_name}</TableCell>
-                        <TableCell className="text-center font-bold text-green-400">{s.goals}</TableCell>
+                        <TableCell className="text-center font-bold text-gol-400">{s.goals}</TableCell>
                         <TableCell className="text-center text-white/80">{s.matches_played}</TableCell>
                       </TableRow>
                     ))}

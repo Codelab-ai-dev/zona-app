@@ -45,7 +45,7 @@ export function TeamCard({ team, tournamentName, ownerName, disabled, onEdit, on
       {navigating && (
         <div role="status" className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-green-400 motion-reduce:animate-none" aria-hidden="true" />
+            <Loader2 className="h-8 w-8 animate-spin text-gol-400 motion-reduce:animate-none" aria-hidden="true" />
             <p className="text-sm font-medium text-white">Cargando equipo...</p>
           </div>
         </div>
@@ -62,7 +62,7 @@ export function TeamCard({ team, tournamentName, ownerName, disabled, onEdit, on
             {team.logo ? (
               <AvatarImage src={team.logo} alt={`${team.name} logo`} />
             ) : (
-              <AvatarFallback className="bg-green-500/20 font-bold text-green-400">{initials(team.name)}</AvatarFallback>
+              <AvatarFallback className="bg-gol-500/20 font-bold text-gol-400">{initials(team.name)}</AvatarFallback>
             )}
           </Avatar>
           <div>
@@ -74,7 +74,7 @@ export function TeamCard({ team, tournamentName, ownerName, disabled, onEdit, on
             <CardDescription className="text-white/70 drop-shadow">/{team.slug}</CardDescription>
           </div>
         </div>
-        <Badge className={team.is_active ? 'w-fit border-0 bg-green-500/80 text-white' : 'w-fit border-0 bg-gray-500/80 text-white'}>
+        <Badge className={team.is_active ? 'w-fit border-0 bg-emerald-600/90 text-white' : 'w-fit border-0 bg-gray-500/80 text-white'}>
           {team.is_active ? 'Aprobado' : 'Pendiente'}
         </Badge>
       </CardHeader>
@@ -116,7 +116,7 @@ export function TeamCard({ team, tournamentName, ownerName, disabled, onEdit, on
                 className={
                   team.is_active
                     ? 'flex-1 border-0 bg-yellow-500/80 text-white backdrop-blur-md hover:bg-yellow-500/90'
-                    : 'flex-1 border-0 bg-green-500/80 text-white backdrop-blur-md hover:bg-green-500/90'
+                    : 'flex-1 border-0 bg-gol-500/80 text-slate-950 backdrop-blur-md hover:bg-gol-500/90'
                 }
               >
                 {team.is_active ? <XCircle className="mr-1 h-4 w-4" aria-hidden="true" /> : <CheckCircle className="mr-1 h-4 w-4" aria-hidden="true" />}

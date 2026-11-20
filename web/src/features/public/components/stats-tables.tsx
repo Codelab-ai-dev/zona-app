@@ -35,15 +35,15 @@ export function StandingsTable({ standings, label = 'Tabla de posiciones', advan
           <TableBody>
             {standings.map((s) => (
               <TableRow key={s.team_id} className="border-white/5 hover:bg-white/5">
-                <TableCell className={`text-center font-bold text-white ${s.position <= advancing ? 'border-l-2 border-green-500' : ''}`}>
+                <TableCell className={`text-center font-bold text-white ${s.position <= advancing ? 'border-l-2 border-gol-500' : ''}`}>
                   {s.position}
                   {s.position <= advancing && <span className="sr-only"> (clasifica)</span>}
                 </TableCell>
                 <TableCell>
-                  <Link to={`/equipos/${s.team_id}`} className="flex items-center gap-2 text-white hover:text-green-400 hover:underline">
+                  <Link to={`/equipos/${s.team_id}`} className="flex items-center gap-2 text-white hover:text-gol-400 hover:underline">
                     <Avatar className="size-6 shrink-0 border border-white/10 md:size-8">
                       {s.team_logo && <AvatarImage src={s.team_logo} alt="" />}
-                      <AvatarFallback className="bg-green-500/20 text-xs font-bold text-green-400" aria-hidden="true">{initials(s.team_name)}</AvatarFallback>
+                      <AvatarFallback className="bg-gol-500/20 text-xs font-bold text-gol-400" aria-hidden="true">{initials(s.team_name)}</AvatarFallback>
                     </Avatar>
                     <span className="truncate text-sm">{s.team_name}</span>
                   </Link>
@@ -54,7 +54,7 @@ export function StandingsTable({ standings, label = 'Tabla de posiciones', advan
                 <TableCell className="text-center text-sm text-gray-400">{s.matches_lost}</TableCell>
                 <TableCell className="text-center text-sm text-gray-400">{s.goals_for}</TableCell>
                 <TableCell className="text-center text-sm text-gray-400">{s.goals_against}</TableCell>
-                <TableCell className={`text-center text-sm ${s.goal_difference > 0 ? 'text-green-400' : s.goal_difference < 0 ? 'text-red-400' : 'text-gray-500'}`}>{signed(s.goal_difference)}</TableCell>
+                <TableCell className={`text-center text-sm ${s.goal_difference > 0 ? 'text-gol-400' : s.goal_difference < 0 ? 'text-red-400' : 'text-gray-500'}`}>{signed(s.goal_difference)}</TableCell>
                 <TableCell className="text-center font-bold">
                   {s.points + s.points_adjustment}
                   {s.points_adjustment !== 0 && (
@@ -92,7 +92,7 @@ export function TopScorersTable({ scorers }: { scorers: TopScorer[] }) {
                 <TableCell className="text-center font-semibold">{index + 1}</TableCell>
                 <TableCell className="font-medium">{p.player_name}</TableCell>
                 <TableCell className="text-sm text-gray-400">{p.team_name}</TableCell>
-                <TableCell className="text-center font-bold text-green-400">{p.goals}</TableCell>
+                <TableCell className="text-center font-bold text-gol-400">{p.goals}</TableCell>
                 <TableCell className="text-center text-blue-400">{p.assists}</TableCell>
                 <TableCell className="text-center text-gray-400">{p.matches_played}</TableCell>
               </TableRow>

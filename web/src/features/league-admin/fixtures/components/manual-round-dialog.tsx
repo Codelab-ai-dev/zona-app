@@ -148,7 +148,7 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
             <div className="rounded-xl border border-white/10 bg-slate-800/50 p-3">
               <p className="mb-2 block text-[10px] uppercase tracking-wide text-gray-500">Acción</p>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" aria-pressed={!editing} variant={editing ? 'outline' : 'default'} onClick={() => setAction('create')} className={`h-10 gap-2 ${editing ? 'border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white' : 'border-0 bg-green-500 text-white hover:bg-green-600'}`}>
+                <Button type="button" aria-pressed={!editing} variant={editing ? 'outline' : 'default'} onClick={() => setAction('create')} className={`h-10 gap-2 ${editing ? 'border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white' : 'border-0 bg-gol-400 text-slate-950 hover:bg-gol-300'}`}>
                   <Plus className="h-4 w-4" aria-hidden="true" />
                   <span className="text-xs font-medium">Crear Nueva</span>
                 </Button>
@@ -237,7 +237,7 @@ export function ManualRoundDialog({ open, onOpenChange, tournaments, getActiveTe
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={bulkCreate.isPending} className="h-9 flex-1 border-white/10 bg-slate-800/50 text-xs text-gray-400 hover:text-white">
               Cancelar
             </Button>
-            <Button onClick={() => void handleSave()} disabled={bulkCreate.isPending || !tournamentId} className="h-9 flex-1 bg-green-500 text-xs text-white hover:bg-green-600">
+            <Button onClick={() => void handleSave()} disabled={bulkCreate.isPending || !tournamentId} className="h-9 flex-1 bg-gol-400 text-xs text-slate-950 hover:bg-gol-300">
               {bulkCreate.isPending ? 'Creando…' : 'Crear jornada'}
             </Button>
           </div>}

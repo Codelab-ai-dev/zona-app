@@ -73,7 +73,7 @@ export function ReviewRequestDialog({ request, teamName, pending, onReview, onCl
             />
           </div>
           <div className="flex gap-3 pt-4">
-            <Button onClick={() => onReview('approved', notes.trim() ? notes : undefined)} disabled={pending} className="flex-1 bg-green-600 text-white hover:bg-green-700">
+            <Button onClick={() => onReview('approved', notes.trim() ? notes : undefined)} disabled={pending} className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-500">
               {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />}
               {pending ? 'Procesando...' : 'Aprobar y Registrar Jugador'}
             </Button>

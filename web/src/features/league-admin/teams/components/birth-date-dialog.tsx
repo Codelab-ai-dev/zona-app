@@ -80,7 +80,7 @@ export function BirthDateDialog({ row, leagueId, onClose }: Props) {
             <Button variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20" onClick={onClose}>
               Cancelar
             </Button>
-            <Button className="border-0 bg-green-500/80 text-white hover:bg-green-500/90" onClick={() => void submit()} disabled={!birthDate || save.isPending}>
+            <Button className="border-0 bg-gol-500/80 text-slate-950 hover:bg-gol-500/90" onClick={() => void submit()} disabled={!birthDate || save.isPending}>
               <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
               {save.isPending ? 'Guardando…' : canVerify && verify ? 'Guardar y Verificar' : 'Guardar'}
             </Button>

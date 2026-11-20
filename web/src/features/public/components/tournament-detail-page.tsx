@@ -70,9 +70,9 @@ export function TournamentDetailPage() {
     <PublicPage back={{ to: `/liga/${slug}`, label: 'Torneos' }}>
       <HeroCard>
         <div className="flex flex-col items-center gap-4 md:flex-row">
-          <Avatar className="size-16 border-2 border-green-500/30 shadow-lg shadow-green-500/20 md:size-20">
+          <Avatar className="size-16 border-2 border-gol-500/30 shadow-lg shadow-gol-500/20 md:size-20">
             {lg?.logo && <AvatarImage src={lg.logo} alt="" className="object-cover" />}
-            <AvatarFallback aria-hidden="true" className="bg-gradient-to-br from-green-500 to-emerald-600 text-xl font-bold text-white">
+            <AvatarFallback aria-hidden="true" className="gol-gradient text-xl font-bold text-slate-950">
               {initials(lg?.name ?? 'Liga')}
             </AvatarFallback>
           </Avatar>
@@ -84,7 +84,7 @@ export function TournamentDetailPage() {
               </p>
             )}
             <div className="flex items-center justify-center gap-2 md:justify-start">
-              <Badge asChild className="border-green-500/30 bg-green-500/20 text-xs text-green-400">
+              <Badge asChild className="border-gol-500/30 bg-gol-500/20 text-xs text-gol-400">
                 <Link to={`/liga/${slug}`}>{lg?.name ?? 'Volver a la liga'}</Link>
               </Badge>
             </div>

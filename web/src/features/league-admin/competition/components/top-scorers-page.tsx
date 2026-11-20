@@ -108,7 +108,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
           {viewMode === 'scorers' && selectedTournament && (
             <Button
               onClick={() => setDialog({})}
-              className="sm:self-end h-9 backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0"
+              className="sm:self-end h-9 backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0"
             >
               <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
               Agregar Goles
@@ -187,7 +187,7 @@ export function TopScorersPage({ leagueId }: { leagueId: string }) {
                         <TableCell className="text-white/80 drop-shadow">{scorer.team_name}</TableCell>
                         <TableCell className="text-center text-white/70">{scorer.matches_played}</TableCell>
                         <TableCell className="text-center">
-                          <Badge className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0">⚽ {scorer.goals}</Badge>
+                          <Badge className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0">⚽ {scorer.goals}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className="backdrop-blur-md bg-blue-500/80 text-white border-0">{scorer.assists}</Badge>

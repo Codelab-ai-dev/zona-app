@@ -11,7 +11,7 @@ export function QRResults({ result }: { result: QRRunResult }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-center gap-4">
-        <Badge className="flex items-center gap-2 border-green-500/30 bg-green-500/20 text-green-300 backdrop-blur-md">
+        <Badge className="flex items-center gap-2 border-gol-500/30 bg-gol-500/20 text-gol-300 backdrop-blur-md">
           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
           {success} Exitosos
         </Badge>
@@ -48,7 +48,7 @@ export function QRResults({ result }: { result: QRRunResult }) {
                     <p className="text-sm font-medium text-white">{n.name}</p>
                     <p className="text-xs text-blue-300/80">En QR: {n.inQR}</p>
                   </div>
-                  <CheckCircle2 className="h-4 w-4 text-green-400" aria-label="Actualizado" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-label="Actualizado" />
                 </li>
               ))}
             </ul>
@@ -73,12 +73,12 @@ export function QRResults({ result }: { result: QRRunResult }) {
         </div>
       )}
 
-      <div role="status" className="rounded-lg border border-green-500/20 bg-green-500/10 p-4">
+      <div role="status" className="rounded-lg border border-gol-500/20 bg-gol-500/10 p-4">
         <div className="flex gap-3">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" aria-hidden="true" />
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
           <div>
-            <h4 className="text-sm font-medium text-green-300">Actualización Completada</h4>
-            <p className="mt-1 text-xs text-green-300/80">
+            <h4 className="text-sm font-medium text-emerald-300">Actualización Completada</h4>
+            <p className="mt-1 text-xs text-gol-300/80">
               {success === 0 && failed === 0
                 ? 'No hay jugadores activos para actualizar en los equipos seleccionados.'
                 : failed === 0

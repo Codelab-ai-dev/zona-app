@@ -164,7 +164,7 @@ export function PlayerForm({ positions, onSubmit, isLoading, player, ageRules, u
 
       <PhotoPicker label="Foto del Jugador" currentUrl={player?.photo} disabled={isLoading} onChange={setPhoto} />
 
-      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading || (ageResult !== null && !ageResult.isValid)}>
+      <Button type="submit" className="w-full bg-gol-400 hover:bg-gol-500 text-slate-950" disabled={isLoading || (ageResult !== null && !ageResult.isValid)}>
         {isLoading ? 'Guardando…' : player ? 'Guardar Cambios' : 'Registrar Jugador'}
       </Button>
     </form>

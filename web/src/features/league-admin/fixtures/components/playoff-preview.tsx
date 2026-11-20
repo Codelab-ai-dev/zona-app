@@ -65,7 +65,7 @@ export function PlayoffPreview({ numTeams, seedNames, startDate, startTime, fiel
         <Button onClick={onBack} disabled={pending} className="border-white/30 bg-white/10 text-white hover:bg-white/20">
           Volver
         </Button>
-        <Button onClick={onConfirm} disabled={pending} className="flex-1 bg-green-500 text-white hover:bg-green-600">
+        <Button onClick={onConfirm} disabled={pending} className="flex-1 bg-gol-400 text-slate-950 hover:bg-gol-300">
           {pending ? 'Generando…' : 'Confirmar y generar'}
         </Button>
       </div>

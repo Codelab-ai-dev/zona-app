@@ -39,7 +39,7 @@ export function ProductModeSelector({ value, onChange, disabled = false }: Produ
               onClick={() => !disabled && onChange(mode)}
               className={`relative block cursor-pointer transition-all rounded-xl ${
                 isSelected
-                  ? 'bg-green-500/20 border-2 border-green-500/50 ring-1 ring-green-500/30'
+                  ? 'bg-gol-500/20 border-2 border-gol-500/50 ring-1 ring-gol-500/30'
                   : 'bg-slate-700/30 border border-white/10 hover:bg-slate-700/50'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -62,7 +62,7 @@ export function ProductModeSelector({ value, onChange, disabled = false }: Produ
                     value={mode}
                     id={`product-mode-${mode}`}
                     aria-label={config.label}
-                    className="border-white/30 text-green-400 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                    className="border-white/30 text-gol-400 data-[state=checked]:bg-gol-400 data-[state=checked]:border-gol-400 data-[state=checked]:text-slate-950"
                   />
                 </div>
                 <p className="text-[10px] md:text-xs text-gray-500 mb-2">{config.description}</p>
@@ -70,7 +70,7 @@ export function ProductModeSelector({ value, onChange, disabled = false }: Produ
                 <ul className="space-y-0.5">
                   {included.slice(0, 4).map((feature) => (
                     <li key={feature} className="flex items-center gap-1.5 text-[10px] md:text-xs text-gray-400">
-                      <Check className="w-3 h-3 text-green-400 flex-shrink-0" aria-hidden="true" />
+                      <Check className="w-3 h-3 text-gol-400 flex-shrink-0" aria-hidden="true" />
                       <span>{PRODUCT_FEATURE_LABELS[feature]}</span>
                     </li>
                   ))}
@@ -105,7 +105,7 @@ export function ProductModeSelector({ value, onChange, disabled = false }: Produ
                     <td key={mode} className="p-2 md:p-3 text-center">
                       {PRODUCT_MODE_CONFIG[mode].features[feature] ? (
                         <>
-                          <Check className="w-4 h-4 text-green-400 mx-auto" aria-hidden="true" />
+                          <Check className="w-4 h-4 text-gol-400 mx-auto" aria-hidden="true" />
                           <span className="sr-only">Incluido</span>
                         </>
                       ) : (

@@ -29,7 +29,7 @@ export function UsersManagement() {
           <h2 className="text-lg md:text-xl font-bold text-white">Gestión de Usuarios</h2>
           <p className="text-gray-500 text-sm">Administra usuarios del sistema</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} size="sm" className="bg-green-500 hover:bg-green-600 text-white border-0">
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0">
           <Plus className="w-3 h-3 mr-1" aria-hidden="true" />
           Nuevo Usuario
         </Button>

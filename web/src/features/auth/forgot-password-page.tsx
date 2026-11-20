@@ -30,15 +30,14 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell title="Recuperar contraseña">
-      <h1 className="sr-only">Recuperar contraseña</h1>
+    <AuthShell eyebrow="Acceso" title="Recuperar contraseña">
       {sent ? (
-        <p role="status" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
+        <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
           Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada.
         </p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-5" noValidate>
-          <p className="text-sm text-gray-400">Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
+          <p className="text-sm text-slate-400">Escribe tu correo y te enviaremos un enlace para crear una nueva contraseña.</p>
           <div className="space-y-2">
             <Label htmlFor="email" className={authLabelClass}>Correo electrónico</Label>
             <Input id="email" name="email" type="email" autoComplete="email" placeholder="tu@email.com" required className={authInputClass} aria-invalid={error ? true : undefined} aria-describedby={error ? 'forgot-error' : undefined} />
