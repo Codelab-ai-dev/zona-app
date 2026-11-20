@@ -94,7 +94,7 @@ export function ManualStatsDialog({ leagueId, tournamentId, entries, editing, on
       <DialogContent className="max-w-[95vw] md:max-w-md bg-slate-900 border-white/20 text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <Plus className="w-5 h-5 text-green-400" aria-hidden="true" />
+            <Plus className="w-5 h-5 text-gol-400" aria-hidden="true" />
             {editing ? 'Editar Estadísticas Manuales' : 'Agregar Goles Extemporáneos'}
           </DialogTitle>
           <DialogDescription className="text-white/70">
@@ -182,7 +182,7 @@ export function ManualStatsDialog({ leagueId, tournamentId, entries, editing, on
             <Button type="button" variant="ghost" onClick={onClose} disabled={pending} className="text-white/70 hover:text-white hover:bg-white/10">
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending} className="bg-green-500 hover:bg-green-600 text-white">
+            <Button type="submit" disabled={pending} className="bg-gol-400 hover:bg-gol-300 text-slate-950">
               {pending && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
               {pending ? 'Guardando…' : editing ? 'Guardar' : 'Agregar'}
             </Button>

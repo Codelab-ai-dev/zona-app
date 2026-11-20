@@ -186,7 +186,7 @@ export function StandingsEditDialog({
               <X className="w-3 h-3 md:w-4 md:h-4 mr-1.5" aria-hidden="true" />
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending} className="flex-1 h-9 bg-green-500 hover:bg-green-600 text-white text-xs md:text-sm">
+            <Button type="submit" disabled={pending} className="flex-1 h-9 bg-gol-400 hover:bg-gol-300 text-slate-950 text-xs md:text-sm">
               {pending ? <Loader2 className="w-3 h-3 md:w-4 md:h-4 mr-1.5 animate-spin" aria-hidden="true" /> : <Save className="w-3 h-3 md:w-4 md:h-4 mr-1.5" aria-hidden="true" />}
               {pending ? 'Guardando…' : 'Guardar'}
             </Button>

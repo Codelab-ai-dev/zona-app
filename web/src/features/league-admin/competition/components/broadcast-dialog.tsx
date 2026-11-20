@@ -101,7 +101,7 @@ export function BroadcastDialog({ leagueId, onClose }: { leagueId: string; onClo
             <Button type="button" variant="ghost" onClick={onClose} disabled={broadcast.isPending}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white" disabled={broadcast.isPending}>
+            <Button type="submit" className="bg-gol-400 hover:bg-gol-300 text-slate-950" disabled={broadcast.isPending}>
               {broadcast.isPending ? 'Enviando…' : 'Enviar'}
             </Button>
           </DialogFooter>

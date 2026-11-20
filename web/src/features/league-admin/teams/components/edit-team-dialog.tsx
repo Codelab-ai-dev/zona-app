@@ -156,7 +156,7 @@ export function EditTeamDialog({ team, open, onOpenChange }: EditTeamDialogProps
           <Button onClick={() => onOpenChange(false)} disabled={busy} className="h-9 flex-1 border-white/10 bg-slate-800/50 text-xs text-gray-400 hover:bg-slate-700/50 hover:text-white md:text-sm">
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={busy} className="h-9 flex-1 bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
+          <Button onClick={handleSubmit} disabled={busy} className="h-9 flex-1 bg-gol-400 text-xs text-slate-950 hover:bg-gol-300 md:text-sm">
             {busy && <Loader2 className="mr-1.5 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
             {uploading ? 'Subiendo logo...' : busy ? 'Actualizando...' : 'Actualizar Equipo'}
           </Button>

@@ -92,7 +92,7 @@ export function TeamForm({ initialData, onSubmit, isLoading }: TeamFormProps) {
         />
       </div>
 
-      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-gol-400 hover:bg-gol-500 text-slate-950" disabled={isLoading}>
         {isLoading ? 'Guardando…' : 'Guardar'}
       </Button>
     </form>

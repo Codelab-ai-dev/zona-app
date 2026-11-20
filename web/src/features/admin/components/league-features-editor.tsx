@@ -141,7 +141,7 @@ export function LeagueFeaturesEditor({ open, onOpenChange, league }: LeagueFeatu
           <Button variant="outline" className="bg-slate-700/50 border-white/10 text-gray-400 hover:text-white hover:bg-slate-700" onClick={() => onOpenChange(false)} disabled={updateMode.isPending}>
             Cancelar
           </Button>
-          <Button className="bg-green-500 hover:bg-green-600 text-white border-0" onClick={handleSave} disabled={updateMode.isPending}>
+          <Button className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0" onClick={handleSave} disabled={updateMode.isPending}>
             {updateMode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Cambios
           </Button>

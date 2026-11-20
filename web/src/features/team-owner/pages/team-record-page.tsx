@@ -10,7 +10,7 @@ import type { TeamStats } from '../types'
 
 const recordTone = {
   played: ['bg-gray-500/20 border-gray-300/30', 'text-white'],
-  won: ['bg-green-500/20 border-green-300/30', 'text-green-400'],
+  won: ['bg-gol-500/20 border-gol-300/30', 'text-gol-400'],
   drawn: ['bg-yellow-500/20 border-yellow-300/30', 'text-yellow-400'],
   lost: ['bg-red-500/20 border-red-300/30', 'text-red-400'],
 } as const
@@ -80,16 +80,16 @@ function RecordCard({ stat }: { stat: TeamStats }) {
                   key={g.label}
                   className={cn(
                     'flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 p-4 rounded-xl backdrop-blur-md border shadow-lg',
-                    g.good ? 'bg-green-500/20 border-green-300/30' : 'bg-red-500/20 border-red-300/30',
+                    g.good ? 'bg-gol-500/20 border-gol-300/30' : 'bg-red-500/20 border-red-300/30',
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={cn('p-2 rounded-full backdrop-blur-md border', g.good ? 'bg-green-500/30 border-green-300/50' : 'bg-red-500/30 border-red-300/50')}>
-                      <Icon className={cn('w-4 h-4', g.good ? 'text-green-300' : 'text-red-300')} aria-hidden="true" />
+                    <div className={cn('p-2 rounded-full backdrop-blur-md border', g.good ? 'bg-gol-500/30 border-gol-300/50' : 'bg-red-500/30 border-red-300/50')}>
+                      <Icon className={cn('w-4 h-4', g.good ? 'text-gol-300' : 'text-red-300')} aria-hidden="true" />
                     </div>
                     <span className="text-sm font-medium text-white drop-shadow">{g.label}</span>
                   </div>
-                  <span className={cn('text-2xl font-bold drop-shadow-lg', g.good ? 'text-green-400' : 'text-red-400')}>{g.value}</span>
+                  <span className={cn('text-2xl font-bold drop-shadow-lg', g.good ? 'text-gol-400' : 'text-red-400')}>{g.value}</span>
                 </div>
               )
             })}
@@ -116,10 +116,10 @@ function RecordCard({ stat }: { stat: TeamStats }) {
           <div className="pt-4 border-t border-white/20">
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 text-sm">
               <span className="text-white/80 drop-shadow">Porcentaje de Victorias</span>
-              <span className="font-bold text-green-400 drop-shadow">{winRate.toFixed(1)}%</span>
+              <span className="font-bold text-emerald-400 drop-shadow">{winRate.toFixed(1)}%</span>
             </div>
             <div className="mt-2 h-2 backdrop-blur-md bg-white/20 rounded-full overflow-hidden border border-white/30" role="presentation">
-              <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${winRate}%` }} />
+              <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${winRate}%` }} />
             </div>
           </div>
         )}

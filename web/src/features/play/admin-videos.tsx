@@ -17,7 +17,7 @@ const statusConfig = {
   pending: { label: 'Pendiente', color: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400', icon: Clock },
   uploading: { label: 'Subiendo', color: 'bg-blue-500/20 text-blue-700 dark:text-blue-400', icon: Loader2 },
   processing: { label: 'Procesando', color: 'bg-purple-500/20 text-purple-700 dark:text-purple-400', icon: Loader2 },
-  ready: { label: 'Listo', color: 'bg-green-500/20 text-green-700 dark:text-green-400', icon: CheckCircle },
+  ready: { label: 'Listo', color: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400', icon: CheckCircle },
   failed: { label: 'Error', color: 'bg-red-500/20 text-red-700 dark:text-red-400', icon: AlertCircle },
 } as const
 

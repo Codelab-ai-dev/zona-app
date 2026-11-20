@@ -12,8 +12,8 @@ export function AppManagement() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex items-start gap-3">
-        <div className="p-2 md:p-2.5 rounded-lg bg-green-500/20">
-          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-green-400" aria-hidden="true" />
+        <div className="p-2 md:p-2.5 rounded-lg bg-gol-500/20">
+          <Smartphone className="w-5 h-5 md:w-6 md:h-6 text-gol-400" aria-hidden="true" />
         </div>
         <div>
           <h2 className="text-lg md:text-xl font-bold text-white">Gestión de Aplicación Móvil</h2>

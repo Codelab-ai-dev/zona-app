@@ -57,7 +57,7 @@ function Summary({ row, position, teamName }: { row: Standings; position: number
     : position === 3 ? 'bg-orange-500/30 border-orange-400 text-orange-400'
     : 'bg-white/20 border-white/30 text-white'
   const tiles = [
-    { label: 'Victorias', value: row.matches_won, tone: 'bg-green-500/20 border-green-300/30 text-green-400' },
+    { label: 'Victorias', value: row.matches_won, tone: 'bg-emerald-500/20 border-emerald-300/30 text-emerald-400' },
     { label: 'Empates', value: row.matches_drawn, tone: 'bg-yellow-500/20 border-yellow-300/30 text-yellow-400' },
     { label: 'Derrotas', value: row.matches_lost, tone: 'bg-red-500/20 border-red-300/30 text-red-400' },
   ]
@@ -146,7 +146,7 @@ function StandingsTable({ tournamentId, teamId, teamName }: { tournamentId: stri
                             className={cn(
                               'border-white/10 transition-colors',
                               isOwn
-                                ? 'bg-green-500/30 hover:bg-green-500/40 border-l-4 border-l-green-400'
+                                ? 'bg-gol-500/30 hover:bg-gol-500/40 border-l-4 border-l-gol-400'
                                 : position <= 3
                                   ? 'bg-yellow-500/10 hover:bg-yellow-500/15'
                                   : 'bg-transparent hover:bg-white/5',
@@ -156,7 +156,7 @@ function StandingsTable({ tournamentId, teamId, teamName }: { tournamentId: stri
                               <span className="sm:hidden font-bold text-white">{position}</span>
                               <span className="hidden sm:inline"><PositionBadge position={position} /></span>
                             </TableCell>
-                            <TableCell className={cn('font-semibold drop-shadow bg-transparent px-1 sm:px-4', isOwn ? 'text-green-300' : 'text-white')}>
+                            <TableCell className={cn('font-semibold drop-shadow bg-transparent px-1 sm:px-4', isOwn ? 'text-gol-300' : 'text-white')}>
                               <div className="flex items-center gap-1 sm:gap-3">
                                 <Avatar className="w-6 h-6 sm:w-8 sm:h-8 border border-white/20" aria-hidden="true">
                                   {s.team_logo ? <AvatarImage src={s.team_logo} alt="" /> : null}
@@ -164,21 +164,21 @@ function StandingsTable({ tournamentId, teamId, teamName }: { tournamentId: stri
                                 </Avatar>
                                 <span className="truncate max-w-[80px] sm:max-w-none">{s.team_name}</span>
                                 {isOwn && (
-                                  <Badge className="hidden sm:inline-flex text-xs backdrop-blur-md bg-green-500/50 text-white border-0">Tu equipo</Badge>
+                                  <Badge className="hidden sm:inline-flex text-xs bg-gol-400/15 text-gol-300 border-0">Tu equipo</Badge>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell className={cn(th, 'text-white/80')}>{s.matches_played}</TableCell>
-                            <TableCell className={cn(th, 'text-green-400')}>{s.matches_won}</TableCell>
+                            <TableCell className={cn(th, 'text-gol-400')}>{s.matches_won}</TableCell>
                             <TableCell className={cn(th, 'text-yellow-400')}>{s.matches_drawn}</TableCell>
                             <TableCell className={cn(th, 'text-red-400')}>{s.matches_lost}</TableCell>
                             <TableCell className={cn(th, 'hidden sm:table-cell text-white/80')}>{s.goals_for}</TableCell>
                             <TableCell className={cn(th, 'hidden sm:table-cell text-white/80')}>{s.goals_against}</TableCell>
-                            <TableCell className={cn(th, s.goal_difference > 0 ? 'text-green-400' : s.goal_difference < 0 ? 'text-red-400' : 'text-white/80')}>
+                            <TableCell className={cn(th, s.goal_difference > 0 ? 'text-gol-400' : s.goal_difference < 0 ? 'text-red-400' : 'text-white/80')}>
                               {s.goal_difference > 0 ? `+${s.goal_difference}` : s.goal_difference}
                             </TableCell>
                             <TableCell className="text-center bg-transparent px-1 sm:px-2">
-                              <Badge className={cn('backdrop-blur-md border-0 text-xs sm:text-sm px-1.5 sm:px-2', isOwn ? 'bg-green-500/80 hover:bg-green-500/90' : 'bg-blue-500/80 hover:bg-blue-500/90')}>
+                              <Badge className={cn('backdrop-blur-md border-0 text-xs sm:text-sm px-1.5 sm:px-2', isOwn ? 'bg-gol-500/80 hover:bg-gol-500/90' : 'bg-blue-500/80 hover:bg-blue-500/90')}>
                                 {s.points}
                               </Badge>
                             </TableCell>

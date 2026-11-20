@@ -76,11 +76,11 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
       <CardContent className="space-y-6">
         <div>
           <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center text-white drop-shadow-lg">
-            <Target className="w-5 h-5 mr-2 text-green-400" aria-hidden="true" />
+            <Target className="w-5 h-5 mr-2 text-gol-400" aria-hidden="true" />
             Rendimiento Ofensivo
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <StatTile label="Goles a Favor" value={teamStat.goals_for} valueClass="text-green-400" tint="p-4 backdrop-blur-md bg-green-500/20 rounded-xl border border-green-300/30 shadow-lg" />
+            <StatTile label="Goles a Favor" value={teamStat.goals_for} valueClass="text-gol-400" tint="p-4 backdrop-blur-md bg-gol-500/20 rounded-xl border border-gol-300/30 shadow-lg" />
             <StatTile label="Goles en Contra" value={teamStat.goals_against} valueClass="text-red-400" />
             <StatTile label="Diferencia de Goles" value={teamStat.goal_difference} valueClass="text-purple-400" tint="p-4 backdrop-blur-md bg-purple-500/20 rounded-xl border border-purple-300/30 shadow-lg" />
             <StatTile label="Vallas Invictas" value={teamStat.clean_sheets} />
@@ -103,14 +103,14 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
                     </div>
                     <Avatar className="w-10 h-10">
                       {player.photo ? <AvatarImage src={player.photo} alt={player.player_name} /> : null}
-                      <AvatarFallback className="backdrop-blur-md bg-green-500/30 text-white border border-green-300/50">{initials(player.player_name)}</AvatarFallback>
+                      <AvatarFallback className="backdrop-blur-md bg-gol-500/30 text-white border border-gol-300/50">{initials(player.player_name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm truncate text-white drop-shadow">{player.player_name}</p>
                       <p className="text-xs text-white/70 drop-shadow">#{player.jersey_number}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-green-400 drop-shadow-lg">{player.goals}</p>
+                      <p className="text-2xl font-bold text-gol-400 drop-shadow-lg">{player.goals}</p>
                       <p className="text-xs text-white/70 drop-shadow">goles</p>
                     </div>
                   </div>
@@ -140,7 +140,7 @@ function DetailedStats({ teamStat, teamId }: { teamStat: TeamStats; teamId: stri
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-red-400 drop-shadow-lg">{teamStat.red_cards}</p>
             </div>
-            <StatTile label="Puntos" value={teamStat.points} valueClass="text-green-400" />
+            <StatTile label="Puntos" value={teamStat.points} valueClass="text-gol-400" />
             {playerStats && <DisciplineTiles players={playerStats} />}
           </div>
         </div>

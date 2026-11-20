@@ -18,17 +18,17 @@ interface Props {
 export function OwnerCredentialsDialog({ credentials, onClose }: Props) {
   return (
     <Dialog open={credentials !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] border-green-500/30 bg-slate-900 md:max-w-md">
+      <DialogContent className="max-w-[95vw] border-gol-500/30 bg-slate-900 md:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center text-sm text-green-400 md:text-base">
+          <DialogTitle className="flex items-center text-sm text-gol-400 md:text-base">
             <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
             Equipo Creado Exitosamente
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-400 md:text-sm">Guarda estas credenciales de acceso.</DialogDescription>
         </DialogHeader>
         {credentials && (
-          <div className="space-y-3 rounded-lg border border-green-500/20 bg-green-500/10 p-3">
-            <h4 className="text-xs font-medium text-green-400 md:text-sm">Credenciales del Propietario</h4>
+          <div className="space-y-3 rounded-lg border border-gol-500/20 bg-gol-500/10 p-3">
+            <h4 className="text-xs font-medium text-gol-400 md:text-sm">Credenciales del Propietario</h4>
             <dl className="space-y-2 text-xs md:text-sm">
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-gray-400">Nombre:</dt>
@@ -51,7 +51,7 @@ export function OwnerCredentialsDialog({ credentials, onClose }: Props) {
           </div>
         )}
         <DialogFooter>
-          <Button onClick={onClose} className="h-9 w-full bg-green-500 text-sm text-white hover:bg-green-600">
+          <Button onClick={onClose} className="h-9 w-full bg-gol-400 text-sm text-slate-950 hover:bg-gol-300">
             Entendido
           </Button>
         </DialogFooter>

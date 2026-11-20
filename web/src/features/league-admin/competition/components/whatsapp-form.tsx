@@ -107,7 +107,7 @@ export function WhatsAppForm({ leagueId, link, onClose }: WhatsAppFormProps) {
       <DialogContent className="max-w-[95vw] md:max-w-lg bg-slate-900 border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-green-400" aria-hidden="true" />
+            <MessageSquare className="w-5 h-5 text-gol-400" aria-hidden="true" />
             {link ? 'Editar' : 'Crear'} Vínculo de WhatsApp
           </DialogTitle>
           <DialogDescription className="text-gray-400 text-xs md:text-sm">
@@ -252,7 +252,7 @@ export function WhatsAppForm({ leagueId, link, onClose }: WhatsAppFormProps) {
             <Button type="button" variant="ghost" onClick={onClose} disabled={pending} className="text-gray-400 hover:text-white hover:bg-slate-800/50">
               Cancelar
             </Button>
-            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white" disabled={pending || !formData.phone_number.trim()}>
+            <Button type="submit" className="bg-gol-400 hover:bg-gol-300 text-slate-950" disabled={pending || !formData.phone_number.trim()}>
               {pending && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
               {pending ? (link ? 'Actualizando...' : 'Creando...') : link ? 'Actualizar Vínculo' : 'Crear Vínculo'}
             </Button>

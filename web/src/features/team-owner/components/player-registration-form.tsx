@@ -196,7 +196,7 @@ export function PlayerRegistrationForm({ positions, onSubmit, isLoading, excepti
         )}
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white">
+      <Button type="submit" disabled={isLoading} className="w-full bg-gol-400 hover:bg-gol-500 text-slate-950">
         {isLoading ? 'Enviando...' : 'Enviar Solicitud'}
       </Button>
     </form>

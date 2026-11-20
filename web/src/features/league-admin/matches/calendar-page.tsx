@@ -152,7 +152,7 @@ export function CalendarPage({ leagueId, leagueSlug = '' }: CalendarPageProps) {
                     {res.data.map((t) => (
                       <SelectItem key={t.id} value={t.id} className="text-white">
                         <span className="flex items-center gap-2">
-                          <Trophy className={`h-4 w-4 ${t.is_active ? 'text-green-300' : 'text-white/50'}`} aria-hidden="true" />
+                          <Trophy className={`h-4 w-4 ${t.is_active ? 'text-emerald-300' : 'text-white/50'}`} aria-hidden="true" />
                           {t.name}
                         </span>
                       </SelectItem>

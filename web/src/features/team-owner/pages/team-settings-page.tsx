@@ -28,7 +28,7 @@ export function TeamSettingsPage() {
         <CardContent>
           <ChangePasswordDialog
             trigger={
-              <Button className="w-full backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
+              <Button className="w-full backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg">
                 <Lock className="w-4 h-4 mr-2" aria-hidden="true" />
                 Cambiar Contraseña
               </Button>
@@ -45,7 +45,7 @@ export function TeamSettingsPage() {
           <ul className="space-y-2 text-sm text-white/80 drop-shadow">
             {tips.map((tip) => (
               <li key={tip} className="flex items-center">
-                <CheckCircle className="w-4 h-4 text-green-300 mr-2" aria-hidden="true" />
+                <CheckCircle className="w-4 h-4 text-emerald-300 mr-2" aria-hidden="true" />
                 {tip}
               </li>
             ))}

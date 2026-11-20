@@ -59,7 +59,7 @@ export function TeamCalendarPage({ teamId }: { teamId: string }) {
                   <div className="flex gap-1" aria-hidden="true">
                     {list.map((m) => {
                       const r = matchResult(m, teamId)
-                      return <div key={m.id} className={cn('w-2 h-2 rounded-full', r === 'win' && 'bg-green-400', r === 'loss' && 'bg-red-400', r === 'draw' && 'bg-yellow-400')} />
+                      return <div key={m.id} className={cn('w-2 h-2 rounded-full', r === 'win' && 'bg-emerald-400', r === 'loss' && 'bg-red-400', r === 'draw' && 'bg-yellow-400')} />
                     })}
                   </div>
                 )}
@@ -84,15 +84,15 @@ export function TeamCalendarPage({ teamId }: { teamId: string }) {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard icon={<CalendarDays className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400 mx-auto mb-2" aria-hidden="true" />} value={published.length} label="Total" />
-              <SummaryCard icon={<CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mx-auto mb-2" aria-hidden="true" />} value={finished.length} label="Jugados" />
+              <SummaryCard icon={<CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400 mx-auto mb-2" aria-hidden="true" />} value={finished.length} label="Jugados" />
               <SummaryCard icon={<Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mx-auto mb-2" aria-hidden="true" />} value={scheduled.length} label="Programados" />
-              <SummaryCard icon={<div className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 flex items-center justify-center"><span className="text-lg sm:text-xl" aria-hidden="true">🏆</span></div>} value={wins} label="Victorias" valueClass="text-green-400" />
+              <SummaryCard icon={<div className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 flex items-center justify-center"><span className="text-lg sm:text-xl" aria-hidden="true">🏆</span></div>} value={wins} label="Victorias" valueClass="text-gol-400" />
             </div>
 
             {finished.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-white drop-shadow-lg flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" aria-hidden="true" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" aria-hidden="true" />
                   Partidos Finalizados
                 </h3>
                 {groupByRound(finished).map(([round, list]) => renderRound(round, list, true, ['partido jugado', 'partidos jugados']))}

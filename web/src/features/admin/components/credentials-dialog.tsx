@@ -27,8 +27,8 @@ export function CredentialsDialog({ credentials, onClose }: CredentialsDialogPro
       <DialogContent className="bg-slate-900 border-white/10 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
-            <span className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-              <Check className="w-4 h-4 text-green-400" aria-hidden="true" />
+            <span className="w-6 h-6 bg-gol-500/20 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />
             </span>
             Liga Creada
           </DialogTitle>
@@ -90,7 +90,7 @@ export function CredentialsDialog({ credentials, onClose }: CredentialsDialogPro
         )}
 
         <DialogFooter>
-          <Button onClick={onClose} className="bg-green-500 hover:bg-green-600 text-white">
+          <Button onClick={onClose} className="bg-gol-400 hover:bg-gol-300 text-slate-950">
             Cerrar
           </Button>
         </DialogFooter>

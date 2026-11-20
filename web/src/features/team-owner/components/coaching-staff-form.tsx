@@ -149,7 +149,7 @@ export function CoachingStaffForm({ roles, onSubmit, isLoading, staff }: Coachin
 
       <PhotoPicker label="Foto" currentUrl={staff?.photo} disabled={isLoading} onChange={setPhoto} />
 
-      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-gol-400 hover:bg-gol-500 text-slate-950" disabled={isLoading}>
         {isLoading ? 'Guardando…' : staff ? 'Guardar Cambios' : 'Registrar Miembro'}
       </Button>
     </form>

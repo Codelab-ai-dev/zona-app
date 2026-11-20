@@ -48,19 +48,19 @@ export function TeamPlayersTable({ teamId }: { teamId: string }) {
               <tbody>
                 {res.data.map((p) => (
                   <tr key={p.player_id} className="border-b border-white/5 last:border-0 hover:bg-white/5">
-                    <td className="py-2 text-center text-sm font-semibold text-green-400 md:py-3">{p.jersey_number || '-'}</td>
+                    <td className="py-2 text-center text-sm font-semibold text-gol-400 md:py-3">{p.jersey_number || '-'}</td>
                     <td className="py-2 md:py-3">
-                      <button type="button" onClick={() => setSelected(p)} aria-label={`Ver estadísticas de ${p.name}`} className="flex w-full items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 md:gap-3">
-                        <Avatar className="size-7 border border-green-500/30 md:size-8">
+                      <button type="button" onClick={() => setSelected(p)} aria-label={`Ver estadísticas de ${p.name}`} className="flex w-full items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gol-400 md:gap-3">
+                        <Avatar className="size-7 border border-gol-500/30 md:size-8">
                           {p.photo && <AvatarImage src={p.photo} alt="" />}
-                          <AvatarFallback className="bg-green-500/20 text-[10px] text-green-400 md:text-xs" aria-hidden="true">{initials(p.name)}</AvatarFallback>
+                          <AvatarFallback className="bg-gol-500/20 text-[10px] text-gol-400 md:text-xs" aria-hidden="true">{initials(p.name)}</AvatarFallback>
                         </Avatar>
                         <span className="truncate text-xs font-medium text-white md:text-sm">{p.name}</span>
                       </button>
                     </td>
                     <td className="hidden py-2 text-xs text-gray-500 sm:table-cell md:py-3 md:text-sm">{p.position || '-'}</td>
                     <td className={`${num} text-gray-300`}>{p.matches_played}</td>
-                    <td className={`${num} font-semibold text-green-400`}>{p.goals}</td>
+                    <td className={`${num} font-semibold text-gol-400`}>{p.goals}</td>
                     <td className={`${num} text-blue-400`}>{p.assists}</td>
                     <td className={`${num} text-yellow-400`}>{p.yellow_cards}</td>
                     <td className={`${num} text-red-400`}>{p.red_cards}</td>

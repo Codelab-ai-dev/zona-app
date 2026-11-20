@@ -52,7 +52,7 @@ export function DocumentDialog({ row, onClose, onApprove }: Props) {
           )}
           <div className="flex justify-end gap-2">
             {row.status === 'pending' && (
-              <Button className="border-0 bg-green-500/80 text-white hover:bg-green-500/90" onClick={() => onApprove(row)}>
+              <Button className="border-0 bg-gol-500/80 text-slate-950 hover:bg-gol-500/90" onClick={() => onApprove(row)}>
                 <CheckCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                 Aprobar Verificación
               </Button>

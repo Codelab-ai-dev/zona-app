@@ -45,7 +45,7 @@ export function RoundSection({
   const isRoundPublished = matches.every((m) => m.is_published)
   return (
     <div
-      className={`rounded-xl border bg-slate-800/50 ${isRoundPublished ? 'border-green-500/30' : 'border-white/10'}`}
+      className={`rounded-xl border bg-slate-800/50 ${isRoundPublished ? 'border-gol-500/30' : 'border-white/10'}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 p-3 md:p-4">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-white md:text-base">
@@ -59,7 +59,7 @@ export function RoundSection({
               <Badge
                 className={
                   isRoundPublished
-                    ? 'border-green-500/30 bg-green-500/20 text-[10px] text-green-400'
+                    ? 'border-gol-500/30 bg-gol-500/20 text-[10px] text-gol-400'
                     : 'border-orange-500/30 bg-orange-500/20 text-[10px] text-orange-400'
                 }
               >
@@ -85,7 +85,7 @@ export function RoundSection({
                 className={
                   isRoundPublished
                     ? 'h-7 border border-orange-500/50 bg-transparent text-xs text-orange-400 hover:bg-orange-500/20'
-                    : 'h-7 border-0 bg-green-500/80 text-xs text-white hover:bg-green-500'
+                    : 'h-7 border-0 bg-gol-500/80 text-xs text-slate-950 hover:bg-gol-500'
                 }
               >
                 {isRoundPublished ? (

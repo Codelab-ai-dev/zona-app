@@ -27,11 +27,11 @@ export function VerificationSummary({ summary }: Props) {
           <p className="text-xs text-yellow-300">Pendientes</p>
         </CardContent>
       </Card>
-      <Card className="border-green-400/30 bg-green-500/20 shadow-xl backdrop-blur-xl">
+      <Card className="border-emerald-400/30 bg-emerald-500/20 shadow-xl backdrop-blur-xl">
         <CardContent className="pt-4 text-center">
-          <CheckCircle className="mx-auto mb-2 h-6 w-6 text-green-400" aria-hidden="true" />
-          <p className="text-2xl font-bold text-green-400">{value(summary?.verified)}</p>
-          <p className="text-xs text-green-300">Verificados</p>
+          <CheckCircle className="mx-auto mb-2 h-6 w-6 text-emerald-400" aria-hidden="true" />
+          <p className="text-2xl font-bold text-emerald-400">{value(summary?.verified)}</p>
+          <p className="text-xs text-emerald-300">Verificados</p>
         </CardContent>
       </Card>
       <Card className="border-red-400/30 bg-red-500/20 shadow-xl backdrop-blur-xl">

@@ -103,7 +103,7 @@ export function SuspensionRow({ suspension, teamName, onEdit }: Props) {
                 <Pencil className="w-4 h-4 mr-1" aria-hidden="true" />
                 Editar
               </Button>
-              <Button size="sm" onClick={() => setConfirming('complete')} disabled={pending} className={`${actionButton} bg-green-500/80 hover:bg-green-500/90`}>
+              <Button size="sm" onClick={() => setConfirming('complete')} disabled={pending} className={`${actionButton} bg-emerald-600/90 hover:bg-emerald-600`}>
                 <CheckCircle className="w-4 h-4 mr-1" aria-hidden="true" />
                 Completar
               </Button>
@@ -156,7 +156,7 @@ export function SuspensionRow({ suspension, teamName, onEdit }: Props) {
                 void run('complete')
               }}
               disabled={complete.isPending}
-              className="bg-green-500 hover:bg-green-600 text-white"
+              className="bg-gol-400 hover:bg-gol-300 text-slate-950"
             >
               {complete.isPending ? 'Completando…' : 'Sí, completar'}
             </AlertDialogAction>

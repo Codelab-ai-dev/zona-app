@@ -15,11 +15,11 @@ export function TeamsTab({ teams }: { teams: TeamLookup }) {
         <li key={id}>
           <Link
             to={`/equipos/${id}`}
-            className={`${panelClass} flex flex-col items-center gap-2 p-4 text-center transition-colors hover:border-green-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400`}
+            className={`${panelClass} flex flex-col items-center gap-2 p-4 text-center transition-colors hover:border-gol-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gol-400`}
           >
             <Avatar className="size-14 border border-white/10">
               {team.logo && <AvatarImage src={team.logo} alt="" />}
-              <AvatarFallback aria-hidden="true" className="bg-green-500/20 font-bold text-green-400">{initials(team.name)}</AvatarFallback>
+              <AvatarFallback aria-hidden="true" className="bg-gol-500/20 font-bold text-gol-400">{initials(team.name)}</AvatarFallback>
             </Avatar>
             <span className="line-clamp-2 text-sm font-medium text-white">{team.name}</span>
           </Link>

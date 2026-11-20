@@ -75,7 +75,7 @@ export function ResultsCard({ teamId, matches, teamName, onViewReport }: Results
             const result = teamScore > opponentScore ? 'Victoria' : teamScore === opponentScore ? 'Empate' : 'Derrota'
             const resultColor =
               result === 'Victoria'
-                ? 'bg-green-100 text-green-800'
+                ? 'bg-gol-100 text-gol-800'
                 : result === 'Empate'
                   ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-red-100 text-red-800'
@@ -135,8 +135,8 @@ export function SuspensionsCard({ suspensions, players }: { suspensions: Suspens
       <CardContent>
         {active.length === 0 ? (
           <div className="text-center py-8">
-            <div className="mx-auto w-12 h-12 rounded-full backdrop-blur-md bg-green-500/20 border border-green-300/30 flex items-center justify-center mb-3">
-              <AlertTriangle className="w-6 h-6 text-green-400" aria-hidden="true" />
+            <div className="mx-auto w-12 h-12 rounded-full backdrop-blur-md bg-gol-500/20 border border-gol-300/30 flex items-center justify-center mb-3">
+              <AlertTriangle className="w-6 h-6 text-gol-400" aria-hidden="true" />
             </div>
             <p className="text-sm text-white/80 drop-shadow">Todos los jugadores están habilitados para jugar</p>
           </div>

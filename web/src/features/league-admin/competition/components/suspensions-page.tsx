@@ -14,7 +14,7 @@ import { DisciplineRulesCard } from './discipline-rules-card'
 import { SuspensionForm } from './suspension-form'
 import { SuspensionRow } from './suspension-card'
 
-const newButton = 'backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg'
+const newButton = 'backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg'
 
 export function SuspensionsPage({ leagueId }: { leagueId: string }) {
   const [showForm, setShowForm] = useState(false)

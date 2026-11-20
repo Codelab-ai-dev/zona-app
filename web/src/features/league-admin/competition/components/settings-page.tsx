@@ -67,11 +67,11 @@ function LogoCard({ league }: { league: League }) {
         <div className="flex items-center gap-4">
           <Avatar className="size-20">
             {league.logo && <AvatarImage src={league.logo} alt={`Logo de ${league.name}`} />}
-            <AvatarFallback className="bg-green-500/20 text-green-300">{league.name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="bg-gol-500/20 text-gol-300">{league.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div>
             <Label htmlFor="logo-upload" className="cursor-pointer text-white">
-              <Button asChild className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0">
+              <Button asChild className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0">
                 <span className="gap-2">
                   <Upload className="size-4" aria-hidden="true" />
                   {isPending ? 'Cargando…' : 'Cargar Logo'}
@@ -192,7 +192,7 @@ function GeneralCard({ league }: { league: League }) {
             )}
           </div>
 
-          <Button type="submit" disabled={update.isPending} className="w-full sm:w-auto backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg">
+          <Button type="submit" disabled={update.isPending} className="w-full sm:w-auto backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg">
             {update.isPending ? 'Guardando…' : 'Guardar Cambios'}
           </Button>
         </form>

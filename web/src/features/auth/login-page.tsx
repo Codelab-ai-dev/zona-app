@@ -36,8 +36,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell>
-      <h1 className="sr-only">Iniciar sesión</h1>
+    <AuthShell title="Iniciar sesión">
       {expired && (
         <div role="status" className="mb-6 rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
           <div className="flex items-start gap-3">
@@ -62,7 +61,7 @@ export function LoginPage() {
           <Label htmlFor="password" className={authLabelClass}>Contraseña</Label>
           <div className="relative">
             <Input id="password" name="password" type={show ? 'text' : 'password'} autoComplete="current-password" placeholder="••••••••" required disabled={submitting} className={`${authInputClass} pr-12`} />
-            <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-emerald-400">
+            <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'} className="absolute right-4 top-1/2 -translate-y-1/2 rounded text-slate-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zona-400">
               {show ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
             </button>
           </div>
@@ -76,7 +75,7 @@ export function LoginPage() {
         <div className="pt-2">
           <Button type="submit" className={`${authButtonClass} group`} disabled={submitting}>
             <span className="flex items-center justify-center gap-3">
-              <span className="tracking-wide uppercase">{submitting ? 'Entrando…' : 'Entrar'}</span>
+              <span>{submitting ? 'Entrando…' : 'Entrar'}</span>
               {!submitting && <ArrowRight className="size-5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />}
             </span>
           </Button>

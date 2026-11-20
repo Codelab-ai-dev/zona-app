@@ -45,7 +45,7 @@ export function LogoPicker({ currentUrl, fallback, disabled, onChange }: Props) 
       <div className="relative">
         <Avatar className="h-20 w-20 border border-white/20">
           {shown && <AvatarImage src={shown} alt="Logo del equipo" />}
-          <AvatarFallback className="bg-green-500/20 text-lg font-bold text-green-400">{fallback || '?'}</AvatarFallback>
+          <AvatarFallback className="bg-gol-500/20 text-lg font-bold text-gol-400">{fallback || '?'}</AvatarFallback>
         </Avatar>
         {preview && (
           <button

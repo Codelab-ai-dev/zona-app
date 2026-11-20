@@ -159,7 +159,7 @@ export function HomePage({ leagueId }: { leagueId: string }) {
                     </div>
                     <div
                       className={`px-2 py-1 text-xs font-medium rounded-full backdrop-blur-md ${
-                        team.is_active ? 'bg-green-500/80 text-white' : 'bg-yellow-500/80 text-white'
+                        team.is_active ? 'bg-emerald-600/90 text-white' : 'bg-yellow-500/80 text-white'
                       }`}
                     >
                       {team.is_active ? 'Activo' : 'Inactivo'}
@@ -217,7 +217,7 @@ export function HomePage({ leagueId }: { leagueId: string }) {
                   <span className="font-semibold text-lg w-8">{s.position}.</span>
                   <span className="font-medium">{s.team_name}</span>
                 </div>
-                <span className="font-bold text-green-400">{s.points} pts</span>
+                <span className="font-bold text-gol-400">{s.points} pts</span>
               </div>
             ))}
           </CardContent>

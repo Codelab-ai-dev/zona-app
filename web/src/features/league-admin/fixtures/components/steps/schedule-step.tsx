@@ -216,7 +216,7 @@ export function ScheduleStep({ schedule, errors, onChange, onToggleDay, onSetDay
         <Button className="border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white" onClick={onBack}>
           Atrás
         </Button>
-        <Button className="bg-green-500 text-white hover:bg-green-600" onClick={onNext}>Siguiente</Button>
+        <Button className="bg-gol-400 text-slate-950 hover:bg-gol-300" onClick={onNext}>Siguiente</Button>
       </div>
     </div>
   )

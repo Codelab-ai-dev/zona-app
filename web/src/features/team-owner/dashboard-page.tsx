@@ -20,7 +20,7 @@ import { TeamSettingsPage } from './pages/team-settings-page'
 import { useMyTeams, useTeam } from './api'
 
 const triggerClass =
-  'text-xs whitespace-nowrap text-gray-400 dark:text-gray-400 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 dark:data-[state=active]:bg-green-500/20 dark:data-[state=active]:text-green-400 dark:data-[state=active]:border-transparent'
+  'text-xs whitespace-nowrap text-gray-400 dark:text-gray-400 data-[state=active]:bg-gol-500/20 data-[state=active]:text-gol-400 dark:data-[state=active]:bg-gol-500/20 dark:data-[state=active]:text-gol-400 dark:data-[state=active]:border-transparent'
 
 const tabs = [
   { value: 'overview', label: 'Resumen' },

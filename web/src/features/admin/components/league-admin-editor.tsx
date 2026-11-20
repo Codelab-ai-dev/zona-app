@@ -124,7 +124,7 @@ export function LeagueAdminEditor({ league, admins }: { league: League; admins: 
           size="sm"
           onClick={() => void handleSave()}
           disabled={pending || !hasChanges || adminQuery.isPending}
-          className="bg-green-500 hover:bg-green-600 text-white border-0"
+          className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0"
         >
           {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {pending ? 'Guardando…' : 'Guardar administrador'}

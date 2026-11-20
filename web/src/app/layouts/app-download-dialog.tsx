@@ -12,7 +12,7 @@ export function AppDownloadDialog({ leagues, trigger }: { leagues: { id: string;
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
-            <Smartphone className="h-5 w-5 text-green-400" aria-hidden="true" />
+            <Smartphone className="h-5 w-5 text-gol-400" aria-hidden="true" />
             Descargar App Móvil
           </DialogTitle>
           <DialogDescription className="text-gray-500">

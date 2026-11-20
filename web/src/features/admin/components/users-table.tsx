@@ -40,7 +40,7 @@ export function UsersTable({ users, onEditClick, onStatusClick }: UsersTableProp
               <TableCell className="text-sm">{user.phone || '—'}</TableCell>
               <TableCell className="text-sm">
                 {user.is_active ? (
-                  <span className="text-green-400">Activo</span>
+                  <span className="text-emerald-400">Activo</span>
                 ) : (
                   <span className="text-gray-500">Inactivo</span>
                 )}
@@ -69,7 +69,7 @@ export function UsersTable({ users, onEditClick, onStatusClick }: UsersTableProp
                     variant="ghost"
                     size="sm"
                     onClick={() => onStatusClick(user)}
-                    className="text-green-400 hover:text-green-300"
+                    className="text-gol-400 hover:text-gol-300"
                     aria-label="Reactivar usuario"
                   >
                     <ToggleRight className="h-3 w-3" />

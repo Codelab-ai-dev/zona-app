@@ -77,7 +77,7 @@ export function ReasonDialog({ title, description, confirmLabel, pendingLabel, i
               void submit()
             }}
             disabled={isPending}
-            className="bg-green-500 hover:bg-green-600 text-white"
+            className="bg-gol-400 hover:bg-gol-300 text-slate-950"
           >
             {isPending ? pendingLabel : confirmLabel}
           </AlertDialogAction>

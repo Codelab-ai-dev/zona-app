@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router'
 
-const BASE = 'Zona Gol'
+const BASE = 'Zona OS'
 
 /** Titles by path prefix (most specific first). */
 const titles: [RegExp, string][] = [
@@ -24,7 +24,7 @@ export function DocumentTitle() {
   const { pathname } = useLocation()
   useEffect(() => {
     const match = titles.find(([re]) => re.test(pathname))
-    document.title = match ? `${match[1]} · ${BASE}` : `${BASE} - Gestión de Ligas de Fútbol`
+    document.title = match ? `${match[1]} · ${BASE}` : `${BASE} · Zona Gol`
   }, [pathname])
   return null
 }

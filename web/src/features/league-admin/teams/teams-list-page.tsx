@@ -59,7 +59,7 @@ export function TeamsListPage() {
                 <h1 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl">Gestión de Equipos</h1>
                 <p className="text-xs text-white/80 drop-shadow sm:text-base">Administra los equipos de tu liga</p>
               </div>
-              <Button onClick={() => setIsCreateOpen(true)} className="h-9 bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
+              <Button onClick={() => setIsCreateOpen(true)} className="h-9 bg-gol-400 text-xs text-slate-950 hover:bg-gol-300 md:text-sm">
                 <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
                 Agregar Equipo
               </Button>

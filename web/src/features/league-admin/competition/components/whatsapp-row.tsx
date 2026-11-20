@@ -73,7 +73,7 @@ export function WhatsAppRow({ leagueId, link, tournamentName, account }: { leagu
         </TableCell>
         <TableCell>
           {link.is_active ? (
-            <Badge className="bg-green-500/80 text-white">
+            <Badge className="bg-gol-500/80 text-slate-950">
               <CheckCircle className="w-3 h-3 mr-1" aria-hidden="true" />
               Activo
             </Badge>

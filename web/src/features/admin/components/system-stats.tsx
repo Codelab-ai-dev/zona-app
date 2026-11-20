@@ -24,7 +24,7 @@ export function SystemStats() {
 
   const data = stats.data
   const tiles = [
-    { title: 'Ligas', count: data.leagues, icon: Trophy, color: 'text-green-400', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/20' },
+    { title: 'Ligas', count: data.leagues, icon: Trophy, color: 'text-gol-400', bgColor: 'bg-gol-500/10', borderColor: 'border-gol-500/20' },
     { title: 'Torneos', count: data.tournaments, icon: Target, color: 'text-blue-400', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20' },
     { title: 'Equipos', count: data.teams, icon: Shield, color: 'text-purple-400', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/20' },
     { title: 'Jugadores', count: data.players, icon: Users, color: 'text-orange-400', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20' },
@@ -85,7 +85,7 @@ export function SystemStats() {
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs flex-shrink-0 ml-2 ${
-                    league.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                    league.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
                   }`}
                 >
                   {league.is_active ? 'Activa' : 'Inactiva'}

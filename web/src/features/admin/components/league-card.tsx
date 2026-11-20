@@ -25,15 +25,15 @@ export function LeagueCard({ league, busy, onEdit, onFeatures, onDeactivate, onA
             className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg bg-slate-700/50 flex-shrink-0"
           />
         ) : (
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-green-400 font-bold text-sm">{league.name.charAt(0)}</span>
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gol-500/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-gol-400 font-bold text-sm">{league.name.charAt(0)}</span>
           </div>
         )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-white text-sm md:text-base truncate">{league.name}</h3>
           <p className="text-[10px] md:text-xs text-gray-500 truncate">/{league.slug}</p>
           <div className="flex flex-wrap gap-1 mt-1.5">
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${league.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] ${league.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
               {league.is_active ? 'Activa' : 'Inactiva'}
             </span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] ${league.product_mode === 'full' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>

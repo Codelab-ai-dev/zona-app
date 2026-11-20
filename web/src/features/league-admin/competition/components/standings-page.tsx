@@ -38,7 +38,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
     return (
       <div role="status" className="rounded-xl bg-slate-800/50 border border-white/10 p-4">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin mr-2 text-green-400" aria-hidden="true" />
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-gol-400" aria-hidden="true" />
           <span className="text-gray-400 text-sm">Cargando...</span>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
               onClick={() => setPosterOpen(true)}
               disabled={standings.isPending || rows.length === 0}
               size="sm"
-              className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0 shadow-lg"
+              className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0 shadow-lg"
             >
               <ImageDown className="w-4 h-4 mr-2" aria-hidden="true" />
               Generar Imagen
@@ -101,7 +101,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
             </div>
           ) : standings.isPending ? (
             <div role="status" className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin mr-2 text-green-400" aria-hidden="true" />
+              <Loader2 className="w-6 h-6 animate-spin mr-2 text-gol-400" aria-hidden="true" />
               <span className="text-gray-400 text-sm">Cargando posiciones…</span>
             </div>
           ) : standings.isError ? (
@@ -141,7 +141,7 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                           <div className="flex items-center gap-1.5 md:gap-2">
                             <Avatar className="w-6 h-6 md:w-8 md:h-8 border border-white/10 flex-shrink-0">
                               {team.team_logo && <AvatarImage src={team.team_logo} alt={team.team_name} />}
-                              <AvatarFallback className="bg-green-500/20 text-green-400 text-[8px] md:text-xs font-bold">
+                              <AvatarFallback className="bg-gol-500/20 text-gol-400 text-[8px] md:text-xs font-bold">
                                 {getTeamInitials(team.team_name).slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
@@ -160,13 +160,13 @@ export function StandingsPage({ leagueId }: { leagueId: string }) {
                           </div>
                         </TableCell>
                         <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1">{team.matches_played}</TableCell>
-                        <TableCell className="text-center text-green-400 text-[10px] md:text-sm px-1">{team.matches_won}</TableCell>
+                        <TableCell className="text-center text-gol-400 text-[10px] md:text-sm px-1">{team.matches_won}</TableCell>
                         <TableCell className="text-center text-yellow-400 text-[10px] md:text-sm px-1">{team.matches_drawn}</TableCell>
                         <TableCell className="text-center text-red-400 text-[10px] md:text-sm px-1">{team.matches_lost}</TableCell>
                         <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1 hidden md:table-cell">{team.goals_for}</TableCell>
                         <TableCell className="text-center text-gray-300 text-[10px] md:text-sm px-1 hidden md:table-cell">{team.goals_against}</TableCell>
                         <TableCell className="text-center text-[10px] md:text-sm px-1">
-                          <span className={team.goal_difference > 0 ? 'text-green-400' : team.goal_difference < 0 ? 'text-red-400' : 'text-gray-500'}>
+                          <span className={team.goal_difference > 0 ? 'text-gol-400' : team.goal_difference < 0 ? 'text-red-400' : 'text-gray-500'}>
                             {team.goal_difference > 0 ? '+' : ''}
                             {team.goal_difference}
                           </span>

@@ -40,7 +40,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
     <section aria-labelledby="whatsapp-title" className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard label="Total Vínculos" value={rows.length} icon={MessageSquare} color="text-blue-300" />
-        <StatCard label="Activos" value={rows.filter((l) => l.is_active).length} icon={CheckCircle} color="text-green-300" />
+        <StatCard label="Activos" value={rows.filter((l) => l.is_active).length} icon={CheckCircle} color="text-emerald-300" />
         <StatCard label="Inactivos" value={rows.filter((l) => !l.is_active).length} icon={XCircle} color="text-red-300" />
         <StatCard label="Con Interacciones" value={rows.filter((l) => l.last_interaction_at).length} icon={Clock} color="text-yellow-300" />
       </div>
@@ -50,7 +50,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div>
               <CardTitle id="whatsapp-title" className="flex items-center gap-2 text-white drop-shadow-lg">
-                <MessageSquare className="w-5 h-5 text-green-400" aria-hidden="true" />
+                <MessageSquare className="w-5 h-5 text-gol-400" aria-hidden="true" />
                 Gestión de WhatsApp
               </CardTitle>
               <CardDescription className="text-white/80 drop-shadow">Vincula números de WhatsApp con usuarios de tu liga</CardDescription>
@@ -60,7 +60,7 @@ export function WhatsAppPage({ leagueId }: { leagueId: string }) {
                 <Megaphone className="w-4 h-4 mr-2" aria-hidden="true" />
                 Enviar jornada
               </Button>
-              <Button onClick={() => setShowForm(true)} className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 text-white border-0">
+              <Button onClick={() => setShowForm(true)} className="backdrop-blur-md bg-gol-500/80 hover:bg-gol-500/90 text-slate-950 border-0">
                 <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
                 Nuevo Vínculo
               </Button>

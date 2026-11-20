@@ -35,7 +35,7 @@ export function LeagueProductModeEditor({ league }: { league: League }) {
           size="sm"
           onClick={() => void handleSave()}
           disabled={updateMode.isPending || selected === current}
-          className="bg-green-500 hover:bg-green-600 text-white border-0"
+          className="bg-gol-400 hover:bg-gol-300 text-slate-950 border-0"
         >
           {updateMode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {updateMode.isPending ? 'Guardando…' : 'Cambiar tipo de producto'}

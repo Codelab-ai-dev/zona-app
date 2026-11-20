@@ -279,13 +279,13 @@ export function TournamentForm({ leagueId, tournament, onClose }: { leagueId: st
             <div className="flex items-center space-x-2 p-2 rounded-lg bg-slate-800/30 mt-3">
               <Switch id="id_document_required" checked={form.id_document_required} onCheckedChange={(c) => set('id_document_required', c)} />
               <Label htmlFor="id_document_required" className="cursor-pointer text-gray-300 text-xs md:text-sm flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-green-400" aria-hidden="true" />
+                <UserCheck className="w-4 h-4 text-gol-400" aria-hidden="true" />
                 Requerir INE para registro
               </Label>
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-10 bg-green-500 hover:bg-green-600 text-white text-sm" disabled={isPending}>
+          <Button type="submit" className="w-full h-10 bg-gol-400 hover:bg-gol-300 text-slate-950 text-sm" disabled={isPending}>
             {isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />

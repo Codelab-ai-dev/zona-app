@@ -10,7 +10,7 @@ import { useDeleteAttendance, useMatchAttendance, useTeamPlayers } from '../api'
 import type { AttendanceRecord, MatchWithRelations } from '../types'
 import { ReasonConfirmDialog } from './reason-confirm-dialog'
 
-const confidenceColor = (c: number) => (c >= 0.9 ? 'bg-green-500' : c >= 0.8 ? 'bg-blue-500' : c >= 0.7 ? 'bg-yellow-500' : 'bg-red-500')
+const confidenceColor = (c: number) => (c >= 0.9 ? 'bg-gol-400' : c >= 0.8 ? 'bg-blue-500' : c >= 0.7 ? 'bg-yellow-500' : 'bg-red-500')
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 

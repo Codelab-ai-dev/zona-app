@@ -89,9 +89,29 @@ describe('dashboard navigation', () => {
     expect(screen.getByRole('button', { name: 'App Móvil' })).toBeInTheDocument()
   })
 
+  it('jumps to a section from the Ctrl+K palette', async () => {
+    const { user } = renderWithProviders(<DashboardLayout nav={nav}>contenido</DashboardLayout>, { route: '/liga-admin' })
+    await user.keyboard('{Control>}k{/Control}')
+    const palette = await screen.findByRole('dialog', { name: 'Ir a una sección' })
+    await user.type(within(palette).getByRole('combobox'), 'posic')
+    await user.click(within(palette).getByRole('option', { name: /Posiciones/ }))
+
+    const tabs = screen.getByRole('navigation', { name: 'Panel' })
+    expect(within(tabs).getByRole('link', { name: 'Posiciones' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('dialog', { name: 'Ir a una sección' })).not.toBeInTheDocument()
+  })
+
+  it('opens the section palette from its button and lists only allowed sections', async () => {
+    const { user } = renderWithProviders(<DashboardLayout nav={nav}>contenido</DashboardLayout>, { route: '/liga-admin' })
+    await user.click(screen.getByRole('button', { name: /Buscar sección/ }))
+    const palette = await screen.findByRole('dialog', { name: 'Ir a una sección' })
+    expect(within(palette).getByRole('option', { name: /Resumen/ })).toHaveTextContent('Actual')
+    expect(within(palette).queryByRole('option', { name: /Finanzas/ })).not.toBeInTheDocument()
+  })
+
   it('opens the mobile menu from an accessible button', async () => {
     const { user } = renderWithProviders(<DashboardLayout nav={nav}>contenido</DashboardLayout>, { route: '/liga-admin' })
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }))
-    expect(await screen.findByRole('dialog', { name: 'Zona Gol' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: /Zona Gol/ })).toBeInTheDocument()
   })
 })

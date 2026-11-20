@@ -38,7 +38,7 @@ export function GroupsTab({ standings, teams, advancing }: GroupsTabProps) {
         return (
           <section key={name} aria-labelledby={`group-${name}`} className={`${panelClass} overflow-hidden`}>
             <div className="flex items-center gap-3 border-b border-white/10 bg-slate-800/50 p-3 md:p-4">
-              <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-green-500/20 font-bold text-green-400">{name}</span>
+              <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-gol-500/20 font-bold text-gol-400">{name}</span>
               <div>
                 <h3 id={`group-${name}`} className="text-lg font-semibold text-white">Grupo {name}</h3>
                 <p className="text-xs text-gray-400">

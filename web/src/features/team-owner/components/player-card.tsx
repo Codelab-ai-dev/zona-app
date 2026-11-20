@@ -39,7 +39,7 @@ export function PlayerCard({ player, suspended, onCredential, onEdit, onDeactiva
           <div>
             <p className="text-base sm:text-lg font-semibold flex items-center text-white drop-shadow">
               {player.name}
-              <span className="ml-2 text-sm font-bold text-green-400">#{player.jersey_number}</span>
+              <span className="ml-2 text-sm font-bold text-gol-400">#{player.jersey_number}</span>
             </p>
             <p className="text-sm text-white/70 drop-shadow">{player.position}</p>
           </div>

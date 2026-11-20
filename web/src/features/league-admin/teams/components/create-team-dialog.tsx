@@ -124,7 +124,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
         <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-y-auto border-white/10 bg-slate-900 md:max-w-[800px]">
           <DialogHeader>
             <DialogTitle className="flex items-center text-sm text-white md:text-base">
-              <Shield className="mr-2 h-4 w-4 text-green-400" aria-hidden="true" />
+              <Shield className="mr-2 h-4 w-4 text-gol-400" aria-hidden="true" />
               Crear Nuevo Equipo
             </DialogTitle>
             <DialogDescription className="text-xs text-gray-400 md:text-sm">
@@ -183,7 +183,7 @@ export function CreateTeamDialog({ open, onOpenChange, leagueId }: CreateTeamDia
             <Button onClick={handleClose} disabled={pending} className="h-9 flex-1 border-white/10 bg-slate-800/50 text-xs text-gray-400 hover:bg-slate-700/50 hover:text-white md:text-sm">
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={pending} className="h-9 flex-1 bg-green-500 text-xs text-white hover:bg-green-600 md:text-sm">
+            <Button onClick={handleSubmit} disabled={pending} className="h-9 flex-1 bg-gol-400 text-xs text-slate-950 hover:bg-gol-300 md:text-sm">
               {pending ? (
                 <>
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />

@@ -285,7 +285,7 @@ export function SuspensionForm({ leagueId, suspension, teamName, onClose }: Susp
             <Button type="button" variant="ghost" onClick={onClose} disabled={isPending} className="h-9 text-gray-400 hover:text-white hover:bg-slate-800/50 text-sm">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending} className="h-9 bg-green-500 hover:bg-green-600 text-white text-sm">
+            <Button type="submit" disabled={isPending} className="h-9 bg-gol-400 hover:bg-gol-300 text-slate-950 text-sm">
               {isPending ? (suspension ? 'Guardando…' : 'Creando…') : suspension ? 'Guardar Cambios' : 'Crear Suspensión'}
             </Button>
           </DialogFooter>

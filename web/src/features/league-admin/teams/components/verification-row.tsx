@@ -37,7 +37,7 @@ interface Props {
 
 function StatusBadge({ status }: { status: LeaguePlayerVerification['status'] }) {
   if (status === 'verified')
-    return <Badge className="flex w-fit items-center gap-1 border-0 bg-green-500/80 text-white"><CheckCircle className="h-3 w-3" aria-hidden="true" />Verificado</Badge>
+    return <Badge className="flex w-fit items-center gap-1 border-0 bg-emerald-600/90 text-white"><CheckCircle className="h-3 w-3" aria-hidden="true" />Verificado</Badge>
   if (status === 'pending')
     return <Badge className="flex w-fit items-center gap-1 border-0 bg-yellow-500/80 text-white"><CreditCard className="h-3 w-3" aria-hidden="true" />Pendiente</Badge>
   return <Badge className="w-fit border-0 bg-gray-500/80 text-white">Sin INE</Badge>
@@ -103,7 +103,7 @@ export function VerificationRow({ row, leagueId, age, teamLogo, onView, onEditBi
           age.ok === null ? (
             <span className="text-sm text-white">{age.age} años</span>
           ) : (
-            <Badge className={`border-0 text-white ${age.ok ? 'bg-green-500/80' : 'bg-red-500/80'}`}>
+            <Badge className={`border-0 text-white ${age.ok ? 'bg-emerald-600/90' : 'bg-red-500/80'}`}>
               {age.age} años
               <span className="sr-only">{age.ok ? ' (cumple la edad del torneo)' : ' (no cumple la edad del torneo)'}</span>
             </Badge>
@@ -134,7 +134,7 @@ export function VerificationRow({ row, leagueId, age, teamLogo, onView, onEditBi
             <Edit className="h-4 w-4" aria-hidden="true" />
           </Button>
           {row.status === 'pending' && (
-            <Button size="sm" className="border-0 bg-green-500/80 text-white hover:bg-green-500/90" onClick={() => setConfirm('verify')} disabled={decide.isPending} aria-label={`Marcar verificado a ${row.name}`}>
+            <Button size="sm" className="border-0 bg-emerald-600/90 text-white hover:bg-emerald-600" onClick={() => setConfirm('verify')} disabled={decide.isPending} aria-label={`Marcar verificado a ${row.name}`}>
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}

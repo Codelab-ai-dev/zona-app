@@ -24,7 +24,7 @@ export function DuplicatesStep({ count, pending, onCancel, onConfirm }: Duplicat
             <Button className="border-white/10 bg-slate-700/50 text-gray-400 hover:bg-slate-700 hover:text-white" onClick={onCancel} size="sm" disabled={pending}>
               Cancelar
             </Button>
-            <Button onClick={onConfirm} disabled={pending} size="sm" className="bg-green-500 text-white hover:bg-green-600">
+            <Button onClick={onConfirm} disabled={pending} size="sm" className="bg-gol-400 text-slate-950 hover:bg-gol-300">
               {pending ? 'Generando…' : 'Generar de todas formas'}
             </Button>
           </div>

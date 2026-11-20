@@ -52,14 +52,14 @@ function BracketMatch({ match, teams }: { match: Match; teams: TeamLookup }) {
       {match.leg && <p className="mb-1 text-xs font-medium text-gray-400">{LEG_LABEL[match.leg as keyof typeof LEG_LABEL]}</p>}
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">{home}</span>
-        <span className="text-lg font-bold text-green-400">
+        <span className="text-lg font-bold text-gol-400">
           {showScore ? `${match.home_score} - ${match.away_score}` : <span className="text-sm text-gray-400">vs</span>}
         </span>
         <span className="min-w-0 flex-1 truncate text-right text-sm font-medium text-white">{away}</span>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
         <span>{formatDate(match.match_date)}{match.match_time ? ` · ${match.match_time.slice(0, 5)}` : ''}</span>
-        {match.status === 'in_progress' && <Badge className="border-0 bg-green-500/20 text-[10px] text-green-400">En vivo</Badge>}
+        {match.status === 'in_progress' && <Badge className="border-0 bg-gol-500/20 text-[10px] text-gol-400">En vivo</Badge>}
         {match.field_number ? <span>Cancha {match.field_number}</span> : null}
       </div>
     </div>

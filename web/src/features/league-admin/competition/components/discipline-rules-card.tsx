@@ -50,7 +50,7 @@ function RulesForm({ tournamentId, rules }: { tournamentId: string; rules: Disci
         Aplica a los resultados que se capturen desde ahora. No cuentan las amarillas de un partido en el que el mismo jugador fue
         expulsado (esa roja ya genera su suspensión).
       </p>
-      <Button type="submit" disabled={save.isPending} className="bg-green-500/80 text-white hover:bg-green-500/90">
+      <Button type="submit" disabled={save.isPending} className="bg-gol-500/80 text-slate-950 hover:bg-gol-500/90">
         {save.isPending && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />}
         Guardar reglas
       </Button>
