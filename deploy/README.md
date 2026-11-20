@@ -38,6 +38,7 @@ Crea dos ligas independientes con jugadores y partidos, y una jornada programada
 | `make backup` | Copia la base de datos y los archivos subidos en `backups/<fecha>/`. |
 | `make restore FROM=backups/<fecha>` | **Reemplaza** los datos actuales por una copia (pide confirmación y verifica que no esté dañada). |
 | `make reset` | Detiene todo y **borra** la base de datos y los archivos. |
+| `make mcp-up` / `make mcp-down` / `make mcp-logs` | Servidor MCP para clientes de IA (#50). Apagado por defecto: requiere `MCP_PUBLIC=true` en `deploy/.env`. |
 
 ## Copias de seguridad
 
@@ -48,6 +49,10 @@ Crea dos ligas independientes con jugadores y partidos, y una jornada programada
 Se activan añadiendo sus variables a `deploy/.env` (lista completa en `backend/.env.example`): `SMTP_*` (correo), `KAPSO_*` (WhatsApp), `MUX_*` (video), `LLM_*` y `OPENAI_API_KEY` (asistente IA). Sin ellas, esas funciones quedan desactivadas y el resto funciona.
 
 **Zona Play está diferido y apagado por defecto.** Sin `PLAY_ENABLED=true`, la API no monta `/api/v1/play/*`: todas esas rutas responden 404, incluido el webhook de Mux, y el arranque lo indica en el log con `module disabled: play`. La web tampoco muestra Play, salvo que se compile con `VITE_PLAY_ENABLED=true` (argumento de build de `web/Dockerfile`). No los actives hasta resolver #38, #39 y #40. Las tablas de Play no se tocan.
+
+## Servidor MCP (clientes de IA)
+
+El servicio `mcp` da acceso de solo lectura a los datos públicos de Zona Gol a clientes de IA compatibles con MCP. **Está apagado**: `make up` no lo arranca y Caddy responde 404 en `/mcp` mientras `MCP_PUBLIC` no sea `true`. Activarlo, desactivarlo, monitorearlo y el checklist de seguridad están en [`docs/architecture/ZONA_MCP.md`](../docs/architecture/ZONA_MCP.md).
 
 ## Más adelante: VPS
 

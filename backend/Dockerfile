@@ -4,7 +4,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN for cmd in api seed createadmin; do \
+RUN for cmd in api seed createadmin mcp; do \
       CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/$cmd ./cmd/$cmd || exit 1; \
     done \
  # File storage mount points, owned by the nonroot user so fresh named
@@ -16,6 +16,8 @@ COPY --from=build /out/api /api
 # seed: demo data (refuses production). createadmin: bootstrap a super admin.
 COPY --from=build /out/seed /seed
 COPY --from=build /out/createadmin /createadmin
+# mcp: MCP server for AI clients (#50). Only runs as the opt-in `mcp` service.
+COPY --from=build /out/mcp /mcp
 COPY --from=build --chown=65532:65532 /out/data /data
 USER nonroot:nonroot
 EXPOSE 8080

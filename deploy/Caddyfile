@@ -22,6 +22,19 @@
 		reverse_proxy api:8080
 	}
 
+	# MCP server for AI clients (issue #50). Answers 404 unless MCP_PUBLIC is
+	# "true" (and then 502 until `make mcp-up` starts the service). Caddy
+	# replaces any X-Forwarded-For from the client with the real address,
+	# which the MCP server uses for its per-client rate limit.
+	handle /mcp* {
+		@mcp_off not expression `{env.MCP_PUBLIC} == "true"`
+		respond @mcp_off 404
+		request_body {
+			max_size 64KB
+		}
+		reverse_proxy mcp:8090
+	}
+
 	# Public uploads (league/team/player images). Private files live in
 	# another volume that Caddy never mounts.
 	handle_path /media/* {

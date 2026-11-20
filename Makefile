@@ -2,7 +2,7 @@
 COMPOSE_BIN := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 COMPOSE := $(COMPOSE_BIN) -f deploy/compose.yml --env-file deploy/.env
 
-.PHONY: env up seed admin backup restore down logs ps reset
+.PHONY: env up seed admin backup restore down logs ps reset mcp-up mcp-down mcp-logs
 
 # Creates deploy/.env with random secrets (only if it doesn't exist yet).
 env:
@@ -44,7 +44,24 @@ restore:
 	@COMPOSE="$(COMPOSE)" deploy/restore.sh "$(FROM)"
 
 down:
-	$(COMPOSE) down
+	$(COMPOSE) --profile mcp down
+
+# MCP server for AI clients (#50): off by default. Needs MCP_PUBLIC=true in
+# deploy/.env; then it answers at http://localhost:8088/mcp (and on
+# 127.0.0.1:8090 for local clients). See docs/architecture/ZONA_MCP.md.
+mcp-up: env
+	@grep -q '^MCP_PUBLIC=true$$' deploy/.env || { echo "Set MCP_PUBLIC=true in deploy/.env first (see docs/architecture/ZONA_MCP.md)"; exit 1; }
+	$(COMPOSE) --profile mcp up -d --build --wait mcp web
+	@echo "MCP server at http://localhost:8088/mcp"
+
+# Stops only the MCP server. Set MCP_PUBLIC=false and `make up` so Caddy
+# answers 404 on /mcp again.
+mcp-down:
+	$(COMPOSE) --profile mcp stop mcp
+	$(COMPOSE) --profile mcp rm -f mcp
+
+mcp-logs:
+	$(COMPOSE) --profile mcp logs -f mcp
 
 logs:
 	$(COMPOSE) logs -f api web
@@ -54,4 +71,4 @@ ps:
 
 # Deletes the local database volume too.
 reset:
-	$(COMPOSE) down -v
+	$(COMPOSE) --profile mcp down -v

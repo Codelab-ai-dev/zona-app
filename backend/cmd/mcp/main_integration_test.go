@@ -5,7 +5,9 @@ package main
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/testdb"
@@ -14,7 +16,7 @@ import (
 // The MCP pool must not be able to write, whatever a tool does.
 func TestReadOnlyPoolRejectsWrites(t *testing.T) {
 	testdb.Pool(t) // skips without TEST_DATABASE_URL, applies migrations
-	dbURL, err := readOnlyURL(os.Getenv("TEST_DATABASE_URL"))
+	dbURL, err := readOnlyURL(os.Getenv("TEST_DATABASE_URL"), 2*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,5 +33,9 @@ func TestReadOnlyPoolRejectsWrites(t *testing.T) {
 	}
 	if _, err := pool.Exec(ctx, `UPDATE public.leagues SET name = name`); err == nil {
 		t.Fatal("write succeeded on the read-only pool")
+	}
+	// statement_timeout bounds a slow query.
+	if _, err := pool.Exec(ctx, `SELECT pg_sleep(5)`); err == nil || !strings.Contains(err.Error(), "statement timeout") {
+		t.Fatalf("slow query must hit statement_timeout, got %v", err)
 	}
 }
