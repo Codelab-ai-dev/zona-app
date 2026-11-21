@@ -6,25 +6,26 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
 
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
 
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
 
   static const Color error = Color(0xFFEF4444);
 
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Settings Screen - Stadium Nights Edition
@@ -380,7 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     children: [
                       Text(
                         'CONFIGURACIÓN',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 28,
                           color: _StadiumNights.textPrimary,
                           letterSpacing: 3,
@@ -389,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                       Text(
                         'Ajustes del sistema',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _StadiumNights.neonPurple,
                           letterSpacing: 0.5,
@@ -455,7 +456,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: _StadiumNights.textMuted,
             letterSpacing: 2,
@@ -530,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       color: _StadiumNights.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -538,7 +539,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _StadiumNights.textMuted,
                     ),
@@ -601,7 +602,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 15,
                         color: _StadiumNights.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -609,7 +610,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _StadiumNights.textMuted,
                       ),
@@ -655,7 +656,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     color: _StadiumNights.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -663,7 +664,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _StadiumNights.textMuted,
                   ),
@@ -706,7 +707,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(height: 16),
           Text(
             'ZONA GOL',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _StadiumNights.textPrimary,
               letterSpacing: 4,
@@ -715,7 +716,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(height: 4),
           Text(
             'Hecho con pasión por el fútbol',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: _StadiumNights.textMuted,
             ),
@@ -723,7 +724,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           const SizedBox(height: 8),
           Text(
             '© 2024 Zona Gol. Todos los derechos reservados.',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               color: _StadiumNights.textMuted.withOpacity(0.6),
             ),
@@ -766,7 +767,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               const SizedBox(height: 20),
               Text(
                 'LIMPIAR CACHÉ',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _StadiumNights.textPrimary,
                   letterSpacing: 2,
@@ -776,7 +777,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               Text(
                 '¿Limpiar datos en caché?\nEsto liberará espacio pero puede ralentizar la app temporalmente.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.textSecondary,
                   height: 1.5,
@@ -797,7 +798,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         child: Center(
                           child: Text(
                             'Cancelar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: _StadiumNights.textSecondary,
                             ),
                           ),
@@ -821,7 +822,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         child: Center(
                           child: Text(
                             'Limpiar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.black,
                               fontWeight: FontWeight.w600,
                             ),
@@ -933,7 +934,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
@@ -960,7 +961,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
@@ -987,7 +988,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
             ),
           ],

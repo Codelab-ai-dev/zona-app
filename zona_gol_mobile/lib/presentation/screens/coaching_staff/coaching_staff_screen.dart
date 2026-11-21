@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/di/injection.dart';
@@ -9,20 +8,21 @@ import '../../../domain/entities/coaching_staff_entity.dart';
 import '../../bloc/coaching_staff/coaching_staff_bloc.dart';
 import '../../bloc/coaching_staff/coaching_staff_event.dart';
 import '../../bloc/coaching_staff/coaching_staff_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights palette
 class _SN {
-  static const Color bg = Color(0xFF050508);
-  static const Color surface = Color(0xFF0D1117);
-  static const Color card = Color(0xFF161B22);
+  static const Color bg = ZonaColors.background;
+  static const Color surface = ZonaColors.panel;
+  static const Color card = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
-  static const Color divider = Color(0xFF1E2733);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
+  static const Color divider = ZonaColors.lineSoft;
 }
 
 /// Available coaching staff roles
@@ -183,7 +183,7 @@ class _CoachingStaffView extends StatelessWidget {
                   children: [
                     Text(
                       'CUERPO T\u00c9CNICO',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: _SN.gold,
                         fontSize: 22,
                         letterSpacing: 2,
@@ -287,7 +287,7 @@ class _CoachingStaffView extends StatelessWidget {
                   child: Center(
                     child: Text(
                       member.initials,
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: roleColor,
                         fontSize: 20,
                       ),
@@ -376,7 +376,7 @@ class _CoachingStaffView extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Sin cuerpo t\u00e9cnico',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 color: _SN.textSecondary,
                 fontSize: 22,
                 letterSpacing: 1,
@@ -528,7 +528,7 @@ void _showStaffFormSheet(
                       isEditing
                           ? 'EDITAR MIEMBRO'
                           : 'AGREGAR MIEMBRO',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: _SN.gold,
                         fontSize: 22,
                         letterSpacing: 1.5,

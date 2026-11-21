@@ -10,18 +10,19 @@ import '../../../domain/entities/whatsapp_link_entity.dart';
 import '../../bloc/whatsapp/whatsapp_bloc.dart';
 import '../../bloc/whatsapp/whatsapp_event.dart';
 import '../../bloc/whatsapp/whatsapp_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
   static const Color whatsappGreen = Color(0xFF25D366);
 }
 
@@ -134,7 +135,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
         children: [
           Text(
             'WHATSAPP',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -142,7 +143,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           ),
           Text(
             'Gestión de Enlaces',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: _StadiumNights.textSecondary,
             ),
@@ -203,7 +204,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
               SnackBar(
                 content: Text(
                   message,
-                  style: GoogleFonts.outfit(color: Colors.white),
+                  style: GoogleFonts.inter(color: Colors.white),
                 ),
                 backgroundColor: _StadiumNights.neonGreen.withOpacity(0.8),
                 behavior: SnackBarBehavior.floating,
@@ -220,7 +221,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             SnackBar(
               content: Text(
                 state.message,
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
               backgroundColor: _StadiumNights.error,
               behavior: SnackBarBehavior.floating,
@@ -265,7 +266,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO ENLACES',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -299,7 +300,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             const SizedBox(height: 24),
             Text(
               'FUNCIÓN NO DISPONIBLE',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -310,7 +311,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
               'La integración de WhatsApp no está habilitada para esta liga. '
               'Contacta al administrador para activarla.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -344,7 +345,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             const SizedBox(height: 24),
             Text(
               'SIN ENLACES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -354,7 +355,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             Text(
               'Aún no hay enlaces de WhatsApp configurados para esta liga.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -405,7 +406,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -415,7 +416,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -501,12 +502,12 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
           children: [
             Text(
               value,
-              style: GoogleFonts.bebasNeue(fontSize: 24, color: color),
+              style: ZonaType.headline(fontSize: 24, color: color),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: _StadiumNights.textMuted,
               ),
@@ -549,7 +550,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                       // Phone number
                       Text(
                         link.formattedPhone,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: link.isActive
@@ -565,7 +566,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                             Flexible(
                               child: Text(
                                 link.displayName!,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: _StadiumNights.textSecondary,
                                 ),
@@ -586,7 +587,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                             ),
                             child: Text(
                               link.roleDisplay,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 color: _getRoleColor(link.role),
                                 fontWeight: FontWeight.w600,
@@ -663,7 +664,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
         child: link.hasDisplayName
             ? Text(
                 link.initials,
-                style: GoogleFonts.bebasNeue(fontSize: 18, color: color),
+                style: ZonaType.headline(fontSize: 18, color: color),
               )
             : Icon(Icons.chat, color: color, size: 22),
       ),
@@ -721,7 +722,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                       // Title
                       Text(
                         isEdit ? 'EDITAR ENLACE' : 'NUEVO ENLACE',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 22,
                           color: _StadiumNights.gold,
                           letterSpacing: 2,
@@ -733,7 +734,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                       // Phone number field
                       Text(
                         'Número de teléfono',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _StadiumNights.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -766,7 +767,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                               ),
                               child: Text(
                                 '+52',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: _StadiumNights.gold,
                                   fontWeight: FontWeight.w600,
@@ -776,7 +777,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                             Expanded(
                               child: TextField(
                                 controller: phoneController,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _StadiumNights.textPrimary,
                                 ),
                                 keyboardType: TextInputType.phone,
@@ -786,7 +787,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                                 ],
                                 decoration: InputDecoration(
                                   hintText: '5512345678',
-                                  hintStyle: GoogleFonts.outfit(
+                                  hintStyle: GoogleFonts.inter(
                                     color: _StadiumNights.textMuted,
                                   ),
                                   border: InputBorder.none,
@@ -805,7 +806,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                       // Display name field
                       Text(
                         'Nombre para mostrar',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _StadiumNights.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -822,12 +823,12 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                         ),
                         child: TextField(
                           controller: nameController,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _StadiumNights.textPrimary,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Nombre del contacto',
-                            hintStyle: GoogleFonts.outfit(
+                            hintStyle: GoogleFonts.inter(
                               color: _StadiumNights.textMuted,
                             ),
                             border: InputBorder.none,
@@ -843,7 +844,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                       // Role dropdown
                       Text(
                         'Rol',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _StadiumNights.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -864,7 +865,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                             value: selectedRole,
                             isExpanded: true,
                             dropdownColor: _StadiumNights.cardDark,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: _StadiumNights.textPrimary,
                               fontSize: 14,
                             ),
@@ -922,7 +923,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                               ),
                               child: Text(
                                 'Cancelar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -940,7 +941,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                                     SnackBar(
                                       content: Text(
                                         'Ingrese un número de 10 dígitos',
-                                        style: GoogleFonts.outfit(),
+                                        style: GoogleFonts.inter(),
                                       ),
                                       backgroundColor: _StadiumNights.error,
                                       behavior: SnackBarBehavior.floating,
@@ -987,7 +988,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                               ),
                               child: Text(
                                 isEdit ? 'Guardar' : 'Crear',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1039,7 +1040,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 const SizedBox(height: 16),
                 Text(
                   'DESACTIVAR ENLACE',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 20,
                     color: _StadiumNights.error,
                     letterSpacing: 2,
@@ -1049,7 +1050,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 Text(
                   'Se desactivará el enlace de WhatsApp para:',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textSecondary,
                   ),
@@ -1057,7 +1058,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 const SizedBox(height: 8),
                 Text(
                   link.formattedPhone,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: _StadiumNights.textPrimary,
@@ -1067,7 +1068,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                   const SizedBox(height: 4),
                   Text(
                     link.displayName!,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _StadiumNights.textMuted,
                     ),
@@ -1077,7 +1078,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                 Text(
                   'Dejará de recibir mensajes del asistente. Puedes reactivarlo después con el interruptor.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _StadiumNights.error.withOpacity(0.8),
                     fontStyle: FontStyle.italic,
@@ -1101,7 +1102,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                         ),
                         child: Text(
                           'Cancelar',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1124,7 +1125,7 @@ class _WhatsAppManagementViewState extends State<_WhatsAppManagementView> {
                         ),
                         child: Text(
                           'Desactivar',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                           ),
                         ),

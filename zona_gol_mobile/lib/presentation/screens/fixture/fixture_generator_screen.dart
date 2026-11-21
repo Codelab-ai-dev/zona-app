@@ -21,19 +21,20 @@ import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
 import 'fixture_preview_screen.dart';
 import 'manual_round_editor_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color purple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color purple = ZonaColors.zona;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Fixture Generator Screen
@@ -202,7 +203,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
       ),
       title: Text(
         'GENERAR FIXTURE',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -358,7 +359,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: isSelected ? Colors.white : _SN.textMuted,
                 letterSpacing: 1,
@@ -411,7 +412,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 const SizedBox(width: 12),
                 Text(
                   'Cargando jornadas...',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textSecondary,
                   ),
@@ -440,7 +441,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 Expanded(
                   child: Text(
                     'No hay jornadas creadas aún',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _SN.textSecondary,
                     ),
@@ -500,7 +501,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 children: [
                   Text(
                     'Crear Jornada $nextRound',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       color: canCreate
                           ? _SN.textPrimary
@@ -510,7 +511,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                   ),
                   Text(
                     'Agregar partidos manualmente',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _SN.textMuted,
                     ),
@@ -564,7 +565,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                   alignment: Alignment.center,
                   child: Text(
                     '$roundNum',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       color: _SN.purple,
                     ),
@@ -577,7 +578,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                     children: [
                       Text(
                         'Jornada $roundNum',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           color: _SN.textPrimary,
                           fontWeight: FontWeight.w500,
@@ -585,7 +586,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                       ),
                       Text(
                         '$matchCount ${matchCount == 1 ? 'partido' : 'partidos'}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _SN.textMuted,
                         ),
@@ -647,7 +648,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           const SizedBox(height: 20),
           Text(
             text,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -665,7 +666,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 16,
             color: _SN.purple,
             letterSpacing: 2,
@@ -700,7 +701,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 state is TournamentLoading
                     ? 'Cargando torneos...'
                     : 'Selecciona un torneo',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _SN.textSecondary,
                 ),
@@ -710,7 +711,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                   value: t.id,
                   child: Text(
                     '${t.name} (${t.formatText})',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _SN.textPrimary,
                     ),
@@ -766,7 +767,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
             const SizedBox(width: 12),
             Text(
               'Cargando equipos...',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _SN.textSecondary,
               ),
@@ -791,7 +792,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
             Expanded(
               child: Text(
                 'No hay equipos inscritos en este torneo',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _SN.error,
                 ),
@@ -828,7 +829,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
               const SizedBox(width: 8),
               Text(
                 '${_teams.length} equipos',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _SN.neonGreen,
                   fontWeight: FontWeight.w600,
@@ -844,7 +845,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                   ),
                   child: Text(
                     'Impar - habrá descansos',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: _SN.amber,
                     ),
@@ -867,7 +868,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                   ),
                   child: Text(
                     'Grupo ${e.key}: ${e.value}',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _SN.purple,
                     ),
@@ -943,7 +944,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           children: [
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: _SN.textMuted,
               ),
@@ -951,7 +952,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
             const SizedBox(height: 4),
             Text(
               DateFormat('dd/MM/yyyy').format(date),
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 15,
                 color: _SN.textPrimary,
                 fontWeight: FontWeight.w500,
@@ -1013,7 +1014,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
               alignment: Alignment.center,
               child: Text(
                 _dayLabels[index],
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 16,
                   color: isSelected ? Colors.white : _SN.textMuted,
                 ),
@@ -1090,7 +1091,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: _SN.textMuted,
                     ),
@@ -1100,7 +1101,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
                     time != null
                         ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
                         : 'Auto',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       color: time != null ? _SN.textPrimary : _SN.textMuted,
                       fontWeight: FontWeight.w500,
@@ -1136,14 +1137,14 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
               children: [
                 Text(
                   'Canchas disponibles',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                   ),
                 ),
                 Text(
                   'Partidos simultáneos',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.textMuted,
                   ),
@@ -1164,7 +1165,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
             alignment: Alignment.center,
             child: Text(
               '$_fieldsAvailable',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _SN.purple,
               ),
@@ -1259,14 +1260,14 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           children: [
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: _SN.textSecondary,
               ),
             ),
             Text(
               '${value.round()} $suffix',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: _SN.purple,
               ),
@@ -1310,14 +1311,14 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
               children: [
                 Text(
                   'Ida y vuelta',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                   ),
                 ),
                 Text(
                   'Cada equipo juega 2 veces contra cada rival',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.textMuted,
                   ),
@@ -1397,7 +1398,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
         children: [
           Text(
             'RESUMEN',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.purple,
               letterSpacing: 2,
@@ -1424,14 +1425,14 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
         children: [
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: _SN.textSecondary,
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: _SN.textPrimary,
               fontWeight: FontWeight.w600,
@@ -1460,7 +1461,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
         icon: Icon(buttonIcon, size: 18),
         label: Text(
           buttonText,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 18,
             letterSpacing: 2,
           ),
@@ -1492,7 +1493,7 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           backgroundColor: _SN.cardDark,
           title: Text(
             'TORNEO CON PARTIDOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 20,
               color: _SN.textPrimary,
               letterSpacing: 1.5,
@@ -1500,18 +1501,18 @@ class _FixtureGeneratorViewState extends State<_FixtureGeneratorView> {
           ),
           content: Text(
             'Este torneo ya tiene $existing partidos. Se generarán partidos nuevos además de los existentes.',
-            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+            style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancelar', style: GoogleFonts.outfit(color: _SN.textMuted)),
+              child: Text('Cancelar', style: GoogleFonts.inter(color: _SN.textMuted)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
                 'Continuar',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _SN.neonGreen,
                   fontWeight: FontWeight.w600,
                 ),

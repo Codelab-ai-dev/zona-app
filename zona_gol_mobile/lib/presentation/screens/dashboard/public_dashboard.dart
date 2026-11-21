@@ -8,6 +8,7 @@ import '../../widgets/dashboard/dashboard_background.dart';
 import '../../widgets/dashboard/dashboard_action_card.dart';
 import '../../widgets/dashboard/dashboard_header.dart';
 import '../league/leagues_list_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Public Dashboard - "Noche de Partido" Edition
 /// Read-only access to view leagues, matches, and statistics
@@ -31,7 +32,7 @@ class PublicDashboard extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1C),
+      backgroundColor: ZonaColors.background,
       body: DashboardBackground(
         child: Column(
           children: [
@@ -55,7 +56,7 @@ class PublicDashboard extends StatelessWidget {
                     title: 'Ligas',
                     subtitle: 'Ver todas las ligas activas',
                     icon: Icons.emoji_events,
-                    color: const Color(0xFF10B981),
+                    color: ZonaColors.gol,
                     animationDelay: 1,
                     onTap: () {
                       Navigator.of(context).push(
@@ -96,7 +97,7 @@ class PublicDashboard extends StatelessWidget {
                     title: 'Tablas de Posiciones',
                     subtitle: 'Ver clasificaciones',
                     icon: Icons.leaderboard,
-                    color: const Color(0xFF22C55E),
+                    color: ZonaColors.golDark,
                     animationDelay: 5,
                     onTap: () => _showComingSoon(context, 'Tablas'),
                   ),
@@ -105,7 +106,7 @@ class PublicDashboard extends StatelessWidget {
                     title: 'Goleadores',
                     subtitle: 'Top scorers del torneo',
                     icon: Icons.sports_score,
-                    color: const Color(0xFF8B5CF6),
+                    color: ZonaColors.zona,
                     animationDelay: 6,
                     onTap: () => _showComingSoon(context, 'Goleadores'),
                   ),
@@ -150,7 +151,7 @@ class PublicDashboard extends StatelessWidget {
             shaderCallback: (bounds) => const LinearGradient(
               colors: [
                 Colors.white,
-                Color(0xFF10B981),
+                ZonaColors.gol,
               ],
             ).createShader(bounds),
             child: const Text(
@@ -180,7 +181,7 @@ class PublicDashboard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Próximamente: $feature'),
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -193,7 +194,7 @@ class PublicDashboard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

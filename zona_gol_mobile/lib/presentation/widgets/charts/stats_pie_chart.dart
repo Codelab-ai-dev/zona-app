@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Data point for a pie chart
 class PieChartItem {
@@ -53,7 +54,7 @@ class StatsPieChart extends StatelessWidget {
                   color: item.color,
                   radius: sectionRadius ?? 50,
                   title: '${percentage.toStringAsFixed(0)}%',
-                  titleStyle: GoogleFonts.bebasNeue(
+                  titleStyle: ZonaType.headline(
                     fontSize: 14,
                     color: Colors.white,
                   ),
@@ -83,9 +84,9 @@ class StatsPieChart extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${item.label} (${item.value.toInt()})',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: const Color(0xFF9CA3AF),
+                      color: ZonaColors.textMuted,
                     ),
                   ),
                 ],

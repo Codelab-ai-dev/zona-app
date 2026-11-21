@@ -17,16 +17,17 @@ import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
 import 'player_list_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Team Players Screen
@@ -136,7 +137,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
           ),
           title: Text(
             'EQUIPOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -221,7 +222,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
                     const SizedBox(width: 10),
                     Text(
                       'Todos los equipos',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _StadiumNights.textSecondary,
                         fontSize: 14,
                       ),
@@ -241,7 +242,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
                     value: null,
                     child: Text(
                       'Todos los equipos',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _selectedTournament == null
                             ? _StadiumNights.gold
                             : _StadiumNights.textPrimary,
@@ -258,7 +259,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
                       value: tournament.id,
                       child: Text(
                         tournament.name,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: isSelected
                               ? _StadiumNights.gold
                               : _StadiumNights.textPrimary,
@@ -293,7 +294,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: _StadiumNights.textPrimary,
               fontSize: 14,
             ),
@@ -320,7 +321,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO EQUIPOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -351,7 +352,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 15,
                 color: _StadiumNights.textSecondary,
               ),
@@ -427,7 +428,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
                     children: [
                       Text(
                         team.name,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: _StadiumNights.textPrimary,
@@ -436,7 +437,7 @@ class _TeamPlayersViewState extends State<_TeamPlayersView> {
                       const SizedBox(height: 2),
                       Text(
                         'Toca para ver jugadores',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _StadiumNights.textMuted,
                         ),

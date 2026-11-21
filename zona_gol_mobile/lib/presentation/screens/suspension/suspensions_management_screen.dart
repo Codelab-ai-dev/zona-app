@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/suspension_entity.dart';
@@ -10,19 +9,20 @@ import '../../../domain/repositories/suspension_repository.dart';
 import '../../bloc/suspension/suspension_bloc.dart';
 import '../../bloc/suspension/suspension_event.dart';
 import '../../bloc/suspension/suspension_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color amber = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Suspensions Management Screen
@@ -163,7 +163,7 @@ class _SuspensionsViewState extends State<_SuspensionsView> {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           'Suspensiones',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             color: _SN.textPrimary,
             fontSize: 22,
             letterSpacing: 1.5,
@@ -255,7 +255,7 @@ class _SuspensionsViewState extends State<_SuspensionsView> {
           children: [
             Text(
               '$count',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 color: color,
                 fontSize: 24,
               ),
@@ -369,7 +369,7 @@ class _SuspensionsViewState extends State<_SuspensionsView> {
                       suspension.jerseyNumber != null
                           ? '${suspension.jerseyNumber}'
                           : '?',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: isActive ? _SN.error : _SN.textMuted,
                         fontSize: 18,
                       ),
@@ -426,7 +426,7 @@ class _SuspensionsViewState extends State<_SuspensionsView> {
                 // Progress
                 Text(
                   '${suspension.matchesServed}/${suspension.matchesToServe}',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     color: isActive ? _SN.error : _SN.textMuted,
                     fontSize: 20,
                   ),
@@ -1023,7 +1023,7 @@ class _CreateSuspensionSheetState extends State<_CreateSuspensionSheet> {
             padding: const EdgeInsets.all(20),
             child: Text(
               'NUEVA SUSPENSI\u00d3N',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 color: _SN.textPrimary,
                 fontSize: 20,
                 letterSpacing: 1.5,
@@ -1157,7 +1157,7 @@ class _CreateSuspensionSheetState extends State<_CreateSuspensionSheet> {
                       ),
                       child: Text(
                         'CREAR SUSPENSI\u00d3N',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 16,
                           letterSpacing: 1.5,
                         ),

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../domain/entities/user_entity.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Dashboard Header - "Noche de Partido" Edition
 /// Glassmorphism header with animated elements
@@ -122,7 +123,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            color: ZonaColors.gol.withOpacity(0.1),
                             blurRadius: 20,
                             spreadRadius: -5,
                           ),
@@ -172,28 +173,15 @@ class _DashboardHeaderState extends State<DashboardHeader>
                             ),
                           ),
 
-                          // Logo
-                          Container(
-                            width: 68,
-                            height: 68,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      const Color(0xFF10B981).withOpacity(0.35),
-                                  blurRadius: 18,
-                                  spreadRadius: -2,
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.asset(
-                                'assets/images/zona-gol.png',
-                                fit: BoxFit.contain,
-                              ),
-                            ),
+                          // Zona Gol, the football module of Zona OS.
+                          const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              ZonaGolMark(height: 34, semanticLabel: 'Zona Gol'),
+                              SizedBox(height: 6),
+                              ZonaOSLogo(height: 11),
+                            ],
                           ),
                         ],
                       ),
@@ -223,13 +211,13 @@ class _DashboardHeaderState extends State<DashboardHeader>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF10B981),
-            Color(0xFF059669),
+            ZonaColors.gol,
+            ZonaColors.golDark,
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.4),
+            color: ZonaColors.gol.withOpacity(0.4),
             blurRadius: 12,
             spreadRadius: -2,
           ),
@@ -241,7 +229,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: ZonaColors.onGol,
           ),
         ),
       ),
@@ -252,10 +240,10 @@ class _DashboardHeaderState extends State<DashboardHeader>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF10B981).withOpacity(0.15),
+        color: ZonaColors.gol.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF10B981).withOpacity(0.3),
+          color: ZonaColors.gol.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -264,14 +252,14 @@ class _DashboardHeaderState extends State<DashboardHeader>
         children: [
           Icon(
             _getRoleIcon(),
-            color: const Color(0xFF10B981),
+            color: ZonaColors.gol,
             size: 12,
           ),
           const SizedBox(width: 5),
           Text(
             _getRoleDisplayName(),
             style: const TextStyle(
-              color: Color(0xFF10B981),
+              color: ZonaColors.gol,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
