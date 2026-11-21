@@ -4,15 +4,16 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/utils/feature_gate.dart';
 import 'finance_dashboard_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
 }
 
 /// Finance Module Screen
@@ -107,7 +108,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
           ),
           title: Text(
             'FINANZAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _SN.textPrimary,
               letterSpacing: 2,
@@ -141,7 +142,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
                 const SizedBox(height: 32),
                 Text(
                   'MODULO NO DISPONIBLE',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 24,
                     color: _SN.textPrimary,
                     letterSpacing: 2,
@@ -152,7 +153,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
                   'El modulo de finanzas no esta habilitado para esta liga. '
                   'Contacta al administrador para activar esta funcion.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textSecondary,
                     height: 1.5,
@@ -173,7 +174,7 @@ class _FinanceModuleScreenState extends State<FinanceModuleScreen> {
                     ),
                     child: Text(
                       'VOLVER',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 16,
                         color: _SN.gold,
                         letterSpacing: 1.5,

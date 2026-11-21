@@ -28,6 +28,7 @@ import '../finance/finance_module_screen.dart';
 import '../whatsapp/whatsapp_management_screen.dart';
 import '../settings/change_password_screen.dart';
 import '../statistics/league_statistics_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// League Admin Dashboard - "Noche de Partido" Edition
 class LeagueAdminDashboard extends StatefulWidget {
@@ -86,22 +87,22 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
 
   List<_DashboardItem> _getGridItems() {
     final items = <_DashboardItem>[
-      _DashboardItem('torneos', 'Mis Torneos', Icons.sports_soccer, const Color(0xFF10B981), () => _navigateToTournaments(context)),
-      _DashboardItem('torneos', 'Crear Torneo', Icons.add_circle, const Color(0xFF22C55E), () => _navigateToCreateTournament(context)),
+      _DashboardItem('torneos', 'Mis Torneos', Icons.sports_soccer, ZonaColors.gol, () => _navigateToTournaments(context)),
+      _DashboardItem('torneos', 'Crear Torneo', Icons.add_circle, ZonaColors.golDark, () => _navigateToCreateTournament(context)),
       _DashboardItem('torneos', 'Calendario', Icons.calendar_month, const Color(0xFF3B82F6), () => _navigateToCalendar(context)),
-      _DashboardItem('equipos', 'Equipos', Icons.groups, const Color(0xFF10B981), () => _navigateToTeamManagement(context)),
+      _DashboardItem('equipos', 'Equipos', Icons.groups, ZonaColors.gol, () => _navigateToTeamManagement(context)),
       _DashboardItem('equipos', 'Jugadores', Icons.person, const Color(0xFF06B6D4), () => _navigateToTeams(context)),
       _DashboardItem('equipos', 'Posiciones', Icons.emoji_events, const Color(0xFFF59E0B), () => _navigateToStandings(context)),
-      _DashboardItem('equipos', 'Verificar', Icons.verified_user, const Color(0xFF8B5CF6), () => _navigateToPlayerVerification(context)),
-      _DashboardItem('partidos', 'Resultado', Icons.scoreboard, const Color(0xFF22C55E), () => _navigateToRegisterResults(context)),
+      _DashboardItem('equipos', 'Verificar', Icons.verified_user, ZonaColors.zona, () => _navigateToPlayerVerification(context)),
+      _DashboardItem('partidos', 'Resultado', Icons.scoreboard, ZonaColors.golDark, () => _navigateToRegisterResults(context)),
       _DashboardItem('partidos', 'Programar', Icons.add_box, const Color(0xFF06B6D4), () => _navigateToCreateMatch(context)),
-      _DashboardItem('partidos', 'Fixture', Icons.settings, const Color(0xFF8B5CF6), () => _navigateToFixtureGenerator(context)),
+      _DashboardItem('partidos', 'Fixture', Icons.settings, ZonaColors.zona, () => _navigateToFixtureGenerator(context)),
       _DashboardItem('partidos', 'QR Masivo', Icons.qr_code_2, const Color(0xFFF59E0B), () => _navigateToBatchQr(context)),
       _DashboardItem('stats', 'Goleadores', Icons.leaderboard, const Color(0xFF3B82F6), () => _navigateToTopScorers(context)),
       _DashboardItem('stats', 'Suspensiones', Icons.gavel, const Color(0xFFEF4444), () => _navigateToSuspensions(context)),
-      _DashboardItem('stats', 'Estadísticas', Icons.analytics, const Color(0xFF00FF7F), () => _navigateToLeagueStatistics(context)),
+      _DashboardItem('stats', 'Estadísticas', Icons.analytics, ZonaColors.gol, () => _navigateToLeagueStatistics(context)),
       if (_hasFinances)
-        _DashboardItem('modulos', 'Finanzas', Icons.account_balance_wallet, const Color(0xFF10B981), () => _navigateToFinances(context)),
+        _DashboardItem('modulos', 'Finanzas', Icons.account_balance_wallet, ZonaColors.gol, () => _navigateToFinances(context)),
       if (_hasWhatsApp)
         _DashboardItem('modulos', 'WhatsApp', Icons.chat, const Color(0xFF25D366), () => _navigateToWhatsApp(context)),
     ];
@@ -123,7 +124,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
     final gridItems = _getGridItems();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1C),
+      backgroundColor: ZonaColors.background,
       body: DashboardBackground(
         child: Column(
           children: [
@@ -168,7 +169,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
             child: _buildQuickActionChip(
               icon: Icons.scoreboard,
               label: 'Registrar Resultado',
-              color: const Color(0xFF22C55E),
+              color: ZonaColors.golDark,
               onTap: () => _navigateToRegisterResults(context),
             ),
           ),
@@ -198,7 +199,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -222,18 +223,21 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 6),
+              // Shrinks instead of cutting the label on narrow phones.
               Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -269,12 +273,12 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF10B981).withOpacity(0.2)
+                    ? ZonaColors.gol.withOpacity(0.2)
                     : Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isSelected
-                      ? const Color(0xFF10B981).withOpacity(0.5)
+                      ? ZonaColors.gol.withOpacity(0.5)
                       : Colors.white.withOpacity(0.1),
                   width: 1,
                 ),
@@ -287,7 +291,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
                       chipIcon,
                       size: 14,
                       color: isSelected
-                          ? const Color(0xFF10B981)
+                          ? ZonaColors.gol
                           : Colors.white.withOpacity(0.5),
                     ),
                     const SizedBox(width: 5),
@@ -296,7 +300,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
                     label,
                     style: TextStyle(
                       color: isSelected
-                          ? const Color(0xFF10B981)
+                          ? ZonaColors.gol
                           : Colors.white.withOpacity(0.6),
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
@@ -314,6 +318,8 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
   Widget _buildActionGrid(List<_DashboardItem> items) {
     return GridView.builder(
       shrinkWrap: true,
+      // Without it the grid adds the screen's safe-area inset as top padding.
+      padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -342,7 +348,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
           child: _buildFooterButton(
             icon: Icons.lock,
             label: 'Contraseña',
-            color: const Color(0xFF6B7280),
+            color: ZonaColors.textSubtle,
             onTap: () => _navigateToChangePassword(context),
           ),
         ),
@@ -404,7 +410,7 @@ class _LeagueAdminDashboardState extends State<LeagueAdminDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

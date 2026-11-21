@@ -12,17 +12,18 @@ import '../../../domain/entities/player_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Normalizes a name: uppercase + remove accents/diacritics
@@ -163,7 +164,7 @@ class _SingleCredentialView extends StatelessWidget {
                   icon: const Icon(Icons.copy, size: 18),
                   label: Text(
                     'COPIAR DATOS QR',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                         fontSize: 15, letterSpacing: 1.5),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -201,7 +202,7 @@ class _SingleCredentialView extends StatelessWidget {
       ),
       title: Text(
         'CREDENCIAL',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -254,7 +255,7 @@ class _BatchCredentialView extends StatelessWidget {
             children: [
               Text(
                 'CREDENCIALES',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _SN.textPrimary,
                   letterSpacing: 2,
@@ -262,7 +263,7 @@ class _BatchCredentialView extends StatelessWidget {
               ),
               Text(
                 teamName,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textSecondary,
                 ),
@@ -316,7 +317,7 @@ class _BatchCredentialView extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'GENERANDO CREDENCIALES',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -346,7 +347,7 @@ class _BatchCredentialView extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'SIN JUGADORES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -356,7 +357,7 @@ class _BatchCredentialView extends StatelessWidget {
             Text(
               'No hay jugadores activos para generar credenciales.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _SN.textSecondary,
               ),
@@ -387,7 +388,7 @@ class _BatchCredentialView extends StatelessWidget {
             const SizedBox(height: 20),
             Text(message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                     fontSize: 14, color: _SN.textSecondary)),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -420,7 +421,7 @@ class _BatchCredentialView extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '${players.length} credenciales',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: _SN.textSecondary,
                 ),
@@ -428,7 +429,7 @@ class _BatchCredentialView extends StatelessWidget {
               const Spacer(),
               Text(
                 'Toca para ver detalle',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textMuted,
                 ),
@@ -508,7 +509,7 @@ class _CredentialCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1A1A2E),
+              ZonaColors.raised,
               Color(0xFF16213E),
               Color(0xFF0F3460),
             ],
@@ -572,7 +573,7 @@ class _CredentialCard extends StatelessWidget {
           Expanded(
             child: Text(
               teamName.toUpperCase(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: _SN.gold,
                 letterSpacing: 1.5,
@@ -616,7 +617,7 @@ class _CredentialCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             player.initials,
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 14,
                               color: _SN.gold.withOpacity(0.7),
                             ),
@@ -637,7 +638,7 @@ class _CredentialCard extends StatelessWidget {
                 // Name
                 Text(
                   player.name,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: _SN.textPrimary,
@@ -650,7 +651,7 @@ class _CredentialCard extends StatelessWidget {
                 if (player.hasPosition)
                   Text(
                     player.positionDisplay,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: _SN.textSecondary,
                       fontWeight: FontWeight.w500,
@@ -680,9 +681,9 @@ class _CredentialCard extends StatelessWidget {
                     child: Center(
                       child: Text(
                         '${player.jerseyNumber}',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 16,
-                          color: const Color(0xFF1A1A2E),
+                          color: ZonaColors.raised,
                         ),
                       ),
                     ),
@@ -712,11 +713,11 @@ class _CredentialCard extends StatelessWidget {
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
             ),
           ),
@@ -748,7 +749,7 @@ class _CredentialCard extends StatelessWidget {
         children: [
           Text(
             'ID: $credentialId',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 9,
               color: _SN.textMuted,
               fontWeight: FontWeight.w500,
@@ -756,7 +757,7 @@ class _CredentialCard extends StatelessWidget {
           ),
           Text(
             'CREDENCIAL OFICIAL',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 10,
               color: _SN.gold,
               letterSpacing: 1.5,

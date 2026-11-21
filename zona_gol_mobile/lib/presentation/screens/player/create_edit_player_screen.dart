@@ -14,19 +14,20 @@ import '../../../domain/entities/tournament_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Position options (stored as the Spanish name, like the web app)
@@ -205,7 +206,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
         children: [
           Text(
             widget.isEditing ? 'EDITAR JUGADOR' : 'NUEVO JUGADOR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -213,7 +214,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
           ),
           Text(
             widget.teamName,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: _StadiumNights.textSecondary,
             ),
@@ -425,7 +426,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
           const SizedBox(height: 4),
           Text(
             'FOTO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 11,
               color: _StadiumNights.textMuted,
               letterSpacing: 1,
@@ -459,7 +460,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
             const SizedBox(height: 16),
             Text(
               'SELECCIONAR FOTO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 18,
                 color: _StadiumNights.gold,
                 letterSpacing: 2,
@@ -475,8 +476,8 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                 ),
                 child: const Icon(Icons.camera_alt, color: _StadiumNights.gold),
               ),
-              title: Text('Tomar foto', style: GoogleFonts.outfit(color: _StadiumNights.textPrimary)),
-              subtitle: Text('Usar la cámara', style: GoogleFonts.outfit(color: _StadiumNights.textMuted, fontSize: 12)),
+              title: Text('Tomar foto', style: GoogleFonts.inter(color: _StadiumNights.textPrimary)),
+              subtitle: Text('Usar la cámara', style: GoogleFonts.inter(color: _StadiumNights.textMuted, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 _pickPhoto(ImageSource.camera);
@@ -491,8 +492,8 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                 ),
                 child: const Icon(Icons.photo_library, color: _StadiumNights.gold),
               ),
-              title: Text('Elegir de galería', style: GoogleFonts.outfit(color: _StadiumNights.textPrimary)),
-              subtitle: Text('Seleccionar imagen existente', style: GoogleFonts.outfit(color: _StadiumNights.textMuted, fontSize: 12)),
+              title: Text('Elegir de galería', style: GoogleFonts.inter(color: _StadiumNights.textPrimary)),
+              subtitle: Text('Seleccionar imagen existente', style: GoogleFonts.inter(color: _StadiumNights.textMuted, fontSize: 12)),
               onTap: () {
                 Navigator.pop(context);
                 _pickPhoto(ImageSource.gallery);
@@ -508,7 +509,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                   ),
                   child: const Icon(Icons.delete_outline, color: _StadiumNights.error),
                 ),
-                title: Text('Quitar foto', style: GoogleFonts.outfit(color: _StadiumNights.error)),
+                title: Text('Quitar foto', style: GoogleFonts.inter(color: _StadiumNights.error)),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
@@ -591,7 +592,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
   Widget _buildLabel(String text) {
     return Text(
       text.toUpperCase(),
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         fontSize: 14,
         color: _StadiumNights.gold,
         letterSpacing: 1.5,
@@ -618,14 +619,14 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         validator: validator,
-        style: GoogleFonts.outfit(color: _StadiumNights.textPrimary),
+        style: GoogleFonts.inter(color: _StadiumNights.textPrimary),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.outfit(color: _StadiumNights.textMuted),
+          hintStyle: GoogleFonts.inter(color: _StadiumNights.textMuted),
           prefixIcon: Icon(icon, color: _StadiumNights.gold.withOpacity(0.7), size: 20),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          errorStyle: GoogleFonts.outfit(color: _StadiumNights.error, fontSize: 12),
+          errorStyle: GoogleFonts.inter(color: _StadiumNights.error, fontSize: 12),
         ),
       ),
     );
@@ -641,7 +642,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
       child: DropdownButtonFormField<String>(
         value: _selectedPosition,
         dropdownColor: _StadiumNights.cardDark,
-        style: GoogleFonts.outfit(color: _StadiumNights.textPrimary),
+        style: GoogleFonts.inter(color: _StadiumNights.textPrimary),
         decoration: InputDecoration(
           prefixIcon: Icon(
             Icons.sports_soccer,
@@ -651,7 +652,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        hint: Text('Seleccionar posición', style: GoogleFonts.outfit(color: _StadiumNights.textMuted)),
+        hint: Text('Seleccionar posición', style: GoogleFonts.inter(color: _StadiumNights.textMuted)),
         items: [
           ..._positionOptions.map((pos) {
             return DropdownMenuItem<String>(
@@ -688,7 +689,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                 _birthDate != null
                     ? DateFormat('dd/MM/yyyy').format(_birthDate!)
                     : 'Seleccionar fecha',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _birthDate != null
                       ? _StadiumNights.textPrimary
                       : _StadiumNights.textMuted,
@@ -782,7 +783,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                 children: [
                   Text(
                     message,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _StadiumNights.textPrimary,
                       fontWeight: FontWeight.w500,
@@ -791,7 +792,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
                   const SizedBox(height: 2),
                   Text(
                     rulesText,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: _StadiumNights.textMuted,
                     ),
@@ -819,7 +820,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
           Expanded(
             child: Text(
               rulesText,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _StadiumNights.textSecondary,
               ),
@@ -844,7 +845,7 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
       ),
       child: Text(
         widget.isEditing ? 'GUARDAR CAMBIOS' : 'CREAR JUGADOR',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 18,
           letterSpacing: 2,
         ),
@@ -884,11 +885,11 @@ class _CreateEditPlayerScreenState extends State<CreateEditPlayerScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(
               'Excepción de Edad',
-              style: GoogleFonts.outfit(color: _StadiumNights.gold, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(color: _StadiumNights.gold, fontWeight: FontWeight.w600),
             ),
             content: Text(
               result.reason ?? 'Este jugador será registrado como excepción de edad.',
-              style: GoogleFonts.outfit(color: _StadiumNights.textSecondary),
+              style: GoogleFonts.inter(color: _StadiumNights.textSecondary),
             ),
             actions: [
               TextButton(

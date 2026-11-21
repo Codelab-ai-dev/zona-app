@@ -17,20 +17,21 @@ import '../../bloc/finance/finance_state.dart';
 import 'finance_config_screen.dart';
 import 'finance_transaction_form_screen.dart';
 import 'finance_payment_form_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Finance Dashboard Screen
@@ -121,7 +122,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
                 SnackBar(
                   content: Text(
                     message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
@@ -137,7 +138,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
@@ -189,7 +190,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       ),
       title: Text(
         'FINANZAS',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -217,8 +218,8 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         indicatorWeight: 3,
         labelColor: _SN.gold,
         unselectedLabelColor: _SN.textMuted,
-        labelStyle: GoogleFonts.bebasNeue(fontSize: 14, letterSpacing: 1.5),
-        unselectedLabelStyle: GoogleFonts.bebasNeue(
+        labelStyle: ZonaType.headline(fontSize: 14, letterSpacing: 1.5),
+        unselectedLabelStyle: ZonaType.headline(
           fontSize: 14,
           letterSpacing: 1.5,
         ),
@@ -342,7 +343,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               const SizedBox(width: 8),
               Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -352,7 +353,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           ),
           Text(
             value,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: color,
               letterSpacing: 0.5,
@@ -381,7 +382,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
         children: [
           Text(
             'TOTAL COBRADO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 14,
               color: _SN.textSecondary,
               letterSpacing: 2,
@@ -390,7 +391,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           const SizedBox(height: 8),
           Text(
             _currencyFormat.format(summary.totalCollected),
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 36,
               color: _SN.neonGreen,
               letterSpacing: 1,
@@ -430,12 +431,12 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       children: [
         Text(
           value,
-          style: GoogleFonts.bebasNeue(fontSize: 20, color: _SN.gold),
+          style: ZonaType.headline(fontSize: 20, color: _SN.gold),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
         ),
       ],
     );
@@ -453,7 +454,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
       children: [
         Text(
           'EQUIPOS CON ADEUDO',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 16,
             color: _SN.gold,
             letterSpacing: 2,
@@ -488,7 +489,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               children: [
                 Text(
                   balance.teamName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -497,7 +498,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
                 const SizedBox(height: 2),
                 Text(
                   '${balance.pendingFinesCount} multas pendientes',
-                  style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+                  style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
                 ),
               ],
             ),
@@ -507,12 +508,12 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             children: [
               Text(
                 _currencyFormat.format(balance.pendingBalance),
-                style: GoogleFonts.bebasNeue(fontSize: 18, color: _SN.amber),
+                style: ZonaType.headline(fontSize: 18, color: _SN.amber),
               ),
               if (balance.overdueCount > 0)
                 Text(
                   '${balance.overdueCount} vencido${balance.overdueCount == 1 ? '' : 's'}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     color: _SN.error,
                     fontWeight: FontWeight.w500,
@@ -558,7 +559,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 16),
             Text(
               'SIN TRANSACCIONES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -567,7 +568,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 8),
             Text(
               'Aun no hay transacciones registradas.',
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
           ],
         ),
@@ -600,7 +601,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 16),
             Text(
               'SIN DATOS',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -609,7 +610,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 8),
             Text(
               'Aun no hay balances de equipos.',
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
           ],
         ),
@@ -690,7 +691,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           const SizedBox(height: 20),
           Text(
             'CARGANDO FINANZAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -712,7 +713,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -722,7 +723,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -747,7 +748,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
                     const SizedBox(width: 8),
                     Text(
                       'REINTENTAR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 14,
                         color: Colors.black,
                         letterSpacing: 1,
@@ -781,7 +782,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
           ),
           title: Text(
             'CANCELAR TRANSACCIÓN',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 20,
               color: _SN.error,
               letterSpacing: 2,
@@ -794,17 +795,17 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               Text(
                 '${transaction.transactionType.display} · '
                 '${_currencyFormat.format(transaction.amount)}',
-                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textPrimary),
+                style: GoogleFonts.inter(fontSize: 14, color: _SN.textPrimary),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: reasonCtrl,
                 autofocus: true,
                 maxLines: 2,
-                style: GoogleFonts.outfit(color: _SN.textPrimary),
+                style: GoogleFonts.inter(color: _SN.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Motivo de la cancelación',
-                  hintStyle: GoogleFonts.outfit(color: _SN.textMuted),
+                  hintStyle: GoogleFonts.inter(color: _SN.textMuted),
                   filled: true,
                   fillColor: _SN.surfaceDark,
                   border: OutlineInputBorder(
@@ -820,7 +821,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
                 'Volver',
-                style: GoogleFonts.outfit(color: _SN.textSecondary),
+                style: GoogleFonts.inter(color: _SN.textSecondary),
               ),
             ),
             TextButton(
@@ -831,7 +832,7 @@ class _FinanceDashboardViewState extends State<_FinanceDashboardView>
               },
               child: Text(
                 'Cancelar transacción',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _SN.error,
                   fontWeight: FontWeight.w600,
                 ),
@@ -955,7 +956,7 @@ class _TransactionCard extends StatelessWidget {
                 ),
                 child: Text(
                   transaction.status.display,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     color: _statusColor,
                     fontWeight: FontWeight.w600,
@@ -965,7 +966,7 @@ class _TransactionCard extends StatelessWidget {
               const Spacer(),
               Text(
                 currencyFormat.format(transaction.amount),
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 20,
                   color: _SN.textPrimary,
                 ),
@@ -976,7 +977,7 @@ class _TransactionCard extends StatelessWidget {
           // Type
           Text(
             transaction.transactionType.display,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _SN.textPrimary,
               fontWeight: FontWeight.w500,
@@ -990,7 +991,7 @@ class _TransactionCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 transaction.teamName ?? 'Sin equipo',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textSecondary,
                 ),
@@ -1001,7 +1002,7 @@ class _TransactionCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   transaction.playerName!,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _SN.textSecondary,
                   ),
@@ -1013,7 +1014,7 @@ class _TransactionCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               transaction.description,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.textMuted,
                 fontStyle: FontStyle.italic,
@@ -1041,7 +1042,7 @@ class _TransactionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${currencyFormat.format(transaction.amountPaid)} pagado',
-                  style: GoogleFonts.outfit(fontSize: 10, color: _SN.neonGreen),
+                  style: GoogleFonts.inter(fontSize: 10, color: _SN.neonGreen),
                 ),
               ],
             ),
@@ -1067,7 +1068,7 @@ class _TransactionCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Cancelar',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.error,
                         fontWeight: FontWeight.w500,
@@ -1089,7 +1090,7 @@ class _TransactionCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Registrar Pago',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: Colors.black,
                         fontWeight: FontWeight.w600,
@@ -1141,7 +1142,7 @@ class _TeamBalanceCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   balance.teamName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -1153,14 +1154,14 @@ class _TeamBalanceCard extends StatelessWidget {
                 children: [
                   Text(
                     currencyFormat.format(balance.totalCharges),
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       color: _SN.textPrimary,
                     ),
                   ),
                   Text(
                     'Total',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: _SN.textMuted,
                     ),
@@ -1202,7 +1203,7 @@ class _TeamBalanceCard extends StatelessWidget {
               ),
               Text(
                 '${percentage.toStringAsFixed(0)}%',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 18,
                   color: progressColor,
                 ),
@@ -1264,7 +1265,7 @@ class _TeamBalanceCard extends StatelessWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 12,
             color: color ?? _SN.textPrimary,
             fontWeight: FontWeight.w600,
@@ -1272,7 +1273,7 @@ class _TeamBalanceCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 10, color: _SN.textMuted),
         ),
       ],
     );

@@ -7,16 +7,17 @@ import '../../../core/di/injection.dart';
 import '../../../domain/usecases/change_password_usecase.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
+import '../../../core/config/zona_brand.dart';
 
 class _S {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Change Password Screen
@@ -79,7 +80,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
           title: Text(
             'CAMBIAR CONTRASEÑA',
-            style: GoogleFonts.bebasNeue(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
+            style: ZonaType.headline(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
           ),
           centerTitle: true,
         ),
@@ -140,7 +141,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(width: 6),
                       Text(
                         _passwordsMatch ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _passwordsMatch ? _S.success : _S.error,
                         ),
@@ -174,7 +175,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             )
                           : Text(
                               'CAMBIAR CONTRASEÑA',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 18,
                                 color: _isValid ? Colors.black : _S.textMuted,
                                 letterSpacing: 2,
@@ -209,10 +210,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         controller: controller,
         obscureText: obscure,
         onChanged: onChanged,
-        style: GoogleFonts.outfit(color: _S.textPrimary),
+        style: GoogleFonts.inter(color: _S.textPrimary),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.outfit(color: _S.textMuted),
+          labelStyle: GoogleFonts.inter(color: _S.textMuted),
           prefixIcon: Icon(icon, color: _S.gold, size: 20),
           suffixIcon: IconButton(
             icon: Icon(
@@ -241,7 +242,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         children: [
           Text(
             'Requisitos:',
-            style: GoogleFonts.outfit(fontSize: 12, color: _S.textMuted, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(fontSize: 12, color: _S.textMuted, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _buildCheck('Entre 10 y 72 caracteres', _hasMinLength),
@@ -267,7 +268,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           const SizedBox(width: 8),
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: met ? _S.success : _S.textMuted,
             ),

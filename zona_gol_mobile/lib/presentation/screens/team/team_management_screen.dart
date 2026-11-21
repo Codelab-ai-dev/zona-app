@@ -8,20 +8,21 @@ import '../../bloc/team/team_bloc.dart';
 import '../../bloc/team/team_event.dart';
 import '../../bloc/team/team_state.dart';
 import 'create_team_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Team Management Screen
@@ -94,7 +95,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
               SnackBar(
                 content: Text(
                   state.message,
-                  style: GoogleFonts.outfit(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: 13),
                 ),
                 backgroundColor: _SN.error,
                 behavior: SnackBarBehavior.floating,
@@ -165,7 +166,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           'GESTION DE EQUIPOS',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             color: _SN.textPrimary,
             fontSize: 22,
             letterSpacing: 1.5,
@@ -275,7 +276,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                 children: [
                   Text(
                     '$totalTeams equipos registrados',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _SN.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -284,7 +285,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                   if (_selectedTournamentFilter != null)
                     Text(
                       '$filteredCount mostrando con filtro',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _SN.textMuted,
                         fontSize: 12,
                       ),
@@ -320,7 +321,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                 const SizedBox(width: 10),
                 Text(
                   'Filtrar por torneo',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _SN.textSecondary,
                     fontSize: 14,
                   ),
@@ -332,7 +333,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                 value: null,
                 child: Text(
                   'Todos los torneos',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _SN.textPrimary,
                     fontSize: 14,
                   ),
@@ -342,7 +343,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                     value: id,
                     child: Text(
                       'Torneo: ${id.substring(0, 8)}...',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _SN.textPrimary,
                         fontSize: 14,
                       ),
@@ -398,7 +399,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                         team.name.isNotEmpty
                             ? team.name[0].toUpperCase()
                             : '?',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           color: _SN.gold,
                           fontSize: 22,
                         ),
@@ -418,7 +419,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                       Expanded(
                         child: Text(
                           team.name,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _SN.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -442,7 +443,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                       Expanded(
                         child: Text(
                           team.ownerId,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _SN.textMuted,
                             fontSize: 12,
                           ),
@@ -463,7 +464,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                         const SizedBox(width: 4),
                         Text(
                           'Torneo: ${team.tournamentId!.substring(0, 8)}...',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _SN.amber,
                             fontSize: 12,
                           ),
@@ -514,7 +515,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
       ),
       child: Text(
         isActive ? 'Activo' : 'Inactivo',
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           color: isActive ? _SN.neonGreen : _SN.error,
           fontSize: 10,
           fontWeight: FontWeight.w600,
@@ -563,7 +564,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
           const SizedBox(height: 20),
           Text(
             'Sin equipos',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               color: _SN.textPrimary,
               fontSize: 22,
               letterSpacing: 1.5,
@@ -574,7 +575,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
             _selectedTournamentFilter != null
                 ? 'No hay equipos en este torneo'
                 : 'Agrega el primer equipo de tu liga',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: _SN.textMuted,
               fontSize: 14,
             ),
@@ -604,7 +605,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                   const SizedBox(width: 8),
                   Text(
                     'CREAR EQUIPO',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 16,
                       color: Colors.black,
                       letterSpacing: 2,
@@ -642,7 +643,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
             const SizedBox(height: 20),
             Text(
               'Error al cargar equipos',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 color: _SN.textPrimary,
                 fontSize: 20,
                 letterSpacing: 1.5,
@@ -652,7 +653,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _SN.textMuted,
                 fontSize: 14,
               ),
@@ -675,7 +676,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                     const SizedBox(width: 8),
                     Text(
                       'Reintentar',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _SN.gold,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -696,7 +697,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.outfit(fontSize: 13),
+          style: GoogleFonts.inter(fontSize: 13),
         ),
         backgroundColor: _SN.neonGreen.withOpacity(0.9),
         behavior: SnackBarBehavior.floating,
@@ -773,7 +774,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                       Center(
                         child: Text(
                           'EDITAR EQUIPO',
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: 22,
                             color: _SN.gold,
                             letterSpacing: 2,
@@ -832,7 +833,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                             Expanded(
                               child: Text(
                                 'Equipo activo',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _SN.textPrimary,
                                   fontSize: 14,
                                 ),
@@ -871,7 +872,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                                 child: Center(
                                   child: Text(
                                     'CANCELAR',
-                                    style: GoogleFonts.bebasNeue(
+                                    style: ZonaType.headline(
                                       fontSize: 14,
                                       color: _SN.textSecondary,
                                       letterSpacing: 1.5,
@@ -924,7 +925,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                                 child: Center(
                                   child: Text(
                                     'GUARDAR',
-                                    style: GoogleFonts.bebasNeue(
+                                    style: ZonaType.headline(
                                       fontSize: 14,
                                       color: Colors.black,
                                       letterSpacing: 1.5,
@@ -955,7 +956,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
   }) {
     return TextFormField(
       controller: controller,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         color: _SN.textPrimary,
         fontSize: 14,
       ),
@@ -965,7 +966,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
         labelText: label,
         filled: true,
         fillColor: _SN.cardDark,
-        labelStyle: GoogleFonts.outfit(
+        labelStyle: GoogleFonts.inter(
           color: _SN.textMuted,
           fontSize: 13,
         ),
@@ -1020,7 +1021,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
 
               Text(
                 'ELIMINAR EQUIPO',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _SN.error,
                   letterSpacing: 2,
@@ -1030,7 +1031,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
               Text(
                 'Estas seguro de que deseas eliminar "${team.name}"?\nSe borraran de forma permanente sus jugadores, cuerpo tecnico y partidos. Esta accion no se puede deshacer.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _SN.textSecondary,
                   fontSize: 14,
                 ),
@@ -1055,7 +1056,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                         child: Center(
                           child: Text(
                             'CANCELAR',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 14,
                               color: _SN.textSecondary,
                               letterSpacing: 1.5,
@@ -1090,7 +1091,7 @@ class _TeamManagementViewState extends State<_TeamManagementView> {
                         child: Center(
                           child: Text(
                             'ELIMINAR',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 14,
                               color: Colors.white,
                               letterSpacing: 1.5,

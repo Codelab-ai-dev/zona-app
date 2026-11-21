@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color amber = Color(0xFFF59E0B);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Dialog that displays generated owner credentials after team creation.
@@ -77,7 +78,7 @@ class TeamCredentialsDialog extends StatelessWidget {
             // Title
             Text(
               'CREDENCIALES DEL OWNER',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 22,
                 color: _SN.gold,
                 letterSpacing: 2,
@@ -86,7 +87,7 @@ class TeamCredentialsDialog extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Equipo creado exitosamente',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _SN.textSecondary,
               ),
@@ -132,7 +133,7 @@ class TeamCredentialsDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Guarda estas credenciales. La contrasena no se puede recuperar.',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _SN.amber,
                         fontWeight: FontWeight.w500,
@@ -167,7 +168,7 @@ class TeamCredentialsDialog extends StatelessWidget {
                   child: Center(
                     child: Text(
                       'CERRAR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 16,
                         color: Colors.black,
                         letterSpacing: 2,
@@ -208,7 +209,7 @@ class TeamCredentialsDialog extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.textMuted,
                     fontWeight: FontWeight.w500,
@@ -217,7 +218,7 @@ class TeamCredentialsDialog extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -233,7 +234,7 @@ class TeamCredentialsDialog extends StatelessWidget {
                 SnackBar(
                   content: Text(
                     '$label copiado al portapapeles',
-                    style: GoogleFonts.outfit(fontSize: 13),
+                    style: GoogleFonts.inter(fontSize: 13),
                   ),
                   backgroundColor: _SN.neonGreen.withOpacity(0.9),
                   behavior: SnackBarBehavior.floating,

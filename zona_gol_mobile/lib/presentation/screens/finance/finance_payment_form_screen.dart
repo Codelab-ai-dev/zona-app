@@ -10,20 +10,21 @@ import '../../../domain/entities/finance_transaction_entity.dart';
 import '../../bloc/finance/finance_bloc.dart';
 import '../../bloc/finance/finance_event.dart';
 import '../../bloc/finance/finance_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Finance Payment Form Screen
@@ -109,7 +110,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
@@ -122,7 +123,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
@@ -164,7 +165,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
       ),
       title: Text(
         'REGISTRAR PAGO',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -233,7 +234,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
           // Type
           Text(
             tx.transactionType.display,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 16,
               color: _SN.textPrimary,
               fontWeight: FontWeight.w600,
@@ -247,7 +248,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
               const SizedBox(width: 6),
               Text(
                 tx.teamName ?? 'Sin equipo',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: _SN.textSecondary,
                 ),
@@ -262,7 +263,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                 const SizedBox(width: 6),
                 Text(
                   tx.playerName!,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: _SN.textSecondary,
                   ),
@@ -313,10 +314,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   Widget _buildSummaryItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value, style: GoogleFonts.bebasNeue(fontSize: 18, color: color)),
+        Text(value, style: ZonaType.headline(fontSize: 18, color: color)),
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 10, color: _SN.textMuted),
         ),
       ],
     );
@@ -325,7 +326,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         fontSize: 13,
         color: _SN.textSecondary,
         fontWeight: FontWeight.w500,
@@ -340,11 +341,11 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
       ],
-      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 20),
+      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 20),
       textAlign: TextAlign.center,
       decoration: InputDecoration(
         prefixText: '\$ ',
-        prefixStyle: GoogleFonts.outfit(
+        prefixStyle: GoogleFonts.inter(
           color: _SN.gold,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -416,7 +417,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                   children: [
                     Text(
                       _currencyFormat.format(amount),
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 14,
                         color: _SN.gold,
                       ),
@@ -427,7 +428,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                           : amount == half
                           ? '50%'
                           : '25%',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         color: _SN.textMuted,
                       ),
@@ -470,7 +471,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
                 Expanded(
                   child: Text(
                     method.display,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: isSelected ? _SN.textPrimary : _SN.textSecondary,
                       fontWeight: isSelected
@@ -512,10 +513,10 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
   Widget _buildReferenceField() {
     return TextFormField(
       controller: _referenceCtrl,
-      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Folio, número de operación...',
-        hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14),
+        hintStyle: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14),
         filled: true,
         fillColor: _SN.cardDark,
         contentPadding: const EdgeInsets.symmetric(
@@ -559,7 +560,7 @@ class _PaymentFormViewState extends State<_PaymentFormView> {
             const SizedBox(width: 8),
             Text(
               'CONFIRMAR PAGO',
-              style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
+              style: ZonaType.headline(fontSize: 18, letterSpacing: 2),
             ),
           ],
         ),

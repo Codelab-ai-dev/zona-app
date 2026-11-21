@@ -12,20 +12,21 @@ import '../../../domain/repositories/user_admin_repository.dart';
 import '../../bloc/league/league_bloc.dart';
 import '../../bloc/league/league_event.dart';
 import '../../bloc/league/league_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Create League Screen - Stadium Nights Edition
@@ -238,7 +239,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
             ),
           ],
@@ -503,7 +504,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                           children: [
                             Text(
                               'NUEVA LIGA',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 28,
                                 color: _StadiumNights.textPrimary,
                                 letterSpacing: 3,
@@ -514,7 +515,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                               _currentStep == 0
                                   ? 'Información de la liga'
                                   : 'Datos del administrador',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.neonGreen,
                               ),
@@ -653,7 +654,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
           children: [
             Text(
               'Tipo de Producto',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -661,7 +662,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
             ),
             Text(
               ' *',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.gold,
                 fontWeight: FontWeight.w600,
@@ -772,7 +773,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                       Expanded(
                         child: Text(
                           title,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: isSelected
@@ -800,7 +801,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _StadiumNights.textMuted,
                     ),
@@ -825,7 +826,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                         ),
                         child: Text(
                           feature,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             color: isSelected
                                 ? _StadiumNights.neonGreen
@@ -880,7 +881,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                 Expanded(
                   child: Text(
                     'Se generará una contraseña segura automáticamente',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _StadiumNights.neonBlue,
                     ),
@@ -977,7 +978,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 20,
                     color: _StadiumNights.textPrimary,
                     letterSpacing: 2,
@@ -985,7 +986,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: _StadiumNights.textSecondary,
                   ),
@@ -1016,7 +1017,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
           children: [
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -1025,7 +1026,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
             if (required)
               Text(
                 ' *',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.gold,
                   fontWeight: FontWeight.w600,
@@ -1052,7 +1053,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
             keyboardType: keyboardType,
             textCapitalization: textCapitalization,
             cursorColor: _StadiumNights.gold,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: Colors.white,
               fontSize: 15,
             ),
@@ -1060,7 +1061,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.outfit(
+              hintStyle: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.3),
                 fontSize: 15,
               ),
@@ -1098,7 +1099,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
               children: [
                 Text(
                   'Slug (URL)',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textSecondary,
                     fontWeight: FontWeight.w500,
@@ -1106,7 +1107,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                 ),
                 Text(
                   ' *',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.gold,
                     fontWeight: FontWeight.w600,
@@ -1151,7 +1152,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                     const SizedBox(width: 6),
                     Text(
                       _autoGenerateSlug ? 'Auto' : 'Manual',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _autoGenerateSlug
                             ? _StadiumNights.neonGreen
@@ -1252,7 +1253,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                   child: Center(
                     child: Text(
                       'Anterior',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _StadiumNights.textSecondary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -1294,7 +1295,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                   children: [
                     Text(
                       isLastStep ? 'Crear Liga' : 'Siguiente',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: Colors.black,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -1346,7 +1347,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                 const SizedBox(height: 24),
                 Text(
                   'CREANDO LIGA',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 20,
                     color: _StadiumNights.textPrimary,
                     letterSpacing: 2,
@@ -1355,7 +1356,7 @@ class _CreateLeagueScreenState extends State<CreateLeagueScreen>
                 const SizedBox(height: 8),
                 Text(
                   'Configurando administrador...',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textSecondary,
                   ),
@@ -1494,7 +1495,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                 // Title
                 Text(
                   'LIGA CREADA',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 28,
                     color: _StadiumNights.textPrimary,
                     letterSpacing: 3,
@@ -1503,7 +1504,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                 const SizedBox(height: 8),
                 Text(
                   widget.leagueName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     color: _StadiumNights.neonGreen,
                     fontWeight: FontWeight.w600,
@@ -1535,7 +1536,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                           const SizedBox(width: 8),
                           Text(
                             'Credenciales del Administrador',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               color: _StadiumNights.gold,
                               fontWeight: FontWeight.w600,
@@ -1577,7 +1578,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                       Expanded(
                         child: Text(
                           'Guarda estas credenciales, no se mostrarán de nuevo',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: _StadiumNights.amber,
                           ),
@@ -1620,7 +1621,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                               const SizedBox(width: 8),
                               Text(
                                 _copied ? 'Copiado' : 'Copiar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _copied
                                       ? _StadiumNights.neonGreen
                                       : _StadiumNights.textSecondary,
@@ -1650,7 +1651,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
                           child: Center(
                             child: Text(
                               'Aceptar',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1677,7 +1678,7 @@ class _CredentialsDialogState extends State<_CredentialsDialog>
           width: 80,
           child: Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: _StadiumNights.textMuted,
             ),

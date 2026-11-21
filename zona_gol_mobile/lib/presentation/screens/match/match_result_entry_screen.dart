@@ -14,19 +14,20 @@ import '../../../domain/usecases/update_match_result_usecase.dart';
 import '../../bloc/match_detail/match_detail_bloc.dart';
 import '../../bloc/match_detail/match_detail_event.dart';
 import '../../bloc/match_detail/match_detail_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 class _S {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 enum _Side { home, away }
@@ -297,7 +298,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'GOLES NO COINCIDEN',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 22,
             color: _S.error,
             letterSpacing: 2,
@@ -310,7 +311,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             Text(
               'Hay más goles registrados que el marcador del equipo. Un autogol cuenta para el rival.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _S.textSecondary,
               ),
@@ -334,7 +335,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'CORREGIR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: _S.gold,
                 letterSpacing: 1,
@@ -366,7 +367,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           Expanded(
             child: Text(
               teamName,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: _S.textPrimary,
                 fontWeight: FontWeight.w500,
@@ -376,12 +377,12 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           ),
           Text(
             'Marcador: $score',
-            style: GoogleFonts.outfit(fontSize: 12, color: _S.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: _S.textMuted),
           ),
           const SizedBox(width: 8),
           Text(
             'Jugadores: $playerGoals',
-            style: GoogleFonts.outfit(fontSize: 12, color: _S.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: _S.textMuted),
           ),
           const SizedBox(width: 8),
           Icon(
@@ -483,7 +484,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
         children: [
           Text(
             'REGISTRAR RESULTADO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 20,
               color: _S.textPrimary,
               letterSpacing: 2,
@@ -491,7 +492,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           ),
           Text(
             stepLabels[_currentStep].toUpperCase(),
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               color: _S.gold,
               fontWeight: FontWeight.w500,
@@ -533,7 +534,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                       ? const Icon(Icons.check, size: 14, color: Colors.black)
                       : Text(
                           '${i + 1}',
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: isActive ? 15 : 12,
                             color: isActive ? _S.gold : _S.textMuted,
                           ),
@@ -571,7 +572,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO JUGADORES',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _S.textMuted,
               letterSpacing: 2,
@@ -594,7 +595,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             Text(
               _loadError ?? 'Error desconocido',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _S.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _S.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -609,7 +610,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                 ),
                 child: Text(
                   'REINTENTAR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: Colors.black,
                     letterSpacing: 1,
@@ -633,7 +634,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           const SizedBox(height: 20),
           Text(
             'INGRESA EL MARCADOR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _S.textPrimary,
               letterSpacing: 2,
@@ -642,7 +643,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           const SizedBox(height: 8),
           Text(
             _match.roundText,
-            style: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
+            style: GoogleFonts.inter(fontSize: 13, color: _S.textMuted),
           ),
           const SizedBox(height: 40),
           Row(
@@ -657,7 +658,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   'VS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 32,
                     color: _S.textMuted,
                   ),
@@ -689,7 +690,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             color: _S.textPrimary,
             fontWeight: FontWeight.w600,
@@ -708,14 +709,14 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             controller: ctrl,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 40,
               color: _S.textPrimary,
             ),
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: '0',
-              hintStyle: GoogleFonts.bebasNeue(
+              hintStyle: ZonaType.headline(
                 fontSize: 40,
                 color: _S.textMuted.withOpacity(0.3),
               ),
@@ -758,7 +759,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
               const SizedBox(width: 8),
               Text(
                 'GOLES: $currentGoals / $expectedScore',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 16,
                   color: color,
                   letterSpacing: 1.5,
@@ -777,7 +778,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   child: Text(
                     'No hay jugadores registrados\nen este equipo.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _S.textMuted,
                     ),
@@ -819,7 +820,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 15,
               color: color,
               letterSpacing: 1.5,
@@ -850,7 +851,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: color,
                 letterSpacing: 1,
@@ -892,7 +893,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
               child: Center(
                 child: Text(
                   "$minute'",
-                  style: GoogleFonts.bebasNeue(fontSize: 16, color: _S.gold),
+                  style: ZonaType.headline(fontSize: 16, color: _S.gold),
                 ),
               ),
             ),
@@ -905,7 +906,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _S.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -916,7 +917,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(fontSize: 11, color: _S.textMuted),
+                      style: GoogleFonts.inter(fontSize: 11, color: _S.textMuted),
                     ),
                 ],
               ),
@@ -1046,7 +1047,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
           const SizedBox(height: 8),
           Text(
             'CONFIRMAR RESULTADO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _S.gold,
               letterSpacing: 2,
@@ -1083,7 +1084,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               color: _S.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -1094,7 +1095,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     ),
                     Text(
                       '$_homeScore',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 48,
                         color: _S.textPrimary,
                       ),
@@ -1103,7 +1104,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         '-',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 36,
                           color: _S.textMuted,
                         ),
@@ -1111,7 +1112,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     ),
                     Text(
                       '$_awayScore',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 48,
                         color: _S.textPrimary,
                       ),
@@ -1126,7 +1127,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                             textAlign: TextAlign.center,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               color: _S.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -1164,7 +1165,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   Expanded(
                     child: Text(
                       'No se registraron goles ni tarjetas.',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _S.textSecondary,
                       ),
@@ -1197,7 +1198,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'OBSERVACIONES DEL ARBITRO',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 14,
                           color: _S.gold,
                           letterSpacing: 1.5,
@@ -1210,7 +1211,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                   child: Text(
                     'Opcional — Notas sobre el partido, incidencias, etc.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _S.textMuted,
                     ),
@@ -1221,13 +1222,13 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   child: TextField(
                     controller: _observationsCtrl,
                     maxLines: 3,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _S.textPrimary,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Escribe las observaciones aquí...',
-                      hintStyle: GoogleFonts.outfit(
+                      hintStyle: GoogleFonts.inter(
                         fontSize: 14,
                         color: _S.textMuted.withOpacity(0.5),
                       ),
@@ -1278,7 +1279,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                 width: 36,
                 child: Text(
                   "$minute'",
-                  style: GoogleFonts.bebasNeue(fontSize: 14, color: _S.gold),
+                  style: ZonaType.headline(fontSize: 14, color: _S.gold),
                 ),
               ),
               Expanded(
@@ -1286,7 +1287,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(fontSize: 13, color: _S.textPrimary),
+                  style: GoogleFonts.inter(fontSize: 13, color: _S.textPrimary),
                 ),
               ),
               badge,
@@ -1307,7 +1308,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
               _teamNameOf(side).toUpperCase(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: _S.gold,
                 letterSpacing: 1.5,
@@ -1346,7 +1347,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontSize: 11,
           color: color,
           fontWeight: FontWeight.w600,
@@ -1389,7 +1390,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                 ),
                 child: Text(
                   'ANTERIOR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     letterSpacing: 1,
                   ),
@@ -1426,7 +1427,7 @@ class _MatchResultEntryScreenState extends State<MatchResultEntryScreen> {
                     )
                   : Text(
                       isLastStep ? 'FINALIZAR PARTIDO' : 'SIGUIENTE',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 14,
                         letterSpacing: 1,
                       ),
@@ -1569,7 +1570,7 @@ class _EventSheetState extends State<_EventSheet> {
 
   InputDecoration _decoration(String label) => InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
+        labelStyle: GoogleFonts.inter(fontSize: 13, color: _S.textMuted),
         filled: true,
         fillColor: _S.surfaceDark,
         border: OutlineInputBorder(
@@ -1601,7 +1602,7 @@ class _EventSheetState extends State<_EventSheet> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 13,
             color: selected ? color : _S.textSecondary,
             fontWeight: FontWeight.w600,
@@ -1613,7 +1614,7 @@ class _EventSheetState extends State<_EventSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dropdownStyle = GoogleFonts.outfit(fontSize: 14, color: _S.textPrimary);
+    final dropdownStyle = GoogleFonts.inter(fontSize: 14, color: _S.textPrimary);
     final assistOptions =
         widget.assistPlayers.where((p) => p.id != _playerId).toList();
 
@@ -1632,7 +1633,7 @@ class _EventSheetState extends State<_EventSheet> {
             Text(
               widget.title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 22,
                 color: _S.gold,
                 letterSpacing: 2,
@@ -1641,7 +1642,7 @@ class _EventSheetState extends State<_EventSheet> {
             Text(
               widget.teamName,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 13, color: _S.textMuted),
+              style: GoogleFonts.inter(fontSize: 13, color: _S.textMuted),
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
@@ -1721,7 +1722,7 @@ class _EventSheetState extends State<_EventSheet> {
               const SizedBox(height: 12),
               Text(
                 _error!,
-                style: GoogleFonts.outfit(fontSize: 13, color: _S.error),
+                style: GoogleFonts.inter(fontSize: 13, color: _S.error),
               ),
             ],
             const SizedBox(height: 20),
@@ -1737,7 +1738,7 @@ class _EventSheetState extends State<_EventSheet> {
               ),
               child: Text(
                 'GUARDAR',
-                style: GoogleFonts.bebasNeue(fontSize: 16, letterSpacing: 1.5),
+                style: ZonaType.headline(fontSize: 16, letterSpacing: 1.5),
               ),
             ),
           ],

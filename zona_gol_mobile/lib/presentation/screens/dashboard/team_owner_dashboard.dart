@@ -18,6 +18,7 @@ import '../coaching_staff/coaching_staff_screen.dart';
 import '../statistics/team_stats_screen.dart';
 import '../player/player_qr_screen.dart';
 import '../player/player_credential_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Team Owner Dashboard - "Noche de Partido" Edition
 /// Manage team players and view statistics
@@ -41,7 +42,7 @@ class TeamOwnerDashboard extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1C),
+      backgroundColor: ZonaColors.background,
       body: DashboardBackground(
         child: Column(
           children: [
@@ -65,7 +66,7 @@ class TeamOwnerDashboard extends StatelessWidget {
                     title: 'Información del Equipo',
                     subtitle: 'Ver y editar datos del equipo',
                     icon: Icons.shield,
-                    color: const Color(0xFF10B981),
+                    color: ZonaColors.gol,
                     animationDelay: 1,
                     onTap: () => _showComingSoon(context, 'Información del Equipo'),
                   ),
@@ -82,7 +83,7 @@ class TeamOwnerDashboard extends StatelessWidget {
                     title: 'Lista de Jugadores',
                     subtitle: 'Ver todos los jugadores',
                     icon: Icons.people,
-                    color: const Color(0xFF10B981),
+                    color: ZonaColors.gol,
                     animationDelay: 3,
                     onTap: () => _navigateToPlayerList(context),
                   ),
@@ -91,7 +92,7 @@ class TeamOwnerDashboard extends StatelessWidget {
                     title: 'Agregar Jugador',
                     subtitle: 'Registrar nuevo jugador',
                     icon: Icons.person_add,
-                    color: const Color(0xFF22C55E),
+                    color: ZonaColors.golDark,
                     animationDelay: 4,
                     onTap: () => _navigateToCreatePlayer(context),
                   ),
@@ -100,7 +101,7 @@ class TeamOwnerDashboard extends StatelessWidget {
                     title: 'Cuerpo T\u00e9cnico',
                     subtitle: 'Gestionar directores y asistentes',
                     icon: Icons.groups_3,
-                    color: const Color(0xFF8B5CF6),
+                    color: ZonaColors.zona,
                     animationDelay: 5,
                     onTap: () => _navigateToCoachingStaff(context),
                   ),
@@ -189,7 +190,7 @@ class TeamOwnerDashboard extends StatelessWidget {
             shaderCallback: (bounds) => const LinearGradient(
               colors: [
                 Colors.white,
-                Color(0xFF10B981),
+                ZonaColors.gol,
               ],
             ).createShader(bounds),
             child: const Text(
@@ -351,7 +352,7 @@ class TeamOwnerDashboard extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Próximamente: $feature'),
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -364,7 +365,7 @@ class TeamOwnerDashboard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

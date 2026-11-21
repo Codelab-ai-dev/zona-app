@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Animated Dashboard Background
 /// Creates the "Noche de Partido" stadium atmosphere effect
@@ -57,9 +58,9 @@ class _DashboardBackgroundState extends State<DashboardBackground>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF0A0F1C), // Deep night blue
-            Color(0xFF0D1424), // Slightly lighter
-            Color(0xFF111827), // Base dark
+            ZonaColors.background, // Deep night blue
+            ZonaColors.panel, // Slightly lighter
+            ZonaColors.background, // Base dark
           ],
           stops: [0.0, 0.5, 1.0],
         ),
@@ -97,7 +98,7 @@ class _DashboardBackgroundState extends State<DashboardBackground>
                 center: Alignment.topCenter,
                 radius: 1.5,
                 colors: [
-                  const Color(0xFF10B981).withOpacity(0.03),
+                  ZonaColors.gol.withOpacity(0.03),
                   Colors.transparent,
                 ],
               ),
@@ -129,8 +130,8 @@ class _DashboardBackgroundState extends State<DashboardBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF10B981).withOpacity(pulse * 0.4),
-                      const Color(0xFF10B981).withOpacity(pulse * 0.1),
+                      ZonaColors.gol.withOpacity(pulse * 0.4),
+                      ZonaColors.gol.withOpacity(pulse * 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -148,8 +149,8 @@ class _DashboardBackgroundState extends State<DashboardBackground>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF3B82F6).withOpacity(pulse * 0.3),
-                      const Color(0xFF3B82F6).withOpacity(pulse * 0.1),
+                      ZonaColors.zona.withOpacity(pulse * 0.3),
+                      ZonaColors.zona.withOpacity(pulse * 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -169,7 +170,7 @@ class _DashboardBackgroundState extends State<DashboardBackground>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        const Color(0xFF10B981).withOpacity(pulse * 0.15),
+                        ZonaColors.gol.withOpacity(pulse * 0.15),
                         Colors.transparent,
                       ],
                     ),
@@ -216,7 +217,7 @@ class ParticlePainter extends CustomPainter {
     for (var particle in particles) {
       final y = (particle.y + progress * particle.speed) % 1.0;
       final paint = Paint()
-        ..color = const Color(0xFF10B981).withOpacity(particle.opacity)
+        ..color = ZonaColors.gol.withOpacity(particle.opacity)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
       canvas.drawCircle(
@@ -238,7 +239,7 @@ class FieldLinesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF10B981).withOpacity(0.03)
+      ..color = ZonaColors.gol.withOpacity(0.03)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

@@ -13,22 +13,23 @@ import '../../../domain/entities/user_entity.dart';
 import '../../bloc/league_stats/league_stats_bloc.dart';
 import '../../bloc/league_stats/league_stats_event.dart';
 import '../../bloc/league_stats/league_stats_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color cardDark = ZonaColors.surface;
 
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
   static const Color amber = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
 
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// League Statistics Screen
@@ -142,7 +143,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               children: [
                 Text(
                   'ESTADÍSTICAS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 28,
                     color: _SN.textPrimary,
                     letterSpacing: 3,
@@ -151,7 +152,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                 ),
                 Text(
                   'Resumen de tu liga',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _SN.neonGreen,
                     letterSpacing: 0.5,
@@ -201,7 +202,7 @@ class _LeagueStatisticsView extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'CARGANDO ESTADÍSTICAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textSecondary,
               letterSpacing: 2,
@@ -224,7 +225,7 @@ class _LeagueStatisticsView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
           ],
         ),
@@ -244,7 +245,7 @@ class _LeagueStatisticsView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -265,7 +266,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                 ),
                 child: Text(
                   'REINTENTAR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                       fontSize: 14, color: Colors.white, letterSpacing: 1),
                 ),
               ),
@@ -347,7 +348,7 @@ class _LeagueStatisticsView extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: _SN.textMuted,
             letterSpacing: 2,
@@ -509,7 +510,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                   children: [
                     Text(
                       'GOLEADOR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 12,
                         color: _SN.gold,
                         letterSpacing: 2,
@@ -517,7 +518,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                     ),
                     Text(
                       topScorer.playerName,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         color: _SN.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -526,7 +527,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                     ),
                     Text(
                       topScorer.teamName,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                           fontSize: 12, color: _SN.textMuted),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -535,7 +536,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               ),
               Text(
                 '${topScorer.goals}',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 36,
                   color: _SN.gold,
                   letterSpacing: 1,
@@ -544,7 +545,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 'GOLES',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 11,
                   color: _SN.gold.withOpacity(0.7),
                   letterSpacing: 1,
@@ -599,7 +600,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                   ),
                   Text(
                     value,
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 32,
                       color: color,
                       letterSpacing: 1,
@@ -610,7 +611,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   color: _SN.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -618,7 +619,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               ),
               Text(
                 sublabel,
-                style: GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+                style: GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
               ),
             ],
           ),
@@ -687,7 +688,7 @@ class _LeagueStatisticsView extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 28,
             color: _SN.textPrimary,
             letterSpacing: 1,
@@ -695,7 +696,7 @@ class _LeagueStatisticsView extends StatelessWidget {
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
           textAlign: TextAlign.center,
         ),
       ],
@@ -737,7 +738,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
                       '${rod.toY.toInt()} partidos',
-                      GoogleFonts.outfit(color: _SN.neonGreen, fontSize: 12),
+                      GoogleFonts.inter(color: _SN.neonGreen, fontSize: 12),
                     );
                   },
                 ),
@@ -756,7 +757,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           monthlyMatches[index].month,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                               color: _SN.textMuted, fontSize: 11),
                         ),
                       );
@@ -771,7 +772,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                       if (value == value.roundToDouble() && value >= 0) {
                         return Text(
                           '${value.toInt()}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                               color: _SN.textMuted, fontSize: 10),
                         );
                       }
@@ -867,7 +868,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                         color: data.color,
                         radius: 50,
                         title: '${percentage.toStringAsFixed(0)}%',
-                        titleStyle: GoogleFonts.bebasNeue(
+                        titleStyle: ZonaType.headline(
                           fontSize: 14,
                           color: Colors.white,
                         ),
@@ -895,7 +896,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           '${data.label} (${data.count})',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: _SN.textSecondary,
                           ),
@@ -963,7 +964,7 @@ class _LeagueStatisticsView extends StatelessWidget {
               children: [
                 Text(
                   '${match.homeName} vs ${match.awayName}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -973,7 +974,7 @@ class _LeagueStatisticsView extends StatelessWidget {
                 Text(
                   DateFormat('dd/MM/yyyy').format(match.matchDate),
                   style:
-                      GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+                      GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
                 ),
               ],
             ),
@@ -986,7 +987,7 @@ class _LeagueStatisticsView extends StatelessWidget {
             ),
             child: Text(
               'Programado',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: _SN.neonBlue,
                 fontWeight: FontWeight.w500,

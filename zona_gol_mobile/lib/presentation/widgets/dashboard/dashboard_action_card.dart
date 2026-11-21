@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Dashboard Action Card - "Noche de Partido" Edition
 /// Glassmorphism card with glow effects and animations
@@ -69,7 +70,7 @@ class _DashboardActionCardState extends State<DashboardActionCard>
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = widget.color ?? const Color(0xFF10B981);
+    final cardColor = widget.color ?? ZonaColors.gol;
     final isLogout = widget.icon == Icons.logout;
 
     return FadeTransition(
@@ -237,14 +238,14 @@ class DashboardSectionHeader extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF10B981),
-                  Color(0xFF3B82F6),
+                  ZonaColors.gol,
+                  ZonaColors.zona,
                 ],
               ),
               borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.5),
+                  color: ZonaColors.gol.withOpacity(0.5),
                   blurRadius: 6,
                   spreadRadius: -1,
                 ),

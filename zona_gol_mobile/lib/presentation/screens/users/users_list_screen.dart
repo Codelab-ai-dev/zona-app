@@ -6,25 +6,26 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/admin_user_entity.dart';
 import '../../../domain/repositories/user_admin_repository.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
 
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
 
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
 
   static const Color error = Color(0xFFEF4444);
 
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Users List Screen - Stadium Nights Edition
@@ -265,7 +266,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                           children: [
                             Text(
                               'USUARIOS',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 32,
                                 color: _StadiumNights.textPrimary,
                                 letterSpacing: 4,
@@ -274,7 +275,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             ),
                             Text(
                               'Gestiona cuentas y roles',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.neonBlue,
                                 letterSpacing: 0.5,
@@ -319,7 +320,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           const SizedBox(width: 6),
           Text(
             _isLoading ? '...' : '$count',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.neonBlue,
               letterSpacing: 1,
@@ -361,14 +362,14 @@ class _UsersListScreenState extends State<UsersListScreen>
                         setState(() => _searchQuery = value);
                       },
                       cursorColor: _StadiumNights.neonBlue,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Buscar usuarios...',
-                        hintStyle: GoogleFonts.outfit(
+                        hintStyle: GoogleFonts.inter(
                           color: Colors.white.withOpacity(0.4),
                           fontSize: 15,
                         ),
@@ -467,7 +468,7 @@ class _UsersListScreenState extends State<UsersListScreen>
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: isSelected ? chipColor : _StadiumNights.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -517,7 +518,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           const SizedBox(height: 24),
           Text(
             'CARGANDO USUARIOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 18,
               color: _StadiumNights.textSecondary,
               letterSpacing: 2,
@@ -551,7 +552,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           const SizedBox(height: 24),
           Text(
             'ERROR AL CARGAR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -561,7 +562,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           Text(
             _error ?? 'Error desconocido',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -600,7 +601,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           const SizedBox(height: 24),
           Text(
             'SIN USUARIOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 28,
               color: _StadiumNights.textPrimary,
               letterSpacing: 3,
@@ -610,7 +611,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           Text(
             'No hay usuarios registrados.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -635,7 +636,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           const SizedBox(height: 24),
           Text(
             'SIN RESULTADOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -645,7 +646,7 @@ class _UsersListScreenState extends State<UsersListScreen>
           Text(
             'No se encontraron usuarios con esos filtros',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -661,7 +662,7 @@ class _UsersListScreenState extends State<UsersListScreen>
             },
             child: Text(
               'Limpiar filtros',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.neonBlue,
                 fontWeight: FontWeight.w600,
@@ -704,7 +705,7 @@ class _UsersListScreenState extends State<UsersListScreen>
             const SizedBox(width: 8),
             Text(
               'REINTENTAR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: Colors.white,
                 letterSpacing: 1,
@@ -778,7 +779,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                       const SizedBox(width: 16),
                       Text(
                         'EDITAR USUARIO',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 24,
                           color: _StadiumNights.textPrimary,
                           letterSpacing: 2,
@@ -810,14 +811,14 @@ class _UsersListScreenState extends State<UsersListScreen>
                             children: [
                               Text(
                                 'Email',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   color: _StadiumNights.textMuted,
                                 ),
                               ),
                               Text(
                                 user.email,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: _StadiumNights.textSecondary,
                                 ),
@@ -833,13 +834,13 @@ class _UsersListScreenState extends State<UsersListScreen>
                   // Name field
                   TextFormField(
                     controller: nameController,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _StadiumNights.textPrimary,
                       fontSize: 14,
                     ),
                     decoration: InputDecoration(
                       labelText: 'Nombre',
-                      labelStyle: GoogleFonts.outfit(
+                      labelStyle: GoogleFonts.inter(
                         color: _StadiumNights.textMuted,
                       ),
                       prefixIcon: Icon(Icons.person, color: _StadiumNights.neonBlue, size: 20),
@@ -882,7 +883,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             child: Center(
                               child: Text(
                                 'Cancelar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _StadiumNights.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -923,7 +924,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             child: Center(
                               child: Text(
                                 'Guardar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -986,7 +987,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                           children: [
                             Text(
                               'CAMBIAR ROL',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 24,
                                 color: _StadiumNights.textPrimary,
                                 letterSpacing: 2,
@@ -994,7 +995,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             ),
                             Text(
                               user.email,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.textMuted,
                               ),
@@ -1064,7 +1065,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             child: Center(
                               child: Text(
                                 'Cancelar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _StadiumNights.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1107,7 +1108,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                             child: Center(
                               child: Text(
                                 'Guardar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1169,7 +1170,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       color: _StadiumNights.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -1177,7 +1178,7 @@ class _UsersListScreenState extends State<UsersListScreen>
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       color: _StadiumNights.textMuted,
                     ),
@@ -1227,7 +1228,7 @@ class _UsersListScreenState extends State<UsersListScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1254,7 +1255,7 @@ class _UsersListScreenState extends State<UsersListScreen>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
             ),
           ],
@@ -1476,7 +1477,7 @@ class _UserCardState extends State<_UserCard>
                           children: [
                             Text(
                               widget.user.name.isNotEmpty ? widget.user.name : widget.user.email,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 16,
                                 color: _StadiumNights.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -1485,7 +1486,7 @@ class _UserCardState extends State<_UserCard>
                             const SizedBox(height: 2),
                             Text(
                               widget.user.email,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 13,
                                 color: _StadiumNights.textMuted,
                               ),
@@ -1557,7 +1558,7 @@ class _UserCardState extends State<_UserCard>
     return Center(
       child: Text(
         initial,
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 24,
           color: color,
         ),
@@ -1586,7 +1587,7 @@ class _UserCardState extends State<_UserCard>
           const SizedBox(width: 4),
           Text(
             _getRoleName(role),
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               color: color,
               fontWeight: FontWeight.w600,
@@ -1613,7 +1614,7 @@ class _UserCardState extends State<_UserCard>
             constraints: const BoxConstraints(maxWidth: 60),
             child: Text(
               name,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 color: color,
               ),
@@ -1662,7 +1663,7 @@ class _UserCardState extends State<_UserCard>
               const SizedBox(width: 12),
               Text(
                 'Editar',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _StadiumNights.textPrimary,
                   fontSize: 14,
                 ),
@@ -1678,7 +1679,7 @@ class _UserCardState extends State<_UserCard>
               const SizedBox(width: 12),
               Text(
                 'Cambiar Rol',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _StadiumNights.textPrimary,
                   fontSize: 14,
                 ),

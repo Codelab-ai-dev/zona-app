@@ -16,19 +16,20 @@ import '../../bloc/team/team_state.dart';
 import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Create Match Screen
@@ -149,7 +150,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
       ),
       title: Text(
         'PROGRAMAR PARTIDO',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -263,7 +264,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
   Widget _buildLabel(String text) {
     return Text(
       text.toUpperCase(),
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         fontSize: 14,
         color: _SN.gold,
         letterSpacing: 1.5,
@@ -306,7 +307,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                     value: t,
                     child: Text(
                       t.name,
-                      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
                       overflow: TextOverflow.ellipsis,
                     ),
                   );
@@ -398,7 +399,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                       Expanded(
                         child: Text(
                           t.name,
-                          style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                          style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -508,10 +509,10 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
               initialValue: value?.toString(),
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: GoogleFonts.outfit(color: _SN.textPrimary),
+              style: GoogleFonts.inter(color: _SN.textPrimary),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: GoogleFonts.outfit(color: _SN.textMuted),
+                hintStyle: GoogleFonts.inter(color: _SN.textMuted),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -538,7 +539,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
         children: [
           Text(
             'VISTA PREVIA',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 14,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -563,7 +564,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                     const SizedBox(height: 8),
                     Text(
                       _homeTeam?.name ?? '',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _SN.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -580,7 +581,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   'VS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 24,
                     color: _SN.gold,
                     letterSpacing: 2,
@@ -603,7 +604,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                     const SizedBox(height: 8),
                     Text(
                       _awayTeam?.name ?? '',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _SN.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -626,7 +627,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
               const SizedBox(width: 6),
               Text(
                 DateFormat('dd/MM/yyyy').format(_matchDate),
-                style: GoogleFonts.outfit(fontSize: 12, color: _SN.textSecondary),
+                style: GoogleFonts.inter(fontSize: 12, color: _SN.textSecondary),
               ),
               if (_matchTime != null) ...[
                 const SizedBox(width: 12),
@@ -634,7 +635,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                 const SizedBox(width: 6),
                 Text(
                   _matchTime!.format(context),
-                  style: GoogleFonts.outfit(fontSize: 12, color: _SN.textSecondary),
+                  style: GoogleFonts.inter(fontSize: 12, color: _SN.textSecondary),
                 ),
               ],
               if (_fieldNumber != null) ...[
@@ -643,7 +644,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
                 const SizedBox(width: 6),
                 Text(
                   'Cancha $_fieldNumber',
-                  style: GoogleFonts.outfit(fontSize: 12, color: _SN.textSecondary),
+                  style: GoogleFonts.inter(fontSize: 12, color: _SN.textSecondary),
                 ),
               ],
             ],
@@ -674,7 +675,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
       ),
       child: Text(
         'PROGRAMAR PARTIDO',
-        style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
+        style: ZonaType.headline(fontSize: 18, letterSpacing: 2),
       ),
     );
   }
@@ -746,7 +747,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: hasValue ? _SN.textPrimary : _SN.textMuted,
               ),
             ),
@@ -762,7 +763,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
       children: [
         Icon(icon, size: 18, color: _SN.gold.withOpacity(0.5)),
         const SizedBox(width: 8),
-        Text(text, style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+        Text(text, style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
       ],
     );
   }
@@ -786,7 +787,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
             ),
           ),
           const SizedBox(width: 12),
-          Text(text, style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+          Text(text, style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
         ],
       ),
     );
@@ -804,7 +805,7 @@ class _CreateMatchViewState extends State<_CreateMatchView> {
         children: [
           Icon(Icons.shield, size: 18, color: _SN.textMuted.withOpacity(0.3)),
           const SizedBox(width: 12),
-          Text(text, style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+          Text(text, style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
         ],
       ),
     );

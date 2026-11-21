@@ -11,19 +11,20 @@ import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
 import '../match/match_detail_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// A matchup "tie" — groups first and second leg matches for one bracket position
@@ -212,7 +213,7 @@ class _BracketViewerBody extends StatelessWidget {
         children: [
           Text(
             'LIGUILLA',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -220,7 +221,7 @@ class _BracketViewerBody extends StatelessWidget {
           ),
           Text(
             tournamentName,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: _StadiumNights.textMuted,
             ),
@@ -260,7 +261,7 @@ class _BracketViewerBody extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'CARGANDO LIGUILLA',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -294,7 +295,7 @@ class _BracketViewerBody extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -304,7 +305,7 @@ class _BracketViewerBody extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -328,7 +329,7 @@ class _BracketViewerBody extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'REINTENTAR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 14,
                         color: Colors.black,
                         letterSpacing: 1,
@@ -371,7 +372,7 @@ class _BracketViewerBody extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'NO HAY LIGUILLA',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -381,7 +382,7 @@ class _BracketViewerBody extends StatelessWidget {
             Text(
               'No se ha generado la liguilla\npara este torneo.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -448,7 +449,7 @@ class _BracketView extends StatelessWidget {
       return Center(
         child: Text(
           'Sin datos de liguilla',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             color: _StadiumNights.textMuted,
           ),
@@ -553,7 +554,7 @@ class _BracketView extends StatelessWidget {
             child: Text(
               column.title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: _StadiumNights.gold,
                 letterSpacing: 2,
@@ -701,7 +702,7 @@ class _MatchupCard extends StatelessWidget {
                 child: Text(
                   'TERCER LUGAR',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 10,
                     color: _StadiumNights.amber,
                     letterSpacing: 1.5,
@@ -789,7 +790,7 @@ class _MatchupCard extends StatelessWidget {
           child: Text(
             name,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: textColor,
               fontWeight: weight,
@@ -812,7 +813,7 @@ class _MatchupCard extends StatelessWidget {
         ),
         child: Text(
           '$ha - $aa',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 16,
             color: _StadiumNights.neonGreen,
             letterSpacing: 1,
@@ -835,7 +836,7 @@ class _MatchupCard extends StatelessWidget {
           ),
           child: Text(
             'VS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 14,
               color: _StadiumNights.gold,
               letterSpacing: 1,
@@ -846,7 +847,7 @@ class _MatchupCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${dateFormat.format(date)}${time != null ? '  $time' : ''}',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 10,
               color: _StadiumNights.textMuted,
             ),
@@ -894,7 +895,7 @@ class _MatchupCard extends StatelessWidget {
       children: [
         Text(
           '$label ',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 9,
             color: _StadiumNights.textMuted,
             fontWeight: FontWeight.w600,
@@ -902,7 +903,7 @@ class _MatchupCard extends StatelessWidget {
         ),
         Text(
           scoreText,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 11,
             color: hasScore
                 ? _StadiumNights.textPrimary

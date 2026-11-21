@@ -16,20 +16,21 @@ import '../../bloc/team/team_state.dart';
 import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 
   // Medal colors
   static const Color goldMedal = Color(0xFFFFD700);
@@ -167,7 +168,7 @@ class _StandingsViewState extends State<_StandingsView> {
       ),
       title: Text(
         'TABLA DE POSICIONES',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _StadiumNights.textPrimary,
           letterSpacing: 2,
@@ -244,7 +245,7 @@ class _StandingsViewState extends State<_StandingsView> {
                     const SizedBox(width: 8),
                     Text(
                       'Seleccionar torneo',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _StadiumNights.textSecondary,
                       ),
@@ -267,7 +268,7 @@ class _StandingsViewState extends State<_StandingsView> {
                         Expanded(
                           child: Text(
                             tournament.name,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: _StadiumNights.textPrimary,
                             ),
@@ -286,7 +287,7 @@ class _StandingsViewState extends State<_StandingsView> {
                             ),
                             child: Text(
                               'ACTIVO',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 color: _StadiumNights.neonGreen,
                                 fontWeight: FontWeight.bold,
@@ -335,7 +336,7 @@ class _StandingsViewState extends State<_StandingsView> {
                 const SizedBox(width: 12),
                 Text(
                   'Cargando torneos...',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textSecondary,
                   ),
@@ -417,7 +418,7 @@ class _StandingsViewState extends State<_StandingsView> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: isSelected
                 ? _StadiumNights.gold
@@ -528,7 +529,7 @@ class _StandingsViewState extends State<_StandingsView> {
                   ),
                   child: Text(
                     groupName.toUpperCase(),
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       color: _StadiumNights.gold,
                       letterSpacing: 2,
@@ -578,7 +579,7 @@ class _StandingsViewState extends State<_StandingsView> {
               ),
               child: Text(
                 'SIN GRUPO',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 18,
                   color: _StadiumNights.textMuted,
                   letterSpacing: 2,
@@ -621,7 +622,7 @@ class _StandingsViewState extends State<_StandingsView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO TABLA',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -647,7 +648,7 @@ class _StandingsViewState extends State<_StandingsView> {
             const SizedBox(height: 24),
             Text(
               'SELECCIONA UN TORNEO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -657,7 +658,7 @@ class _StandingsViewState extends State<_StandingsView> {
             Text(
               'Elige un torneo para ver\nla tabla de posiciones.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -683,7 +684,7 @@ class _StandingsViewState extends State<_StandingsView> {
             const SizedBox(height: 24),
             Text(
               'SIN DATOS',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -693,7 +694,7 @@ class _StandingsViewState extends State<_StandingsView> {
             Text(
               'Aún no hay estadísticas\npara este torneo.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -719,7 +720,7 @@ class _StandingsViewState extends State<_StandingsView> {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -729,7 +730,7 @@ class _StandingsViewState extends State<_StandingsView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -762,7 +763,7 @@ class _StandingsViewState extends State<_StandingsView> {
                       const SizedBox(width: 8),
                       Text(
                         'REINTENTAR',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 14,
                           color: Colors.black,
                           letterSpacing: 1,
@@ -828,7 +829,7 @@ class _StandingsViewState extends State<_StandingsView> {
             children: [
               Text(
                 'EDITAR ESTADÍSTICAS',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 20,
                   color: _StadiumNights.gold,
                   letterSpacing: 2,
@@ -837,7 +838,7 @@ class _StandingsViewState extends State<_StandingsView> {
               const SizedBox(height: 4),
               Text(
                 standing.teamName,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.textSecondary,
                 ),
@@ -878,10 +879,10 @@ class _StandingsViewState extends State<_StandingsView> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: reasonController,
-                  style: GoogleFonts.outfit(fontSize: 14, color: _StadiumNights.textPrimary),
+                  style: GoogleFonts.inter(fontSize: 14, color: _StadiumNights.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Razón del ajuste',
-                    labelStyle: GoogleFonts.outfit(fontSize: 12, color: _StadiumNights.textMuted),
+                    labelStyle: GoogleFonts.inter(fontSize: 12, color: _StadiumNights.textMuted),
                     filled: true,
                     fillColor: _StadiumNights.surfaceDark,
                     border: OutlineInputBorder(
@@ -906,7 +907,7 @@ class _StandingsViewState extends State<_StandingsView> {
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
                 'CANCELAR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   color: _StadiumNights.textMuted,
                   letterSpacing: 1,
                 ),
@@ -938,7 +939,7 @@ class _StandingsViewState extends State<_StandingsView> {
               },
               child: Text(
                 'GUARDAR',
-                style: GoogleFonts.bebasNeue(letterSpacing: 1),
+                style: ZonaType.headline(letterSpacing: 1),
               ),
             ),
           ],
@@ -951,10 +952,10 @@ class _StandingsViewState extends State<_StandingsView> {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.numberWithOptions(signed: allowNegative),
-      style: GoogleFonts.outfit(fontSize: 14, color: _StadiumNights.textPrimary),
+      style: GoogleFonts.inter(fontSize: 14, color: _StadiumNights.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.outfit(fontSize: 12, color: _StadiumNights.textMuted),
+        labelStyle: GoogleFonts.inter(fontSize: 12, color: _StadiumNights.textMuted),
         filled: true,
         fillColor: _StadiumNights.surfaceDark,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -989,7 +990,7 @@ class _StandingsViewState extends State<_StandingsView> {
             width: 30,
             child: Text(
               '#',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: _StadiumNights.gold,
               ),
@@ -1001,7 +1002,7 @@ class _StandingsViewState extends State<_StandingsView> {
             flex: 3,
             child: Text(
               'EQUIPO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 12,
                 color: _StadiumNights.gold,
                 letterSpacing: 1,
@@ -1020,7 +1021,7 @@ class _StandingsViewState extends State<_StandingsView> {
             width: label == TeamStandingEntity.labelPTS ? 36 : 28,
             child: Text(
               label,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 11,
                 color: label == TeamStandingEntity.labelPTS
                     ? _StadiumNights.gold
@@ -1086,7 +1087,7 @@ class _StandingRow extends StatelessWidget {
                     children: [
                       Text(
                         standing.teamName,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _StadiumNights.textPrimary,
                           fontWeight: FontWeight.w500,
@@ -1097,7 +1098,7 @@ class _StandingRow extends StatelessWidget {
                       if (standing.hasAdjustment)
                         Text(
                           '${standing.pointsAdjustment > 0 ? '+' : ''}${standing.pointsAdjustment} pts',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             color: standing.pointsAdjustment > 0
                                 ? _StadiumNights.success
@@ -1135,7 +1136,7 @@ class _StandingRow extends StatelessWidget {
             ),
             child: Text(
               standing.totalPoints.toString(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: _StadiumNights.gold,
               ),
@@ -1178,7 +1179,7 @@ class _StandingRow extends StatelessWidget {
         child: Center(
           child: Text(
             position.toString(),
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 14,
               color: color,
             ),
@@ -1188,7 +1189,7 @@ class _StandingRow extends StatelessWidget {
     }
     return Text(
       position.toString(),
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         fontSize: 16,
         color: _StadiumNights.textMuted,
       ),
@@ -1260,7 +1261,7 @@ class _StandingRow extends StatelessWidget {
       width: 28,
       child: Text(
         value,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontSize: 12,
           color: color ?? _StadiumNights.textSecondary,
           fontWeight: color != null ? FontWeight.w600 : FontWeight.normal,

@@ -15,19 +15,20 @@ import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
 import 'match_detail_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Calendar Screen — shows all matches for a tournament grouped by round
@@ -111,7 +112,7 @@ class _CalendarViewState extends State<_CalendarView> {
       ),
       title: Text(
         'CALENDARIO',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -163,7 +164,7 @@ class _CalendarViewState extends State<_CalendarView> {
               child: Center(
                 child: Text(
                   'No hay torneos activos',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textMuted,
                   ),
@@ -203,7 +204,7 @@ class _CalendarViewState extends State<_CalendarView> {
                           Icons.keyboard_arrow_down,
                           color: _SN.gold,
                         ),
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           color: _SN.textPrimary,
                           fontWeight: FontWeight.w500,
@@ -294,7 +295,7 @@ class _CalendarViewState extends State<_CalendarView> {
           ),
           child: Text(
             label,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 13,
               color: isSelected ? _SN.neonBlue : _SN.textMuted,
               letterSpacing: 1,
@@ -331,7 +332,7 @@ class _CalendarViewState extends State<_CalendarView> {
             const SizedBox(height: 16),
             Text(
               'Selecciona un torneo',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 color: _SN.textMuted,
               ),
@@ -371,7 +372,7 @@ class _CalendarViewState extends State<_CalendarView> {
                 const SizedBox(height: 16),
                 Text(
                   'CARGANDO PARTIDOS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: _SN.textMuted,
                     letterSpacing: 2,
@@ -395,7 +396,7 @@ class _CalendarViewState extends State<_CalendarView> {
                     state.message,
                     textAlign: TextAlign.center,
                     style:
-                        GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+                        GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
@@ -414,7 +415,7 @@ class _CalendarViewState extends State<_CalendarView> {
                       ),
                       child: Text(
                         'REINTENTAR',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 14,
                           color: Colors.black,
                           letterSpacing: 1,
@@ -451,12 +452,12 @@ class _CalendarViewState extends State<_CalendarView> {
             const SizedBox(height: 16),
             Text(
               'No hay partidos',
-              style: GoogleFonts.outfit(fontSize: 16, color: _SN.textMuted),
+              style: GoogleFonts.inter(fontSize: 16, color: _SN.textMuted),
             ),
             const SizedBox(height: 4),
             Text(
               'Genera un fixture para crear partidos',
-              style: GoogleFonts.outfit(fontSize: 13, color: _SN.textMuted),
+              style: GoogleFonts.inter(fontSize: 13, color: _SN.textMuted),
             ),
           ],
         ),
@@ -547,7 +548,7 @@ class _CalendarViewState extends State<_CalendarView> {
               children: [
                 Text(
                   'PROGRESO DEL TORNEO',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 12,
                     color: _SN.textMuted,
                     letterSpacing: 1.5,
@@ -570,7 +571,7 @@ class _CalendarViewState extends State<_CalendarView> {
           const SizedBox(width: 14),
           Text(
             '$finished/$total',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 18,
               color: _SN.neonGreen,
             ),
@@ -605,7 +606,7 @@ class _CalendarViewState extends State<_CalendarView> {
             ),
             child: Text(
               'JORNADA $roundNum',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 13,
                 color: Colors.white,
                 letterSpacing: 1,
@@ -615,7 +616,7 @@ class _CalendarViewState extends State<_CalendarView> {
           const SizedBox(width: 8),
           Text(
             dateStr,
-            style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
           ),
           const Spacer(),
           if (_isAdmin) ...[
@@ -632,7 +633,7 @@ class _CalendarViewState extends State<_CalendarView> {
             ),
             child: Text(
               '$finished/$total',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: finished == total ? _SN.neonGreen : _SN.textMuted,
                 fontWeight: FontWeight.w600,
@@ -671,7 +672,7 @@ class _CalendarViewState extends State<_CalendarView> {
             const SizedBox(width: 4),
             Text(
               allPublished ? 'PUBLICADA' : 'PUBLICAR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 11,
                 color: color,
                 letterSpacing: 1,
@@ -690,7 +691,7 @@ class _CalendarViewState extends State<_CalendarView> {
         backgroundColor: _SN.cardDark,
         title: Text(
           publish ? 'PUBLICAR JORNADA $roundNum' : 'OCULTAR JORNADA $roundNum',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 20,
             color: _SN.textPrimary,
             letterSpacing: 1.5,
@@ -700,12 +701,12 @@ class _CalendarViewState extends State<_CalendarView> {
           publish
               ? 'Todos los partidos de la jornada serán visibles en el portal público.'
               : 'Los partidos de la jornada dejarán de verse en el portal público.',
-          style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar', style: GoogleFonts.outfit(color: _SN.textMuted)),
+            child: Text('Cancelar', style: GoogleFonts.inter(color: _SN.textMuted)),
           ),
           TextButton(
             onPressed: () {
@@ -718,7 +719,7 @@ class _CalendarViewState extends State<_CalendarView> {
             },
             child: Text(
               publish ? 'Publicar' : 'Ocultar',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _SN.neonGreen,
                 fontWeight: FontWeight.w600,
               ),
@@ -749,7 +750,7 @@ class _CalendarViewState extends State<_CalendarView> {
                 const SizedBox(width: 6),
                 Text(
                   'PLAYOFFS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: Colors.black,
                     letterSpacing: 1.5,
@@ -780,7 +781,7 @@ class _CalendarViewState extends State<_CalendarView> {
             ),
             child: Text(
               round.displayText.toUpperCase(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 12,
                 color: _SN.gold,
                 letterSpacing: 1,
@@ -790,7 +791,7 @@ class _CalendarViewState extends State<_CalendarView> {
           const SizedBox(width: 8),
           Text(
             '${matches.length} partidos',
-            style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
           ),
         ],
       ),
@@ -850,7 +851,7 @@ class _CalendarViewState extends State<_CalendarView> {
                 children: [
                   Text(
                     match.homeTeam?.name ?? 'Local',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _SN.textPrimary,
                       fontWeight: FontWeight.w500,
@@ -861,7 +862,7 @@ class _CalendarViewState extends State<_CalendarView> {
                   const SizedBox(height: 2),
                   Text(
                     match.awayTeam?.name ?? 'Visitante',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _SN.textPrimary,
                       fontWeight: FontWeight.w500,
@@ -886,14 +887,14 @@ class _CalendarViewState extends State<_CalendarView> {
                   children: [
                     Text(
                       '${match.homeScore}',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 18,
                         color: _SN.textPrimary,
                       ),
                     ),
                     Text(
                       '${match.awayScore}',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 18,
                         color: _SN.textPrimary,
                       ),
@@ -911,7 +912,7 @@ class _CalendarViewState extends State<_CalendarView> {
                 ),
                 child: Text(
                   'VS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: statusColor,
                   ),
@@ -932,7 +933,7 @@ class _CalendarViewState extends State<_CalendarView> {
                     const SizedBox(width: 3),
                     Text(
                       DateFormat('dd/MM').format(match.matchDate),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.textMuted,
                       ),
@@ -949,7 +950,7 @@ class _CalendarViewState extends State<_CalendarView> {
                       const SizedBox(width: 3),
                       Text(
                         match.matchTime!,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           color: _SN.neonBlue,
                         ),
@@ -961,7 +962,7 @@ class _CalendarViewState extends State<_CalendarView> {
                   const SizedBox(height: 2),
                   Text(
                     'C${match.fieldNumber}',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: _SN.textMuted,
                     ),

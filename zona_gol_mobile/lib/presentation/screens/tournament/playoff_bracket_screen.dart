@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/di/injection.dart';
@@ -9,19 +8,20 @@ import '../../../domain/entities/team_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../../domain/repositories/match_repository.dart';
 import '../../../domain/repositories/team_repository.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights palette
 class _SN {
-  static const Color bg = Color(0xFF050508);
-  static const Color surface = Color(0xFF0D1117);
-  static const Color card = Color(0xFF161B22);
+  static const Color bg = ZonaColors.background;
+  static const Color surface = ZonaColors.panel;
+  static const Color card = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
-  static const Color divider = Color(0xFF1E2733);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
+  static const Color divider = ZonaColors.lineSoft;
 }
 
 /// Playoff Bracket Generator Screen
@@ -143,7 +143,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
                   children: [
                     Text(
                       'GENERAR LIGUILLA',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: _SN.gold,
                         fontSize: 22,
                         letterSpacing: 2,
@@ -335,7 +335,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
             ),
             child: Text(
               'SELECCIONAR EQUIPOS',
-              style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 1.5),
+              style: ZonaType.headline(fontSize: 18, letterSpacing: 1.5),
             ),
           ),
         ),
@@ -502,7 +502,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         color: _SN.textSecondary,
         fontSize: 14,
         letterSpacing: 1,
@@ -640,7 +640,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
               child: Text(
                 'GENERAR LIGUILLA',
                 style:
-                    GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 1.5),
+                    ZonaType.headline(fontSize: 18, letterSpacing: 1.5),
               ),
             ),
           ),
@@ -851,7 +851,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
                   children: [
                     Text(
                       'LIGUILLA',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                           color: _SN.gold, fontSize: 20, letterSpacing: 2),
                     ),
                     const SizedBox(height: 4),
@@ -896,7 +896,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
               label: Text(
                 _isSaving ? 'GUARDANDO...' : 'GUARDAR LIGUILLA',
                 style:
-                    GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 1.5),
+                    ZonaType.headline(fontSize: 18, letterSpacing: 1.5),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _SN.neonGreen,
@@ -933,7 +933,7 @@ class _PlayoffBracketScreenState extends State<PlayoffBracketScreen> {
         const SizedBox(width: 8),
         Text(
           displayMap[roundKey] ?? roundKey.toUpperCase(),
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             color: _SN.gold,
             fontSize: 16,
             letterSpacing: 1.5,

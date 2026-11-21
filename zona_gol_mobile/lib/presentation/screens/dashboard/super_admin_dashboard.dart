@@ -14,6 +14,7 @@ import '../league/leagues_list_screen.dart';
 import '../users/users_list_screen.dart';
 import '../settings/settings_screen.dart';
 import '../statistics/global_statistics_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Super Admin Dashboard - "Noche de Partido" Edition
 /// Full access to all system features with premium UI
@@ -66,7 +67,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1C),
+      backgroundColor: ZonaColors.background,
       body: DashboardBackground(
         child: Column(
           children: [
@@ -97,7 +98,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     title: 'Ligas',
                     subtitle: 'Ver y administrar todas las ligas',
                     icon: Icons.emoji_events,
-                    color: const Color(0xFF10B981),
+                    color: ZonaColors.gol,
                     animationDelay: 1,
                     onTap: () {
                       Navigator.of(context).push(
@@ -112,7 +113,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     title: 'Crear Nueva Liga',
                     subtitle: 'Configurar una nueva liga de fútbol',
                     icon: Icons.add_circle,
-                    color: const Color(0xFF22C55E),
+                    color: ZonaColors.golDark,
                     animationDelay: 2,
                     onTap: () {
                       Navigator.of(context).push(
@@ -173,7 +174,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     title: 'Configuración',
                     subtitle: 'Ajustes generales del sistema',
                     icon: Icons.settings,
-                    color: const Color(0xFF6B7280),
+                    color: ZonaColors.textSubtle,
                     animationDelay: 7,
                     onTap: () {
                       Navigator.of(context).push(
@@ -188,7 +189,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     title: 'Estadísticas Globales',
                     subtitle: 'Ver métricas del sistema',
                     icon: Icons.analytics,
-                    color: const Color(0xFF8B5CF6),
+                    color: ZonaColors.zona,
                     animationDelay: 8,
                     onTap: () {
                       Navigator.of(context).push(
@@ -239,7 +240,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             shaderCallback: (bounds) => const LinearGradient(
               colors: [
                 Colors.white,
-                Color(0xFF10B981),
+                ZonaColors.gol,
               ],
             ).createShader(bounds),
             child: const Text(
@@ -286,7 +287,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               icon: Icons.emoji_events,
               value: _isLoading ? '...' : '$_leaguesCount',
               label: 'Ligas',
-              color: const Color(0xFF10B981),
+              color: ZonaColors.gol,
               isLoading: _isLoading,
             ),
           ),
@@ -306,7 +307,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               icon: Icons.people,
               value: _isLoading ? '...' : '$_usersCount',
               label: 'Usuarios',
-              color: const Color(0xFF8B5CF6),
+              color: ZonaColors.zona,
               isLoading: _isLoading,
             ),
           ),
@@ -378,7 +379,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: ZonaColors.raised,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

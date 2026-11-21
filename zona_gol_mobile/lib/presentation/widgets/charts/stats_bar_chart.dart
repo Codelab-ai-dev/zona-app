@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Data point for a bar chart
 class BarChartItem {
@@ -21,7 +22,7 @@ class StatsBarChart extends StatelessWidget {
   const StatsBarChart({
     super.key,
     required this.items,
-    this.barColor = const Color(0xFF00FF7F),
+    this.barColor = ZonaColors.gol,
     this.barColorEnd,
     this.tooltipSuffix,
     this.height,
@@ -43,13 +44,13 @@ class StatsBarChart extends StatelessWidget {
             enabled: true,
             touchTooltipData: BarTouchTooltipData(
               tooltipRoundedRadius: 8,
-              getTooltipColor: (_) => const Color(0xFF12121A),
+              getTooltipColor: (_) => ZonaColors.surface,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final label = items[group.x].label;
                 final suffix = tooltipSuffix ?? '';
                 return BarTooltipItem(
                   '$label\n${rod.toY.toInt()} $suffix',
-                  GoogleFonts.outfit(color: barColor, fontSize: 12),
+                  GoogleFonts.inter(color: barColor, fontSize: 12),
                 );
               },
             ),
@@ -68,8 +69,8 @@ class StatsBarChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       items[index].label,
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF6B7280),
+                      style: GoogleFonts.inter(
+                        color: ZonaColors.textSubtle,
                         fontSize: 10,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -86,8 +87,8 @@ class StatsBarChart extends StatelessWidget {
                   if (value == value.roundToDouble() && value >= 0) {
                     return Text(
                       '${value.toInt()}',
-                      style: GoogleFonts.outfit(
-                        color: const Color(0xFF6B7280),
+                      style: GoogleFonts.inter(
+                        color: ZonaColors.textSubtle,
                         fontSize: 10,
                       ),
                     );
