@@ -4,7 +4,7 @@
  * - Page navigations: network-first; offline → cached shell, else /offline.html.
  * - /api/* is NEVER cached: responses carry private, per-user data.
  */
-const VERSION = 'zos-v2'
+const VERSION = 'zos-v3'
 const SHELL = ['/', '/offline.html', '/manifest.json', '/icons/icon-192x192.png', '/icons/icon-512x512.png']
 
 self.addEventListener('install', (event) => {

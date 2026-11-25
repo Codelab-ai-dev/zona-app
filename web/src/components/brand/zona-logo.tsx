@@ -83,25 +83,25 @@ export function ZonaOSLogo({
 export function ZonaGolMark({ className, title }: { className?: string; title?: string }) {
   return (
     <img
-      src="/brand/zona-gol-simbolo.webp"
+      src="/brand/zona-gol-simbolo.svg"
       alt={title ?? ''}
       aria-hidden={title ? undefined : true}
-      width={262}
-      height={138}
+      width={299}
+      height={239}
       decoding="async"
       className={cn('h-6 w-auto shrink-0 object-contain', className)}
     />
   )
 }
 
-/** Zona Gol horizontal lockup with the "Gestión de ligas de fútbol" tagline. */
+/** Zona Gol horizontal lockup: ball and orbit with the ZONA GOL wordmark. */
 export function ZonaGolLogo({ className }: { className?: string }) {
   return (
     <img
-      src="/brand/zona-gol-logo.webp"
-      alt="Zona Gol, gestión de ligas de fútbol"
-      width={735}
-      height={141}
+      src="/brand/zona-gol-logo.svg"
+      alt="Zona Gol"
+      width={835}
+      height={239}
       decoding="async"
       className={cn('h-auto w-full max-w-[368px] object-contain', className)}
     />
