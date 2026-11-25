@@ -8,6 +8,9 @@ COPY . .
 # Zona Play is deferred (#51): its pages ship only when built with true.
 ARG VITE_PLAY_ENABLED=false
 ENV VITE_PLAY_ENABLED=$VITE_PLAY_ENABLED
+# Shows "Aplicaciones conectadas" (#50 phase C); pair with MCP_OAUTH_ENABLED.
+ARG VITE_MCP_OAUTH_ENABLED=false
+ENV VITE_MCP_OAUTH_ENABLED=$VITE_MCP_OAUTH_ENABLED
 RUN npx vite build
 
 FROM caddy:2-alpine

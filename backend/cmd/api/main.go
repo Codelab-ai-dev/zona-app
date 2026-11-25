@@ -29,6 +29,7 @@ import (
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/leagues"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/matches"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/notifications"
+	"github.com/Codelab-ai-dev/zona-app/backend/internal/oauth"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/database"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/platform/mail"
 	"github.com/Codelab-ai-dev/zona-app/backend/internal/play"
@@ -78,6 +79,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	oauthModule, oauthEndpoints := buildOAuth(cfg, pool)
+	if oauthModule != nil {
+		modules = append(modules, oauthModule)
+	}
 
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
@@ -87,6 +92,7 @@ func run() error {
 			Auth:           authMW,
 			Health:         health.NewHandler(pool),
 			Modules:        modules,
+			OAuth:          oauthEndpoints,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -113,6 +119,24 @@ func run() error {
 	defer cancel()
 	slog.Info("shutting down")
 	return srv.Shutdown(shutdownCtx)
+}
+
+// buildOAuth wires the authorization server for MCP clients (#50 phase C).
+// Off unless MCP_OAUTH_ENABLED=true: then neither /oauth/* nor the consent
+// API exists.
+func buildOAuth(cfg config.Config, pool *pgxpool.Pool) (server.Module, http.Handler) {
+	if !cfg.MCPOAuth.Enabled {
+		slog.Warn("module disabled: mcp oauth (set MCP_OAUTH_ENABLED=true to mount /oauth/*)")
+		return nil, nil
+	}
+	svc := oauth.NewService(oauth.NewPGRepository(pool), auth.NewPGProfileLoader(pool), oauth.Config{
+		Issuer:     cfg.AppURL,
+		Resource:   cfg.MCPOAuth.ResourceURL,
+		ConsentURL: cfg.AppURL + "/autorizar",
+	})
+	h := oauth.NewHandler(svc)
+	slog.Info("mcp oauth enabled", "issuer", cfg.AppURL, "resource", cfg.MCPOAuth.ResourceURL)
+	return h, h.Endpoints()
 }
 
 // buildSession wires login/refresh/logout/password flows.

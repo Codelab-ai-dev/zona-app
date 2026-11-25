@@ -80,7 +80,12 @@ services:
     networks: [internal]
 
   web:
-    build: ../web
+    build:
+      context: ../web
+      args:
+        # The web shows "Aplicaciones conectadas" only when the API has the
+        # OAuth endpoints (#50 phase C).
+        VITE_MCP_OAUTH_ENABLED: ${MCP_OAUTH_ENABLED:-false}
     image: zona-web:local
     restart: unless-stopped
     environment:

@@ -35,6 +35,19 @@
 		reverse_proxy mcp:8090
 	}
 
+	# OAuth authorization server for MCP clients (issue #50, phase C), served
+	# by the API. Without MCP_OAUTH_ENABLED=true the API answers 404 here.
+	# The consent page itself is a web route (/autorizar).
+	handle /oauth/* {
+		request_body {
+			max_size 64KB
+		}
+		reverse_proxy api:8080
+	}
+	handle /.well-known/oauth-authorization-server {
+		reverse_proxy api:8080
+	}
+
 	# Public uploads (league/team/player images). Private files live in
 	# another volume that Caddy never mounts.
 	handle_path /media/* {

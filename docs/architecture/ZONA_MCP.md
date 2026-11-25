@@ -1,4 +1,4 @@
-# Zona OS MCP Server — Fases A y B
+# Zona OS MCP Server — Fases A, B y C
 
 Servidor [Model Context Protocol](https://modelcontextprotocol.io) para que clientes de IA (Claude, ChatGPT u otros hosts MCP) consulten **datos deportivos públicos de Zona Gol**. Issue #50.
 
@@ -309,6 +309,63 @@ TEST_DATABASE_URL='postgres://...' go test -tags integration -race -p 1 ./intern
 - [ ] Alguien revisa los logs `mcp http` y `mcp tool failed` la primera semana.
 - [ ] Probado con al menos dos hosts MCP contra el entorno real antes de anunciarlo.
 
+## Fase C1: servidor de autorización OAuth
+
+Primera parte de la fase C: permite que un administrador de liga o un dueño de equipo **conecte un cliente de IA a su cuenta**. C1 entrega el servidor de autorización, el consentimiento y la revocación. **Todavía no hay herramientas privadas en MCP**: eso es C2, que validará estos tokens en `/mcp`.
+
+### Decisiones
+
+| Tema | Decisión | Por qué |
+|---|---|---|
+| Servidor de autorización | Dentro de la API Go (`internal/oauth`), sin proveedor externo | Reutiliza usuarios, login y roles; sin servicios ni costos nuevos. |
+| Especificación | Autorización MCP `2025-11-25`: OAuth 2.1, código + PKCE `S256`, RFC 8414, RFC 7591, RFC 7009, RFC 8707, RFC 9207 | Es lo que los hosts MCP implementan. |
+| Registro de clientes | Registro dinámico (RFC 7591), abierto y limitado por IP | Los hosts MCP se registran solos. Los Client ID Metadata Documents quedan pendientes: obligan a descargar URLs externas (riesgo SSRF). |
+| Tokens | **Opacos** (`zga_…` acceso 15 min, `zgr_…` renovación 30 días), solo se guarda su SHA-256 | No son JWT de la API: la API nunca los acepta y la revocación es inmediata. |
+| Audiencia | Un solo recurso: `MCP_RESOURCE_URL` (por omisión `APP_URL/mcp`) | RFC 8707; un token no sirve para otro servicio. |
+| Scope | `zonagol:read` (solo lectura) | Las escrituras siguen fuera de alcance. |
+| Quién puede conectar | `league_admin` y `team_owner` activos | **Super admin excluido**: MCP nunca obtiene acceso global implícito. |
+| Qué recursos ve | Lo decide el servidor en cada llamada (C2) a partir del usuario | El cliente nunca elige `league_id` como sustituto de identidad. |
+
+### Flujo
+
+1. El host descubre el servidor en `/.well-known/oauth-authorization-server` y se registra en `POST /oauth/register`.
+2. Abre el navegador en `GET /oauth/authorize` (PKCE `S256` obligatorio). Si el cliente o su `redirect_uri` no son válidos, **no se redirige a ellos**: la web muestra el error.
+3. La web abre `/autorizar?solicitud=…`; si no hay sesión, pide iniciar sesión y vuelve. La pantalla muestra el cliente, a dónde regresará y qué podrá hacer.
+4. Al autorizar, la API crea (o reutiliza) la conexión y devuelve el código, con `state` e `iss`. Cancelar devuelve `access_denied`.
+5. El host canjea el código en `POST /oauth/token` y renueva con `refresh_token`.
+
+Protecciones: el código vale 1 minuto y se canjea una vez (reusarlo revoca la conexión); la renovación rota y reusar un token viejo revoca la conexión; al renovar se vuelve a comprobar que el usuario siga activo y con rol permitido; los redirect loopback (`http://127.0.0.1`) aceptan cualquier puerto, como pide RFC 8252.
+
+### Aplicaciones conectadas
+
+En el panel, el botón **Aplicaciones conectadas** (ícono de enchufe) lista las conexiones del usuario y permite desconectarlas: se revocan la conexión y todos sus tokens al instante. Cada usuario ve y revoca solo las suyas.
+
+### Configuración
+
+| Variable | Por omisión | Uso |
+|---|---|---|
+| `MCP_OAUTH_ENABLED` | `false` | Solo `"true"` monta `/oauth/*`, la metadata y la API de consentimiento. También compila la web con `VITE_MCP_OAUTH_ENABLED`. |
+| `MCP_RESOURCE_URL` | `APP_URL` + `/mcp` | Audiencia de los tokens; `https://` en producción. |
+
+Caddy envía `/oauth/*` y `/.well-known/oauth-authorization-server` a la API. Con el interruptor apagado la API responde 404. La migración `00018_mcp_oauth.sql` solo agrega tablas en `auth` (`oauth_clients`, `oauth_grants`, `oauth_authorizations`, `oauth_tokens`); su `Down` las elimina.
+
+**Desactivar:** `MCP_OAUTH_ENABLED=false` y reiniciar la API. Para cortar todas las conexiones existentes: `UPDATE auth.oauth_grants SET revoked_at = now() WHERE revoked_at IS NULL;` y lo mismo en `auth.oauth_tokens`.
+
+### Pruebas de C1
+
+```sh
+cd backend
+go test -race ./internal/oauth/ ./internal/server/
+TEST_DATABASE_URL='postgres://...' go test -tags integration -race ./internal/oauth/
+cd ../web && npx vitest run src/features/auth
+```
+
+- **Unitarias:** registro (redirects inválidos, métodos y grants no soportados), `authorize` (nunca redirige a clientes o URIs no registrados; errores devueltos al cliente con `state` e `iss`), roles (super admin, público e inactivo no pueden conectar), solicitudes vencidas o ya decididas, canje (verifier, redirect, cliente, recurso, código vencido o reusado), rotación y reuso de renovación, cambio de rol o desactivación, clientes confidenciales, revocación y aislamiento de "Aplicaciones conectadas".
+- **HTTP:** flujo completo, errores en formato OAuth, Basic auth, límites de tamaño, CORS abierto solo en los endpoints OAuth y el CORS de la API sin cambios.
+- **Integración con PostgreSQL:** flujo en el esquema real, solo hashes guardados, aislamiento entre ligas y dueños, desactivación, y carreras (8 aprobaciones o 6 canjes simultáneos: gana uno).
+
 ## Siguientes fases
 
-- **Fase C:** OAuth, con audiencia y scopes propios, para consultar recursos privados del usuario autenticado. Las herramientas de escritura siguen fuera de alcance.
+- **Fase C2:** `/mcp` acepta los tokens de C1 (`RequireBearerToken`, metadata de recurso protegido RFC 9728, `WWW-Authenticate`) y agrega herramientas privadas de solo lectura, autorizadas por recurso en cada llamada y auditadas. Pruebas negativas entre ligas A y B, dueños de equipo, tokens vencidos o revocados y scopes insuficientes.
+- **Pendientes de C1:** Client ID Metadata Documents; limpieza periódica de solicitudes y tokens vencidos; revocar conexiones al cambiar la contraseña.
+- Las herramientas de escritura siguen fuera de alcance.
