@@ -165,3 +165,48 @@ func TestRequestID(t *testing.T) {
 		}
 	})
 }
+
+// The API keeps its own CORS policy, and the OAuth endpoints (mounted only
+// when enabled) answer preflights from any origin without credentials.
+func TestCORSScopes(t *testing.T) {
+	oauthEndpoints := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusNoContent)
+	})
+	preflight := func(h http.Handler, path, origin string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodOptions, path, nil)
+		req.Header.Set("Origin", origin)
+		req.Header.Set("Access-Control-Request-Method", "POST")
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+	deps := Deps{
+		AllowedOrigins: []string{"https://zonagol.app"},
+		Auth:           auth.NewMiddleware(noTokens{}, noProfiles{}),
+		Health:         http.NotFoundHandler(),
+		Modules:        []Module{waitModule{time.Millisecond}},
+	}
+
+	off := NewRouter(deps)
+	if rec := preflight(off, "/api/v1/matches/1/attendance/qr", "https://zonagol.app"); rec.Header().Get("Access-Control-Allow-Origin") != "https://zonagol.app" {
+		t.Fatalf("listed origin lost API CORS: %v", rec.Header())
+	}
+	if rec := preflight(off, "/api/v1/matches/1/attendance/qr", "https://evil.example"); rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Fatalf("unlisted origin got API CORS: %v", rec.Header())
+	}
+	if rec := preflight(off, "/oauth/token", "http://localhost:6274"); rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Fatalf("oauth must not exist when disabled: %d %v", rec.Code, rec.Header())
+	}
+
+	deps.OAuth = oauthEndpoints
+	on := NewRouter(deps)
+	for _, path := range []string{"/oauth/token", "/.well-known/oauth-authorization-server"} {
+		if rec := preflight(on, path, "http://localhost:6274"); rec.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Fatalf("%s preflight blocked: %d %v", path, rec.Code, rec.Header())
+		}
+	}
+	if rec := preflight(on, "/api/v1/matches/1/attendance/qr", "http://localhost:6274"); rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Fatalf("enabling oauth widened API CORS: %v", rec.Header())
+	}
+}

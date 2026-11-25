@@ -1,4 +1,4 @@
-import { KeyRound, LogOut, Menu, Smartphone, Sparkles, User } from 'lucide-react'
+import { KeyRound, LogOut, Menu, PlugZap, Smartphone, Sparkles, User } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ChangePasswordDialog } from '@/features/auth/change-password-dialog'
+import { ConnectedAppsDialog } from '@/features/auth/connected-apps-dialog'
+import { connectionsEnabled } from '@/features/auth/connections'
 import { useAuth, type Role } from '@/lib/auth/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +78,8 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
   const mode = caps.leagues.some((l) => l.product_mode === 'full') ? 'full' : caps.leagues[0]?.product_mode
   const plan = mode ? productModes[mode] : undefined
   const showAppDownload = isLeagueAdmin && caps.has('mobile_app')
+  // Only league admins and team owners may connect AI clients (the API enforces it).
+  const showConnections = connectionsEnabled && (profile?.role === 'league_admin' || profile?.role === 'team_owner')
 
   return (
     <div className="min-h-dvh bg-slate-950 relative text-white">
@@ -105,7 +109,7 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
               {profile && (
                 <div className="hidden min-w-0 xl:flex flex-col gap-1 border-l border-slate-800 pl-4">
                   <span className="truncate text-sm font-medium text-white">Hola, {profile.name}</span>
-                  <span className={cn('whitespace-nowrap text-xs px-2 py-0.5 rounded-md border w-fit', roleBadge[profile.role])}>{roleLabel[profile.role]}</span>
+                  <span className={cn('max-w-full truncate whitespace-nowrap text-xs px-2 py-0.5 rounded-md border w-fit', roleBadge[profile.role])}>{roleLabel[profile.role]}</span>
                 </div>
               )}
             </div>
@@ -131,6 +135,16 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
                       <Button variant="outline" size="sm" aria-label="App Móvil" title="App Móvil" className={headerButton}>
                         <Smartphone className="size-4 xl:mr-1" aria-hidden="true" />
                         <span className="hidden xl:inline">App Móvil</span>
+                      </Button>
+                    }
+                  />
+                )}
+                {showConnections && (
+                  <ConnectedAppsDialog
+                    trigger={
+                      <Button variant="outline" size="sm" aria-label="Aplicaciones conectadas" title="Aplicaciones conectadas" className={headerButton}>
+                        {/* Icon only: the header has no room left for another label. */}
+                        <PlugZap className="size-4" aria-hidden="true" />
                       </Button>
                     }
                   />
@@ -197,6 +211,16 @@ export function DashboardLayout({ children, nav = [] }: { children: ReactNode; n
                               <Button variant="outline" className={cn('w-full', headerButton)}>
                                 <Smartphone className="h-4 w-4 mr-2" aria-hidden="true" />
                                 Descargar App Móvil
+                              </Button>
+                            }
+                          />
+                        )}
+                        {showConnections && (
+                          <ConnectedAppsDialog
+                            trigger={
+                              <Button variant="outline" className={cn('w-full', headerButton)}>
+                                <PlugZap className="w-4 h-4 mr-2" aria-hidden="true" />
+                                Aplicaciones conectadas
                               </Button>
                             }
                           />

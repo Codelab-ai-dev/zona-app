@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,19 @@ type Config struct {
 	Mux         MuxConfig
 	OpenAI      OpenAIConfig
 	Agent       AgentConfig
+
+	// MCPOAuth is the authorization server that lets users connect AI
+	// clients to their account (issue #50, phase C).
+	MCPOAuth MCPOAuthConfig
+}
+
+// MCPOAuthConfig configures the OAuth endpoints for the MCP server. Off by
+// default: no route exists until MCP_OAUTH_ENABLED is exactly "true".
+type MCPOAuthConfig struct {
+	Enabled bool
+	// ResourceURL is the canonical URL of the MCP endpoint, the audience of
+	// every token. Defaults to APP_URL + "/mcp" (the Caddy route).
+	ResourceURL string
 }
 
 // SMTPConfig configures the outgoing mail relay (STARTTLS required).
@@ -193,6 +207,10 @@ func Load() (Config, error) {
 	if cfg.AccessTokenTTL, err = parseDuration("ACCESS_TOKEN_TTL", 15*time.Minute); err != nil {
 		return Config{}, err
 	}
+	cfg.MCPOAuth = MCPOAuthConfig{
+		Enabled:     os.Getenv("MCP_OAUTH_ENABLED") == "true",
+		ResourceURL: strings.TrimRight(getEnv("MCP_RESOURCE_URL", cfg.AppURL+"/mcp"), "/"),
+	}
 
 	return cfg, cfg.validate()
 }
@@ -219,6 +237,15 @@ func (c Config) validate() error {
 	}
 	if c.IsProduction() && !strings.HasPrefix(c.AppURL, "https://") {
 		errs = append(errs, errors.New("APP_URL must be https:// in production"))
+	}
+	if c.MCPOAuth.Enabled {
+		u, err := url.Parse(c.MCPOAuth.ResourceURL)
+		switch {
+		case err != nil || u.Host == "" || u.Fragment != "":
+			errs = append(errs, errors.New("MCP_RESOURCE_URL must be an absolute URL without fragment"))
+		case c.IsProduction() && u.Scheme != "https":
+			errs = append(errs, errors.New("MCP_RESOURCE_URL must be https:// in production"))
+		}
 	}
 	if c.IsProduction() && len(c.AllowedOrigins) == 0 {
 		errs = append(errs, errors.New("CORS_ALLOWED_ORIGINS is required in production"))

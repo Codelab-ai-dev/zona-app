@@ -26,6 +26,10 @@ type Deps struct {
 	Auth           *auth.Middleware
 	Health         http.Handler
 	Modules        []Module
+	// OAuth serves the authorization server endpoints at the root
+	// (/.well-known/oauth-authorization-server and /oauth/*); nil when
+	// MCP_OAUTH_ENABLED is off. It brings its own CORS policy.
+	OAuth http.Handler
 	// RequestTimeout bounds every non-streaming request; zero means 30s.
 	RequestTimeout time.Duration
 }
@@ -47,24 +51,31 @@ func NewRouter(d Deps) http.Handler {
 		timeout = 30 * time.Second
 	}
 	r.Use(timeoutExceptStreams(timeout))
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   d.AllowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type", "X-Request-ID"},
-		ExposedHeaders:   []string{"X-Request-ID"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
 	r.Use(newIPRateLimiter(20, 40).Middleware)
 
 	r.Method(http.MethodGet, "/healthz", d.Health)
 
+	// The API's CORS policy wraps only /api/v1: it answers preflights from
+	// unlisted origins itself, which would block the OAuth endpoints.
 	r.Route("/api/v1", func(api chi.Router) {
+		api.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   d.AllowedOrigins,
+			AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Authorization", "Content-Type", "X-Request-ID"},
+			ExposedHeaders:   []string{"X-Request-ID"},
+			AllowCredentials: false,
+			MaxAge:           300,
+		}))
 		api.Use(d.Auth.Authenticate)
 		for _, m := range d.Modules {
 			m.Routes(api)
 		}
 	})
+
+	if d.OAuth != nil {
+		r.Handle("/.well-known/oauth-authorization-server", d.OAuth)
+		r.Handle("/oauth/*", d.OAuth)
+	}
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.ErrNotFound)

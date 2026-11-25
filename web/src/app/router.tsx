@@ -26,6 +26,7 @@ import { RouteError } from './route-error'
 const LoginPage = lazy(() => import('@/features/auth/login-page').then((m) => ({ default: m.LoginPage })))
 const ForgotPasswordPage = lazy(() => import('@/features/auth/forgot-password-page').then((m) => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage = lazy(() => import('@/features/auth/reset-password-page').then((m) => ({ default: m.ResetPasswordPage })))
+const AuthorizePage = lazy(() => import('@/features/auth/authorize-page').then((m) => ({ default: m.AuthorizePage })))
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState />}>{children}</Suspense>
@@ -72,6 +73,8 @@ const appRoutes: RouteObject[] = [
       { path: 'login', element: <Lazy><LoginPage /></Lazy> },
       { path: 'recuperar-contrasena', element: <Lazy><ForgotPasswordPage /></Lazy> },
       { path: 'reset-password', element: <Lazy><ResetPasswordPage /></Lazy> },
+      // OAuth consent for AI clients (#50): any signed-in user reaches it; the API decides who may connect.
+      { path: 'autorizar', element: <RequireRole><Lazy><AuthorizePage /></Lazy></RequireRole> },
       ...areas.flatMap((a) => a.publicRoutes ?? []),
     ],
   },

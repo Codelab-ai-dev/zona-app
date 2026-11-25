@@ -10,7 +10,12 @@ export default defineConfig({
   },
   server: {
     // In development the Go API runs on :8080; same-origin calls avoid CORS.
-    proxy: { '/api': 'http://localhost:8080' },
+    proxy: {
+      '/api': 'http://localhost:8080',
+      // OAuth for MCP clients (#50); only answers with MCP_OAUTH_ENABLED=true.
+      '/oauth': 'http://localhost:8080',
+      '/.well-known/oauth-authorization-server': 'http://localhost:8080',
+    },
   },
   test: {
     environment: 'jsdom',
