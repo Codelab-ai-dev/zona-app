@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Zona OS / Zona Gol brand palette (Zona OS Brand Kit v1.1 and Zona Gol
-/// Brand Kit v2.1).
+/// Brand Kit v1).
 ///
 /// The app is the Zona Gol module of Zona OS: actions and accents use the
 /// energy green [gol] with dark text on fills (white on #A3FF12 fails
@@ -227,7 +227,7 @@ class ZonaOSLogo extends StatelessWidget {
   }
 }
 
-/// Zona Gol horizontal logo. Approved raster art (kit v2.1): never redrawn
+/// Zona Gol horizontal logo: ball and orbit with the wordmark. Approved art (kit v1): never redrawn
 /// or stretched, only scaled with its aspect ratio.
 class ZonaGolLogo extends StatelessWidget {
   const ZonaGolLogo({super.key, this.width = 280});
@@ -240,11 +240,11 @@ class ZonaGolLogo extends StatelessWidget {
         width: width,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.medium,
-        semanticLabel: 'Zona Gol, gestión de ligas de fútbol',
+        semanticLabel: 'Zona Gol',
       );
 }
 
-/// Zona Gol symbol: the ball with its green motion trail.
+/// Zona Gol symbol: the ball with its lime orbit.
 class ZonaGolMark extends StatelessWidget {
   const ZonaGolMark({super.key, this.height = 32, this.semanticLabel});
 
