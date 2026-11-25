@@ -11,19 +11,20 @@ import '../../../domain/entities/player_stats_entity.dart';
 import '../../bloc/player_stats/player_stats_bloc.dart';
 import '../../bloc/player_stats/player_stats_event.dart';
 import '../../bloc/player_stats/player_stats_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color warning = Color(0xFFFFC107);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Player Performance Screen — deep analytics with match history & charts
@@ -93,7 +94,7 @@ class _PerformanceView extends StatelessWidget {
           ),
           title: Text(
             'RENDIMIENTO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _SN.textPrimary,
               letterSpacing: 2,
@@ -134,7 +135,7 @@ class _PerformanceView extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         state.message,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                             color: _SN.textSecondary, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
@@ -224,7 +225,7 @@ class _PerformanceView extends StatelessWidget {
               children: [
                 Text(
                   playerName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: _SN.textPrimary,
@@ -233,7 +234,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   teamName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: _SN.textSecondary,
                   ),
@@ -296,7 +297,7 @@ class _PerformanceView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _SN.textPrimary,
             ),
@@ -304,7 +305,7 @@ class _PerformanceView extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 10,
               color: _SN.textMuted,
               fontWeight: FontWeight.w500,
@@ -362,7 +363,7 @@ class _PerformanceView extends StatelessWidget {
             child: Center(
               child: Text(
                 rating.toStringAsFixed(1),
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 20,
                   color: ratingColor,
                 ),
@@ -376,7 +377,7 @@ class _PerformanceView extends StatelessWidget {
               children: [
                 Text(
                   'RATING DE RENDIMIENTO',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: _SN.gold,
                     letterSpacing: 1.5,
@@ -385,7 +386,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   ratingLabel,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     color: ratingColor,
                     fontWeight: FontWeight.w600,
@@ -393,7 +394,7 @@ class _PerformanceView extends StatelessWidget {
                 ),
                 Text(
                   '${stats.matchesPlayed} partidos jugados',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _SN.textMuted,
                   ),
@@ -439,7 +440,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'PROGRESION DE GOLES',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _SN.gold,
                     letterSpacing: 1.5,
@@ -472,7 +473,7 @@ class _PerformanceView extends StatelessWidget {
                         interval: (maxY / 4).clamp(1, double.infinity),
                         getTitlesWidget: (value, _) => Text(
                           value.toInt().toString(),
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             color: _SN.textMuted,
                           ),
@@ -493,7 +494,7 @@ class _PerformanceView extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 6),
                             child: Text(
                               'J${idx + 1}',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 9,
                                 color: _SN.textMuted,
                               ),
@@ -539,7 +540,7 @@ class _PerformanceView extends StatelessWidget {
                       getTooltipItems: (spots) => spots.map((s) {
                         return LineTooltipItem(
                           '${s.y.toInt()} goles',
-                          GoogleFonts.outfit(
+                          GoogleFonts.inter(
                             color: _SN.neonGreen,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -576,7 +577,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'HISTORIAL DE PARTIDOS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _SN.gold,
                     letterSpacing: 1.5,
@@ -585,7 +586,7 @@ class _PerformanceView extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${history.length}',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _SN.textMuted,
                   ),
@@ -605,13 +606,13 @@ class _PerformanceView extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Sin historial de partidos',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                           fontSize: 14, color: _SN.textMuted),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'El historial aparecerá cuando se registren estadísticas por partido',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: _SN.textMuted.withOpacity(0.6),
                       ),
@@ -663,7 +664,7 @@ class _PerformanceView extends StatelessWidget {
             child: Center(
               child: Text(
                 resultLabel,
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: resultColor,
                 ),
@@ -678,7 +679,7 @@ class _PerformanceView extends StatelessWidget {
               children: [
                 Text(
                   '${entry.isHome ? "vs" : "@"} ${entry.opponentName}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -689,7 +690,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${DateFormat('dd/MM/yy').format(entry.matchDate)}  ·  ${entry.scoreDisplay}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.textMuted,
                   ),
@@ -725,7 +726,7 @@ class _PerformanceView extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               color: color,
               fontWeight: FontWeight.w600,
@@ -754,7 +755,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(width: 2),
                 Text(
                   '$yellow',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.warning,
                     fontWeight: FontWeight.w600,
@@ -778,7 +779,7 @@ class _PerformanceView extends StatelessWidget {
                 const SizedBox(width: 2),
                 Text(
                   '$red',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _SN.error,
                     fontWeight: FontWeight.w600,

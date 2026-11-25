@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/di/injection.dart';
@@ -10,17 +9,18 @@ import '../../../domain/entities/user_entity.dart';
 import '../../bloc/attendance/attendance_bloc.dart';
 import '../../bloc/attendance/attendance_event.dart';
 import '../../bloc/attendance/attendance_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
+  static const Color backgroundDark = ZonaColors.background;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// QR Scanner Screen — scans player QR codes for attendance.
@@ -174,7 +174,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
               children: [
                 Text(
                   'ESCANEAR QR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     color: _SN.gold,
                     fontSize: 22,
                     letterSpacing: 2,
@@ -258,7 +258,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                     const SizedBox(height: 12),
                     Text(
                       'C\u00e1mara no disponible',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: _SN.gold,
                         fontSize: 22,
                         letterSpacing: 1,
@@ -314,7 +314,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                   icon: const Icon(Icons.qr_code, size: 22),
                   label: Text(
                     'PROCESAR QR',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                         fontSize: 16, letterSpacing: 1.5),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -409,7 +409,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                 const Spacer(),
                 Text(
                   'JUGADOR DETECTADO',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     color: _SN.gold,
                     fontSize: 18,
                     letterSpacing: 1.5,
@@ -473,7 +473,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
           child: Center(
             child: Text(
               playerData.jerseyNumber > 0 ? '${playerData.jerseyNumber}' : '?',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 color: _SN.neonGreen,
                 fontSize: 40,
               ),
@@ -485,7 +485,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
         // Player name
         Text(
           playerData.playerName,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             color: _SN.textPrimary,
             fontSize: 28,
             letterSpacing: 1,
@@ -607,7 +607,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
             selected != null && selected.alreadyRegistered
                 ? 'YA REGISTRADO'
                 : 'REGISTRAR ASISTENCIA',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 18,
               letterSpacing: 1.5,
             ),
@@ -760,7 +760,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                 state.alreadyRegistered
                     ? 'YA REGISTRADO'
                     : 'ASISTENCIA REGISTRADA',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   color: color,
                   fontSize: 26,
                   letterSpacing: 2,
@@ -796,7 +796,7 @@ class _QrScannerViewState extends State<_QrScannerView> {
                   icon: const Icon(Icons.qr_code_scanner, size: 24),
                   label: Text(
                     'ESCANEAR OTRO',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       letterSpacing: 1.5,
                     ),

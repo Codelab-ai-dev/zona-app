@@ -13,16 +13,17 @@ import '../../../domain/entities/user_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 class _S {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
 }
 
 String _generateQrData({
@@ -113,7 +114,7 @@ class _BatchQrViewState extends State<_BatchQrView> {
           ),
           title: Text(
             'QR MASIVO',
-            style: GoogleFonts.bebasNeue(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
+            style: ZonaType.headline(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
           ),
           centerTitle: true,
         ),
@@ -134,7 +135,7 @@ class _BatchQrViewState extends State<_BatchQrView> {
                   children: [
                     const Icon(Icons.error_outline, size: 50, color: _S.error),
                     const SizedBox(height: 16),
-                    Text(state.message, style: GoogleFonts.outfit(color: _S.textSecondary)),
+                    Text(state.message, style: GoogleFonts.inter(color: _S.textSecondary)),
                   ],
                 ),
               );
@@ -188,7 +189,7 @@ class _BatchQrViewState extends State<_BatchQrView> {
                 const SizedBox(height: 8),
                 Text(
                   'Generando $_generated / $_total',
-                  style: GoogleFonts.outfit(fontSize: 12, color: _S.textSecondary),
+                  style: GoogleFonts.inter(fontSize: 12, color: _S.textSecondary),
                 ),
               ],
             ],
@@ -212,7 +213,7 @@ class _BatchQrViewState extends State<_BatchQrView> {
                 Expanded(
                   child: Text(
                     'Se generarán QR para ${validPlayers.length} jugadores con número de camiseta asignado.',
-                    style: GoogleFonts.outfit(fontSize: 12, color: _S.textSecondary),
+                    style: GoogleFonts.inter(fontSize: 12, color: _S.textSecondary),
                   ),
                 ),
               ],
@@ -243,8 +244,8 @@ class _BatchQrViewState extends State<_BatchQrView> {
   Widget _buildStat(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value, style: GoogleFonts.bebasNeue(fontSize: 28, color: color)),
-        Text(label, style: GoogleFonts.outfit(fontSize: 12, color: _S.textSecondary)),
+        Text(value, style: ZonaType.headline(fontSize: 28, color: color)),
+        Text(label, style: GoogleFonts.inter(fontSize: 12, color: _S.textSecondary)),
       ],
     );
   }
@@ -270,7 +271,7 @@ class _BatchQrViewState extends State<_BatchQrView> {
           // Player name
           Text(
             player.displayName,
-            style: GoogleFonts.outfit(fontSize: 12, color: _S.textPrimary, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(fontSize: 12, color: _S.textPrimary, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -290,11 +291,11 @@ class _BatchQrViewState extends State<_BatchQrView> {
                 backgroundColor: Colors.white,
                 eyeStyle: const QrEyeStyle(
                   eyeShape: QrEyeShape.square,
-                  color: Color(0xFF050508),
+                  color: ZonaColors.background,
                 ),
                 dataModuleStyle: const QrDataModuleStyle(
                   dataModuleShape: QrDataModuleShape.square,
-                  color: Color(0xFF050508),
+                  color: ZonaColors.background,
                 ),
               ),
             ),

@@ -11,19 +11,20 @@ import '../../../domain/entities/user_entity.dart';
 import '../../bloc/player_stats/player_stats_bloc.dart';
 import '../../bloc/player_stats/player_stats_event.dart';
 import '../../bloc/player_stats/player_stats_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color cardDark = Color(0xFF12121A);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color cardDark = ZonaColors.surface;
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
   static const Color amber = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Team Stats Screen
@@ -131,7 +132,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
               children: [
                 Text(
                   'ESTADÍSTICAS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 28,
                     color: _SN.textPrimary,
                     letterSpacing: 3,
@@ -140,7 +141,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                 ),
                 Text(
                   'Rendimiento del equipo',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _SN.neonBlue,
                     letterSpacing: 0.5,
@@ -187,7 +188,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO ESTADÍSTICAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textSecondary,
               letterSpacing: 2,
@@ -210,7 +211,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -229,7 +230,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                 ),
                 child: Text(
                   'REINTENTAR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: Colors.white,
                     letterSpacing: 1,
@@ -252,7 +253,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
           const SizedBox(height: 16),
           Text(
             'No hay estadísticas disponibles',
-            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
           ),
         ],
       ),
@@ -389,7 +390,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                     const SizedBox(width: 6),
                     Text(
                       'GOLES POR JUGADOR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 13,
                         color: _SN.textMuted,
                         letterSpacing: 2,
@@ -413,7 +414,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                           final player = top5[group.x];
                           return BarTooltipItem(
                             '${player.playerName}\n${rod.toY.toInt()} goles',
-                            GoogleFonts.outfit(color: _SN.neonGreen, fontSize: 12),
+                            GoogleFonts.inter(color: _SN.neonGreen, fontSize: 12),
                           );
                         },
                       ),
@@ -437,7 +438,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
                                 shortName,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _SN.textMuted,
                                   fontSize: 10,
                                 ),
@@ -455,7 +456,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                             if (value == value.roundToDouble() && value >= 0) {
                               return Text(
                                 '${value.toInt()}',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _SN.textMuted,
                                   fontSize: 10,
                                 ),
@@ -555,11 +556,11 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
         const SizedBox(height: 6),
         Text(
           value,
-          style: GoogleFonts.bebasNeue(fontSize: 22, color: _SN.textPrimary),
+          style: ZonaType.headline(fontSize: 22, color: _SN.textPrimary),
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
+          style: GoogleFonts.inter(fontSize: 10, color: _SN.textMuted),
         ),
       ],
     );
@@ -598,7 +599,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
           children: [
             Text(
               label,
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 12,
                 color: isActive ? _SN.neonBlue : _SN.textMuted,
                 letterSpacing: 0.5,
@@ -648,7 +649,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                             errorBuilder: (_, __, ___) => Center(
                               child: Text(
                                 stat.initials,
-                                style: GoogleFonts.bebasNeue(
+                                style: ZonaType.headline(
                                   fontSize: 11,
                                   color: _SN.neonPurple,
                                 ),
@@ -659,7 +660,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                       : Center(
                           child: Text(
                             stat.initials,
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 11,
                               color: _SN.neonPurple,
                             ),
@@ -673,7 +674,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                     children: [
                       Text(
                         stat.playerName,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _SN.textPrimary,
                           fontWeight: FontWeight.w500,
@@ -683,7 +684,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
                       if (stat.position != null)
                         Text(
                           stat.positionDisplay,
-                          style: GoogleFonts.outfit(fontSize: 10, color: _SN.textMuted),
+                          style: GoogleFonts.inter(fontSize: 10, color: _SN.textMuted),
                         ),
                     ],
                   ),
@@ -707,7 +708,7 @@ class _TeamStatsViewState extends State<_TeamStatsView> {
     return Expanded(
       child: Text(
         value,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontSize: 13,
           color: highlight ? (color ?? _SN.textPrimary) : _SN.textSecondary,
           fontWeight: highlight ? FontWeight.w600 : FontWeight.w400,

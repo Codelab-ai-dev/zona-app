@@ -8,21 +8,22 @@ import '../../../domain/repositories/match_repository.dart';
 import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color purple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color purple = ZonaColors.zona;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Fixture Preview Screen
@@ -111,7 +112,7 @@ class FixturePreviewScreen extends StatelessWidget {
       ),
       title: Text(
         'VISTA PREVIA',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -137,7 +138,7 @@ class FixturePreviewScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'GUARDANDO PARTIDOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -197,7 +198,7 @@ class FixturePreviewScreen extends StatelessWidget {
           Expanded(
             child: Text(
               tournamentName.toUpperCase(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: _SN.gold,
                 letterSpacing: 1,
@@ -213,7 +214,7 @@ class FixturePreviewScreen extends StatelessWidget {
             ),
             child: Text(
               '$totalRounds jornadas',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.purple,
                 fontWeight: FontWeight.w600,
@@ -229,7 +230,7 @@ class FixturePreviewScreen extends StatelessWidget {
             ),
             child: Text(
               '$totalMatches partidos',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.neonGreen,
                 fontWeight: FontWeight.w600,
@@ -265,7 +266,7 @@ class FixturePreviewScreen extends StatelessWidget {
               ),
               child: Text(
                 'JORNADA $roundNum',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: Colors.white,
                   letterSpacing: 1,
@@ -275,7 +276,7 @@ class FixturePreviewScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '${matches.length} partidos',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.textMuted,
               ),
@@ -295,7 +296,7 @@ class FixturePreviewScreen extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       'Descansa: ${byeTeam.name}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.gold,
                       ),
@@ -342,7 +343,7 @@ class FixturePreviewScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 match.homeTeam.name,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: _SN.textPrimary,
                   fontWeight: FontWeight.w500,
@@ -362,7 +363,7 @@ class FixturePreviewScreen extends StatelessWidget {
               ),
               child: Text(
                 'VS',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 12,
                   color: _SN.purple,
                 ),
@@ -373,7 +374,7 @@ class FixturePreviewScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 match.awayTeam.name,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: _SN.textPrimary,
                   fontWeight: FontWeight.w500,
@@ -397,7 +398,7 @@ class FixturePreviewScreen extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       _formatDisplayDate(match.date),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.textMuted,
                       ),
@@ -412,7 +413,7 @@ class FixturePreviewScreen extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       match.time,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.neonBlue,
                       ),
@@ -422,7 +423,7 @@ class FixturePreviewScreen extends StatelessWidget {
                     const SizedBox(width: 2),
                     Text(
                       'C${match.field}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: _SN.textMuted,
                       ),
@@ -466,7 +467,7 @@ class FixturePreviewScreen extends StatelessWidget {
               ),
               child: Text(
                 'CANCELAR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   letterSpacing: 1,
                 ),
@@ -488,7 +489,7 @@ class FixturePreviewScreen extends StatelessWidget {
               ),
               child: Text(
                 'GUARDAR $totalMatches PARTIDOS',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   letterSpacing: 1,
                 ),
@@ -510,7 +511,7 @@ class FixturePreviewScreen extends StatelessWidget {
         ),
         title: Text(
           'Confirmar',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 22,
             color: _SN.textPrimary,
             letterSpacing: 1,
@@ -518,7 +519,7 @@ class FixturePreviewScreen extends StatelessWidget {
         ),
         content: Text(
           'Se crearán $totalMatches partidos para "$tournamentName" (sin publicar).',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             color: _SN.textSecondary,
           ),
@@ -528,7 +529,7 @@ class FixturePreviewScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancelar',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _SN.textMuted,
               ),
             ),
@@ -541,7 +542,7 @@ class FixturePreviewScreen extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: _SN.neonGreen),
             child: Text(
               'Guardar',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
           ),
         ],

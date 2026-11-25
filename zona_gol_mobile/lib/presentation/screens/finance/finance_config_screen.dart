@@ -9,20 +9,21 @@ import '../../../domain/entities/finance_enums.dart';
 import '../../bloc/finance/finance_bloc.dart';
 import '../../bloc/finance/finance_event.dart';
 import '../../bloc/finance/finance_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Finance Config Screen
@@ -201,7 +202,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
@@ -213,7 +214,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
@@ -241,7 +242,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
               return Center(
                 child: Text(
                   state.message,
-                  style: GoogleFonts.outfit(color: _SN.error),
+                  style: GoogleFonts.inter(color: _SN.error),
                 ),
               );
             }
@@ -271,7 +272,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
       ),
       title: Text(
         'CONFIGURACIÓN',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -460,7 +461,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
       ),
       child: Text(
         title,
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 16,
           color: _SN.gold,
           letterSpacing: 2,
@@ -488,7 +489,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
               value: currency,
               child: Text(
                 '${currency.dbValue} - ${currency.display}',
-                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textPrimary),
+                style: GoogleFonts.inter(fontSize: 14, color: _SN.textPrimary),
               ),
             );
           }).toList(),
@@ -514,16 +515,16 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
         ],
-        style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+        style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.outfit(
+          labelStyle: GoogleFonts.inter(
             color: _SN.textSecondary,
             fontSize: 13,
           ),
           prefixIcon: Icon(icon, color: color ?? _SN.gold, size: 20),
           prefixText: '${_currency.symbol} ',
-          prefixStyle: GoogleFonts.outfit(
+          prefixStyle: GoogleFonts.inter(
             color: _SN.gold,
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -563,7 +564,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.outfit(color: _SN.textSecondary, fontSize: 13),
+      labelStyle: GoogleFonts.inter(color: _SN.textSecondary, fontSize: 13),
       prefixIcon: Icon(icon, color: _SN.gold, size: 20),
       filled: true,
       fillColor: _SN.cardDark,
@@ -598,7 +599,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
           FilteringTextInputFormatter.digitsOnly,
           LengthLimitingTextInputFormatter(2),
         ],
-        style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+        style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
         decoration: _decoration(label, icon),
         validator: (value) {
           final days = int.tryParse(value ?? '');
@@ -622,7 +623,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
         controller: controller,
         minLines: 1,
         maxLines: 3,
-        style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+        style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
         decoration: _decoration(label, icon),
       ),
     );
@@ -652,7 +653,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _SN.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -660,7 +661,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
                 ),
                 Text(
                   hint,
-                  style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+                  style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
                 ),
               ],
             ),
@@ -694,7 +695,7 @@ class _FinanceConfigViewState extends State<_FinanceConfigView> {
         ),
         child: Text(
           'GUARDAR CONFIGURACIÓN',
-          style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
+          style: ZonaType.headline(fontSize: 18, letterSpacing: 2),
         ),
       ),
     );

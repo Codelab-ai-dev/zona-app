@@ -20,19 +20,20 @@ import '../statistics/player_performance_screen.dart';
 import 'create_edit_player_screen.dart';
 import 'player_credential_screen.dart';
 import 'player_qr_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Player Detail Screen
@@ -146,7 +147,7 @@ class _PlayerDetailView extends StatelessWidget {
       ),
       title: Text(
         'DETALLE JUGADOR',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _StadiumNights.textPrimary,
           letterSpacing: 2,
@@ -183,7 +184,7 @@ class _PlayerDetailView extends StatelessWidget {
                   children: [
                     const Icon(Icons.edit, color: _StadiumNights.gold, size: 18),
                     const SizedBox(width: 8),
-                    Text('Editar', style: GoogleFonts.outfit(color: _StadiumNights.textPrimary)),
+                    Text('Editar', style: GoogleFonts.inter(color: _StadiumNights.textPrimary)),
                   ],
                 ),
               ),
@@ -193,7 +194,7 @@ class _PlayerDetailView extends StatelessWidget {
                   children: [
                     const Icon(Icons.badge, color: _StadiumNights.gold, size: 18),
                     const SizedBox(width: 8),
-                    Text('Credencial', style: GoogleFonts.outfit(color: _StadiumNights.textPrimary)),
+                    Text('Credencial', style: GoogleFonts.inter(color: _StadiumNights.textPrimary)),
                   ],
                 ),
               ),
@@ -203,7 +204,7 @@ class _PlayerDetailView extends StatelessWidget {
                   children: [
                     const Icon(Icons.delete_outline, color: _StadiumNights.error, size: 18),
                     const SizedBox(width: 8),
-                    Text('Eliminar', style: GoogleFonts.outfit(color: _StadiumNights.error)),
+                    Text('Eliminar', style: GoogleFonts.inter(color: _StadiumNights.error)),
                   ],
                 ),
               ),
@@ -292,7 +293,7 @@ class _PlayerDetailView extends StatelessWidget {
           if (player.hasJerseyNumber)
             Text(
               '#${player.jerseyNumber}',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 18,
                 color: _StadiumNights.gold,
               ),
@@ -300,7 +301,7 @@ class _PlayerDetailView extends StatelessWidget {
           if (player.hasJerseyNumber) const SizedBox(height: 2),
           Text(
             player.name,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: _StadiumNights.textPrimary,
@@ -310,7 +311,7 @@ class _PlayerDetailView extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             teamName,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -330,7 +331,7 @@ class _PlayerDetailView extends StatelessWidget {
                   ),
                   child: Text(
                     player.positionDisplay,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: _StadiumNights.neonGreen,
                       fontWeight: FontWeight.w600,
@@ -353,7 +354,7 @@ class _PlayerDetailView extends StatelessWidget {
                 ),
                 child: Text(
                   player.statusText,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: player.isActive ? _StadiumNights.success : _StadiumNights.error,
                     fontWeight: FontWeight.w600,
@@ -386,7 +387,7 @@ class _PlayerDetailView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   title.toUpperCase(),
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _StadiumNights.gold,
                     letterSpacing: 1.5,
@@ -403,14 +404,14 @@ class _PlayerDetailView extends StatelessWidget {
                   children: [
                     Text(
                       row.label,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _StadiumNights.textMuted,
                       ),
                     ),
                     Text(
                       row.value,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _StadiumNights.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -472,7 +473,7 @@ class _PlayerDetailView extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Error al cargar estadísticas',
-                  style: GoogleFonts.outfit(fontSize: 13, color: _StadiumNights.textMuted),
+                  style: GoogleFonts.inter(fontSize: 13, color: _StadiumNights.textMuted),
                 ),
               ],
             ),
@@ -503,7 +504,7 @@ class _PlayerDetailView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'RENDIMIENTO',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _StadiumNights.gold,
                     letterSpacing: 1.5,
@@ -516,12 +517,12 @@ class _PlayerDetailView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Sin estadísticas aún',
-            style: GoogleFonts.outfit(fontSize: 14, color: _StadiumNights.textMuted),
+            style: GoogleFonts.inter(fontSize: 14, color: _StadiumNights.textMuted),
           ),
           const SizedBox(height: 4),
           Text(
             'Las estadísticas aparecerán cuando el jugador participe en partidos',
-            style: GoogleFonts.outfit(fontSize: 12, color: _StadiumNights.textMuted.withOpacity(0.6)),
+            style: GoogleFonts.inter(fontSize: 12, color: _StadiumNights.textMuted.withOpacity(0.6)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -548,7 +549,7 @@ class _PlayerDetailView extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'RENDIMIENTO',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _StadiumNights.gold,
                     letterSpacing: 1.5,
@@ -619,7 +620,7 @@ class _PlayerDetailView extends StatelessWidget {
             icon: const Icon(Icons.analytics_outlined, size: 16),
             label: Text(
               'Ver rendimiento completo',
-              style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: _StadiumNights.neonGreen,
@@ -649,7 +650,7 @@ class _PlayerDetailView extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
             ),
@@ -657,7 +658,7 @@ class _PlayerDetailView extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 10,
               color: _StadiumNights.textMuted,
               fontWeight: FontWeight.w500,
@@ -668,7 +669,7 @@ class _PlayerDetailView extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 9,
                 color: _StadiumNights.neonGreen.withOpacity(0.7),
               ),
@@ -754,21 +755,21 @@ class _PlayerDetailView extends StatelessWidget {
         ),
         title: Text(
           'Eliminar Jugador',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             color: _StadiumNights.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           '¿Estás seguro que deseas eliminar a ${initialPlayer.name}? El jugador será marcado como inactivo.',
-          style: GoogleFonts.outfit(color: _StadiumNights.textSecondary),
+          style: GoogleFonts.inter(color: _StadiumNights.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancelar',
-              style: GoogleFonts.outfit(color: _StadiumNights.textMuted),
+              style: GoogleFonts.inter(color: _StadiumNights.textMuted),
             ),
           ),
           TextButton(
@@ -779,7 +780,7 @@ class _PlayerDetailView extends StatelessWidget {
                   );
             },
             style: TextButton.styleFrom(foregroundColor: _StadiumNights.error),
-            child: Text('Eliminar', style: GoogleFonts.outfit()),
+            child: Text('Eliminar', style: GoogleFonts.inter()),
           ),
         ],
       ),
@@ -808,7 +809,7 @@ class _PlayerDetailView extends StatelessWidget {
             : Center(
                 child: Text(
                   player.initials,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 32,
                     color: _StadiumNights.gold,
                   ),

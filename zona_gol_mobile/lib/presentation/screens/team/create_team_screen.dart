@@ -5,18 +5,19 @@ import '../../bloc/team/team_bloc.dart';
 import '../../bloc/team/team_event.dart';
 import '../../bloc/team/team_state.dart';
 import '../../widgets/team/team_credentials_dialog.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Create Team Screen
@@ -105,7 +106,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             SnackBar(
               content: Text(
                 'Equipo "${state.team.name}" creado exitosamente',
-                style: GoogleFonts.outfit(fontSize: 13),
+                style: GoogleFonts.inter(fontSize: 13),
               ),
               backgroundColor: _SN.neonGreen.withOpacity(0.9),
               behavior: SnackBarBehavior.floating,
@@ -125,7 +126,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               content: Text(
                 'El equipo se creó, pero no la cuenta del owner: ${state.message}. '
                 'Corrige los datos del owner y vuelve a intentar.',
-                style: GoogleFonts.outfit(fontSize: 13),
+                style: GoogleFonts.inter(fontSize: 13),
               ),
               backgroundColor: _SN.error,
               behavior: SnackBarBehavior.floating,
@@ -141,7 +142,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
             SnackBar(
               content: Text(
                 state.message,
-                style: GoogleFonts.outfit(fontSize: 13),
+                style: GoogleFonts.inter(fontSize: 13),
               ),
               backgroundColor: _SN.error,
               behavior: SnackBarBehavior.floating,
@@ -185,7 +186,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
       ),
       title: Text(
         'CREAR EQUIPO',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -324,7 +325,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         fontSize: 16,
         color: _SN.gold,
         letterSpacing: 2,
@@ -356,7 +357,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               children: [
                 Text(
                   'Crear cuenta de Owner',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _SN.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -367,7 +368,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                   _createOwnerAccount
                       ? 'Se generaran credenciales automaticamente'
                       : 'El equipo quedara a cargo de la liga',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _SN.textMuted,
                     fontSize: 12,
                   ),
@@ -401,7 +402,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         color: _SN.textPrimary,
         fontSize: 15,
       ),
@@ -415,11 +416,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         hintText: hint,
         filled: true,
         fillColor: _SN.cardDark,
-        labelStyle: GoogleFonts.outfit(
+        labelStyle: GoogleFonts.inter(
           color: _SN.textMuted,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.outfit(
+        hintStyle: GoogleFonts.inter(
           color: _SN.textMuted.withOpacity(0.5),
           fontSize: 14,
         ),
@@ -461,7 +462,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           ),
         ),
         contentPadding: const EdgeInsets.all(16),
-        errorStyle: GoogleFonts.outfit(
+        errorStyle: GoogleFonts.inter(
           color: _SN.error,
           fontSize: 12,
         ),
@@ -512,7 +513,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
                   : _createdTeamId != null
                       ? 'REINTENTAR OWNER'
                       : 'CREAR EQUIPO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 18,
                 color: Colors.black,
                 letterSpacing: 2,

@@ -13,18 +13,19 @@ import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
 import 'create_edit_player_screen.dart';
 import 'player_detail_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Player List Screen
@@ -164,7 +165,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
         children: [
           Text(
             'JUGADORES',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -172,7 +173,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
           ),
           Text(
             widget.teamName,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               color: _StadiumNights.textSecondary,
             ),
@@ -209,7 +210,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO JUGADORES',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -243,7 +244,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             const SizedBox(height: 24),
             Text(
               'SIN JUGADORES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -253,7 +254,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             Text(
               'Este equipo aún no tiene jugadores registrados.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -303,7 +304,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -313,7 +314,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -351,10 +352,10 @@ class _PlayerListViewState extends State<_PlayerListView> {
             ),
             child: TextField(
               controller: _searchController,
-              style: GoogleFonts.outfit(color: _StadiumNights.textPrimary),
+              style: GoogleFonts.inter(color: _StadiumNights.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Buscar jugador...',
-                hintStyle: GoogleFonts.outfit(color: _StadiumNights.textMuted),
+                hintStyle: GoogleFonts.inter(color: _StadiumNights.textMuted),
                 prefixIcon: const Icon(Icons.search, color: _StadiumNights.gold, size: 20),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -379,7 +380,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             children: [
               Text(
                 '${players.length}${players.length != totalCount ? '/$totalCount' : ''} jugadores',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _StadiumNights.textMuted,
                 ),
@@ -393,7 +394,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
               ? Center(
                   child: Text(
                     'No se encontraron jugadores',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       color: _StadiumNights.textMuted,
                     ),
@@ -446,7 +447,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
                           if (player.hasJerseyNumber) ...[
                             Text(
                               '#${player.jerseyNumber}',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 16,
                                 color: _StadiumNights.gold,
                               ),
@@ -456,7 +457,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
                           Expanded(
                             child: Text(
                               player.name,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: player.isActive
@@ -480,7 +481,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
                               ),
                               child: Text(
                                 player.positionDisplay,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   color: _StadiumNights.neonGreen,
                                   fontWeight: FontWeight.w500,
@@ -492,7 +493,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
                           if (player.age != null)
                             Text(
                               '${player.age} años',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.textMuted,
                               ),
@@ -512,7 +513,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
                     ),
                     child: Text(
                       'Inactivo',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         color: _StadiumNights.error,
                         fontWeight: FontWeight.w600,
@@ -563,7 +564,7 @@ class _PlayerListViewState extends State<_PlayerListView> {
             : Center(
                 child: Text(
                   player.initials,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 18,
                     color: activeColor,
                   ),

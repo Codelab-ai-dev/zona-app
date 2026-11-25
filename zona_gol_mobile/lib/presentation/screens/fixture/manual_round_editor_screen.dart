@@ -9,20 +9,21 @@ import '../../../domain/entities/team_entity.dart';
 import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color purple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color purple = ZonaColors.zona;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Editable match entry for manual mode
@@ -210,7 +211,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
         widget.isEditing
             ? 'EDITAR JORNADA ${widget.roundNumber}'
             : 'NUEVA JORNADA ${widget.roundNumber}',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -236,7 +237,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
           const SizedBox(height: 20),
           Text(
             'GUARDANDO PARTIDOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -294,7 +295,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
           Expanded(
             child: Text(
               widget.tournamentName.toUpperCase(),
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: _SN.gold,
                 letterSpacing: 1,
@@ -310,7 +311,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             ),
             child: Text(
               'Jornada ${widget.roundNumber}',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.purple,
                 fontWeight: FontWeight.w600,
@@ -326,7 +327,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             ),
             child: Text(
               '$activeCount partidos',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: _SN.neonGreen,
                 fontWeight: FontWeight.w600,
@@ -367,7 +368,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
                 alignment: Alignment.center,
                 child: Text(
                   '$displayNumber',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: _SN.purple,
                   ),
@@ -415,7 +416,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   'VS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: _SN.purple,
                   ),
@@ -525,7 +526,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.textMuted, size: 18),
           hint: Text(
             label,
-            style: GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
           ),
           items: widget.teams
               .where((t) => exclude == null || t.id != exclude.id)
@@ -533,7 +534,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
                     value: t.id,
                     child: Text(
                       t.name,
-                      style: GoogleFonts.outfit(fontSize: 12, color: _SN.textPrimary),
+                      style: GoogleFonts.inter(fontSize: 12, color: _SN.textPrimary),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ))
@@ -568,7 +569,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             const SizedBox(width: 6),
             Text(
               DateFormat('dd/MM').format(date),
-              style: GoogleFonts.outfit(fontSize: 12, color: _SN.textPrimary),
+              style: GoogleFonts.inter(fontSize: 12, color: _SN.textPrimary),
             ),
           ],
         ),
@@ -595,7 +596,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             const SizedBox(width: 6),
             Text(
               '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-              style: GoogleFonts.outfit(fontSize: 12, color: _SN.neonBlue),
+              style: GoogleFonts.inter(fontSize: 12, color: _SN.neonBlue),
             ),
           ],
         ),
@@ -625,7 +626,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
                     value: f,
                     child: Text(
                       'C$f',
-                      style: GoogleFonts.outfit(fontSize: 12, color: _SN.textPrimary),
+                      style: GoogleFonts.inter(fontSize: 12, color: _SN.textPrimary),
                     ),
                   ))
               .toList(),
@@ -658,7 +659,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             const SizedBox(width: 8),
             Text(
               'AGREGAR PARTIDO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 14,
                 color: _SN.purple,
                 letterSpacing: 1,
@@ -703,7 +704,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
               ),
               child: Text(
                 'CANCELAR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   letterSpacing: 1,
                 ),
@@ -726,7 +727,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
               ),
               child: Text(
                 'GUARDAR $validMatches PARTIDOS',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   letterSpacing: 1,
                 ),
@@ -765,7 +766,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
         ),
         title: Text(
           'Confirmar',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 22,
             color: _SN.textPrimary,
             letterSpacing: 1,
@@ -777,7 +778,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               'Cancelar',
-              style: GoogleFonts.outfit(color: _SN.textMuted),
+              style: GoogleFonts.inter(color: _SN.textMuted),
             ),
           ),
           TextButton(
@@ -788,7 +789,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
             style: TextButton.styleFrom(foregroundColor: _SN.neonGreen),
             child: Text(
               'Guardar',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -809,7 +810,7 @@ class _ManualRoundEditorScreenState extends State<ManualRoundEditorScreen> {
     return Text(
       'Jornada ${widget.roundNumber}: ${parts.join(', ')}.'
       '${deletes > 0 ? ' Los partidos eliminados se borran de forma permanente.' : ''}',
-      style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+      style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
     );
   }
 

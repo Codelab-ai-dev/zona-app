@@ -54,7 +54,7 @@ class _OfflineBannerContent extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Sin conexión a internet',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -63,7 +63,7 @@ class _OfflineBannerContent extends StatelessWidget {
               ),
               Text(
                 'Modo offline',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: Colors.white.withOpacity(0.8),
                 ),
@@ -112,7 +112,7 @@ class ConnectivityIndicator extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 state.connectionLabel,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: color,
                   fontWeight: FontWeight.w500,

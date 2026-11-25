@@ -13,19 +13,20 @@ import '../../bloc/finance/finance_state.dart';
 import '../../bloc/team/team_bloc.dart';
 import '../../bloc/team/team_event.dart';
 import '../../bloc/team/team_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Finance Transaction Form Screen
@@ -87,7 +88,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: GoogleFonts.outfit(color: Colors.white)),
+        content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
         backgroundColor: _SN.error,
         behavior: SnackBarBehavior.floating,
       ),
@@ -182,7 +183,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.success,
                   behavior: SnackBarBehavior.floating,
@@ -195,7 +196,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                 SnackBar(
                   content: Text(
                     state.message,
-                    style: GoogleFonts.outfit(color: Colors.white),
+                    style: GoogleFonts.inter(color: Colors.white),
                   ),
                   backgroundColor: _SN.error,
                   behavior: SnackBarBehavior.floating,
@@ -237,7 +238,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
       ),
       title: Text(
         'NUEVA TRANSACCIÓN',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _SN.textPrimary,
           letterSpacing: 2,
@@ -301,7 +302,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         fontSize: 13,
         color: _SN.textSecondary,
         fontWeight: FontWeight.w500,
@@ -323,7 +324,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
           isExpanded: true,
           hint: Text(
             'Seleccionar tipo',
-            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
           ),
           dropdownColor: _SN.cardDark,
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
@@ -344,7 +345,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                   Expanded(
                     child: Text(
                       type.display,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _SN.textPrimary,
                       ),
@@ -386,7 +387,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
               icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
               hint: Text(
                 teams.isEmpty ? 'Cargando equipos...' : 'Seleccionar equipo',
-                style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+                style: GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
               ),
               items: [
                 if (!(_selectedType?.needsTeam ?? true))
@@ -394,7 +395,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                     value: null,
                     child: Text(
                       'Sin equipo',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _SN.textSecondary,
                       ),
@@ -410,7 +411,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                         Expanded(
                           child: Text(
                             team.name,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: _SN.textPrimary,
                             ),
@@ -439,16 +440,16 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d{0,6}(\.\d{0,2})?')),
       ],
-      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 16),
+      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 16),
       decoration: InputDecoration(
         prefixText: '$_symbol ',
-        prefixStyle: GoogleFonts.outfit(
+        prefixStyle: GoogleFonts.inter(
           color: _SN.gold,
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
         hintText: '0',
-        hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 16),
+        hintStyle: GoogleFonts.inter(color: _SN.textMuted, fontSize: 16),
         filled: true,
         fillColor: _SN.cardDark,
         contentPadding: const EdgeInsets.symmetric(
@@ -486,10 +487,10 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
     return TextFormField(
       controller: _descriptionCtrl,
       maxLines: 3,
-      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Describe el cargo, multa o pago...',
-        hintStyle: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14),
+        hintStyle: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14),
         filled: true,
         fillColor: _SN.cardDark,
         contentPadding: const EdgeInsets.all(16),
@@ -539,7 +540,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
                 _dueDate != null
                     ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
                     : 'Sin fecha de vencimiento',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _dueDate != null ? _SN.textPrimary : _SN.textMuted,
                 ),
@@ -572,7 +573,7 @@ class _TransactionFormViewState extends State<_TransactionFormView> {
         ),
         child: Text(
           'CREAR TRANSACCIÓN',
-          style: GoogleFonts.bebasNeue(fontSize: 18, letterSpacing: 2),
+          style: ZonaType.headline(fontSize: 18, letterSpacing: 2),
         ),
       ),
     );

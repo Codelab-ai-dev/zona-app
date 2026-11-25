@@ -1,26 +1,26 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/team_entity.dart';
 import '../../../domain/entities/tournament_entity.dart';
 import '../../../domain/repositories/team_repository.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights palette
 class _SN {
-  static const Color bg = Color(0xFF050508);
-  static const Color surface = Color(0xFF0D1117);
-  static const Color card = Color(0xFF161B22);
+  static const Color bg = ZonaColors.background;
+  static const Color surface = ZonaColors.panel;
+  static const Color card = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
-  static const Color divider = Color(0xFF1E2733);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
+  static const Color divider = ZonaColors.lineSoft;
 }
 
 const _groupColors = [
@@ -28,7 +28,7 @@ const _groupColors = [
   Color(0xFF3B82F6), // B - blue
   Color(0xFFF59E0B), // C - amber
   Color(0xFFEF4444), // D - red
-  Color(0xFF8B5CF6), // E - purple
+  ZonaColors.zona, // E - purple
   Color(0xFFEC4899), // F - pink
   Color(0xFF06B6D4), // G - cyan
   Color(0xFFF97316), // H - orange
@@ -239,7 +239,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
                   children: [
                     Text(
                       'GESTI\u00d3N DE GRUPOS',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         color: _SN.gold,
                         fontSize: 22,
                         letterSpacing: 2,
@@ -340,7 +340,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
             const SizedBox(height: 16),
             Text(
               'Sin equipos en este torneo',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                   color: _SN.textSecondary, fontSize: 20),
             ),
             const SizedBox(height: 8),
@@ -431,7 +431,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
   Widget _buildSectionTitle(String title, Color color) {
     return Text(
       title,
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         color: color,
         fontSize: 16,
         letterSpacing: 1.5,
@@ -555,7 +555,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
                   child: Center(
                     child: Text(
                       groupName,
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                           color: color, fontSize: 16),
                     ),
                   ),
@@ -563,7 +563,7 @@ class _GroupsManagementScreenState extends State<GroupsManagementScreen> {
                 const SizedBox(width: 10),
                 Text(
                   'GRUPO $groupName',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     color: color,
                     fontSize: 16,
                     letterSpacing: 1.5,

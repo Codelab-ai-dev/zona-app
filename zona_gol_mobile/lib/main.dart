@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/config/app_config.dart';
 import 'core/config/theme.dart';
+import 'core/config/zona_brand.dart';
 import 'core/di/injection.dart';
 import 'core/network/connectivity_manager.dart';
 import 'data/datasources/local/hive_service.dart';
@@ -90,10 +91,9 @@ class ZonaGolApp extends StatelessWidget {
         title: 'Zona Gol',
         debugShowCheckedModeBanner: false,
 
-        // Theme
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light, // TODO: Get from settings
+        // Every screen is designed on carbon: the app is always dark.
+        theme: AppTheme.theme,
+        themeMode: ThemeMode.dark,
 
         // Home
         home: const SplashScreen(),
@@ -128,42 +128,22 @@ class SplashScreen extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: AppTheme.primary,
-        body: Center(
+        backgroundColor: ZonaColors.background,
+        body: SafeArea(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App Logo
-              const Icon(
-                Icons.sports_soccer,
-                size: 100,
-                color: Colors.white,
+              const Spacer(flex: 3),
+              const ZonaGolLogo(width: 260),
+              const SizedBox(height: 32),
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: ZonaColors.gol),
               ),
+              const Spacer(flex: 3),
+              // Zona Gol is the football module of the Zona OS platform.
+              const ZonaOSLogo(height: 18, descriptor: true),
               const SizedBox(height: 24),
-
-              // App Name
-              Text(
-                'Zona Gol',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-
-              // Tagline
-              Text(
-                'Gestión de Ligas de Fútbol',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-              ),
-              const SizedBox(height: 48),
-
-              // Loading indicator
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
             ],
           ),
         ),

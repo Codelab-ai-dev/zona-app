@@ -23,20 +23,21 @@ import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
 import '../player/player_list_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// League Detail Screen - Stadium Nights Edition
@@ -227,7 +228,7 @@ class _LeagueDetailViewState extends State<_LeagueDetailView>
               opacity: _headerAnimation.value,
               child: Text(
                 league.name,
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _StadiumNights.textPrimary,
                   letterSpacing: 2,
@@ -317,11 +318,11 @@ class _LeagueDetailViewState extends State<_LeagueDetailView>
             indicatorWeight: 3,
             labelColor: _StadiumNights.gold,
             unselectedLabelColor: _StadiumNights.textMuted,
-            labelStyle: GoogleFonts.outfit(
+            labelStyle: GoogleFonts.inter(
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
-            unselectedLabelStyle: GoogleFonts.outfit(
+            unselectedLabelStyle: GoogleFonts.inter(
               fontWeight: FontWeight.w500,
               fontSize: 13,
             ),
@@ -428,7 +429,7 @@ class _InfoTab extends StatelessWidget {
             title: 'DESCRIPCIÓN',
             child: Text(
               league.description,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 15,
                 color: _StadiumNights.textSecondary,
                 height: 1.6,
@@ -473,7 +474,7 @@ class _InfoTab extends StatelessWidget {
                     compact: true,
                     child: Text(
                       dateFormat.format(league.createdAt!),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _StadiumNights.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -491,7 +492,7 @@ class _InfoTab extends StatelessWidget {
                     compact: true,
                     child: Text(
                       dateFormat.format(league.updatedAt!),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _StadiumNights.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -555,7 +556,7 @@ class _InfoTab extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 league.statusText.toUpperCase(),
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 16,
                   color: league.isActive
                       ? _StadiumNights.neonGreen
@@ -609,7 +610,7 @@ class _InfoTab extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     title,
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 14,
                       color: _StadiumNights.gold,
                       letterSpacing: 1.5,
@@ -766,7 +767,7 @@ class _TournamentCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           tournament.name,
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: 20,
                             color: _StadiumNights.textPrimary,
                             letterSpacing: 1,
@@ -792,7 +793,7 @@ class _TournamentCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               statusText,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: statusColor,
                                 fontWeight: FontWeight.w600,
@@ -816,7 +817,7 @@ class _TournamentCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         tournament.formatText,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: _StadiumNights.textSecondary,
                         ),
@@ -830,7 +831,7 @@ class _TournamentCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${dateFormat.format(tournament.startDate)} - ${dateFormat.format(tournament.endDate)}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _StadiumNights.textMuted,
                         ),
@@ -850,7 +851,7 @@ class _TournamentCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${tournament.durationInDays} días',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _StadiumNights.textMuted,
                         ),
@@ -999,7 +1000,7 @@ class _TeamsTabState extends State<_TeamsTab> {
           isExpanded: true,
           hint: Text(
             'Seleccionar torneo',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: _StadiumNights.textMuted,
               fontSize: 14,
             ),
@@ -1027,7 +1028,7 @@ class _TeamsTabState extends State<_TeamsTab> {
                   Expanded(
                     child: Text(
                       tournament.name,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _StadiumNights.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -1131,7 +1132,7 @@ class _TeamCard extends StatelessWidget {
                       children: [
                         Text(
                           team.name,
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: 18,
                             color: _StadiumNights.textPrimary,
                             letterSpacing: 1,
@@ -1158,7 +1159,7 @@ class _TeamCard extends StatelessWidget {
                             ),
                             child: Text(
                               team.groupDisplayText,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 color: _StadiumNights.neonBlue,
                                 fontWeight: FontWeight.w500,
@@ -1198,7 +1199,7 @@ class _TeamCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           team.isActive ? 'Activo' : 'Inactivo',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             color: team.isActive
                                 ? _StadiumNights.neonGreen
@@ -1319,7 +1320,7 @@ Widget _buildLoadingState() {
         const SizedBox(height: 20),
         Text(
           'CARGANDO',
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 16,
             color: _StadiumNights.textMuted,
             letterSpacing: 2,
@@ -1354,7 +1355,7 @@ Widget _buildErrorState(
           const SizedBox(height: 20),
           Text(
             'ERROR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 20,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -1364,7 +1365,7 @@ Widget _buildErrorState(
           Text(
             message,
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -1387,7 +1388,7 @@ Widget _buildErrorState(
                   const SizedBox(width: 8),
                   Text(
                     'REINTENTAR',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 14,
                       color: Colors.black,
                       letterSpacing: 1,
@@ -1434,7 +1435,7 @@ Widget _buildEmptyState({
           const SizedBox(height: 20),
           Text(
             title,
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -1444,7 +1445,7 @@ Widget _buildEmptyState({
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/config/zona_brand.dart';
 import '../../../core/di/injection.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../main.dart';
@@ -26,13 +27,10 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
 
   // Animation controllers
-  late AnimationController _logoController;
   late AnimationController _staggerController;
   late AnimationController _lightsController;
 
   // Animations
-  late Animation<double> _logoScale;
-  late Animation<double> _logoGlow;
   late Animation<double> _lightsAnimation;
 
   // Focus nodes for input effects
@@ -57,20 +55,6 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _setupAnimations() {
-    // Logo pulsing animation
-    _logoController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _logoScale = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeInOut),
-    );
-
-    _logoGlow = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeInOut),
-    );
-
     // Staggered entrance animation
     _staggerController = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -83,9 +67,10 @@ class _LoginScreenState extends State<LoginScreen>
       vsync: this,
     )..repeat();
 
-    _lightsAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
-      _lightsController,
-    );
+    _lightsAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * math.pi,
+    ).animate(_lightsController);
   }
 
   void _setupFocusListeners() {
@@ -101,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _logoController.dispose();
     _staggerController.dispose();
     _lightsController.dispose();
     _emailFocus.dispose();
@@ -113,11 +97,11 @@ class _LoginScreenState extends State<LoginScreen>
     if (_formKey.currentState!.validate()) {
       HapticFeedback.mediumImpact();
       context.read<AuthBloc>().add(
-            LoginWithEmailEvent(
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-            ),
-          );
+        LoginWithEmailEvent(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
     }
   }
 
@@ -139,8 +123,8 @@ class _LoginScreenState extends State<LoginScreen>
                     const HomeScreen(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+                      return FadeTransition(opacity: animation, child: child);
+                    },
                 transitionDuration: const Duration(milliseconds: 500),
               ),
             );
@@ -173,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // Animated logo
                         _buildAnimatedLogo(),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
 
                         // Welcome text
                         _buildWelcomeText(),
@@ -216,9 +200,9 @@ class _LoginScreenState extends State<LoginScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF0A0E1A), // Deep night
-            Color(0xFF0D1B2A), // Dark blue
-            Color(0xFF1B2838), // Stadium shadow
+            ZonaColors.background, // Carbon
+            ZonaColors.panel,
+            ZonaColors.background,
           ],
           stops: [0.0, 0.5, 1.0],
         ),
@@ -237,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen>
               top: -100 + math.sin(_lightsAnimation.value) * 20,
               left: -80 + math.cos(_lightsAnimation.value) * 15,
               child: _buildLightOrb(
-                color: const Color(0xFF3B82F6).withOpacity(0.15),
+                color: ZonaColors.zona.withValues(alpha: 0.12),
                 size: 300,
               ),
             ),
@@ -246,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen>
               top: -50 + math.cos(_lightsAnimation.value + 1) * 25,
               right: -100 + math.sin(_lightsAnimation.value + 1) * 20,
               child: _buildLightOrb(
-                color: const Color(0xFF10B981).withOpacity(0.12),
+                color: ZonaColors.gol.withValues(alpha: 0.08),
                 size: 350,
               ),
             ),
@@ -255,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen>
               bottom: -150 + math.sin(_lightsAnimation.value + 2) * 15,
               left: size.width * 0.3,
               child: _buildLightOrb(
-                color: const Color(0xFF1E40AF).withOpacity(0.2),
+                color: ZonaColors.zonaDark.withValues(alpha: 0.12),
                 size: 400,
               ),
             ),
@@ -271,9 +255,7 @@ class _LoginScreenState extends State<LoginScreen>
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withOpacity(0)],
-        ),
+        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
       ),
     );
   }
@@ -285,9 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
       right: 0,
       child: CustomPaint(
         size: Size(size.width, 200),
-        painter: FieldLinesPainter(
-          color: Colors.white.withOpacity(0.03),
-        ),
+        painter: FieldLinesPainter(color: Colors.white.withOpacity(0.03)),
       ),
     );
   }
@@ -295,35 +275,31 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildAnimatedLogo() {
     return _buildStaggeredAnimation(
       delay: 0.0,
-      child: AnimatedBuilder(
-        animation: _logoController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _logoScale.value,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(_logoGlow.value * 0.5),
-                    blurRadius: 50,
-                    spreadRadius: 15,
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF3B82F6).withOpacity(_logoGlow.value * 0.3),
-                    blurRadius: 60,
-                    spreadRadius: 20,
-                  ),
-                ],
-              ),
-              child: Image.asset(
-                'assets/images/zona-gol.png',
-                fit: BoxFit.contain,
-              ),
+      child: Column(
+        children: [
+          const ZonaGolLogo(width: 280),
+          const SizedBox(height: 14),
+          // Zona Gol is the football module of the Zona OS platform.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: ZonaColors.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: ZonaColors.lineSoft),
             ),
-          );
-        },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ZonaMark(size: 11),
+                const SizedBox(width: 8),
+                Text(
+                  'Módulo de fútbol de Zona OS',
+                  style: ZonaType.ui(fontSize: 12, color: ZonaColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -390,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ? Icons.visibility_outlined
                   : Icons.visibility_off_outlined,
               color: _passwordHasFocus
-                  ? const Color(0xFF10B981)
+                  ? ZonaColors.gol
                   : Colors.white.withOpacity(0.7),
               size: 24,
             ),
@@ -425,19 +401,15 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: hasFocus
-            ? const Color(0xFF1E293B)
-            : const Color(0xFF0F172A),
+        color: hasFocus ? ZonaColors.raised : ZonaColors.panel,
         border: Border.all(
-          color: hasFocus
-              ? const Color(0xFF10B981)
-              : const Color(0xFF334155),
+          color: hasFocus ? ZonaColors.gol : ZonaColors.line,
           width: hasFocus ? 2 : 1.5,
         ),
         boxShadow: hasFocus
             ? [
                 BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.25),
+                  color: ZonaColors.gol.withValues(alpha: 0.2),
                   blurRadius: 12,
                   spreadRadius: 0,
                 ),
@@ -456,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen>
           fontWeight: FontWeight.w500,
           letterSpacing: 0.3,
         ),
-        cursorColor: const Color(0xFF10B981),
+        cursorColor: ZonaColors.gol,
         cursorWidth: 2,
         decoration: InputDecoration(
           filled: false,
@@ -471,9 +443,7 @@ class _LoginScreenState extends State<LoginScreen>
             padding: const EdgeInsets.only(left: 16, right: 12),
             child: Icon(
               prefixIcon,
-              color: hasFocus
-                  ? const Color(0xFF10B981)
-                  : Colors.white.withOpacity(0.6),
+              color: hasFocus ? ZonaColors.gol : Colors.white.withOpacity(0.6),
               size: 22,
             ),
           ),
@@ -518,10 +488,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           child: const Text(
             '¿Olvidaste tu contraseña?',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
           ),
         ),
       ),
@@ -531,7 +498,9 @@ class _LoginScreenState extends State<LoginScreen>
   /// Asks for the email and requests a reset link (the answer is the same
   /// whether or not the account exists).
   Future<void> _showForgotPasswordDialog() async {
-    final controller = TextEditingController(text: _emailController.text.trim());
+    final controller = TextEditingController(
+      text: _emailController.text.trim(),
+    );
     final email = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -543,7 +512,10 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: const InputDecoration(labelText: 'Email'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Enviar enlace'),
@@ -555,74 +527,76 @@ class _LoginScreenState extends State<LoginScreen>
     if (email == null || email.isEmpty || !mounted) return;
     final result = await sl<AuthRepository>().resetPassword(email: email);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(result.fold(
-      (failure) => _buildSnackBar(failure.message, isError: true),
-      (_) => _buildSnackBar('Si el email está registrado, recibirás un enlace para restablecer tu contraseña.', isError: false),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      result.fold(
+        (failure) => _buildSnackBar(failure.message, isError: true),
+        (_) => _buildSnackBar(
+          'Si el email está registrado, recibirás un enlace para restablecer tu contraseña.',
+          isError: false,
+        ),
+      ),
+    );
   }
 
   Widget _buildLoginButton(bool isLoading) {
     return _buildStaggeredAnimation(
       delay: 0.35,
-      child: GestureDetector(
-        onTap: isLoading ? null : _handleLogin,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: double.infinity,
-          height: 50,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isLoading
-                  ? [
-                      const Color(0xFF10B981).withOpacity(0.5),
-                      const Color(0xFF059669).withOpacity(0.5),
-                    ]
-                  : [
-                      const Color(0xFF10B981),
-                      const Color(0xFF059669),
-                    ],
+      child: Semantics(
+        button: true,
+        enabled: !isLoading,
+        label: 'Entrar',
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: isLoading ? null : _handleLogin,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: isLoading
+                  ? ZonaColors.gol.withValues(alpha: 0.5)
+                  : ZonaColors.gol,
+              boxShadow: [
+                BoxShadow(
+                  color: ZonaColors.gol.withValues(alpha: 0.25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.4),
-                blurRadius: 15,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'ENTRAR',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ZonaColors.onGol,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ],
-                  ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Entrar',
+                          style: TextStyle(
+                            color: ZonaColors.onGol,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: ZonaColors.onGol,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
@@ -652,9 +626,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      _buildSnackBar(message, isError: true),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(_buildSnackBar(message, isError: true));
   }
 
   SnackBar _buildSnackBar(String message, {required bool isError}) {
@@ -678,9 +652,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ],
       ),
-      backgroundColor: isError
-          ? const Color(0xFFDC2626)
-          : const Color(0xFF1E40AF),
+      backgroundColor: isError ? const Color(0xFFDC2626) : ZonaColors.raised,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
@@ -703,11 +675,7 @@ class FieldLinesPainter extends CustomPainter {
       ..strokeWidth = 2;
 
     // Center circle
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height + 80),
-      120,
-      paint,
-    );
+    canvas.drawCircle(Offset(size.width / 2, size.height + 80), 120, paint);
 
     // Horizontal line
     canvas.drawLine(

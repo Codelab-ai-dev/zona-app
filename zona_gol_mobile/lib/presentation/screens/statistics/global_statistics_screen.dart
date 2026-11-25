@@ -6,25 +6,26 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/di/injection.dart';
 import '../../../domain/entities/league_stats_entity.dart';
 import '../../../domain/repositories/league_repository.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color cardDark = ZonaColors.surface;
 
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
 
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
   static const Color neonPink = Color(0xFFFF6B9D);
 
   static const Color error = Color(0xFFEF4444);
 
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Global Statistics Screen - Stadium Nights Edition
@@ -265,7 +266,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                       children: [
                         Text(
                           'ESTADÍSTICAS',
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: 28,
                             color: _StadiumNights.textPrimary,
                             letterSpacing: 3,
@@ -274,7 +275,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                         ),
                         Text(
                           'Métricas globales del sistema',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: _StadiumNights.neonPink,
                             letterSpacing: 0.5,
@@ -370,7 +371,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
           const SizedBox(height: 24),
           Text(
             'CARGANDO ESTADÍSTICAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 18,
               color: _StadiumNights.textSecondary,
               letterSpacing: 2,
@@ -404,7 +405,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
           const SizedBox(height: 24),
           Text(
             'ERROR AL CARGAR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 24,
               color: _StadiumNights.textPrimary,
               letterSpacing: 2,
@@ -414,7 +415,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
           Text(
             _error ?? 'Error desconocido',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _StadiumNights.textSecondary,
             ),
@@ -432,7 +433,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
               ),
               child: Text(
                 'REINTENTAR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 16,
                   color: Colors.white,
                   letterSpacing: 1,
@@ -489,7 +490,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: _StadiumNights.textMuted,
             letterSpacing: 2,
@@ -653,7 +654,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                     ),
                     Text(
                       value,
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 32,
                         color: color,
                         letterSpacing: 1,
@@ -664,7 +665,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                 const SizedBox(height: 12),
                 Text(
                   label,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     color: _StadiumNights.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -672,7 +673,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                 ),
                 Text(
                   sublabel,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _StadiumNights.textMuted,
                   ),
@@ -761,7 +762,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 28,
             color: _StadiumNights.textPrimary,
             letterSpacing: 1,
@@ -769,7 +770,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 11,
             color: _StadiumNights.textMuted,
           ),
@@ -871,7 +872,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                   ? Icon(medal, color: positionColor, size: 18)
                   : Text(
                       '$position',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 16,
                         color: positionColor,
                       ),
@@ -884,7 +885,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
           Expanded(
             child: Text(
               name,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 15,
                 color: _StadiumNights.textPrimary,
                 fontWeight: FontWeight.w500,
@@ -910,7 +911,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                 const SizedBox(width: 6),
                 Text(
                   '$goals',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 16,
                     color: _StadiumNights.neonGreen,
                   ),
@@ -987,7 +988,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
               Expanded(
                 child: Text(
                   homeName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -1010,7 +1011,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
                 ),
                 child: Text(
                   '$homeScore - $awayScore',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 18,
                     color: statusColor,
                     letterSpacing: 1,
@@ -1024,7 +1025,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
               Expanded(
                 child: Text(
                   awayName,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: _StadiumNights.textPrimary,
                     fontWeight: FontWeight.w500,
@@ -1051,7 +1052,7 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
               const SizedBox(width: 6),
               Text(
                 statusText,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: statusColor,
                   fontWeight: FontWeight.w500,
@@ -1060,14 +1061,14 @@ class _GlobalStatisticsScreenState extends State<GlobalStatisticsScreen>
               if (matchDate != null) ...[
                 Text(
                   ' • ',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _StadiumNights.textMuted,
                   ),
                 ),
                 Text(
                   _formatDate(matchDate),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: _StadiumNights.textMuted,
                   ),

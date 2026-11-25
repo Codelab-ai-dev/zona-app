@@ -15,20 +15,21 @@ import '../../bloc/match/match_bloc.dart';
 import '../../bloc/match/match_event.dart';
 import '../../bloc/match/match_state.dart';
 import 'match_detail_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Pending Matches Screen
@@ -138,7 +139,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
       ),
       title: Text(
         'REGISTRAR RESULTADOS',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _StadiumNights.textPrimary,
           letterSpacing: 2,
@@ -175,7 +176,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
           const SizedBox(height: 20),
           Text(
             'CARGANDO PARTIDOS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _StadiumNights.textMuted,
               letterSpacing: 2,
@@ -209,7 +210,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             const SizedBox(height: 24),
             Text(
               'SIN LIGA ASIGNADA',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -219,7 +220,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             Text(
               'No tienes una liga asignada para administrar.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -253,7 +254,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 20,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -263,7 +264,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -293,7 +294,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                     const SizedBox(width: 8),
                     Text(
                       'REINTENTAR',
-                      style: GoogleFonts.bebasNeue(
+                      style: ZonaType.headline(
                         fontSize: 14,
                         color: Colors.black,
                         letterSpacing: 1,
@@ -336,7 +337,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             const SizedBox(height: 24),
             Text(
               'SIN PARTIDOS PENDIENTES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -346,7 +347,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
             Text(
               'No hay partidos programados pendientes\nde registrar resultado.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -424,7 +425,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                       const SizedBox(width: 8),
                       Text(
                         'Todos los torneos (${matches.length})',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           color: _StadiumNights.textPrimary,
                         ),
@@ -444,7 +445,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                           const SizedBox(width: 8),
                           Text(
                             'Todos los torneos (${matches.length})',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: _StadiumNights.textPrimary,
                             ),
@@ -469,7 +470,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                             Expanded(
                               child: Text(
                                 '${entry.value} ($count)',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: _StadiumNights.textPrimary,
                                 ),
@@ -507,7 +508,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                           const SizedBox(height: 16),
                           Text(
                             'SIN PARTIDOS',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 20,
                               color: _StadiumNights.textPrimary,
                               letterSpacing: 2,
@@ -517,7 +518,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                           Text(
                             'No hay partidos pendientes\nen este torneo.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: _StadiumNights.textSecondary,
                             ),
@@ -551,7 +552,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                                 Expanded(
                                   child: Text(
                                     tournamentName.toUpperCase(),
-                                    style: GoogleFonts.bebasNeue(
+                                    style: ZonaType.headline(
                                       fontSize: 16,
                                       color: _StadiumNights.gold,
                                       letterSpacing: 2,
@@ -569,7 +570,7 @@ class _PendingMatchesViewState extends State<_PendingMatchesView> {
                                   ),
                                   child: Text(
                                     '${tournamentMatches.length}',
-                                    style: GoogleFonts.bebasNeue(
+                                    style: ZonaType.headline(
                                       fontSize: 14,
                                       color: _StadiumNights.gold,
                                     ),
@@ -684,7 +685,7 @@ class _MatchCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               dateFormat.format(match.matchDate),
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.textMuted,
                               ),
@@ -693,7 +694,7 @@ class _MatchCard extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 match.matchTime!,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: _StadiumNights.textMuted,
                                 ),
@@ -703,7 +704,7 @@ class _MatchCard extends StatelessWidget {
                         ),
                         Text(
                           match.roundText,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: _StadiumNights.neonBlue,
                             fontWeight: FontWeight.w500,
@@ -727,7 +728,7 @@ class _MatchCard extends StatelessWidget {
                                   match.homeTeam?.name ?? 'Local',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: _StadiumNights.textPrimary,
                                     fontWeight: FontWeight.w500,
@@ -750,7 +751,7 @@ class _MatchCard extends StatelessWidget {
                           ),
                           child: Text(
                             'VS',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 14,
                               color: _StadiumNights.gold,
                             ),
@@ -768,7 +769,7 @@ class _MatchCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   textAlign: TextAlign.right,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: _StadiumNights.textPrimary,
                                     fontWeight: FontWeight.w500,
@@ -808,7 +809,7 @@ class _MatchCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             'TOCA PARA VER DETALLE',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               color: _StadiumNights.neonGreen,
                               fontWeight: FontWeight.w600,

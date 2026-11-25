@@ -10,18 +10,19 @@ import '../../../domain/entities/user_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 class _S {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color success = Color(0xFF10B981);
   static const Color error = Color(0xFFEF4444);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Player Verification Screen
@@ -80,7 +81,7 @@ class _VerificationViewState extends State<_VerificationView> {
           ),
           title: Text(
             'VERIFICAR JUGADORES',
-            style: GoogleFonts.bebasNeue(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
+            style: ZonaType.headline(fontSize: 22, color: _S.textPrimary, letterSpacing: 2),
           ),
           centerTitle: true,
           actions: [
@@ -135,7 +136,7 @@ class _VerificationViewState extends State<_VerificationView> {
                   children: [
                     const Icon(Icons.error_outline, size: 50, color: _S.error),
                     const SizedBox(height: 16),
-                    Text(state.message, style: GoogleFonts.outfit(color: _S.textSecondary)),
+                    Text(state.message, style: GoogleFonts.inter(color: _S.textSecondary)),
                   ],
                 ),
               );
@@ -186,8 +187,8 @@ class _VerificationViewState extends State<_VerificationView> {
                     children: [
                       Icon(Icons.verified_user_outlined, size: 60, color: _S.textMuted),
                       const SizedBox(height: 16),
-                      Text('No hay jugadores', style: GoogleFonts.bebasNeue(fontSize: 18, color: _S.textPrimary, letterSpacing: 1)),
-                      Text('en esta categoría', style: GoogleFonts.outfit(fontSize: 14, color: _S.textSecondary)),
+                      Text('No hay jugadores', style: ZonaType.headline(fontSize: 18, color: _S.textPrimary, letterSpacing: 1)),
+                      Text('en esta categoría', style: GoogleFonts.inter(fontSize: 14, color: _S.textSecondary)),
                     ],
                   ),
                 )
@@ -229,11 +230,11 @@ class _VerificationViewState extends State<_VerificationView> {
             children: [
               Text(
                 count.toString(),
-                style: GoogleFonts.bebasNeue(fontSize: 20, color: color),
+                style: ZonaType.headline(fontSize: 20, color: color),
               ),
               Text(
                 label,
-                style: GoogleFonts.outfit(fontSize: 9, color: _S.textSecondary),
+                style: GoogleFonts.inter(fontSize: 9, color: _S.textSecondary),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -276,7 +277,7 @@ class _VerificationViewState extends State<_VerificationView> {
             child: Center(
               child: Text(
                 player.initials,
-                style: GoogleFonts.bebasNeue(fontSize: 16, color: _S.gold),
+                style: ZonaType.headline(fontSize: 16, color: _S.gold),
               ),
             ),
           ),
@@ -289,11 +290,11 @@ class _VerificationViewState extends State<_VerificationView> {
               children: [
                 Text(
                   player.displayName,
-                  style: GoogleFonts.outfit(fontSize: 14, color: _S.textPrimary, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(fontSize: 14, color: _S.textPrimary, fontWeight: FontWeight.w500),
                 ),
                 Text(
                   player.teamName,
-                  style: GoogleFonts.outfit(fontSize: 11, color: _S.textMuted),
+                  style: GoogleFonts.inter(fontSize: 11, color: _S.textMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,7 +314,7 @@ class _VerificationViewState extends State<_VerificationView> {
                       ),
                       child: Text(
                         player.isVerified ? 'Verificado' : hasDoc ? 'Pendiente' : 'Sin INE',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 10,
                           color: player.isVerified ? _S.success : hasDoc ? _S.amber : _S.error,
                           fontWeight: FontWeight.w600,
@@ -367,13 +368,13 @@ class _VerificationViewState extends State<_VerificationView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           verified ? 'Aprobar jugador' : 'Quitar verificación',
-          style: GoogleFonts.outfit(color: _S.textPrimary),
+          style: GoogleFonts.inter(color: _S.textPrimary),
         ),
         content: Text(
           verified
               ? '¿Confirmas que el documento de ${player.name} es válido?'
               : '¿Quitar la verificación de ${player.name}? El documento se conserva para revisarlo de nuevo.',
-          style: GoogleFonts.outfit(color: _S.textSecondary),
+          style: GoogleFonts.inter(color: _S.textSecondary),
         ),
         actions: [
           TextButton(
@@ -420,7 +421,7 @@ class _VerificationViewState extends State<_VerificationView> {
                   Expanded(
                     child: Text(
                       'Documento: ${player.name}',
-                      style: GoogleFonts.outfit(fontSize: 16, color: _S.textPrimary, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: 16, color: _S.textPrimary, fontWeight: FontWeight.w600),
                     ),
                   ),
                   IconButton(
@@ -497,7 +498,7 @@ class _VerificationViewState extends State<_VerificationView> {
         child: TextButton.icon(
           onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
           icon: const Icon(Icons.picture_as_pdf, color: _S.gold),
-          label: Text('Abrir documento PDF', style: GoogleFonts.outfit(color: _S.gold)),
+          label: Text('Abrir documento PDF', style: GoogleFonts.inter(color: _S.gold)),
         ),
       ),
     );
@@ -513,7 +514,7 @@ class _VerificationViewState extends State<_VerificationView> {
           children: [
             const Icon(Icons.broken_image, size: 40, color: _S.textMuted),
             const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center, style: GoogleFonts.outfit(color: _S.textMuted)),
+            Text(message, textAlign: TextAlign.center, style: GoogleFonts.inter(color: _S.textMuted)),
           ],
         ),
       ),

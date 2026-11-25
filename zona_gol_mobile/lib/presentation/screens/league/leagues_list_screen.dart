@@ -12,13 +12,14 @@ import '../../bloc/league/league_bloc.dart';
 import '../../bloc/league/league_event.dart';
 import '../../bloc/league/league_state.dart';
 import 'league_detail_screen.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
   // Core palette - Deep night with golden floodlights
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
 
   // Accent colors - Stadium lights
   static const Color gold = Color(0xFFFFD700);
@@ -26,17 +27,17 @@ class _StadiumNights {
   static const Color amber = Color(0xFFF59E0B);
 
   // Neon accents - Scoreboard style
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
 
   // Status colors
   static const Color error = Color(0xFFEF4444);
-  static const Color inactive = Color(0xFF6B7280);
+  static const Color inactive = ZonaColors.textSubtle;
 
   // Text hierarchy
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Leagues List Screen - Stadium Nights Edition
@@ -313,7 +314,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
                           children: [
                             Text(
                               'LIGAS',
-                              style: GoogleFonts.bebasNeue(
+                              style: ZonaType.headline(
                                 fontSize: 32,
                                 color: _StadiumNights.textPrimary,
                                 letterSpacing: 4,
@@ -322,7 +323,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
                             ),
                             Text(
                               'Gestiona tus competiciones',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: _StadiumNights.gold,
                                 letterSpacing: 0.5,
@@ -355,7 +356,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
           SnackBar(
             content: Text(
               'Crear nueva liga',
-              style: GoogleFonts.outfit(color: Colors.white),
+              style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: _StadiumNights.neonGreen,
             behavior: SnackBarBehavior.floating,
@@ -426,14 +427,14 @@ class _LeaguesListViewState extends State<_LeaguesListView>
                         setState(() => _searchQuery = value);
                       },
                       cursorColor: _StadiumNights.gold,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Buscar ligas...',
-                        hintStyle: GoogleFonts.outfit(
+                        hintStyle: GoogleFonts.inter(
                           color: Colors.white.withOpacity(0.4),
                           fontSize: 15,
                         ),
@@ -526,7 +527,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: isSelected
                     ? _StadiumNights.gold
@@ -579,7 +580,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
           const SizedBox(height: 24),
           Text(
             'CARGANDO LIGAS',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 18,
               color: _StadiumNights.textSecondary,
               letterSpacing: 2,
@@ -621,7 +622,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(height: 24),
             Text(
               'ERROR AL CARGAR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -631,7 +632,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -696,7 +697,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(height: 24),
             Text(
               'SIN LIGAS',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 28,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 3,
@@ -706,7 +707,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             Text(
               'Aún no hay ligas registradas.\nCrea tu primera liga para comenzar.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
                 height: 1.5,
@@ -737,7 +738,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(height: 24),
             Text(
               'SIN RESULTADOS',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _StadiumNights.textPrimary,
                 letterSpacing: 2,
@@ -747,7 +748,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             Text(
               'No se encontraron ligas con esos filtros',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _StadiumNights.textSecondary,
               ),
@@ -763,7 +764,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
               },
               child: Text(
                 'Limpiar filtros',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.gold,
                   fontWeight: FontWeight.w600,
@@ -807,7 +808,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(width: 8),
             Text(
               'REINTENTAR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: Colors.black,
                 letterSpacing: 1,
@@ -850,7 +851,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             const SizedBox(width: 8),
             Text(
               'CREAR LIGA',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 16,
                 color: Colors.black,
                 letterSpacing: 1,
@@ -890,7 +891,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.black,
                   fontWeight: FontWeight.w500,
                 ),
@@ -917,7 +918,7 @@ class _LeaguesListViewState extends State<_LeaguesListView>
             Expanded(
               child: Text(
                 message,
-                style: GoogleFonts.outfit(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
             ),
           ],
@@ -1136,7 +1137,7 @@ class _LeagueCardState extends State<_LeagueCard>
                               // Name
                               Text(
                                 widget.league.name,
-                                style: GoogleFonts.bebasNeue(
+                                style: ZonaType.headline(
                                   fontSize: 22,
                                   color: _StadiumNights.textPrimary,
                                   letterSpacing: 1,
@@ -1149,7 +1150,7 @@ class _LeagueCardState extends State<_LeagueCard>
                                 widget.league.description,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   color: _StadiumNights.textSecondary,
                                   height: 1.4,
@@ -1319,7 +1320,7 @@ class _LeagueCardState extends State<_LeagueCard>
           const SizedBox(width: 6),
           Text(
             widget.league.statusText,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               color: isActive ? _StadiumNights.neonGreen : _StadiumNights.inactive,
               fontWeight: FontWeight.w600,
@@ -1378,7 +1379,7 @@ class _LeagueCardState extends State<_LeagueCard>
           const SizedBox(width: 12),
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: value == 'delete' ? color : _StadiumNights.textPrimary,
               fontSize: 14,
             ),
@@ -1482,7 +1483,7 @@ class _LeagueCardState extends State<_LeagueCard>
                       const SizedBox(width: 16),
                       Text(
                         'EDITAR LIGA',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 24,
                           color: _StadiumNights.textPrimary,
                           letterSpacing: 2,
@@ -1549,7 +1550,7 @@ class _LeagueCardState extends State<_LeagueCard>
                             child: Center(
                               child: Text(
                                 'Cancelar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: _StadiumNights.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1586,7 +1587,7 @@ class _LeagueCardState extends State<_LeagueCard>
                             child: Center(
                               child: Text(
                                 'Guardar',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1617,13 +1618,13 @@ class _LeagueCardState extends State<_LeagueCard>
       controller: controller,
       maxLines: maxLines,
       validator: validator,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         color: _StadiumNights.textPrimary,
         fontSize: 14,
       ),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.outfit(
+        labelStyle: GoogleFonts.inter(
           color: _StadiumNights.textMuted,
         ),
         prefixIcon: Icon(icon, color: _StadiumNights.gold, size: 20),
@@ -1688,7 +1689,7 @@ class _LeagueCardState extends State<_LeagueCard>
               const SizedBox(height: 20),
               Text(
                 isActive ? 'DESACTIVAR LIGA' : 'ACTIVAR LIGA',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _StadiumNights.textPrimary,
                   letterSpacing: 2,
@@ -1700,7 +1701,7 @@ class _LeagueCardState extends State<_LeagueCard>
                     ? '¿Desactivar "${widget.league.name}"?\nNo será visible para los usuarios.'
                     : '¿Activar "${widget.league.name}"?\nSerá visible para los usuarios.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.textSecondary,
                   height: 1.5,
@@ -1721,7 +1722,7 @@ class _LeagueCardState extends State<_LeagueCard>
                         child: Center(
                           child: Text(
                             'Cancelar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: _StadiumNights.textSecondary,
                             ),
                           ),
@@ -1750,7 +1751,7 @@ class _LeagueCardState extends State<_LeagueCard>
                         child: Center(
                           child: Text(
                             isActive ? 'Desactivar' : 'Activar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.black,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1800,7 +1801,7 @@ class _LeagueCardState extends State<_LeagueCard>
               const SizedBox(height: 20),
               Text(
                 'ELIMINAR LIGA',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _StadiumNights.textPrimary,
                   letterSpacing: 2,
@@ -1810,7 +1811,7 @@ class _LeagueCardState extends State<_LeagueCard>
               Text(
                 '¿Eliminar "${widget.league.name}"?\nSe borrarán para siempre sus torneos, equipos, jugadores y partidos. Esta acción no se puede deshacer.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: _StadiumNights.textSecondary,
                   height: 1.5,
@@ -1831,7 +1832,7 @@ class _LeagueCardState extends State<_LeagueCard>
                         child: Center(
                           child: Text(
                             'Cancelar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: _StadiumNights.textSecondary,
                             ),
                           ),
@@ -1857,7 +1858,7 @@ class _LeagueCardState extends State<_LeagueCard>
                         child: Center(
                           child: Text(
                             'Eliminar',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1912,7 +1913,7 @@ class _ActionChip extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: color,
                   fontWeight: FontWeight.w500,

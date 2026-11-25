@@ -11,18 +11,19 @@ import '../../../domain/entities/player_entity.dart';
 import '../../bloc/player/player_bloc.dart';
 import '../../bloc/player/player_event.dart';
 import '../../bloc/player/player_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
+  static const Color neonGreen = ZonaColors.gol;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Generates QR code data in the legacy JSON format compatible with the scanner
@@ -140,7 +141,7 @@ class _SinglePlayerQrView extends StatelessWidget {
           ),
           title: Text(
             'CÓDIGO QR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 22,
               color: _SN.textPrimary,
               letterSpacing: 2,
@@ -204,7 +205,7 @@ class _BatchQrView extends StatelessWidget {
             children: [
               Text(
                 'CÓDIGOS QR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 22,
                   color: _SN.textPrimary,
                   letterSpacing: 2,
@@ -212,7 +213,7 @@ class _BatchQrView extends StatelessWidget {
               ),
               Text(
                 teamName,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textSecondary,
                 ),
@@ -265,7 +266,7 @@ class _BatchQrView extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'GENERANDO CÓDIGOS QR',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textMuted,
               letterSpacing: 2,
@@ -299,7 +300,7 @@ class _BatchQrView extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'SIN JUGADORES',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -309,7 +310,7 @@ class _BatchQrView extends StatelessWidget {
             Text(
               'No hay jugadores activos para generar códigos QR.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: _SN.textSecondary,
               ),
@@ -339,7 +340,7 @@ class _BatchQrView extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'ERROR',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 24,
                 color: _SN.textPrimary,
                 letterSpacing: 2,
@@ -349,7 +350,7 @@ class _BatchQrView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -383,7 +384,7 @@ class _BatchQrView extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '${players.length} jugadores',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: _SN.textSecondary,
                 ),
@@ -391,7 +392,7 @@ class _BatchQrView extends StatelessWidget {
               const Spacer(),
               Text(
                 'Toca para ampliar',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: _SN.textMuted,
                 ),
@@ -513,11 +514,11 @@ class _PlayerQrCard extends StatelessWidget {
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
             ),
           ),
@@ -526,7 +527,7 @@ class _PlayerQrCard extends StatelessWidget {
           // Team name
           Text(
             teamName,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               color: _SN.textSecondary,
             ),
@@ -554,7 +555,7 @@ class _PlayerQrCard extends StatelessWidget {
               icon: const Icon(Icons.copy, size: 18),
               label: Text(
                 'COPIAR DATOS QR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 15,
                   letterSpacing: 1.5,
                 ),
@@ -592,11 +593,11 @@ class _PlayerQrCard extends StatelessWidget {
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
               dataModuleStyle: const QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: Color(0xFF1A1A2E),
+                color: ZonaColors.raised,
               ),
             ),
           ),
@@ -626,7 +627,7 @@ class _PlayerQrCard extends StatelessWidget {
         if (player.hasJerseyNumber)
           Text(
             '#${player.jerseyNumber}',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: isCompact ? 16 : 22,
               color: _SN.gold,
             ),
@@ -634,7 +635,7 @@ class _PlayerQrCard extends StatelessWidget {
         // Name
         Text(
           player.name,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: isCompact ? 15 : 20,
             fontWeight: FontWeight.w600,
             color: _SN.textPrimary,
@@ -654,7 +655,7 @@ class _PlayerQrCard extends StatelessWidget {
             ),
             child: Text(
               player.positionDisplay,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: isCompact ? 11 : 12,
                 color: _SN.neonGreen,
                 fontWeight: FontWeight.w500,

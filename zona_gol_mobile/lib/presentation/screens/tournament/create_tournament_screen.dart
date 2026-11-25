@@ -8,19 +8,20 @@ import '../../../domain/entities/tournament_entity.dart';
 import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _StadiumNights {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color surfaceDark = Color(0xFF0A0A0F);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color surfaceDark = ZonaColors.panel;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
   static const Color amber = Color(0xFFF59E0B);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Create Tournament Screen
@@ -115,7 +116,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
       ),
       title: Text(
         'CREAR TORNEO',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 22,
           color: _StadiumNights.textPrimary,
           letterSpacing: 2,
@@ -254,7 +255,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.bebasNeue(
+      style: ZonaType.headline(
         fontSize: 16,
         color: _StadiumNights.gold,
         letterSpacing: 2,
@@ -272,7 +273,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      style: GoogleFonts.outfit(
+      style: GoogleFonts.inter(
         color: _StadiumNights.textPrimary,
         fontSize: 15,
       ),
@@ -284,11 +285,11 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
         hintText: hint,
         filled: true,
         fillColor: _StadiumNights.cardDark,
-        labelStyle: GoogleFonts.outfit(
+        labelStyle: GoogleFonts.inter(
           color: _StadiumNights.textMuted,
           fontSize: 14,
         ),
-        hintStyle: GoogleFonts.outfit(
+        hintStyle: GoogleFonts.inter(
           color: _StadiumNights.textMuted.withOpacity(0.5),
           fontSize: 14,
         ),
@@ -330,7 +331,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
           ),
         ),
         contentPadding: const EdgeInsets.all(16),
-        errorStyle: GoogleFonts.outfit(
+        errorStyle: GoogleFonts.inter(
           color: _StadiumNights.error,
           fontSize: 12,
         ),
@@ -361,7 +362,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
           children: [
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _StadiumNights.textMuted,
                 fontSize: 12,
               ),
@@ -377,7 +378,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                 const SizedBox(width: 10),
                 Text(
                   dateFormat.format(date),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _StadiumNights.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -429,7 +430,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                     Text(
                       _getFormatName(format),
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: isSelected
                             ? Colors.black
                             : _StadiumNights.textMuted,
@@ -478,7 +479,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
               const SizedBox(width: 8),
               Text(
                 'Vueltas por Temporada',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _StadiumNights.textPrimary,
                   fontSize: 14,
                 ),
@@ -509,7 +510,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                     child: Center(
                       child: Text(
                         '$rounds',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           color: isSelected
                               ? _StadiumNights.neonBlue
                               : _StadiumNights.textMuted,
@@ -527,7 +528,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
             _roundsPerSeason == 1
                 ? 'Todos contra todos (1 vuelta)'
                 : 'Todos contra todos ($_roundsPerSeason vueltas)',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: _StadiumNights.textMuted,
               fontSize: 12,
             ),
@@ -554,7 +555,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
           Expanded(
             child: Text(
               'Partido por 3er lugar',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _StadiumNights.textPrimary,
                 fontSize: 14,
               ),
@@ -593,7 +594,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'Número de Grupos',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _StadiumNights.textPrimary,
                       fontSize: 14,
                     ),
@@ -624,7 +625,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                         child: Center(
                           child: Text(
                             '$groups',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               color: isSelected
                                   ? _StadiumNights.neonGreen
                                   : _StadiumNights.textMuted,
@@ -661,7 +662,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'Equipos que Avanzan por Grupo',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _StadiumNights.textPrimary,
                       fontSize: 14,
                     ),
@@ -692,7 +693,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
                         child: Center(
                           child: Text(
                             '$teams',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               color: isSelected
                                   ? _StadiumNights.neonGreen
                                   : _StadiumNights.textMuted,
@@ -708,7 +709,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
               const SizedBox(height: 8),
               Text(
                 '$_numberOfGroups grupos × $_teamsAdvancingPerGroup equipos = ${_numberOfGroups * _teamsAdvancingPerGroup} equipos a eliminación',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: _StadiumNights.textMuted,
                   fontSize: 12,
                 ),
@@ -735,7 +736,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
               Expanded(
                 child: Text(
                   'Partido por 3er lugar',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _StadiumNights.textPrimary,
                     fontSize: 14,
                   ),
@@ -793,7 +794,7 @@ class _CreateTournamentScreenState extends State<CreateTournamentScreen> {
             const SizedBox(width: 10),
             Text(
               _isLoading ? 'CREANDO...' : 'CREAR TORNEO',
-              style: GoogleFonts.bebasNeue(
+              style: ZonaType.headline(
                 fontSize: 18,
                 color: Colors.black,
                 letterSpacing: 2,

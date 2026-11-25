@@ -23,20 +23,21 @@ import '../../bloc/team/team_state.dart';
 import '../../bloc/tournament/tournament_bloc.dart';
 import '../../bloc/tournament/tournament_event.dart';
 import '../../bloc/tournament/tournament_state.dart';
+import '../../../core/config/zona_brand.dart';
 
 /// Stadium Nights Design System
 class _SN {
-  static const Color backgroundDark = Color(0xFF050508);
-  static const Color cardDark = Color(0xFF12121A);
+  static const Color backgroundDark = ZonaColors.background;
+  static const Color cardDark = ZonaColors.surface;
   static const Color gold = Color(0xFFFFD700);
-  static const Color neonGreen = Color(0xFF00FF7F);
-  static const Color neonBlue = Color(0xFF00BFFF);
-  static const Color neonPurple = Color(0xFF8B5CF6);
+  static const Color neonGreen = ZonaColors.gol;
+  static const Color neonBlue = ZonaColors.info;
+  static const Color neonPurple = ZonaColors.zona;
   static const Color amber = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = ZonaColors.text;
+  static const Color textSecondary = ZonaColors.textMuted;
+  static const Color textMuted = ZonaColors.textSubtle;
 }
 
 /// Top Scorers & Discipline Screen
@@ -120,7 +121,7 @@ class _TopScorersViewState extends State<_TopScorersView>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Goles guardados correctamente',
-                    style: GoogleFonts.outfit(color: Colors.white)),
+                    style: GoogleFonts.inter(color: Colors.white)),
                 backgroundColor: _SN.neonGreen.withOpacity(0.9),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -129,7 +130,7 @@ class _TopScorersViewState extends State<_TopScorersView>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Goles extemporaneos eliminados',
-                    style: GoogleFonts.outfit(color: Colors.white)),
+                    style: GoogleFonts.inter(color: Colors.white)),
                 backgroundColor: _SN.amber.withOpacity(0.9),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -138,7 +139,7 @@ class _TopScorersViewState extends State<_TopScorersView>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message,
-                    style: GoogleFonts.outfit(color: Colors.white)),
+                    style: GoogleFonts.inter(color: Colors.white)),
                 backgroundColor: _SN.error.withOpacity(0.9),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -171,7 +172,7 @@ class _TopScorersViewState extends State<_TopScorersView>
       icon: const Icon(Icons.add, color: _SN.backgroundDark),
       label: Text(
         'AGREGAR GOLES',
-        style: GoogleFonts.bebasNeue(
+        style: ZonaType.headline(
           fontSize: 14,
           color: _SN.backgroundDark,
           letterSpacing: 1,
@@ -227,7 +228,7 @@ class _TopScorersViewState extends State<_TopScorersView>
               children: [
                 Text(
                   'ESTADISTICAS',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 28,
                     color: _SN.textPrimary,
                     letterSpacing: 3,
@@ -236,7 +237,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                 ),
                 Text(
                   'Goleadores y disciplina',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: _SN.neonGreen,
                     letterSpacing: 0.5,
@@ -271,8 +272,8 @@ class _TopScorersViewState extends State<_TopScorersView>
         dividerColor: Colors.transparent,
         labelColor: _SN.neonGreen,
         unselectedLabelColor: _SN.textMuted,
-        labelStyle: GoogleFonts.bebasNeue(fontSize: 16, letterSpacing: 1.5),
-        unselectedLabelStyle: GoogleFonts.bebasNeue(fontSize: 16, letterSpacing: 1.5),
+        labelStyle: ZonaType.headline(fontSize: 16, letterSpacing: 1.5),
+        unselectedLabelStyle: ZonaType.headline(fontSize: 16, letterSpacing: 1.5),
         padding: const EdgeInsets.all(4),
         onTap: (_) {
           // Trigger FAB rebuild when tab changes
@@ -340,7 +341,7 @@ class _TopScorersViewState extends State<_TopScorersView>
           const SizedBox(height: 20),
           Text(
             'CARGANDO',
-            style: GoogleFonts.bebasNeue(
+            style: ZonaType.headline(
               fontSize: 16,
               color: _SN.textSecondary,
               letterSpacing: 2,
@@ -363,7 +364,7 @@ class _TopScorersViewState extends State<_TopScorersView>
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(fontSize: 14, color: _SN.textSecondary),
+              style: GoogleFonts.inter(fontSize: 14, color: _SN.textSecondary),
             ),
             const SizedBox(height: 24),
             GestureDetector(
@@ -388,7 +389,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                 ),
                 child: Text(
                   'REINTENTAR',
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 14,
                     color: Colors.white,
                     letterSpacing: 1,
@@ -411,7 +412,7 @@ class _TopScorersViewState extends State<_TopScorersView>
           const SizedBox(height: 16),
           Text(
             message,
-            style: GoogleFonts.outfit(fontSize: 14, color: _SN.textMuted),
+            style: GoogleFonts.inter(fontSize: 14, color: _SN.textMuted),
           ),
         ],
       ),
@@ -504,7 +505,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                           ? Icon(medal, color: posColor, size: 20)
                           : Text(
                               '$position',
-                              style: GoogleFonts.bebasNeue(fontSize: 18, color: posColor),
+                              style: ZonaType.headline(fontSize: 18, color: posColor),
                             ),
                     ),
                   ),
@@ -521,7 +522,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                       children: [
                         Text(
                           stat.playerName,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             color: _SN.textPrimary,
                             fontWeight: FontWeight.w600,
@@ -537,7 +538,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                               Flexible(
                                 child: Text(
                                   stat.teamName!,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     color: _SN.textMuted,
                                   ),
@@ -549,7 +550,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                               const SizedBox(width: 8),
                               Text(
                                 '#${stat.jerseyNumber}',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: _SN.textSecondary,
                                 ),
@@ -570,12 +571,12 @@ class _TopScorersViewState extends State<_TopScorersView>
                         children: [
                           Text(
                             'PJ',
-                            style: GoogleFonts.outfit(fontSize: 9, color: _SN.textMuted, fontWeight: FontWeight.w500),
+                            style: GoogleFonts.inter(fontSize: 9, color: _SN.textMuted, fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${stat.matchesPlayed}',
-                            style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.textSecondary),
+                            style: ZonaType.headline(fontSize: 16, color: _SN.textSecondary),
                           ),
                         ],
                       ),
@@ -596,14 +597,14 @@ class _TopScorersViewState extends State<_TopScorersView>
                                 const SizedBox(width: 4),
                                 Text(
                                   '${stat.goals}',
-                                  style: GoogleFonts.bebasNeue(fontSize: 18, color: _SN.neonGreen),
+                                  style: ZonaType.headline(fontSize: 18, color: _SN.neonGreen),
                                 ),
                               ],
                             ),
                             if (stat.assists > 0)
                               Text(
                                 '${stat.assists} asist.',
-                                style: GoogleFonts.outfit(fontSize: 9, color: _SN.textMuted),
+                                style: GoogleFonts.inter(fontSize: 9, color: _SN.textMuted),
                               ),
                           ],
                         ),
@@ -614,12 +615,12 @@ class _TopScorersViewState extends State<_TopScorersView>
                         children: [
                           Text(
                             'G/P',
-                            style: GoogleFonts.outfit(fontSize: 9, color: _SN.textMuted, fontWeight: FontWeight.w500),
+                            style: GoogleFonts.inter(fontSize: 9, color: _SN.textMuted, fontWeight: FontWeight.w500),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             stat.goalsPerMatch.toStringAsFixed(1),
-                            style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.neonBlue),
+                            style: ZonaType.headline(fontSize: 16, color: _SN.neonBlue),
                           ),
                         ],
                       ),
@@ -711,7 +712,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                       width: 30,
                       child: Text(
                         '$position',
-                        style: GoogleFonts.bebasNeue(
+                        style: ZonaType.headline(
                           fontSize: 18,
                           color: _SN.textMuted,
                         ),
@@ -731,7 +732,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                         children: [
                           Text(
                             stat.playerName,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 15,
                               color: _SN.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -747,7 +748,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                                 Flexible(
                                   child: Text(
                                     stat.teamName!,
-                                    style: GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+                                    style: GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -756,7 +757,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                                 const SizedBox(width: 8),
                                 Text(
                                   '#${stat.jerseyNumber}',
-                                  style: GoogleFonts.outfit(fontSize: 12, color: _SN.textSecondary),
+                                  style: GoogleFonts.inter(fontSize: 12, color: _SN.textSecondary),
                                 ),
                               ],
                             ],
@@ -776,14 +777,14 @@ class _TopScorersViewState extends State<_TopScorersView>
                         children: [
                           Text(
                             '${stat.totalCards}',
-                            style: GoogleFonts.bebasNeue(
+                            style: ZonaType.headline(
                               fontSize: 20,
                               color: hasRed ? _SN.error : _SN.amber,
                             ),
                           ),
                           Text(
                             'Total',
-                            style: GoogleFonts.outfit(fontSize: 9, color: _SN.textMuted),
+                            style: GoogleFonts.inter(fontSize: 9, color: _SN.textMuted),
                           ),
                         ],
                       ),
@@ -816,7 +817,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                                 const SizedBox(width: 6),
                                 Text(
                                   '${stat.yellowCards}',
-                                  style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.amber),
+                                  style: ZonaType.headline(fontSize: 16, color: _SN.amber),
                                 ),
                               ],
                             ),
@@ -845,7 +846,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                                 const SizedBox(width: 6),
                                 Text(
                                   '${stat.redCards}',
-                                  style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.error),
+                                  style: ZonaType.headline(fontSize: 16, color: _SN.error),
                                 ),
                               ],
                             ),
@@ -872,7 +873,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                         const SizedBox(width: 6),
                         Text(
                           'SUSPENDIDO',
-                          style: GoogleFonts.bebasNeue(
+                          style: ZonaType.headline(
                             fontSize: 12,
                             color: _SN.error,
                             letterSpacing: 1,
@@ -881,7 +882,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                         const SizedBox(width: 6),
                         Text(
                           '${suspension.matchesRemaining} partido${suspension.matchesRemaining == 1 ? '' : 's'}',
-                          style: GoogleFonts.outfit(fontSize: 11, color: _SN.error.withOpacity(0.8)),
+                          style: GoogleFonts.inter(fontSize: 11, color: _SN.error.withOpacity(0.8)),
                         ),
                       ],
                     ),
@@ -913,7 +914,7 @@ class _TopScorersViewState extends State<_TopScorersView>
                 errorBuilder: (_, __, ___) => Center(
                   child: Text(
                     stat.initials,
-                    style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.neonPurple),
+                    style: ZonaType.headline(fontSize: 16, color: _SN.neonPurple),
                   ),
                 ),
               ),
@@ -921,7 +922,7 @@ class _TopScorersViewState extends State<_TopScorersView>
           : Center(
               child: Text(
                 stat.initials,
-                style: GoogleFonts.bebasNeue(fontSize: 16, color: _SN.neonPurple),
+                style: ZonaType.headline(fontSize: 16, color: _SN.neonPurple),
               ),
             ),
     );
@@ -1087,7 +1088,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               // Title
               Text(
                 'AGREGAR GOLES',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 24,
                   color: _SN.neonGreen,
                   letterSpacing: 2,
@@ -1095,14 +1096,14 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               ),
               Text(
                 'Goles extemporaneos (sin partido asociado)',
-                style: GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+                style: GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
               ),
               const SizedBox(height: 24),
 
               // Tournament dropdown
               Text(
                 'TORNEO',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: _SN.textSecondary,
                   letterSpacing: 1,
@@ -1119,7 +1120,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
                   }
                   if (state is TournamentError) {
                     return Text(state.message,
-                        style: GoogleFonts.outfit(color: _SN.error, fontSize: 12));
+                        style: GoogleFonts.inter(color: _SN.error, fontSize: 12));
                   }
                   return const SizedBox.shrink();
                 },
@@ -1129,7 +1130,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               // Team dropdown
               Text(
                 'EQUIPO',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: _SN.textSecondary,
                   letterSpacing: 1,
@@ -1149,7 +1150,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
                   }
                   if (state is TeamError) {
                     return Text(state.message,
-                        style: GoogleFonts.outfit(color: _SN.error, fontSize: 12));
+                        style: GoogleFonts.inter(color: _SN.error, fontSize: 12));
                   }
                   return _buildDisabledDropdown('Selecciona un torneo primero');
                 },
@@ -1159,7 +1160,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               // Player dropdown
               Text(
                 'JUGADOR',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: _SN.textSecondary,
                   letterSpacing: 1,
@@ -1179,7 +1180,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
                   }
                   if (state is PlayerError) {
                     return Text(state.message,
-                        style: GoogleFonts.outfit(color: _SN.error, fontSize: 12));
+                        style: GoogleFonts.inter(color: _SN.error, fontSize: 12));
                   }
                   return _buildDisabledDropdown('Selecciona un equipo primero');
                 },
@@ -1225,7 +1226,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
                   ),
                   child: Text(
                     'GUARDAR',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       color: _SN.backgroundDark,
                       letterSpacing: 2,
@@ -1252,7 +1253,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
         child: DropdownButton<TournamentEntity>(
           value: _selectedTournament,
           hint: Text('Seleccionar torneo',
-              style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+              style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
           isExpanded: true,
           dropdownColor: _SN.cardDark,
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
@@ -1261,7 +1262,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               value: tournament,
               child: Text(
                 tournament.name,
-                style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
               ),
             );
           }).toList(),
@@ -1285,7 +1286,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
         child: DropdownButton<TeamEntity>(
           value: _selectedTeam,
           hint: Text('Seleccionar equipo',
-              style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+              style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
           isExpanded: true,
           dropdownColor: _SN.cardDark,
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.neonGreen),
@@ -1294,7 +1295,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               value: team,
               child: Text(
                 team.name,
-                style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
               ),
             );
           }).toList(),
@@ -1318,7 +1319,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
         child: DropdownButton<PlayerEntity>(
           value: _selectedPlayer,
           hint: Text('Seleccionar jugador',
-              style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+              style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
           isExpanded: true,
           dropdownColor: _SN.cardDark,
           icon: Icon(Icons.keyboard_arrow_down, color: _SN.neonBlue),
@@ -1327,7 +1328,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
               value: player,
               child: Text(
                 player.displayName,
-                style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
               ),
             );
           }).toList(),
@@ -1348,7 +1349,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Text(hint,
-          style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+          style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
     );
   }
 
@@ -1379,7 +1380,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
       children: [
         Text(
           label,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: _SN.textSecondary,
             letterSpacing: 1,
@@ -1403,7 +1404,7 @@ class _AddGoalsBottomSheetState extends State<_AddGoalsBottomSheet> {
                   controller: controller,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 22,
                     color: color,
                   ),
@@ -1518,7 +1519,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
         if (state is TournamentsLoaded) {
           if (state.tournaments.isEmpty) {
             return Text('No hay torneos en la liga',
-                style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 12));
+                style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 12));
           }
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1531,7 +1532,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
               child: DropdownButton<String>(
                 value: _selectedTournament?.id,
                 hint: Text('Seleccionar torneo',
-                    style: GoogleFonts.outfit(color: _SN.textMuted, fontSize: 14)),
+                    style: GoogleFonts.inter(color: _SN.textMuted, fontSize: 14)),
                 isExpanded: true,
                 dropdownColor: _SN.cardDark,
                 icon: Icon(Icons.keyboard_arrow_down, color: _SN.gold),
@@ -1540,7 +1541,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                     value: tournament.id,
                     child: Text(
                       tournament.name,
-                      style: GoogleFonts.outfit(color: _SN.textPrimary, fontSize: 14),
+                      style: GoogleFonts.inter(color: _SN.textPrimary, fontSize: 14),
                     ),
                   );
                 }).toList(),
@@ -1554,7 +1555,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
         }
         if (state is TournamentError) {
           return Text(state.message,
-              style: GoogleFonts.outfit(color: _SN.error, fontSize: 12));
+              style: GoogleFonts.inter(color: _SN.error, fontSize: 12));
         }
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
@@ -1604,7 +1605,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
               // Title
               Text(
                 'EDITAR GOLES',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 24,
                   color: _SN.neonBlue,
                   letterSpacing: 2,
@@ -1620,7 +1621,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                   Expanded(
                     child: Text(
                       widget.stat.playerName,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: _SN.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -1637,7 +1638,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                     const SizedBox(width: 6),
                     Text(
                       widget.stat.teamName!,
-                      style: GoogleFonts.outfit(fontSize: 12, color: _SN.textMuted),
+                      style: GoogleFonts.inter(fontSize: 12, color: _SN.textMuted),
                     ),
                   ],
                 ),
@@ -1645,14 +1646,14 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
               const SizedBox(height: 8),
               Text(
                 'Goles y asistencias extemporaneos (sin partido asociado) del torneo. Los goles de partidos no se modifican.',
-                style: GoogleFonts.outfit(fontSize: 11, color: _SN.textMuted),
+                style: GoogleFonts.inter(fontSize: 11, color: _SN.textMuted),
               ),
               const SizedBox(height: 16),
 
               // Tournament dropdown
               Text(
                 'TORNEO',
-                style: GoogleFonts.bebasNeue(
+                style: ZonaType.headline(
                   fontSize: 14,
                   color: _SN.textSecondary,
                   letterSpacing: 1,
@@ -1663,7 +1664,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
               if (_manualError != null) ...[
                 const SizedBox(height: 8),
                 Text(_manualError!,
-                    style: GoogleFonts.outfit(color: _SN.error, fontSize: 12)),
+                    style: GoogleFonts.inter(color: _SN.error, fontSize: 12)),
               ],
               const SizedBox(height: 20),
 
@@ -1705,7 +1706,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                   ),
                   child: Text(
                     'GUARDAR CAMBIOS',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 18,
                       color: _SN.backgroundDark,
                       letterSpacing: 2,
@@ -1724,7 +1725,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                   icon: Icon(Icons.delete_outline, size: 18, color: _SN.error),
                   label: Text(
                     'ELIMINAR GOLES EXTEMPORANEOS',
-                    style: GoogleFonts.bebasNeue(
+                    style: ZonaType.headline(
                       fontSize: 14,
                       color: _SN.error,
                       letterSpacing: 1,
@@ -1756,7 +1757,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
       children: [
         Text(
           label,
-          style: GoogleFonts.bebasNeue(
+          style: ZonaType.headline(
             fontSize: 14,
             color: _SN.textSecondary,
             letterSpacing: 1,
@@ -1780,7 +1781,7 @@ class _EditGoalsBottomSheetState extends State<_EditGoalsBottomSheet> {
                   controller: controller,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.bebasNeue(
+                  style: ZonaType.headline(
                     fontSize: 22,
                     color: color,
                   ),
